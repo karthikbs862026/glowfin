@@ -1,0 +1,28 @@
+# Glowfin CODEOWNERS
+# Every path should have an owner so nothing lands in main unreviewed (Part 5.2).
+# Replace placeholders with real GitHub usernames/teams before enabling branch protection's
+# "Require review from Code Owners" rule.
+
+# Default owner for anything not matched below
+*                           @karthikbs862026
+
+# Mechanics / gameplay code (Part 2)
+/src/mechanics/             @karthikbs862026
+/src/input/                 @karthikbs862026
+
+# Rendering, shaders, camera (Part 3, Part 4.5)
+/src/render/                @karthikbs862026
+/src/shaders/               @karthikbs862026
+
+# Tuning/config data (Part 5.1) — changes here alter game feel/fairness, review carefully
+/config/                    @karthikbs862026
+
+# Tests (Part 6)
+/tests/                     @karthikbs862026
+
+# CI/CD, deployment (Part 5.2, Part 7)
+/.github/                   @karthikbs862026
+/scripts/                   @karthikbs862026
+
+# Docs / ADRs (Part 5.3, 5.4)
+/docs/                      @karthikbs862026
