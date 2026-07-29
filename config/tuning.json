@@ -27,7 +27,8 @@
     "visibleAheadUnits": 40.0,
     "minReactionWindowMs": 700,
     "minSolvabilityMarginFraction": 0.25,
-    "maxLaneTraversalFraction": 0.6
+    "maxLaneTraversalFraction": 0.6,
+    "inputLatencyBudgetMs": 80
   },
 
   "scoring": {
@@ -50,6 +51,7 @@
   "input": {
     "sensitivity": 1.0,
     "smoothingHalfLifeSec": 0.045,
-    "deadZone": 0.02
+    "deadZone": 0.02,
+    "dragRangeFraction": 0.25
   }
 }

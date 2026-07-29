@@ -32,6 +32,7 @@ export interface TuningConfig {
     minReactionWindowMs: number;
     minSolvabilityMarginFraction: number;
     maxLaneTraversalFraction: number;
+    inputLatencyBudgetMs: number;
   };
   scoring: {
     nearMissClearanceUnits: number;
@@ -48,7 +49,12 @@ export interface TuningConfig {
     regenPerSec: number;
     regenDelayAfterCollisionSec: number;
   };
-  input: { sensitivity: number; smoothingHalfLifeSec: number; deadZone: number };
+  input: {
+    sensitivity: number;
+    smoothingHalfLifeSec: number;
+    deadZone: number;
+    dragRangeFraction: number;
+  };
 }
 
 interface Rule {
@@ -82,6 +88,7 @@ const RULES: Record<string, Rule> = {
   "readability.minReactionWindowMs": { min: 100, max: 5000, note: "Core Design Principle: minimum reaction time" },
   "readability.minSolvabilityMarginFraction": { min: 0, max: 0.9, note: "required slack in solvability check" },
   "readability.maxLaneTraversalFraction": { min: 0.1, max: 1, note: "max lane fraction a gate transition may demand" },
+  "readability.inputLatencyBudgetMs": { min: 10, max: 500, note: "Part 4.6: input-to-visible-response budget" },
 
   "scoring.nearMissClearanceUnits": { min: 0.01, max: 20, note: "clearance under which a pass counts as a near-miss" },
   "scoring.nearMissCooldownSec": { min: 0, max: 10, note: "prevents one cluster farming multiplier stacks" },
@@ -98,7 +105,8 @@ const RULES: Record<string, Rule> = {
 
   "input.sensitivity": { min: 0.05, max: 10, note: "steering responsiveness multiplier" },
   "input.smoothingHalfLifeSec": { min: 0, max: 0.5, note: "smoothing; higher adds latency (Part 2.1 warns against)" },
-  "input.deadZone": { min: 0, max: 0.5, note: "ignore steering magnitudes below this" }
+  "input.deadZone": { min: 0, max: 0.5, note: "ignore steering magnitudes below this" },
+  "input.dragRangeFraction": { min: 0.05, max: 1, note: "fraction of screen width dragged for full deflection" }
 };
 
 function valueAt(obj: unknown, path: string): unknown {
