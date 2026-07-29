@@ -15,7 +15,14 @@ function totalSize(dir) {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     const s = statSync(full);
-    total += s.isDirectory() ? totalSize(full) : s.size;
+    if (s.isDirectory()) {
+      total += totalSize(full);
+    } else if (!entry.endsWith(".map")) {
+      // Sourcemaps aren't downloaded by the browser during normal play —
+      // only when DevTools requests them. Counting them against the
+      // player-facing load budget would be measuring the wrong thing.
+      total += s.size;
+    }
   }
   return total;
 }
