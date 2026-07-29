@@ -24,7 +24,7 @@
   },
 
   "readability": {
-    "visibleAheadUnits": 40.0,
+    "visibleAheadUnits": 90.0,
     "minReactionWindowMs": 700,
     "minSolvabilityMarginFraction": 0.25,
     "maxLaneTraversalFraction": 0.6,
@@ -48,6 +48,17 @@
     "costPerCollision": 34.0,
     "regenPerSec": 2.2,
     "regenDelayAfterCollisionSec": 2.0
+  },
+
+  "camera": {
+    "distanceBehindAtZeroMomentum": 9.0,
+    "distanceBehindAtMaxMomentum": 13.5,
+    "height": 4.2,
+    "lookHeight": 1.2,
+    "lookAheadUnits": 26.0,
+    "fovAtZeroMomentum": 62.0,
+    "fovAtMaxMomentum": 74.0,
+    "lateralFollowFraction": 0.45
   },
 
   "input": {

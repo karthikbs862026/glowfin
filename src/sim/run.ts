@@ -45,6 +45,13 @@ export interface StepEvents {
 
 const NO_EVENTS: StepEvents = { nearMisses: 0, collisions: 0, justEnded: false };
 
+/**
+ * How far behind the player gates are kept before disposal. Generous enough
+ * that anything still on screen survives — the camera sits behind the creature,
+ * so "passed" is not the same as "not visible".
+ */
+const GATE_KEEP_BEHIND_UNITS = 40;
+
 export class Run {
   readonly sim: SimState;
   readonly scoring: ScoringState;
@@ -144,12 +151,16 @@ export class Run {
       }
     }
 
-    // Advance the cursor past everything now behind us.
+    // Advance the cursor past everything now behind us, then drop what is far
+    // enough back to be both unreachable and off-screen. Pruning shifts every
+    // index in the gate array, so the cursor is corrected by the same amount.
     this.gateCursor = firstGateAtOrBeyond(
       this.course.gates,
       previousDistance,
       this.gateCursor
     );
+    const pruned = this.course.prune(this.sim.forwardDistance - GATE_KEEP_BEHIND_UNITS);
+    if (pruned > 0) this.gateCursor = Math.max(0, this.gateCursor - pruned);
 
     // --- scoring ---
     stepScoring(this.scoring, distanceTravelled, dtSec, cfg);

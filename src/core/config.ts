@@ -51,6 +51,16 @@ export interface TuningConfig {
     regenPerSec: number;
     regenDelayAfterCollisionSec: number;
   };
+  camera: {
+    distanceBehindAtZeroMomentum: number;
+    distanceBehindAtMaxMomentum: number;
+    height: number;
+    lookHeight: number;
+    lookAheadUnits: number;
+    fovAtZeroMomentum: number;
+    fovAtMaxMomentum: number;
+    lateralFollowFraction: number;
+  };
   input: {
     sensitivity: number;
     smoothingHalfLifeSec: number;
@@ -107,6 +117,14 @@ const RULES: Record<string, Rule> = {
   "light.regenPerSec": { min: 0, max: 100, note: "light regained per second while clean" },
   "light.regenDelayAfterCollisionSec": { min: 0, max: 30, note: "pause before regen resumes" },
 
+  "camera.distanceBehindAtZeroMomentum": { min: 1, max: 60, note: "camera distance behind the creature at rest" },
+  "camera.distanceBehindAtMaxMomentum": { min: 1, max: 60, note: "camera pulls back with momentum (Part 2.2)" },
+  "camera.height": { min: 0.5, max: 40, note: "camera height above the lane" },
+  "camera.lookHeight": { min: 0, max: 20, note: "height of the camera's look target" },
+  "camera.lookAheadUnits": { min: 1, max: 200, note: "how far ahead the camera aims" },
+  "camera.fovAtZeroMomentum": { min: 30, max: 110, note: "vertical FOV at rest" },
+  "camera.fovAtMaxMomentum": { min: 30, max: 110, note: "FOV widens with momentum to sell speed" },
+  "camera.lateralFollowFraction": { min: 0, max: 1, note: "0 = camera fixed laterally, 1 = fully follows creature" },
   "input.sensitivity": { min: 0.05, max: 10, note: "steering responsiveness multiplier" },
   "input.smoothingHalfLifeSec": { min: 0, max: 0.5, note: "smoothing; higher adds latency (Part 2.1 warns against)" },
   "input.deadZone": { min: 0, max: 0.5, note: "ignore steering magnitudes below this" },

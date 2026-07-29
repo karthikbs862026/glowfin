@@ -1,90 +1,90 @@
-import * as THREE from "three";
-
-// Phase 0 exit criterion (Part 9): "a cube moves on a real phone via touch."
-// This is intentionally primitive — no game logic yet. It exists to prove
-// the render loop, touch input, and build/deploy pipeline all work end to
-// end before any real mechanics are built on top.
+/**
+ * Phase 1.5 — the core loop, playable.
+ *
+ * Wires the deterministic simulation (Run) to the primitive renderer and touch
+ * input. Everything gameplay-relevant lives in src/sim; this file only owns the
+ * frame loop, the time scale, and restart.
+ */
+import { tuning } from "./core/config";
+import { FIXED_DT_SEC, FixedTimestepRunner } from "./core/timestep";
+import { SteeringSource, attachPointerInput } from "./input/steering";
+import { generateSeed } from "./core/rng";
+import { Run } from "./sim/run";
+import { GameView } from "./render/gameView";
+import { Hud } from "./render/hud";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
-if (!canvas) {
-  throw new Error("Canvas element #glowfin-canvas not found");
+if (!canvas) throw new Error("Canvas #glowfin-canvas not found");
+
+const view = new GameView(canvas, tuning);
+const hud = new Hud();
+const steering = new SteeringSource({
+  dragRangeFraction: tuning.input.dragRangeFraction,
+  sensitivity: tuning.input.sensitivity,
+  deadZone: tuning.input.deadZone
+});
+attachPointerInput(canvas, steering);
+
+const timestep = new FixedTimestepRunner(FIXED_DT_SEC);
+let run = new Run(generateSeed(), tuning);
+let awaitingRestart = false;
+
+function startRun(): void {
+  run = new Run(generateSeed(), tuning);
+  awaitingRestart = false;
+  steering.reset();
+  timestep.reset();
+  hud.hideGameOver();
 }
 
-// Prevent the browser from hijacking swipe gestures as scroll/zoom (Part 2.1).
-canvas.style.touchAction = "none";
-
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x050510);
-const camera = new THREE.PerspectiveCamera(
-  60,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  100
-);
-camera.position.z = 5;
-
-const cube = new THREE.Mesh(
-  new THREE.BoxGeometry(1, 1, 1),
-  new THREE.MeshStandardMaterial({ color: 0x33ccff })
-);
-scene.add(cube);
-scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-scene.add(new THREE.DirectionalLight(0xffffff, 0.8));
-
-// Minimal single-axis steering input, matching the normalized -1..1 contract
-// from Part 2.1. Real replacement lands as its own tested module in Phase 1.
-let steering = 0;
-let activePointerId: number | null = null;
-
-canvas.addEventListener("pointerdown", (e) => {
-  if (activePointerId !== null) return; // ignore extra fingers, Part 2.1
-  activePointerId = e.pointerId;
+// Restart on tap once the run has ended. Registered on the document rather than
+// the canvas so a tap on the game-over panel also counts.
+document.addEventListener("pointerdown", () => {
+  if (awaitingRestart) startRun();
 });
 
-canvas.addEventListener("pointermove", (e) => {
-  if (e.pointerId !== activePointerId) return;
-  const normalizedX = (e.clientX / window.innerWidth) * 2 - 1;
-  steering = Math.max(-1, Math.min(1, normalizedX));
-});
-
-canvas.addEventListener("pointerup", (e) => {
-  if (e.pointerId === activePointerId) {
-    activePointerId = null;
-    steering = 0;
+// A backgrounded tab hands back a huge frame time and a finger that is no
+// longer down (Part 2.1). Drop both rather than simulating the gap.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    timestep.reset();
+    lastFrameMs = performance.now();
   }
 });
 
-window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+// Losing the WebGL context currently pauses rather than rebuilding. Full
+// resource rebuild is Phase 5 (Part 4.3) — preventing the default at least
+// keeps the browser from tearing the canvas down permanently.
+canvas.addEventListener("webglcontextlost", (event) => {
+  event.preventDefault();
+  console.warn("WebGL context lost — rebuild is not implemented until Phase 5");
 });
 
-// Fixed timestep simulation, decoupled from render rate (Part 4.2 — non-negotiable).
-const FIXED_DT = 1 / 60;
-let accumulator = 0;
-let lastTime = performance.now();
+let lastFrameMs = performance.now();
 
-function simulate(dt: number) {
-  cube.position.x += steering * 2 * dt;
-  cube.rotation.y += dt;
-}
+function frame(nowMs: number): void {
+  const frameSec = (nowMs - lastFrameMs) / 1000;
+  lastFrameMs = nowMs;
 
-function frame(now: number) {
-  const frameTime = Math.min((now - lastTime) / 1000, 0.25);
-  lastTime = now;
-  accumulator += frameTime;
+  // Slow-mo is applied to wall-clock time before it reaches the accumulator, so
+  // the simulation itself always steps at a fixed dt (ADR-0006).
+  timestep.advance(frameSec * run.timeScale, (dt) => {
+    const events = run.step(dt, steering.getTarget());
+    if (events.justEnded) {
+      awaitingRestart = true;
+      hud.showGameOver(
+        run.scoring.score,
+        run.sim.elapsedSec,
+        run.scoring.nearMissCount,
+        run.collisionCount
+      );
+    }
+  });
 
-  while (accumulator >= FIXED_DT) {
-    simulate(FIXED_DT);
-    accumulator -= FIXED_DT;
-  }
+  const lightFraction = run.light / tuning.light.max;
+  view.render(run.sim, run.gates, lightFraction);
+  hud.update(run.scoring.score, run.scoring.multiplier, lightFraction);
 
-  renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
 

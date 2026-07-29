@@ -2,15 +2,114 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Glowfin — dev build</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#04060f" />
+    <title>Glowfin</title>
     <style>
-      html, body { margin: 0; height: 100%; overflow: hidden; background: #050510; }
+      :root {
+        --ink: #cfefff;
+        --dim: #6c8ba5;
+      }
+      html, body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #04060f;
+        color: var(--ink);
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
       canvas { display: block; width: 100vw; height: 100vh; }
+
+      #hud {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        padding: max(14px, env(safe-area-inset-top)) 16px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      #hud-top { display: flex; align-items: baseline; gap: 12px; }
+      #hud-score {
+        font-size: 34px;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+        text-shadow: 0 0 18px rgba(53, 208, 255, 0.45);
+      }
+      #hud-multiplier {
+        font-size: 17px;
+        font-weight: 600;
+        color: #8a7bff;
+        font-variant-numeric: tabular-nums;
+      }
+      #hud-light {
+        width: min(220px, 52vw);
+        height: 6px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.09);
+        overflow: hidden;
+      }
+      #hud-light-fill {
+        height: 100%;
+        width: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #35d0ff, #8a7bff);
+        transition: width 90ms linear;
+      }
+
+      #hud-gameover {
+        position: fixed;
+        inset: 0;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: rgba(4, 6, 15, 0.72);
+        backdrop-filter: blur(3px);
+      }
+      #hud-gameover .label {
+        font-size: 13px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--dim);
+      }
+      #hud-final-score {
+        font-size: 58px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        font-variant-numeric: tabular-nums;
+        text-shadow: 0 0 30px rgba(53, 208, 255, 0.5);
+      }
+      #hud-final-detail { font-size: 14px; color: var(--dim); }
+      #hud-restart { margin-top: 18px; font-size: 14px; color: var(--dim); }
     </style>
   </head>
   <body>
     <canvas id="glowfin-canvas"></canvas>
+
+    <div id="hud">
+      <div id="hud-top">
+        <div id="hud-score">0</div>
+        <div id="hud-multiplier">x1.0</div>
+      </div>
+      <div id="hud-light"><div id="hud-light-fill"></div></div>
+    </div>
+
+    <div id="hud-gameover">
+      <div class="label">Run ended</div>
+      <div id="hud-final-score">0</div>
+      <div id="hud-final-detail"></div>
+      <div id="hud-restart">Tap to dive again</div>
+    </div>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

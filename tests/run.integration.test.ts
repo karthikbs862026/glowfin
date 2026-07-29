@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { tuning } from "../src/core/config";
 import { FIXED_DT_SEC, FixedTimestepRunner } from "../src/core/timestep";
 import { Run } from "../src/sim/run";
+import type { Gate } from "../src/sim/course";
 
 /**
  * Part 6.1 integration tests: input -> steering -> movement -> collision ->
@@ -25,17 +26,21 @@ import { Run } from "../src/sim/run";
  * A synthetic player with superhuman precision tests nothing.
  */
 function makePilot(bias: number, wobble: number) {
-  let cursor = 0;
   return (run: Run): number => {
     const r = tuning.lane.creatureRadius;
     const t = run.sim.elapsedSec;
     const drift = wobble * (Math.sin(1.7 * t) * 0.6 + Math.sin(2.9 * t + 1.1) * 0.4);
-    const gates = run.gates;
 
-    while (cursor < gates.length && (gates[cursor]?.distance ?? Infinity) < run.sim.forwardDistance) {
-      cursor++;
+    // Scans from the front rather than caching an index: Run now prunes passed
+    // gates (Part 4.3), which shifts every index, and pruning keeps the live
+    // list short enough that a linear scan costs nothing.
+    let gate: Gate | undefined;
+    for (const candidate of run.gates) {
+      if (candidate.distance >= run.sim.forwardDistance) {
+        gate = candidate;
+        break;
+      }
     }
-    const gate = gates[cursor];
     if (!gate) return 0;
 
     const lo = gate.gapLeft + r;
@@ -202,5 +207,34 @@ describe("near-miss beat (Part 2.3)", () => {
 
   it("time scale is exactly 1 when not celebrating", () => {
     expect(new Run(6, tuning).timeScale).toBe(1);
+  });
+});
+
+describe("memory discipline (Part 4.3)", () => {
+  it("prunes passed gates instead of growing the list without bound", () => {
+    const run = new Run(31, tuning);
+    const pilot = makePilot(NORMAL.bias, NORMAL.wobble);
+    let peak = 0;
+    for (let i = 0; i < 120 * 120 && !run.ended; i++) {
+      run.step(FIXED_DT_SEC, pilot(run));
+      if (run.gates.length > peak) peak = run.gates.length;
+    }
+    // Bounded by sight distance over minimum spacing, plus what is kept behind.
+    expect(peak).toBeLessThan(40);
+    expect(run.sim.forwardDistance).toBeGreaterThan(1000);
+  });
+
+  it("pruning does not cause a gate to be missed", () => {
+    // The scan cursor is an index into an array that pruning mutates. If the
+    // correction were wrong, gates would be silently skipped and the player
+    // would pass through walls.
+    const a = new Run(88, tuning);
+    const pilotA = makePilot(0.85, 0.9);
+    let collisions = 0;
+    for (let i = 0; i < 120 * 90 && !a.ended; i++) {
+      collisions += a.step(FIXED_DT_SEC, pilotA(a)).collisions;
+    }
+    expect(collisions).toBeGreaterThan(0);
+    expect(a.collisionCount).toBe(collisions);
   });
 });

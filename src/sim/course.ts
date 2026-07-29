@@ -211,6 +211,27 @@ export class CourseGenerator {
     return this.generated;
   }
 
+  /**
+   * Drop gates that are far enough behind the player to be unreachable and
+   * off-screen. Part 4.3 requires disposal rather than unbounded growth: an
+   * endless runner is a long continuous scene, which is the worst case for the
+   * iOS Safari heap ceiling.
+   *
+   * Returns how many were removed, so callers holding indices into `gates` can
+   * correct them.
+   */
+  prune(behindDistance: number): number {
+    let count = 0;
+    while (
+      count < this.generated.length &&
+      (this.generated[count]?.distance ?? Infinity) < behindDistance
+    ) {
+      count++;
+    }
+    if (count > 0) this.generated.splice(0, count);
+    return count;
+  }
+
   /** Generate until at least one gate exists beyond `distance`. */
   ensureGeneratedTo(distance: number): void {
     let guard = 0;
