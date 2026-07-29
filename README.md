@@ -44,7 +44,7 @@ scripts/        repo/CI tooling, asset pipeline scripts (Part 4.4)
 
 ## Open items from Phase 0 (tracked honestly, not swept under the rug)
 
-- [ ] ADR-0002 (movement/collision model) is drafted but **not decided** — see `docs/decision-log.md`
+
 - [ ] Bundle size budget in CI is a placeholder — see ADR-0003
 - [ ] `CODEOWNERS` currently points everything at one owner — update if/when the team grows
 - [ ] Branch protection script has not been run against the live repo yet
