@@ -1,0 +1,55 @@
+{
+  "$comment": "Glowfin tuning data. Edited by designers, not programmers. Every value here is range-validated at load (src/core/config.ts) — a bad edit fails loudly at startup rather than producing subtly unfair gameplay. See docs/tuning-guide.md for what each value does.",
+  "version": 1,
+
+  "momentum": {
+    "gainRate": 0.12,
+    "ceiling": 1.0,
+    "collisionRetainFraction": 0.4,
+    "collisionFloor": 0.15,
+    "stunDurationSec": 0.6,
+    "invulnerabilityDurationSec": 1.2
+  },
+
+  "speed": {
+    "forwardAtZeroMomentum": 18.0,
+    "forwardAtMaxMomentum": 45.0,
+    "lateralAtZeroMomentum": 12.0,
+    "lateralAtMaxMomentum": 18.0
+  },
+
+  "lane": {
+    "halfWidth": 6.0,
+    "creatureRadius": 0.5
+  },
+
+  "readability": {
+    "visibleAheadUnits": 40.0,
+    "minReactionWindowMs": 700,
+    "minSolvabilityMarginFraction": 0.25,
+    "maxLaneTraversalFraction": 0.6
+  },
+
+  "scoring": {
+    "nearMissClearanceUnits": 0.9,
+    "nearMissCooldownSec": 0.4,
+    "multiplierStart": 1.0,
+    "multiplierGainPerNearMiss": 0.5,
+    "multiplierCap": 8.0,
+    "multiplierDecayPerSec": 0.08,
+    "multiplierDecayGraceSec": 4.0
+  },
+
+  "light": {
+    "max": 100.0,
+    "costPerCollision": 34.0,
+    "regenPerSec": 6.0,
+    "regenDelayAfterCollisionSec": 2.0
+  },
+
+  "input": {
+    "sensitivity": 1.0,
+    "smoothingHalfLifeSec": 0.045,
+    "deadZone": 0.02
+  }
+}
