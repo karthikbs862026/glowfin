@@ -60,6 +60,9 @@ jobs:
       - name: Bundle size check
         run: npm run check:bundle-size
 
+      - name: Debug tooling strip check
+        run: npm run check:no-debug
+
   # Placeholder — wired up in Phase 1 once the movement/control test suite
   # (Part 6.4) exists. Left here so the CI shape is visible from Phase 0.
   # integration-and-simulation:

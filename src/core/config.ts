@@ -51,6 +51,27 @@ export interface TuningConfig {
     regenPerSec: number;
     regenDelayAfterCollisionSec: number;
   };
+  visual: {
+    causticScaleFloor: number;
+    causticScaleWall: number;
+    causticIntensityFloor: number;
+    causticIntensityWall: number;
+    causticSharpness: number;
+    causticSpeed: number;
+    causticMagentaShiftAtMaxMomentum: number;
+    bloomStrength: number;
+    bloomRadius: number;
+    bloomThreshold: number;
+  };
+  trail: {
+    segmentCount: number;
+    sampleIntervalSec: number;
+    widthAtZeroMomentum: number;
+    widthAtMaxMomentum: number;
+    brightnessAtZeroMomentum: number;
+    brightnessAtMaxMomentum: number;
+    heightOffset: number;
+  };
   camera: {
     distanceBehindAtZeroMomentum: number;
     distanceBehindAtMaxMomentum: number;
@@ -117,6 +138,23 @@ const RULES: Record<string, Rule> = {
   "light.regenPerSec": { min: 0, max: 100, note: "light regained per second while clean" },
   "light.regenDelayAfterCollisionSec": { min: 0, max: 30, note: "pause before regen resumes" },
 
+  "visual.causticScaleFloor": { min: 0.05, max: 8, note: "caustic cycles per world unit on the floor" },
+  "visual.causticScaleWall": { min: 0.05, max: 8, note: "caustic cycles per world unit on obstacle faces" },
+  "visual.causticIntensityFloor": { min: 0, max: 6, note: "floor caustic brightness" },
+  "visual.causticIntensityWall": { min: 0, max: 6, note: "obstacle caustic brightness; additive only, never darkens (Part 3.4)" },
+  "visual.causticSharpness": { min: 1, max: 12, note: "higher = tighter, brighter bands with more dark between" },
+  "visual.causticSpeed": { min: 0, max: 5, note: "animation rate" },
+  "visual.causticMagentaShiftAtMaxMomentum": { min: 0, max: 1, note: "how far obstacle caustics shift cyan->magenta at ceiling (Part 3.4 palette range)" },
+  "visual.bloomStrength": { min: 0, max: 4, note: "bloom intensity; this is what makes emissive read as glowing" },
+  "visual.bloomRadius": { min: 0, max: 2, note: "bloom spread" },
+  "visual.bloomThreshold": { min: 0, max: 2, note: "luminance above which pixels bloom" },
+  "trail.segmentCount": { min: 4, max: 96, note: "ribbon segments; capped by budgets.pools.maxTrailSegments" },
+  "trail.sampleIntervalSec": { min: 0.004, max: 0.2, note: "how often a ribbon point is recorded" },
+  "trail.widthAtZeroMomentum": { min: 0.01, max: 6, note: "ribbon width at rest" },
+  "trail.widthAtMaxMomentum": { min: 0.01, max: 6, note: "ribbon width at ceiling (Part 3.2)" },
+  "trail.brightnessAtZeroMomentum": { min: 0, max: 8, note: "ribbon brightness at rest" },
+  "trail.brightnessAtMaxMomentum": { min: 0, max: 8, note: "ribbon brightness at ceiling" },
+  "trail.heightOffset": { min: -3, max: 3, note: "ribbon height relative to the creature" },
   "camera.distanceBehindAtZeroMomentum": { min: 1, max: 60, note: "camera distance behind the creature at rest" },
   "camera.distanceBehindAtMaxMomentum": { min: 1, max: 60, note: "camera pulls back with momentum (Part 2.2)" },
   "camera.height": { min: 0.5, max: 40, note: "camera height above the lane" },

@@ -11,7 +11,8 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "check:bundle-size": "node scripts/check-bundle-size.mjs"
+    "check:bundle-size": "node scripts/check-bundle-size.mjs",
+    "check:no-debug": "node scripts/check-no-debug.mjs"
   },
   "dependencies": {
     "three": "^0.165.0"

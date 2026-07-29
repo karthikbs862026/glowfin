@@ -12,6 +12,9 @@ import { generateSeed } from "./core/rng";
 import { Run } from "./sim/run";
 import { GameView } from "./render/gameView";
 import { Hud } from "./render/hud";
+import { DebugOverlay } from "./render/debugOverlay";
+import { QualityController } from "./perf/quality";
+import { PerfMonitor, checkBudgets } from "./perf/metrics";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
 if (!canvas) throw new Error("Canvas #glowfin-canvas not found");
@@ -25,6 +28,11 @@ const steering = new SteeringSource({
 });
 attachPointerInput(canvas, steering);
 
+const quality = new QualityController();
+const perf = new PerfMonitor();
+const overlay = new DebugOverlay();
+view.setQuality(quality.settings);
+
 const timestep = new FixedTimestepRunner(FIXED_DT_SEC);
 let run = new Run(generateSeed(), tuning);
 let awaitingRestart = false;
@@ -34,6 +42,7 @@ function startRun(): void {
   awaitingRestart = false;
   steering.reset();
   timestep.reset();
+  view.resetTrail();
   hud.hideGameOver();
 }
 
@@ -82,8 +91,26 @@ function frame(nowMs: number): void {
   });
 
   const lightFraction = run.light / tuning.light.max;
-  view.render(run.sim, run.gates, lightFraction);
+  view.render(run.sim, run.gates, lightFraction, run.sim.elapsedSec, frameSec);
   hud.update(run.scoring.score, run.scoring.multiplier, lightFraction);
+
+  // --- performance (Part 4.6 / 6.8) ---
+  // Frame time is measured in wall clock, not simulated time: slow-mo makes the
+  // sim advance more slowly but costs the GPU exactly the same, so using
+  // simulated time here would quietly hide cost during every near-miss.
+  const frameMs = frameSec * 1000;
+  perf.record(frameMs);
+  const change = quality.recordFrame(frameMs);
+  if (change) {
+    view.setQuality(quality.settings);
+    console.info(`Quality ${change.from} -> ${change.to} (${change.reason})`);
+  }
+
+  if (import.meta.env.DEV) {
+    const stats = view.stats();
+    const sample = perf.sample(stats.drawCalls, stats.triangles, view.gpuName);
+    overlay.update(sample, quality.current, checkBudgets(sample));
+  }
 
   requestAnimationFrame(frame);
 }
