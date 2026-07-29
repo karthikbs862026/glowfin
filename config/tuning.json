@@ -50,6 +50,31 @@
     "regenDelayAfterCollisionSec": 2.0
   },
 
+  "visual": {
+    "$comment": "Caustic look. Exposed as tuning data so it can be iterated on-device with hot reload rather than guessed at. scale is cycles per world unit — too low and the pattern becomes one slow blob across the whole lane, which is exactly what the first version shipped with.",
+    "causticScaleFloor": 0.85,
+    "causticScaleWall": 0.65,
+    "causticIntensityFloor": 1.25,
+    "causticIntensityWall": 1.05,
+    "causticSharpness": 4.0,
+    "causticSpeed": 0.85,
+    "causticMagentaShiftAtMaxMomentum": 0.55,
+    "bloomStrength": 0.75,
+    "bloomRadius": 0.55,
+    "bloomThreshold": 0.62
+  },
+
+  "trail": {
+    "$comment": "Mesh ribbon, explicitly not particles (Part 3.3). segmentCount must stay at or under budgets.pools.maxTrailSegments.",
+    "segmentCount": 26,
+    "sampleIntervalSec": 0.02,
+    "widthAtZeroMomentum": 0.30,
+    "widthAtMaxMomentum": 1.45,
+    "brightnessAtZeroMomentum": 0.45,
+    "brightnessAtMaxMomentum": 2.4,
+    "heightOffset": -0.28
+  },
+
   "camera": {
     "distanceBehindAtZeroMomentum": 9.0,
     "distanceBehindAtMaxMomentum": 13.5,

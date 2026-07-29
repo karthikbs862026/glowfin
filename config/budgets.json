@@ -1,0 +1,52 @@
+{
+  "$comment": "Performance budgets (Part 4.6). PROVISIONAL — derived from spec plus measured headroom on the reference devices we have, with a deliberate safety factor. Not yet validated on iOS Safari, which Part 4.6 names as the binding constraint. See docs/device-matrix.md for what is and is not tested. Enforced programmatically: the build fails on bundle-size violation, and the in-game overlay flags runtime violations against these numbers.",
+  "version": 1,
+
+  "frameRate": {
+    "targetHighEndFps": 60,
+    "floorMidRangeFps": 30,
+    "frameBudgetMsHighEnd": 16.7,
+    "frameBudgetMsMidRange": 33.3
+  },
+
+  "scene": {
+    "$drawCallNote": "Revised 60 -> 90 after measurement, not after a violation. The original 60 was set before bloom existed; UnrealBloomPass alone accounts for ~14 draws across its mip chain. Measured 48 with primitives plus bloom on an Adreno 730. Phase 3 art needs headroom above that, and 90 remains conservative for mobile GPUs. Recorded here because raising a budget you have just exceeded is exactly the failure Part 4.6 warns about — the justification has to be visible, not silent.",
+    "maxDrawCalls": 90,
+    "maxTriangles": 150000,
+    "maxTextureMemoryMb": 48
+  },
+
+  "pools": {
+    "maxGates": 16,
+    "maxStripes": 40,
+    "maxTrailSegments": 96,
+    "maxParticles": 128
+  },
+
+  "memory": {
+    "steadyStateHeapMb": 220,
+    "allocationSpikeHeadroomMb": 60
+  },
+
+  "load": {
+    "maxBundleBytes": 2097152,
+    "maxColdStartMs": 3500
+  },
+
+  "input": {
+    "maxInputToVisibleMs": 80
+  },
+
+  "quality": {
+    "$comment": "Dynamic quality scaling, required by Part 4.6 when the frame-rate floor is missed. Tiers step down on sustained overrun and back up only after a longer sustained recovery, so the game never oscillates visibly between tiers mid-run.",
+    "sampleWindowFrames": 90,
+    "downgradeAfterBadWindows": 2,
+    "upgradeAfterGoodWindows": 6,
+    "cooldownMs": 4000,
+    "tiers": {
+      "high": { "pixelRatioCap": 2.0, "causticOctaves": 3, "causticsEnabled": true, "bloomEnabled": true, "bloomResolutionScale": 0.5 },
+      "medium": { "pixelRatioCap": 1.5, "causticOctaves": 2, "causticsEnabled": true, "bloomEnabled": true, "bloomResolutionScale": 0.33 },
+      "low": { "pixelRatioCap": 1.0, "causticOctaves": 1, "causticsEnabled": false, "bloomEnabled": false, "bloomResolutionScale": 0.25 }
+    }
+  }
+}
