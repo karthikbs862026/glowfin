@@ -42,6 +42,8 @@ export interface TuningConfig {
     multiplierCap: number;
     multiplierDecayPerSec: number;
     multiplierDecayGraceSec: number;
+    nearMissSlowMoDurationSec: number;
+    nearMissSlowMoTimeScale: number;
   };
   light: {
     max: number;
@@ -97,6 +99,8 @@ const RULES: Record<string, Rule> = {
   "scoring.multiplierCap": { min: 1, max: 100, note: "ceiling on multiplier" },
   "scoring.multiplierDecayPerSec": { min: 0, max: 5, note: "decay once grace elapses" },
   "scoring.multiplierDecayGraceSec": { min: 0, max: 30, note: "seconds before decay begins" },
+  "scoring.nearMissSlowMoDurationSec": { min: 0, max: 2, note: "length of the near-miss slow-mo beat" },
+  "scoring.nearMissSlowMoTimeScale": { min: 0.1, max: 1, note: "time scale during slow-mo; 1 disables it" },
 
   "light.max": { min: 1, max: 1000, note: "starting/maximum light (the run-end resource)" },
   "light.costPerCollision": { min: 0.1, max: 1000, note: "light lost per collision" },

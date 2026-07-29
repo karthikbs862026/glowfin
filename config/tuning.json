@@ -32,19 +32,21 @@
   },
 
   "scoring": {
-    "nearMissClearanceUnits": 0.9,
-    "nearMissCooldownSec": 0.4,
+    "nearMissClearanceUnits": 0.4,
+    "nearMissCooldownSec": 0.8,
     "multiplierStart": 1.0,
-    "multiplierGainPerNearMiss": 0.5,
+    "multiplierGainPerNearMiss": 0.7,
     "multiplierCap": 8.0,
     "multiplierDecayPerSec": 0.08,
-    "multiplierDecayGraceSec": 4.0
+    "multiplierDecayGraceSec": 4.0,
+    "nearMissSlowMoDurationSec": 0.25,
+    "nearMissSlowMoTimeScale": 0.45
   },
 
   "light": {
     "max": 100.0,
     "costPerCollision": 34.0,
-    "regenPerSec": 6.0,
+    "regenPerSec": 2.2,
     "regenDelayAfterCollisionSec": 2.0
   },
 

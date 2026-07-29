@@ -3,12 +3,13 @@
   "version": 1,
 
   "difficulty": {
-    "distancePerTier": 400,
-    "maxTier": 5,
-    "gapWidthMultiplierAtMaxTier": 0.6,
+    "distancePerTier": 300,
+    "maxTier": 14,
+    "gapWidthMultiplierAtMaxTier": 0.55,
     "minGapWidthUnits": 3.0,
     "gateSpacingMinUnits": 28.0,
-    "gateSpacingMaxUnits": 38.0
+    "gateSpacingMaxUnits": 38.0,
+    "gateSpacingMultiplierAtMaxTier": 0.85
   },
 
   "templates": [

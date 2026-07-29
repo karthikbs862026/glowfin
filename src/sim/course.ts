@@ -47,6 +47,8 @@ interface DifficultySettings {
   minGapWidthUnits: number;
   gateSpacingMinUnits: number;
   gateSpacingMaxUnits: number;
+  /** Gates draw closer together at high tier, raising decision rate. */
+  gateSpacingMultiplierAtMaxTier: number;
 }
 
 const difficulty = chunkData.difficulty as DifficultySettings;
@@ -222,12 +224,14 @@ export class CourseGenerator {
     const tier = tierAtDistance(this.nextDistance);
     const eligible = templates.filter((t) => t.minTier <= tier);
     const template = this.pickWeighted(eligible);
+    const tierFraction = difficulty.maxTier === 0 ? 0 : tier / difficulty.maxTier;
+    const spacingScale =
+      1 + (difficulty.gateSpacingMultiplierAtMaxTier - 1) * tierFraction;
 
     for (const gateTemplate of template.gates) {
-      const spacing = this.rng.range(
-        difficulty.gateSpacingMinUnits,
-        difficulty.gateSpacingMaxUnits
-      );
+      const spacing =
+        this.rng.range(difficulty.gateSpacingMinUnits, difficulty.gateSpacingMaxUnits) *
+        spacingScale;
       const distance = this.nextDistance;
       this.generated.push(this.buildGate(gateTemplate, distance, tier, template.id));
       this.nextDistance = distance + spacing;

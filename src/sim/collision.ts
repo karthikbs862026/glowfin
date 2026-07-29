@@ -71,20 +71,43 @@ export function evaluateGate(
  *
  * `gates` must be sorted by distance ascending — the generator produces them
  * that way.
+ *
+ * `startIndex` lets the caller skip gates already behind the player. Without it
+ * this scan is O(total gates generated) on every step, which grows without
+ * bound over a run — fine for a 60-second session, wasteful for a soak test,
+ * and exactly the kind of thing that shows up as a slow creep on a mid-range
+ * phone rather than an obvious bug.
  */
 export function evaluateStep(
   segment: SweptSegment,
   gates: readonly Gate[],
-  cfg: TuningConfig
+  cfg: TuningConfig,
+  startIndex = 0
 ): GatePassResult[] {
   const results: GatePassResult[] = [];
-  for (const gate of gates) {
+  for (let i = Math.max(0, startIndex); i < gates.length; i++) {
+    const gate = gates[i];
+    if (!gate) continue;
     if (gate.distance >= segment.toDistance) break;
     if (gate.distance < segment.fromDistance) continue;
     const result = evaluateGate(segment, gate, cfg);
     if (result) results.push(result);
   }
   return results;
+}
+
+/**
+ * Index of the first gate at or beyond `distance`. Used to advance the scan
+ * cursor as gates fall behind the player.
+ */
+export function firstGateAtOrBeyond(
+  gates: readonly Gate[],
+  distance: number,
+  fromIndex = 0
+): number {
+  let i = Math.max(0, fromIndex);
+  while (i < gates.length && (gates[i]?.distance ?? Infinity) < distance) i++;
+  return i;
 }
 
 /** True if a clean pass was close enough to count as a near-miss (Part 2.3). */
