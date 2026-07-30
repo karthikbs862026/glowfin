@@ -67,6 +67,50 @@ function captureGate(sim: SimState): Gate {
 export interface BrowserCaptureBundle {
   tier: "fast" | "full";
   captures: SceneCapture[];
+  beautyReview: {
+    meanLuminance: number;
+    nearBlackFraction: number;
+    colourfulFraction: number;
+    clippedHighlightFraction: number;
+  };
+}
+
+function srgbToLinear(channel: number): number {
+  const value = channel / 255;
+  return value <= 0.04045
+    ? value / 12.92
+    : Math.pow((value + 0.055) / 1.055, 2.4);
+}
+
+function analyseBeautyFrame(pixels: Uint8Array): BrowserCaptureBundle["beautyReview"] {
+  const pixelCount = Math.max(1, pixels.length / 4);
+  let luminanceTotal = 0;
+  let nearBlack = 0;
+  let colourful = 0;
+  let clipped = 0;
+
+  for (let index = 0; index < pixels.length; index += 4) {
+    const red = pixels[index] ?? 0;
+    const green = pixels[index + 1] ?? 0;
+    const blue = pixels[index + 2] ?? 0;
+    const luminance =
+      srgbToLinear(red) * 0.2126 +
+      srgbToLinear(green) * 0.7152 +
+      srgbToLinear(blue) * 0.0722;
+    luminanceTotal += luminance;
+    if (luminance < 0.01) nearBlack += 1;
+    if (Math.max(red, green, blue) - Math.min(red, green, blue) > 31) {
+      colourful += 1;
+    }
+    if (luminance > 0.78) clipped += 1;
+  }
+
+  return {
+    meanLuminance: luminanceTotal / pixelCount,
+    nearBlackFraction: nearBlack / pixelCount,
+    colourfulFraction: colourful / pixelCount,
+    clippedHighlightFraction: clipped / pixelCount
+  };
 }
 
 export function runArtGateCapture(
@@ -160,13 +204,21 @@ export function runArtGateCapture(
     previewState.bloom,
     previewState.caustics
   );
-  view.render(
-    previewSim,
-    [captureGate(previewSim)],
-    1,
-    previewSim.elapsedSec,
-    FIXED_DT_SEC
-  );
+  // Warm the deterministic preview for one visual beat. A single reset frame
+  // erased the ribbon and local reef response, so the downloadable "beauty"
+  // image omitted two of the Art Bible's defining layers.
+  for (let frame = 0; frame < 54; frame++) {
+    const steering = Math.sin(frame / 18) * 0.12;
+    stepSim(previewSim, steering, FIXED_DT_SEC, cfg);
+    view.render(
+      previewSim,
+      [captureGate(previewSim)],
+      1,
+      previewSim.elapsedSec,
+      FIXED_DT_SEC
+    );
+  }
+  const beautyReview = analyseBeautyFrame(view.capturePixels().pixels);
 
-  return { tier, captures };
+  return { tier, captures, beautyReview };
 }

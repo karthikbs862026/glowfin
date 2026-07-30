@@ -8,8 +8,8 @@ const MOONSTONE_DARK = new THREE.Color(0x20384a);
 // Collision-critical stone gets its own brighter values. The surrounding
 // ruins deliberately stay subdued, but every surface that can end a run must
 // retain a 3:1 silhouette against the midnight lane even with caustics off.
-const OBSTACLE_MOONSTONE = new THREE.Color(0x5f96ae);
-const OBSTACLE_RECESS = new THREE.Color(0x508198);
+const OBSTACLE_MOONSTONE = new THREE.Color(0x46758a);
+const OBSTACLE_RECESS = new THREE.Color(0x365f74);
 const SHELL_GOLD = new THREE.Color(0xf4d58b);
 const LIVING_CYAN = new THREE.Color(0x63e0ff);
 const MOON_VIOLET = new THREE.Color(0x8b6be8);
@@ -113,6 +113,16 @@ export function createWallFragmentGeometry(
     decorate(extrudedWallShape(gapDirection), {
       colour: OBSTACLE_MOONSTONE,
       glowWeight: 0.08
+    }),
+    // A recessed copy creates the broad layered stone face seen in the Art
+    // Bible without touching the collider-truth edge. It is shifted toward the
+    // wall mass and slightly raised toward the camera, so the base reads as a
+    // sculpted frame rather than one flat extruded card.
+    decorate(extrudedWallShape(gapDirection), {
+      position: new THREE.Vector3(-gapDirection * 0.065, -0.055, 0),
+      scale: new THREE.Vector3(0.82, 0.80, 1.035),
+      colour: OBSTACLE_RECESS,
+      glowWeight: 0.04
     })
   ];
 
@@ -129,7 +139,7 @@ export function createWallFragmentGeometry(
     }
   ));
   parts.push(decorate(
-    new THREE.BoxGeometry(0.065, 0.74, 1.035, 1, ribSegments, 1),
+    new THREE.BoxGeometry(0.045, 0.74, 1.035, 1, ribSegments, 1),
     {
       position: new THREE.Vector3(gapDirection * 0.16, -0.09, 0),
       rotation: new THREE.Euler(0, 0, -gapDirection * 0.16),
@@ -139,7 +149,7 @@ export function createWallFragmentGeometry(
   ));
 
   parts.push(decorate(
-    new THREE.TorusGeometry(0.24, 0.032, tube, radial, Math.PI * 1.42),
+    new THREE.TorusGeometry(0.24, 0.024, tube, radial, Math.PI * 1.42),
     {
       position: new THREE.Vector3(-gapDirection * 0.09, -0.02, 0.515),
       rotation: new THREE.Euler(0, 0, gapDirection > 0 ? -0.8 : Math.PI - 0.8),
@@ -299,8 +309,8 @@ export function createMediumCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
   const vertical = lod === 0 ? 5 : lod === 1 ? 3 : 1;
   const branches = lod === 0 ? 5 : lod === 1 ? 4 : 3;
   const parts: THREE.BufferGeometry[] = [];
-  const offsets = [-0.38, -0.18, 0, 0.2, 0.4];
-  const heights = [0.58, 0.83, 1.05, 0.76, 0.52];
+  const offsets = [-0.44, -0.22, 0, 0.23, 0.45];
+  const heights = [0.62, 0.92, 1.12, 0.84, 0.58];
 
   for (let index = 0; index < branches; index++) {
     const x = offsets[index] ?? 0;
@@ -311,10 +321,14 @@ export function createMediumCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
         ? MOON_VIOLET
         : HEART_ROSE;
     parts.push(decorate(
-      new THREE.CylinderGeometry(0.055, 0.12, height, radial, vertical, false),
+      new THREE.CylinderGeometry(0.085, 0.17, height, radial, vertical, false),
       {
         position: new THREE.Vector3(x, height * 0.5, 0.06 * Math.sin(index * 1.7)),
-        rotation: new THREE.Euler(0, index * 0.5, x * -0.42),
+        rotation: new THREE.Euler(
+          index % 2 === 0 ? 0.08 : -0.06,
+          index * 0.5,
+          x * -0.72
+        ),
         colour,
         glowWeight: 0.92
       }
@@ -323,8 +337,8 @@ export function createMediumCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
     if (lod < 2 && index < cupCount) {
       parts.push(decorate(
         new THREE.TorusGeometry(
-          0.075,
-          0.028,
+          0.105,
+          0.034,
           3,
           lod === 0 ? 12 : 10
         ),
@@ -341,7 +355,7 @@ export function createMediumCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
     new THREE.SphereGeometry(0.42, radial * 2, Math.max(4, radial)),
     {
       position: new THREE.Vector3(0, 0.04, 0),
-      scale: new THREE.Vector3(1, 0.22, 0.72),
+      scale: new THREE.Vector3(1.28, 0.28, 0.86),
       colour: MOONSTONE_DARK,
       glowWeight: 0.16
     }

@@ -133,7 +133,21 @@ const FRAGMENT = /* glsl */ `
     // stops floor and walls reading as the same flat material.
     float facing = clamp(vNormalW.y * 0.35 + 0.72, 0.0, 1.0);
 
-    vec3 colour = uBaseColor + uCausticColor * pattern * uIntensity * facing;
+    // Broad staggered moonstone paving keeps the route readable even when a
+    // low quality tier disables caustics. This is deliberately low-frequency:
+    // at runner speed it reads as grounded stone mass, not noisy wallpaper.
+    vec2 tileUv = vWorldPos.xz * vec2(0.24, 0.105);
+    tileUv.x += floor(tileUv.y) * 0.5;
+    vec2 tileCell = abs(fract(tileUv) - 0.5);
+    float jointDistance = min(0.5 - tileCell.x, 0.5 - tileCell.y);
+    float mortar = 1.0 - smoothstep(0.018, 0.052, jointDistance);
+    float stoneVariation = 0.92 + 0.08 * sin(
+      floor(tileUv.x) * 2.73 + floor(tileUv.y) * 5.19
+    );
+
+    vec3 colour = uBaseColor * stoneVariation;
+    colour *= 1.0 - mortar * 0.38;
+    colour += uCausticColor * pattern * uIntensity * facing;
 
     // Lit border along the face edges.
     //

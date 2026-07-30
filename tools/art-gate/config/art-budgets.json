@@ -39,6 +39,12 @@
     "perObstaclePercentile": 10,
     "perObstacleMinRatio": 3
   },
+  "beauty": {
+    "meanLuminanceMin": 0.032,
+    "nearBlackFractionMax": 0.84,
+    "colourfulFractionMin": 0.1,
+    "clippedHighlightFractionMax": 0.04
+  },
   "creature": {
     "viewportWidthFractionMin": 0.08,
     "viewportWidthFractionMax": 0.1,

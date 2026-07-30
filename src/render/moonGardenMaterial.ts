@@ -37,7 +37,9 @@ const VERTEX = /* glsl */ `
 
     vColour = color;
     #ifdef USE_INSTANCING_COLOR
-      vColour *= instanceColor;
+      // Instance colour is a restrained lighting/tint control. Multiplying
+      // two already-dark colours made the Moon-Garden disappear into black.
+      vColour *= vec3(0.58) + instanceColor * 1.18;
     #endif
     vGlowWeight = glowWeight;
     vec4 mvPosition = viewMatrix * worldPosition;
@@ -61,10 +63,12 @@ const FRAGMENT = /* glsl */ `
   varying float vViewDepth;
 
   void main() {
-    float broadWash = 0.82 + 0.18 * sin(
+    float broadWash = 0.88 + 0.12 * sin(
       vWorldPos.y * 0.82 + vWorldPos.x * 0.19 + vWorldPos.z * 0.07
     );
-    float topLight = clamp(vNormalW.y * 0.24 + 0.82, 0.56, 1.08);
+    vec3 keyDirection = normalize(vec3(-0.35, 0.82, 0.45));
+    float keyLight = dot(normalize(vNormalW), keyDirection) * 0.5 + 0.5;
+    float topLight = mix(0.68, 1.18, keyLight);
     float distanceToGlow = distance(vWorldPos.xz, uGlowCentre.xz);
     float wake = 1.0 - smoothstep(0.0, uGlowRadius, distanceToGlow);
     wake *= wake * vGlowWeight;
@@ -75,8 +79,19 @@ const FRAGMENT = /* glsl */ `
     vec3 awakened = mix(livingCyan, moonViolet, smoothstep(0.22, 0.72, uMomentum));
     awakened = mix(awakened, heartRose, smoothstep(0.72, 1.0, uMomentum));
 
+    vec3 n = abs(normalize(vNormalW));
+    vec2 stoneUv = n.y > n.z
+      ? vWorldPos.xz
+      : vWorldPos.xy;
+    stoneUv *= vec2(0.34, 0.22);
+    vec2 cell = abs(fract(stoneUv + vec2(floor(stoneUv.y) * 0.37, 0.0)) - 0.5);
+    float joint = 1.0 - smoothstep(0.025, 0.065, min(0.5 - cell.x, 0.5 - cell.y));
+    float stoneWeight = 1.0 - smoothstep(0.22, 0.58, vGlowWeight);
+
     vec3 colour = vColour * broadWash * topLight;
-    colour += awakened * wake * mix(0.42, 1.05, uMomentum);
+    colour *= 1.0 - joint * 0.20 * stoneWeight;
+    colour += vec3(0.035, 0.075, 0.105) * stoneWeight;
+    colour += awakened * wake * mix(0.32, 0.84, uMomentum);
 
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
     colour = mix(colour, uFogColor, fog);
@@ -106,6 +121,7 @@ export function createMoonGardenMaterial({
     vertexColors: true,
     fog: false,
     side: THREE.DoubleSide,
+    dithering: true,
     uniforms: {
       uTime: { value: 0 },
       uGlowCentre: { value: new THREE.Vector3() },
@@ -217,13 +233,26 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     }
 
     float pattern = caustics(projected * uScale, uTime);
-    float facing = clamp(vNormalW.y * 0.35 + 0.74, 0.0, 1.0);
-    float wash = 0.84 + 0.16 * sin(
+    vec3 normalW = normalize(vNormalW);
+    vec3 keyDirection = normalize(vec3(-0.35, 0.82, 0.45));
+    float keyLight = dot(normalW, keyDirection) * 0.5 + 0.5;
+    float facing = clamp(normalW.y * 0.24 + 0.78, 0.0, 1.0);
+    float wash = 0.88 + 0.12 * sin(
       vWorldPos.y * 0.76 + vWorldPos.x * 0.18 + vWorldPos.z * 0.09
     );
-    vec3 colour = vColour * wash;
+    vec3 n = abs(normalW);
+    vec2 stoneUv = n.y > n.z
+      ? vWorldPos.xz
+      : vWorldPos.xy;
+    stoneUv *= vec2(0.36, 0.24);
+    vec2 cell = abs(fract(stoneUv + vec2(floor(stoneUv.y) * 0.35, 0.0)) - 0.5);
+    float joint = 1.0 - smoothstep(0.028, 0.07, min(0.5 - cell.x, 0.5 - cell.y));
+
+    vec3 colour = vColour * wash * mix(0.72, 1.16, keyLight);
+    colour *= 1.0 - joint * 0.18;
+    colour += vec3(0.025, 0.065, 0.085);
     colour += uCausticColor * pattern * uIntensity * facing;
-    colour += vColour * vGlowWeight * 0.12;
+    colour += vColour * vGlowWeight * 0.08;
 
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
     colour = mix(colour, uFogColor, fog);
@@ -254,6 +283,7 @@ export function createMoonstoneObstacleMaterial({
 }: MoonstoneObstacleMaterialOptions): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     vertexColors: true,
+    dithering: true,
     defines: { CAUSTIC_OCTAVES: Math.max(1, Math.round(octaves)) },
     uniforms: {
       uTime: { value: 0 },

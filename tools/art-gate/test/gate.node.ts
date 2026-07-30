@@ -316,6 +316,13 @@ describe("config validation", () => {
     delete drawCalls.hard;
     assert.ok(codes(validateGateConfig(bad)).includes("CONFIG_MALFORMED"));
   });
+
+  test("missing beauty threshold blocks a falsely green visual review", () => {
+    const bad = clone(config) as unknown as Record<string, unknown>;
+    const beauty = bad.beauty as Record<string, unknown>;
+    delete beauty.nearBlackFractionMax;
+    assert.ok(codes(validateGateConfig(bad)).includes("CONFIG_MALFORMED"));
+  });
 });
 
 describe("direct collider API", () => {

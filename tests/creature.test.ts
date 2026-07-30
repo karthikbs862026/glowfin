@@ -49,6 +49,12 @@ describe("creature configuration (Part 3.1)", () => {
     expect(tuning.creature.rimStrength).toBeGreaterThan(0);
   });
 
+  it("puts both eyes on the rear-camera-visible side of the body", () => {
+    // Glowfin travels toward negative Z and the chase camera sits at positive
+    // Z. A negative eye offset hides the eyes on the far/front side.
+    expect(tuning.creature.eyeOffsetZ).toBeGreaterThan(0);
+  });
+
   it("the creature's draw calls fit the budget alongside the scene", () => {
     // One skinned body mesh plus one combined emissive-eye mesh.
     const creatureDraws = 2;

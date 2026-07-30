@@ -51,7 +51,7 @@ const BODY_FRAGMENT = /* glsl */ `
     vec3 viewDir = normalize(vViewPosition);
     float facing = clamp(dot(normalize(vNormalV), viewDir), 0.0, 1.0);
     float fresnel = pow(1.0 - facing, uRimPower);
-    float internal = mix(0.52, 1.0, facing);
+    float internal = mix(0.46, 1.0, facing);
 
     vec3 cyan = vec3(0.388, 0.878, 1.0);
     vec3 violet = vec3(0.545, 0.420, 0.910);
@@ -61,17 +61,20 @@ const BODY_FRAGMENT = /* glsl */ `
     momentumColour = mix(momentumColour, rose, smoothstep(0.7, 0.94, uMomentum));
     momentumColour = mix(momentumColour, gold, smoothstep(0.94, 1.0, uMomentum) * 0.56);
 
-    float handPainted = 0.9 + 0.1 * sin(
-      vObjectPosition.x * 7.0 +
-      vObjectPosition.y * 5.0 +
-      vObjectPosition.z * 3.0
-    );
-    vec3 base = mix(vColour, momentumColour, 0.32 + uMomentum * 0.36);
-    base *= handPainted;
+    float broadMottle =
+      sin(vObjectPosition.x * 5.1 + vObjectPosition.z * 3.7) *
+      sin(vObjectPosition.y * 6.3 - vObjectPosition.z * 2.1);
+    float handPainted = 0.92 + 0.08 * broadMottle;
+    vec3 seaGlass = mix(vColour, vec3(0.20, 0.66, 0.79), 0.28);
+    vec3 base = mix(seaGlass, momentumColour, 0.18 + uMomentum * 0.34);
+    base *= handPainted * mix(0.72, 1.0, internal);
     base = mix(base, vec3(0.23, 0.29, 0.36), uCollision * 0.72);
     vec3 rim = mix(vec3(0.85, 0.965, 1.0), gold, uMomentum * 0.45);
-    vec3 colour = base * uGlow * internal +
-      rim * fresnel * uRimStrength * uGlow;
+    float core = smoothstep(-0.8, 0.55, vObjectPosition.y) *
+      (1.0 - smoothstep(0.15, 1.25, abs(vObjectPosition.x)));
+    vec3 colour = base * mix(0.58, 0.92, uGlow) +
+      momentumColour * core * 0.10 * uGlow +
+      rim * fresnel * uRimStrength * uGlow * 0.62;
     gl_FragColor = vec4(colour, 1.0);
   }
 `;
@@ -99,7 +102,10 @@ const EYE_FRAGMENT = /* glsl */ `
       0.0,
       1.0
     );
-    gl_FragColor = vec4(uColor * uGlow * mix(0.72, 1.28, facing), 1.0);
+    float lens = smoothstep(0.18, 0.86, facing);
+    vec3 socket = vec3(0.012, 0.026, 0.055);
+    vec3 iris = uColor * uGlow * mix(0.72, 1.35, facing);
+    gl_FragColor = vec4(mix(socket, iris, lens), 1.0);
   }
 `;
 

@@ -136,3 +136,11 @@ forked spires, coral and kelp; sparse god rays; shared local bioluminescence.
 content breadth. The slice has no binary texture payload and stays deterministic,
 but Android and iOS Safari evidence are still required. Full rationale and exact
 budgets are in `adr-0015-phase3b-moon-garden-vertical-slice.md`.
+
+## ADR-0016: Phase 3B Art-Bible visual reset
+
+**Decision:** Owner visual review rejected the first PR #7 artifact despite
+green technical gates. Keep the collider/LOD/instancing foundation, but rebuild
+the visual treatment, separate beauty evidence from stress evidence, and add
+composition-level luminance/colour/clipping checks. PR #7 remains draft and
+must not be merged on performance/contrast evidence alone.

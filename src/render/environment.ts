@@ -109,7 +109,7 @@ export class Environment {
     const fogNear = cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier;
     const fogFar = cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier;
     this.material = createMoonGardenMaterial({
-      fogColor: 0x04060f,
+      fogColor: 0x071425,
       fogNear,
       fogFar,
       glowRadius: env.coralPulseRadiusUnits
@@ -170,8 +170,10 @@ export class Environment {
     const rayMaterial = new THREE.MeshBasicMaterial({
       vertexColors: true,
       transparent: true,
+      opacity: 0.2,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
+      depthTest: false,
       side: THREE.DoubleSide,
       fog: true,
       toneMapped: false
@@ -267,12 +269,12 @@ export class Environment {
           Math.max(1, env.buildingLateralMax - env.buildingLateralMin)
         );
         const brightness = env.buildingBrightness *
-          lerp(2.2, 3.4, hash01(band, salt + 5)) *
+          lerp(0.82, 1.28, hash01(band, salt + 5)) *
           distanceFade;
         this.colour.setRGB(
-          brightness * 0.52,
-          brightness * 0.82,
-          brightness
+          brightness * 0.72,
+          brightness * 0.94,
+          brightness * 1.08
         );
         if (isTower) this.towers.add(lod, this.matrix, this.colour);
         else this.spires.add(lod, this.matrix, this.colour);
@@ -305,7 +307,8 @@ export class Environment {
           halfWidth + 3.2,
           hash01(band, salt)
         );
-        const height = lerp(0.72, 2.15, hash01(band, salt + 1));
+        const heroScale = index % 7 === 0 ? 1.32 : 1;
+        const height = lerp(0.82, 2.35, hash01(band, salt + 1)) * heroScale;
         this.position.set(lateral, -1, -zDistance);
         this.quaternion.setFromEuler(new THREE.Euler(
           0,
@@ -313,9 +316,9 @@ export class Environment {
           side * 0.08
         ));
         this.scale.set(
-          lerp(0.7, 1.25, hash01(band, salt + 5)),
+          lerp(0.82, 1.38, hash01(band, salt + 5)) * heroScale,
           height,
-          lerp(0.7, 1.18, hash01(band, salt + 6))
+          lerp(0.8, 1.28, hash01(band, salt + 6)) * heroScale
         );
         this.matrix.compose(this.position, this.quaternion, this.scale);
         const hue = lerp(0.48, 0.88, hash01(band, salt + 4));
@@ -349,11 +352,12 @@ export class Environment {
     momentumFraction: number
   ): void {
     const env = this.cfg.environment;
-    const firstBand = Math.floor(
-      (forwardDistance - env.godRayBandSpacing) / env.godRayBandSpacing
-    );
+    const firstBand = Math.floor(forwardDistance / env.godRayBandSpacing);
     for (let index = 0; index < env.godRayCount; index++) {
-      const band = firstBand + index;
+      // Always place shafts ahead of the camera. The old "-1, 0, 1" band
+      // selection put one plane through the camera and produced the giant
+      // opaque-looking slab seen in the rejected evidence.
+      const band = firstBand + index + 1;
       const side = hash01(band, 5055) < 0.5 ? -1 : 1;
       const lateral = side * lerp(8.5, 17, hash01(band, 5051));
       this.position.set(

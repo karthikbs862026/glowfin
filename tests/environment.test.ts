@@ -15,6 +15,7 @@ describe("environment must not compete with obstacles (Part 3.4)", () => {
   });
 
   it("ruins stay far dimmer than obstacle edges", () => {
+    expect(tuning.environment.buildingBrightness).toBeGreaterThanOrEqual(0.15);
     expect(tuning.environment.buildingBrightness).toBeLessThan(
       tuning.visual.obstacleEdgeStrength * 0.3
     );
@@ -38,6 +39,10 @@ describe("environment must not compete with obstacles (Part 3.4)", () => {
       tuning.readability.visibleAheadUnits * 0.5
     );
     expect(tuning.environment.godRayCount).toBeLessThanOrEqual(3);
+  });
+
+  it("keeps the collision cue restrained rather than turning it into a light bar", () => {
+    expect(tuning.visual.obstacleEdgeWidthPixels).toBeLessThanOrEqual(8);
   });
 });
 

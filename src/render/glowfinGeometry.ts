@@ -79,13 +79,13 @@ export function createGlowfinRigGeometry(
 ): GlowfinRigGeometry {
   const r = cfg.lane.creatureRadius;
   const high = lod === 0;
-  const cyan = new THREE.Color(0x7fe4ff);
-  const finCyan = new THREE.Color(0x63e0ff);
-  const gillViolet = new THREE.Color(0xa985ff);
+  const cyan = new THREE.Color(0x56c8e8);
+  const finCyan = new THREE.Color(0x69d8ee);
+  const gillViolet = new THREE.Color(0xa77be8);
   const pivots = {
-    finLeft: new THREE.Vector3(-r * 0.72, -r * 0.08, r * 0.02),
-    finRight: new THREE.Vector3(r * 0.72, -r * 0.08, r * 0.02),
-    tail: new THREE.Vector3(0, r * 0.03, r * 0.78),
+    finLeft: new THREE.Vector3(-r * 0.78, -r * 0.12, r * 0.18),
+    finRight: new THREE.Vector3(r * 0.78, -r * 0.12, r * 0.18),
+    tail: new THREE.Vector3(0, r * 0.01, r * 0.92),
     gills: [] as THREE.Vector3[]
   };
 
@@ -110,50 +110,50 @@ export function createGlowfinRigGeometry(
     const pivot = side < 0 ? pivots.finLeft : pivots.finRight;
     bodyParts.push({
       geometry: new THREE.SphereGeometry(
-        r * 0.62,
+        r * 0.78,
         finSegments[0],
         finSegments[1]
       ),
       bone: side < 0 ? 1 : 2,
       colour: finCyan,
       position: pivot.clone(),
-      rotation: new THREE.Euler(0, side * 0.1, side * 0.08),
-      scale: new THREE.Vector3(1.42, 0.14, 0.9)
+      rotation: new THREE.Euler(0, side * 0.16, side * 0.12),
+      scale: new THREE.Vector3(1.82, 0.12, 1.06)
     });
   }
 
   bodyParts.push({
     geometry: new THREE.SphereGeometry(
-      r * 0.64,
+      r * 0.70,
       high ? 22 : 14,
       high ? 15 : 9
     ),
     bone: 3,
     colour: finCyan,
     position: pivots.tail.clone(),
-    scale: new THREE.Vector3(0.24, 0.92, 1.12)
+    scale: new THREE.Vector3(0.30, 0.88, 1.22)
   });
 
   let bone = 4;
   for (const side of [-1, 1]) {
     for (let index = 0; index < 3; index++) {
       const pivot = new THREE.Vector3(
-        side * r * 0.73,
-        r * (0.38 - index * 0.23),
-        -r * 0.18 + index * r * 0.16
+        side * r * 0.72,
+        r * (0.43 - index * 0.25),
+        r * 0.10 + index * r * 0.13
       );
       pivots.gills.push(pivot);
       bodyParts.push({
         geometry: new THREE.SphereGeometry(
-          r * 0.17,
+          r * 0.20,
           high ? 14 : 9,
           high ? 9 : 6
         ),
         bone,
         colour: gillViolet,
         position: pivot,
-        rotation: new THREE.Euler(0, side * 0.34, side * 0.18),
-        scale: new THREE.Vector3(0.72, 0.58, 1.7)
+        rotation: new THREE.Euler(0, side * 0.42, side * 0.24),
+        scale: new THREE.Vector3(0.86, 0.46, 2.05)
       });
       bone += 1;
     }

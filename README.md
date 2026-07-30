@@ -7,12 +7,13 @@ this README covers local setup only.
 
 ## Status
 
-**Phase 3B — Moon-Garden vertical slice.**
+**Phase 3B — Moon-Garden vertical slice under visual revision.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
-trail, contrast probe and hardened art gate are in place. The first production
-art slice now replaces the placeholder creature and environment with:
+trail, contrast probe and hardened art gate are in place. Draft PR #7 is
+rebuilding its first visual slice after the initial evidence frame failed owner
+Art-Bible review. The current draft work includes:
 
 - a two-draw, ten-bone simulation-driven Glowfin
 - truthful LOD wall fragments with independent cyan collider contours
@@ -20,8 +21,10 @@ art slice now replaces the placeholder creature and environment with:
 - locally responsive coral and shader-sway ribbon kelp
 - three hard-capped god-ray meshes
 
-The slice follows the approved **Moon-Garden Ruins** Concept-First Art Bible.
-Real-device Android and iOS sign-off remains separate from CI emulation.
+The slice is not approved for merge until its revised frame visibly follows the
+**Moon-Garden Ruins** Concept-First Art Bible. Technical contrast/performance
+checks cannot override visual rejection. Real-device Android and iOS sign-off
+remains separate from CI emulation.
 
 ## Local setup
 

@@ -106,7 +106,8 @@ export class GameView {
   private readonly savedMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
   private maskMode = false;
   readonly gpuName: string;
-  private readonly stripePool: THREE.Mesh[] = [];
+  private readonly speedInlays: THREE.InstancedMesh;
+  private readonly speedInlayMatrix = new THREE.Matrix4();
   private readonly disposables: Array<{ dispose(): void }> = [];
 
   constructor(
@@ -124,7 +125,7 @@ export class GameView {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
 
-    this.scene.background = new THREE.Color(0x04060f);
+    this.scene.background = new THREE.Color(0x020916);
     // Fog starts well beyond the sight distance so it never eats an obstacle
     // the player is supposed to be reading (Part 3.4).
     // Fog must begin BEYOND the reaction window, not at its edge.
@@ -135,7 +136,7 @@ export class GameView {
     // out at exactly the distance Part 4.5 requires them to stay readable, and
     // the probe caught it as near-black obstacles on a near-black background.
     this.scene.fog = new THREE.Fog(
-      0x04060f,
+      0x071425,
       cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier,
       cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier
     );
@@ -147,8 +148,9 @@ export class GameView {
       cfg.readability.visibleAheadUnits * (cfg.visual.fogFarMultiplier + 0.4)
     );
 
-    this.scene.add(new THREE.AmbientLight(0x4488cc, 1.1));
-    const key = new THREE.DirectionalLight(0xaaddff, 1.0);
+    this.scene.add(new THREE.HemisphereLight(0x6fb8db, 0x06111f, 1.35));
+    this.scene.add(new THREE.AmbientLight(0x356d91, 0.7));
+    const key = new THREE.DirectionalLight(0xb9edff, 1.25);
     key.position.set(0.4, 1, 0.6);
     this.scene.add(key);
 
@@ -157,16 +159,32 @@ export class GameView {
     const fogNear = cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier;
     const fogFar = cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier;
 
-    // --- floor, with caustics (Part 3.2 priority 1) ---
-    const floorGeo = new THREE.PlaneGeometry(halfWidth * 2, 4000);
+    // --- grounded seabed and readable Moon-Garden route ---
+    //
+    // The old floor ended exactly at the lane boundary, leaving coral and
+    // ruins floating against black. A broad seabed now grounds the ecology,
+    // while the narrower route keeps the playable corridor legible.
+    const seabedGeo = new THREE.PlaneGeometry(72, 4000);
+    const seabedMaterial = new THREE.MeshStandardMaterial({
+      color: 0x061522,
+      roughness: 1,
+      metalness: 0
+    });
+    const seabed = new THREE.Mesh(seabedGeo, seabedMaterial);
+    seabed.rotation.x = -Math.PI / 2;
+    seabed.position.y = -1.08;
+    this.scene.add(seabed);
+    this.disposables.push(seabedGeo, seabedMaterial);
+
+    const floorGeo = new THREE.PlaneGeometry(halfWidth * 2.05, 4000);
     this.floorMaterial = createCausticMaterial({
-      baseColor: 0x081426,
+      baseColor: 0x10293b,
       causticColor: 0x2ea8d8,
       scale: cfg.visual.causticScaleFloor,
       intensity: cfg.visual.causticIntensityFloor,
       sharpness: cfg.visual.causticSharpness,
       speed: cfg.visual.causticSpeed,
-      fogColor: 0x04060f,
+      fogColor: 0x071425,
       fogNear,
       fogFar,
       octaves: 3
@@ -180,9 +198,10 @@ export class GameView {
     // --- lane edges: the player needs a fixed reference to read lateral position ---
     const edgeGeo = new THREE.BoxGeometry(0.25, 0.5, 4000);
     const navigationMaterial = new THREE.MeshStandardMaterial({
-      color: 0x0d2a3a,
-      emissive: 0x18506b,
-      emissiveIntensity: 0.8
+      color: 0x143748,
+      emissive: 0x17465d,
+      emissiveIntensity: 0.42,
+      roughness: 0.82
     });
     for (const sign of [-1, 1]) {
       const edge = new THREE.Mesh(edgeGeo, navigationMaterial);
@@ -191,15 +210,34 @@ export class GameView {
     }
     this.disposables.push(edgeGeo, navigationMaterial);
 
-    // --- speed stripes: without moving reference objects, speed is invisible ---
-    const stripeGeo = new THREE.BoxGeometry(halfWidth * 2 * 0.9, 0.06, 0.7);
-    for (let i = 0; i < MAX_POOLED_STRIPES; i++) {
-      const stripe = new THREE.Mesh(stripeGeo, navigationMaterial);
-      stripe.position.y = -0.95;
-      this.scene.add(stripe);
-      this.stripePool.push(stripe);
-    }
-    this.disposables.push(stripeGeo);
+    // --- submerged crescent inlays: one instanced draw, not forty debug bars ---
+    const inlayGeo = new THREE.TorusGeometry(
+      0.66,
+      0.035,
+      4,
+      22,
+      Math.PI * 1.18
+    );
+    inlayGeo.rotateX(-Math.PI / 2);
+    inlayGeo.rotateZ(-Math.PI * 0.59);
+    inlayGeo.scale(halfWidth * 0.73, 1, 1.45);
+    const inlayMaterial = new THREE.MeshBasicMaterial({
+      color: 0x55bdd7,
+      transparent: true,
+      opacity: 0.22,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false
+    });
+    this.speedInlays = new THREE.InstancedMesh(
+      inlayGeo,
+      inlayMaterial,
+      MAX_POOLED_STRIPES
+    );
+    this.speedInlays.frustumCulled = false;
+    this.speedInlays.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.scene.add(this.speedInlays);
+    this.disposables.push(inlayGeo, inlayMaterial);
 
     // --- game-ready wall-fragment kit with independently truthful contours ---
     this.gates = new MoonGardenGates(cfg);
@@ -503,11 +541,15 @@ export class GameView {
 
   private updateStripes(distance: number): void {
     const first = Math.floor((distance - 20) / STRIPE_SPACING_UNITS);
-    for (let i = 0; i < this.stripePool.length; i++) {
-      const stripe = this.stripePool[i];
-      if (!stripe) continue;
-      stripe.position.z = -(first + i) * STRIPE_SPACING_UNITS;
+    for (let i = 0; i < MAX_POOLED_STRIPES; i++) {
+      this.speedInlayMatrix.makeTranslation(
+        0,
+        -0.985,
+        -(first + i) * STRIPE_SPACING_UNITS
+      );
+      this.speedInlays.setMatrixAt(i, this.speedInlayMatrix);
     }
+    this.speedInlays.instanceMatrix.needsUpdate = true;
   }
 
   /** Release GPU resources. Full context-loss rebuild is Phase 5 (Part 4.3). */

@@ -237,6 +237,12 @@ export interface GateConfig {
     perObstaclePercentile: number;
     perObstacleMinRatio: number;
   };
+  beauty: {
+    meanLuminanceMin: number;
+    nearBlackFractionMax: number;
+    colourfulFractionMin: number;
+    clippedHighlightFractionMax: number;
+  };
   creature: {
     viewportWidthFractionMin: number;
     viewportWidthFractionMax: number;

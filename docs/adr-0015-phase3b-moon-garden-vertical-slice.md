@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted for draft visual review.
+Superseded for visual-quality decisions by ADR-0016. The collision, LOD,
+instancing and evidence architecture remains useful, but the first rendered
+art treatment was rejected in owner review and must not be merged unchanged.
 
 ## Context
 
@@ -41,7 +43,7 @@ Build one bounded code-native production vertical slice:
 | Family | LOD0 | LOD1 | LOD2 |
 | --- | ---: | ---: | ---: |
 | Glowfin | 7,240 | 3,104 | — |
-| Wall fragment | 1,436 | 596 | 146 |
+| Wall fragment | 1,464 | 624 | 174 |
 | Broken tower | 4,384 | 1,592 | 508 |
 | Spire | 1,960 | 868 | 240 |
 | Medium coral | 920 | 432 | 96 |
