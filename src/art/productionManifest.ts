@@ -10,7 +10,7 @@ export const PRODUCTION_ART = {
     bones: 10
   },
   wallFragment: {
-    lod0: 1120,
+    lod0: 1264,
     lod1: 768,
     lod2: 204,
     materials: 1,

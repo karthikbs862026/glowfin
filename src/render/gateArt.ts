@@ -163,8 +163,8 @@ export class MoonGardenGates {
             (1.0 - smoothstep(0.42, 0.5, vLocalPosition.y));
           float waterFlow = 0.94 + 0.06 *
             sin(vLocalPosition.y * 31.0 + vLocalPosition.z * 4.0);
-          vec3 deepCyan = vec3(0.20, 0.61, 0.70);
-          vec3 moonCyan = vec3(0.40, 0.84, 0.90);
+          vec3 deepCyan = vec3(0.18, 0.88, 1.0);
+          vec3 moonCyan = vec3(0.44, 0.98, 1.0);
           gl_FragColor = vec4(mix(deepCyan, moonCyan, endFade) * waterFlow, 1.0);
         }
       `,

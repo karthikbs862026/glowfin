@@ -15,7 +15,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1120,
+          "triangles": 1264,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -133,7 +133,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1120,
+          "triangles": 1264,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,

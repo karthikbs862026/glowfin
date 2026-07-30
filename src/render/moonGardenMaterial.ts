@@ -154,7 +154,7 @@ export function createMoonGardenMaterial({
       uFogNear: { value: fogNear },
       uFogFar: { value: fogFar },
       uSurfaceMap: { value: surfaceMap },
-      uSurfaceScale: { value: 0.16 }
+      uSurfaceScale: { value: 0.42 }
     },
     vertexShader: VERTEX,
     fragmentShader: FRAGMENT
@@ -341,7 +341,7 @@ export function createMoonstoneObstacleMaterial({
       uFogNear: { value: fogNear },
       uFogFar: { value: fogFar },
       uSurfaceMap: { value: surfaceMap },
-      uSurfaceScale: { value: 0.16 }
+      uSurfaceScale: { value: 0.42 }
     },
     vertexShader: OBSTACLE_VERTEX,
     fragmentShader: OBSTACLE_FRAGMENT

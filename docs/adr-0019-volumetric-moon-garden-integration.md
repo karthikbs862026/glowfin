@@ -72,3 +72,11 @@ The corrective pass therefore:
   bioluminescence; and
 - renders a thin blue contour just camera-forward of the recessed channel so
   ordinary depth testing cannot hide the authoritative edge.
+
+The next Chromium review retained the volumetric improvement but showed that a
+single broad material sample still flattened the obstacle face. The current
+pass therefore maps weathering at a smaller physical scale, adds raised
+irregular stone courses in front of the structural wall, quiets the floor
+behind the gameplay edge, and moves the narrow cyan core below the adjusted
+bloom threshold wherever possible. The 5.5px projected edge, gap width and
+collider planes are unchanged.

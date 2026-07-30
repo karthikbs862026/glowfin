@@ -55,7 +55,7 @@
     "$comment": "Caustic look. Exposed as tuning data so it can be iterated on-device with hot reload rather than guessed at. scale is cycles per world unit — too low and the pattern becomes one slow blob across the whole lane, which is exactly what the first version shipped with.",
     "causticScaleFloor": 0.85,
     "causticScaleWall": 0.65,
-    "causticIntensityFloor": 0.62,
+    "causticIntensityFloor": 0.44,
     "causticIntensityWall": 0.42,
     "causticSharpness": 4.0,
     "causticSpeed": 0.85,
@@ -66,7 +66,7 @@
     "fogFarMultiplier": 3.0,
     "bloomStrength": 0.44,
     "bloomRadius": 0.28,
-    "bloomThreshold": 0.68
+    "bloomThreshold": 0.78
   },
 
   "environment": {

@@ -190,7 +190,7 @@ export function createWallFragmentGeometry(
   for (let index = 0; index < inlayCount; index++) {
     const t = index / Math.max(1, inlayCount - 1);
     const angle = THREE.MathUtils.lerp(-0.76, 0.76, t);
-    const detail = lod === 0 || (lod === 1 && index < inlayCount - 1)
+    const detail = lod === 0 || (lod === 1 && index < 3)
       ? 1
       : 0;
     parts.push(decorate(
@@ -208,7 +208,7 @@ export function createWallFragmentGeometry(
     ));
   }
 
-  const frontStoneCount = lod === 0 ? 5 : lod === 1 ? 4 : 1;
+  const frontStoneCount = lod === 0 ? 5 : lod === 1 ? 4 : 0;
   for (let index = 0; index < frontStoneCount; index++) {
     const radius = 0.045 + (index % 3) * 0.008;
     parts.push(decorate(
@@ -222,6 +222,42 @@ export function createWallFragmentGeometry(
         rotation: new THREE.Euler(index * 0.31, index * 0.67, index * 0.17),
         scale: new THREE.Vector3(1.2, 0.68, 1),
         colour: index % 2 === 0 ? OBSTACLE_RECESS : OBSTACLE_MOONSTONE,
+        glowWeight: 0.01
+      }
+    ));
+  }
+
+  const courseCount = lod === 0 ? 12 : lod === 1 ? 10 : 3;
+  const columns = lod === 2 ? 2 : 3;
+  for (let index = 0; index < courseCount; index++) {
+    const column = index % columns;
+    const row = Math.floor(index / columns);
+    const x = THREE.MathUtils.lerp(
+      -0.32,
+      0.23,
+      column / Math.max(1, columns - 1)
+    );
+    const y = -0.37 + row * (lod === 2 ? 0.24 : 0.155);
+    parts.push(decorate(
+      new THREE.BoxGeometry(
+        (lod === 2 ? 0.22 : 0.19) * (index % 4 === 0 ? 1.12 : 1),
+        lod === 2 ? 0.14 : 0.115,
+        0.075
+      ),
+      {
+        position: new THREE.Vector3(
+          gapDirection * (x + (row % 2) * 0.018),
+          y + Math.sin(index * 1.8) * 0.008,
+          0.548 + Math.sin(index * 2.2) * 0.012
+        ),
+        rotation: new THREE.Euler(
+          Math.sin(index) * 0.018,
+          Math.sin(index * 0.7) * 0.045,
+          gapDirection * Math.sin(index * 1.3) * 0.035
+        ),
+        colour: index % 3 === variant
+          ? OBSTACLE_MOONSTONE
+          : OBSTACLE_RECESS,
         glowWeight: 0.01
       }
     ));

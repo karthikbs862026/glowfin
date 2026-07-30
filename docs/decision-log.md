@@ -185,3 +185,9 @@ band, creates three distinct wall crowns, remodels reef as rounded forked
 branches/anemones on shared rubble, and places the restrained blue seam just
 camera-forward of its inset stone channel. Collider planes and openings remain
 unchanged.
+
+**Material/relief correction:** Later browser frames proved that volume with
+broad procedural colour still read as slabs. Add one 512px hand-painted
+moonstone surface through triplanar mapping, break the perfect crescent into
+embedded mineral fragments, raise irregular masonry courses on the wall face,
+and reduce floor/caustic competition behind the collider-true cyan core.
