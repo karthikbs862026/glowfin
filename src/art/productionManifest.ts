@@ -35,7 +35,7 @@ export const PRODUCTION_ART = {
     materials: 1
   },
   ribbonKelp: {
-    lod0: 416,
+    lod0: 312,
     lod1: 120,
     materials: 1
   },

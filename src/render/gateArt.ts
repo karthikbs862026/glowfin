@@ -117,7 +117,10 @@ export class MoonGardenGates {
       side: THREE.DoubleSide,
       depthWrite: false,
       fog: true,
-      toneMapped: false
+      toneMapped: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -4,
+      polygonOffsetUnits: -4
     });
     this.facades = new THREE.InstancedMesh(
       facadeGeometry,
@@ -143,8 +146,8 @@ export class MoonGardenGates {
       // remains collider-true. Polygon offset resolves the coplanar surface
       // without moving that edge toward the camera.
       polygonOffset: true,
-      polygonOffsetFactor: -2,
-      polygonOffsetUnits: -2
+      polygonOffsetFactor: -8,
+      polygonOffsetUnits: -8
     });
     this.contours = new THREE.InstancedMesh(
       contourGeometry,
@@ -222,7 +225,7 @@ export class MoonGardenGates {
         this.position.set(
           wall.colliderPlane - wall.gapDirection * facadeWidth * 0.5,
           PROCEDURAL_GATE_VISUAL.wallFloorY,
-          -gate.distance + PROCEDURAL_GATE_VISUAL.wallDepth * 0.5 + 0.01
+          -gate.distance + PROCEDURAL_GATE_VISUAL.wallDepth * 0.5
         );
         this.scale.set(
           wall.gapDirection > 0 ? facadeWidth : -facadeWidth,

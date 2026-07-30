@@ -57,6 +57,16 @@ describe("Phase 3B art geometry inventory", () => {
     }
   });
 
+  it("records the three-blade kelp cluster LODs exactly", () => {
+    for (const lod of [0, 1] as const) {
+      const geometry = createRibbonKelpGeometry(lod);
+      expect(geometryTriangles(geometry)).toBe(
+        PRODUCTION_ART.ribbonKelp[`lod${lod}`]
+      );
+      geometry.dispose();
+    }
+  });
+
   it("measures the straight lane contour and classifies broken wall art as context", () => {
     const gates = new MoonGardenGates(tuning);
     const contours = gates.objects.filter((object) => object.userData["isObstacle"]);

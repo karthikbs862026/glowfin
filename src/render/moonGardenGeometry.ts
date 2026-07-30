@@ -364,22 +364,38 @@ export function createMediumCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
 }
 
 export function createRibbonKelpGeometry(lod: 0 | 1): THREE.BufferGeometry {
-  const widthSegments = lod === 0 ? 4 : 2;
-  const heightSegments = lod === 0 ? 52 : 30;
-  const geometry = new THREE.PlaneGeometry(0.62, 2, widthSegments, heightSegments);
-  geometry.translate(0, 1, 0);
-  const position = geometry.getAttribute("position");
-  for (let index = 0; index < position.count; index++) {
-    const y = position.getY(index);
-    const x = position.getX(index);
-    position.setX(index, x + Math.sin(y * 2.2) * 0.09 * (y / 2));
+  const heightSegments = lod === 0 ? 26 : 10;
+  const parts: THREE.BufferGeometry[] = [];
+  for (const blade of [-1, 0, 1]) {
+    const geometry = new THREE.PlaneGeometry(
+      blade === 0 ? 0.34 : 0.28,
+      2,
+      2,
+      heightSegments
+    );
+    geometry.translate(0, 1, 0);
+    const position = geometry.getAttribute("position");
+    for (let index = 0; index < position.count; index++) {
+      const y = position.getY(index);
+      const x = position.getX(index);
+      position.setX(
+        index,
+        x + Math.sin(y * 2.2 + blade * 0.7) * 0.07 * (y / 2)
+      );
+    }
+    position.needsUpdate = true;
+    parts.push(decorate(geometry, {
+      position: new THREE.Vector3(blade * 0.22, 0, blade === 0 ? 0.04 : 0),
+      rotation: new THREE.Euler(0, blade * 0.18, -blade * 0.055),
+      scale: new THREE.Vector3(1, blade === 0 ? 1.08 : 0.82, 1),
+      colour: blade === 0
+        ? (lod === 0 ? LIVING_CYAN : MOON_VIOLET)
+        : MOON_VIOLET,
+      glowWeight: blade === 0 ? 0.58 : 0.42,
+      swayWeight: (vertex) => THREE.MathUtils.clamp(vertex.y / 2, 0, 1)
+    }));
   }
-  position.needsUpdate = true;
-  return decorate(geometry, {
-    colour: lod === 0 ? LIVING_CYAN : MOON_VIOLET,
-    glowWeight: 0.72,
-    swayWeight: (vertex) => THREE.MathUtils.clamp(vertex.y / 2, 0, 1)
-  });
+  return merge(parts);
 }
 
 export function geometryTriangles(geometry: THREE.BufferGeometry): number {

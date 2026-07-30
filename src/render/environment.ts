@@ -168,29 +168,25 @@ export class Environment {
     });
     this.disposables.push(this.material);
 
-    const createReviewMaterial = (
-      colour: THREE.ColorRepresentation
-    ): THREE.MeshBasicMaterial => new THREE.MeshBasicMaterial({
+    const reviewMaterial = new THREE.MeshBasicMaterial({
       map: textures.reviewAtlas,
-      color: colour,
+      color: 0xffffff,
       // These are authored colour plates, not dark albedo waiting for scene
       // lights. The previous tone-mapped/instance-tinted path crushed both
       // tower and coral cards to black silhouettes in the actual capture.
-      vertexColors: false,
+      // One shared atlas material stays inside the active-material budget;
+      // restrained instance colours preserve tower/reef hierarchy.
+      vertexColors: true,
       alphaTest: 0.08,
       side: THREE.DoubleSide,
       depthWrite: true,
       fog: true,
       toneMapped: false
     });
-    // Distant architecture stays quieter than the living reef. Sharing the
-    // atlas does not require sharing a brightness hierarchy.
-    const towerMaterial = createReviewMaterial(0xb8ced8);
-    const reefMaterial = createReviewMaterial(0xffffff);
-    this.disposables.push(towerMaterial, reefMaterial);
+    this.disposables.push(reviewMaterial);
 
     this.towers = new InstancedBillboardFamily(
-      towerMaterial,
+      reviewMaterial,
       683 / 1024,
       { uMin: 0, vMin: 0.25, uMax: 0.5, vMax: 1 },
       env.buildingCount,
@@ -203,7 +199,7 @@ export class Environment {
       this.disposables
     );
     this.coral = new InstancedBillboardFamily(
-      reefMaterial,
+      reviewMaterial,
       1024 / 723,
       { uMin: 0.5, vMin: 0, uMax: 1, vMax: 362 / 1024 },
       env.coralCount,
