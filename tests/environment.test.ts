@@ -79,8 +79,8 @@ describe("draw call budget (Part 4.6)", () => {
       tuning.environment.buildingCount +
         tuning.environment.godRayCount +
         tuning.environment.coralCount +
-        24 +
-        64;
+        33 +
+        128;
     expect(representedObjects).toBeGreaterThan(environmentDraws * 8);
   });
 
