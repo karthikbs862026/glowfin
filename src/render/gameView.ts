@@ -63,6 +63,12 @@ export class GameView {
    */
   private readonly maskObstacle = new THREE.ShaderMaterial({
     uniforms: { uMaxDepth: { value: 1e9 } },
+    // The mask represents authoritative collision truth, not what happened to
+    // win the beauty render's depth test. Drawing it through depth makes a
+    // visually occluded seam disappear from the evidence instead of producing
+    // the low-contrast samples that should block release.
+    depthTest: false,
+    depthWrite: false,
     vertexShader: `
       varying float vDepth;
       void main() {

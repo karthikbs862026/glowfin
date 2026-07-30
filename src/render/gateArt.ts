@@ -109,6 +109,10 @@ export class MoonGardenGates {
     this.contours.frustumCulled = false;
     this.contours.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.contours.userData["isObstacle"] = true;
+    // During the art-gate mask pass this guarantees the authoritative contour
+    // is written after contextual ruins. Beauty rendering still uses ordinary
+    // depth testing, so the captured image remains the player's actual view.
+    this.contours.renderOrder = 1000;
     this.objects.push(this.contours);
     this.disposables.push(
       this.material,

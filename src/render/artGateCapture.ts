@@ -115,7 +115,10 @@ export function runArtGateCapture(
         // leaving a real interior sample even when the low tier renders at a
         // fractional pixel ratio.
         offsetPx: Math.max(1, Math.floor(2 * view.capturePixelRatio())),
-        rowStride: Math.max(1, Math.round(4 * view.capturePixelRatio()))
+        // Coverage is itself a release requirement. Sampling every framebuffer
+        // scanline keeps a narrow but clearly visible low-tier contour from
+        // collapsing to one or two measurements merely because DPR changed.
+        rowStride: 1
       }
     );
 
