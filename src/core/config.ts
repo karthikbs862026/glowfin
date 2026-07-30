@@ -33,6 +33,7 @@ export interface TuningConfig {
     minSolvabilityMarginFraction: number;
     maxLaneTraversalFraction: number;
     inputLatencyBudgetMs: number;
+    minObstacleContrastRatio: number;
   };
   scoring: {
     nearMissClearanceUnits: number;
@@ -59,6 +60,10 @@ export interface TuningConfig {
     causticSharpness: number;
     causticSpeed: number;
     causticMagentaShiftAtMaxMomentum: number;
+    obstacleEdgeStrength: number;
+    obstacleEdgeWidthPixels: number;
+    fogNearMultiplier: number;
+    fogFarMultiplier: number;
     bloomStrength: number;
     bloomRadius: number;
     bloomThreshold: number;
@@ -121,6 +126,7 @@ const RULES: Record<string, Rule> = {
   "readability.minReactionWindowMs": { min: 100, max: 5000, note: "Core Design Principle: minimum reaction time" },
   "readability.minSolvabilityMarginFraction": { min: 0, max: 0.9, note: "required slack in solvability check" },
   "readability.maxLaneTraversalFraction": { min: 0.1, max: 1, note: "max lane fraction a gate transition may demand" },
+  "readability.minObstacleContrastRatio": { min: 1.5, max: 21, note: "Part 3.4 hard requirement: minimum WCAG contrast between obstacle silhouette and whatever is behind it, with all effects on" },
   "readability.inputLatencyBudgetMs": { min: 10, max: 500, note: "Part 4.6: input-to-visible-response budget" },
 
   "scoring.nearMissClearanceUnits": { min: 0.01, max: 20, note: "clearance under which a pass counts as a near-miss" },
@@ -145,6 +151,10 @@ const RULES: Record<string, Rule> = {
   "visual.causticSharpness": { min: 1, max: 12, note: "higher = tighter, brighter bands with more dark between" },
   "visual.causticSpeed": { min: 0, max: 5, note: "animation rate" },
   "visual.causticMagentaShiftAtMaxMomentum": { min: 0, max: 1, note: "how far obstacle caustics shift cyan->magenta at ceiling (Part 3.4 palette range)" },
+  "visual.obstacleEdgeStrength": { min: 0, max: 8, note: "brightness of the lit border on obstacle faces — this is what guarantees the Part 3.4 contrast floor" },
+  "visual.obstacleEdgeWidthPixels": { min: 1, max: 40, note: "border thickness in SCREEN pixels — constant regardless of wall size or distance, which a UV-space width is not" },
+  "visual.fogNearMultiplier": { min: 1.1, max: 6, note: "fog start as a multiple of visibleAheadUnits — MUST exceed (visibleAhead + camera distance) or fog erases obstacles inside the reaction window" },
+  "visual.fogFarMultiplier": { min: 1.2, max: 10, note: "fog end as a multiple of visibleAheadUnits" },
   "visual.bloomStrength": { min: 0, max: 4, note: "bloom intensity; this is what makes emissive read as glowing" },
   "visual.bloomRadius": { min: 0, max: 2, note: "bloom spread" },
   "visual.bloomThreshold": { min: 0, max: 2, note: "luminance above which pixels bloom" },

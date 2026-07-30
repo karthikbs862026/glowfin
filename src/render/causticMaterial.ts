@@ -40,14 +40,21 @@ export interface CausticParams {
   fogNear: number;
   fogFar: number;
   octaves: number;
+  /** Lit border along face edges. Zero disables it (used for the floor). */
+  edgeStrength?: number;
+  /** Border thickness in screen pixels. */
+  edgeWidthPixels?: number;
+  edgeColor?: THREE.ColorRepresentation;
 }
 
 const VERTEX = /* glsl */ `
   varying vec3 vWorldPos;
   varying vec3 vNormalW;
   varying float vViewDepth;
+  varying vec2 vFaceUv;
 
   void main() {
+    vFaceUv = uv;
     vec4 worldPosition = modelMatrix * vec4(position, 1.0);
     vWorldPos = worldPosition.xyz;
     vNormalW = normalize(mat3(modelMatrix) * normal);
@@ -71,9 +78,14 @@ const FRAGMENT = /* glsl */ `
   uniform float uFogNear;
   uniform float uFogFar;
 
+  uniform float uEdgeStrength;
+  uniform float uEdgeWidthPixels;
+  uniform vec3 uEdgeColor;
+
   varying vec3 vWorldPos;
   varying vec3 vNormalW;
   varying float vViewDepth;
+  varying vec2 vFaceUv;
 
   // Layered sine interference. Cheaper and far more predictable on mobile than
   // the division-heavy caustic loops that circulate, and the sharpening pow is
@@ -123,6 +135,33 @@ const FRAGMENT = /* glsl */ `
 
     vec3 colour = uBaseColor + uCausticColor * pattern * uIntensity * facing;
 
+    // Lit border along the face edges.
+    //
+    // This exists for fairness, not decoration. The floor's caustics animate
+    // across a wide luminance range, and wherever that range crosses the
+    // obstacle's own luminance the silhouette contrast passes through 1:1 —
+    // the obstacle briefly becomes invisible against what is behind it. No
+    // flat obstacle colour can avoid that, because the background is moving.
+    // A bright constant edge gives the silhouette its own light source, so the
+    // boundary stays readable whatever the floor is doing (Part 3.4).
+    float edgeDistance = min(
+      min(vFaceUv.x, 1.0 - vFaceUv.x),
+      min(vFaceUv.y, 1.0 - vFaceUv.y)
+    );
+
+    // Border width is measured in SCREEN PIXELS, not UV.
+    //
+    // A fixed UV width was the first attempt and it failed: face UVs span 0-1
+    // regardless of how large the face is or how far away it sits, so the same
+    // UV width renders as 26px on a near wide wall and 0.4px on a far narrow
+    // one. The border simply vanished on most obstacles, which is exactly where
+    // it was needed. fwidth gives UV-units-per-pixel at this fragment, so the
+    // border stays the same thickness everywhere on screen.
+    float uvPerPixel = fwidth(edgeDistance);
+    float borderWidth = max(uvPerPixel * uEdgeWidthPixels, 1e-5);
+    float border = 1.0 - smoothstep(0.0, borderWidth, edgeDistance);
+    colour += uEdgeColor * border * uEdgeStrength;
+
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
     colour = mix(colour, uFogColor, fog);
 
@@ -142,7 +181,10 @@ export function createCausticMaterial(params: CausticParams): THREE.ShaderMateri
       uSharpness: { value: params.sharpness },
       uFogColor: { value: new THREE.Color(params.fogColor) },
       uFogNear: { value: params.fogNear },
-      uFogFar: { value: params.fogFar }
+      uFogFar: { value: params.fogFar },
+      uEdgeStrength: { value: params.edgeStrength ?? 0 },
+      uEdgeWidthPixels: { value: params.edgeWidthPixels ?? 7 },
+      uEdgeColor: { value: new THREE.Color(params.edgeColor ?? 0xbdf4ff) }
     },
     vertexShader: VERTEX,
     fragmentShader: FRAGMENT

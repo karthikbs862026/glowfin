@@ -15,6 +15,7 @@ import { Hud } from "./render/hud";
 import { DebugOverlay } from "./render/debugOverlay";
 import { QualityController } from "./perf/quality";
 import { PerfMonitor, checkBudgets } from "./perf/metrics";
+import { runContrastProbe, showProbeResult } from "./render/contrastProbe";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
 if (!canvas) throw new Error("Canvas #glowfin-canvas not found");
@@ -115,4 +116,26 @@ function frame(nowMs: number): void {
   requestAnimationFrame(frame);
 }
 
-requestAnimationFrame(frame);
+/**
+ * Contrast probe mode (Part 3.4 / 6.5), opened with `?probe=contrast`.
+ *
+ * Measures obstacle silhouette contrast against whatever sits behind it, with
+ * every effect enabled, at low/mid/max momentum, then reports pass/fail. Runs
+ * instead of the game rather than alongside it, so nothing is competing for the
+ * framebuffer while pixels are being read back.
+ *
+ * Dev-only: `import.meta.env.DEV` is replaced with a literal at build time, so
+ * this whole branch is tree-shaken out of production (Part 6.10).
+ */
+function isProbeRequested(): boolean {
+  if (!import.meta.env.DEV) return false;
+  return new URLSearchParams(window.location.search).get("probe") === "contrast";
+}
+
+if (isProbeRequested()) {
+  const result = runContrastProbe(view, tuning);
+  showProbeResult(result);
+  console.info(result.lines.join("\n"));
+} else {
+  requestAnimationFrame(frame);
+}
