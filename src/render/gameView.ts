@@ -148,6 +148,13 @@ export class GameView {
     moonstoneSurface.wrapT = THREE.RepeatWrapping;
     moonstoneSurface.repeat.set(72 / 25, 4000 / 25);
     moonstoneSurface.anisotropy = maxAnisotropy;
+    // The grounded seabed uses mesh UVs, but the caustic floor shader samples
+    // in world space. Sharing the 72×4000 mesh repeat with that shader made
+    // the texture about 55 times denser forward than laterally, creating
+    // racetrack-like horizontal bands. A clone keeps world sampling isotropic.
+    const moonstoneFloorSurface = moonstoneSurface.clone();
+    moonstoneFloorSurface.repeat.set(1, 1);
+    moonstoneFloorSurface.anisotropy = maxAnisotropy;
 
     const glowfinRear = textureLoader.load(
       "/art/moon-garden/glowfin-rear.webp"
@@ -166,6 +173,7 @@ export class GameView {
     worldVariationAtlas.anisotropy = maxAnisotropy;
     this.disposables.push(
       moonstoneSurface,
+      moonstoneFloorSurface,
       glowfinRear,
       gateVariationAtlas,
       worldVariationAtlas
@@ -282,8 +290,8 @@ export class GameView {
       fogNear,
       fogFar,
       octaves: 3,
-      surfaceMap: moonstoneSurface,
-      surfaceScale: 0.04,
+      surfaceMap: moonstoneFloorSurface,
+      surfaceScale: 0.16,
       surfaceWeight: 0.92
     });
     const floor = new THREE.Mesh(floorGeo, this.floorMaterial);

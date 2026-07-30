@@ -21,8 +21,10 @@ had large empty gaps, and nothing except Glowfin moved.
 - Pack three obstacle/ruin families into one 1024px gate atlas.
 - Pack a centre-open city skyline, four reef families and four ambient-life
   families into one 1024px world atlas.
-- Increase outside-lane reef cadence while keeping its nearest placement
-  beyond the playable half-width.
+- Increase outside-lane reef cadence and scale into continuous side banks.
+  Placement is resolved from each atlas silhouette's inner edge, not its
+  centre, so even large foreground clusters stay beyond the playable
+  half-width.
 - Animate moon-minnow schools, lantern jellies, ribbon rays and garden spirits
   on deterministic world-band paths. They are non-collidable and use different
   depths, speeds and vertical ranges.
@@ -33,6 +35,9 @@ had large empty gaps, and nothing except Glowfin moved.
 - Keep the collider-truth contour below the global bloom threshold. It remains
   pale cyan and at least 3:1 against the world, but cannot wash into a detached
   fluorescent post at the medium-quality bloom resolution.
+- Give the caustic floor its own isotropic texture transform. Reusing the
+  seabed mesh's 72×4000 UV repeat in a world-space shader stretched authored
+  gravel into horizontal racetrack bands.
 - Scale all non-gameplay density to 1.0 / 0.68 / 0.38 on high / medium / low
   quality tiers.
 - Treat browser page errors and shader/WebGL console errors as capture

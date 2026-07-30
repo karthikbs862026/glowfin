@@ -259,7 +259,7 @@ export class Environment {
     const colours = new Float32Array(POINT_COUNT * 3);
     for (let index = 0; index < POINT_COUNT; index++) {
       const isMoon = index === 0;
-      sizes[index] = isMoon ? 34 : lerp(0.32, 0.72, hash01(index, 601));
+      sizes[index] = isMoon ? 22 : lerp(0.32, 0.72, hash01(index, 601));
       colours[index * 3] = isMoon ? 0.32 : lerp(0.35, 0.75, hash01(index, 602));
       colours[index * 3 + 1] = isMoon ? 0.78 : lerp(0.62, 0.9, hash01(index, 603));
       colours[index * 3 + 2] = 1;
@@ -435,13 +435,18 @@ export class Environment {
         const variant = positiveMod(band + (side > 0 ? 2 : 0), 4);
         const zDistance = band * env.coralBandSpacing +
           (hash01(band, salt + 2) - 0.5) * env.coralBandSpacing * 0.55;
+        const heroScale = positiveMod(band, 9) === 0 ? 1.28 : 1;
+        const height = lerp(1.35, 4.1, hash01(band, salt + 1)) * heroScale;
+        const widthScale = lerp(0.9, 1.34, hash01(band, salt + 5));
+        // Place from the atlas silhouette's inner edge, not its centre. This
+        // lets large foreground reef form a continuous bank without ever
+        // teaching the player that decoration inside the lane is collidable.
+        const halfVisualWidth = height * widthScale * 0.5;
         const lateral = side * lerp(
-          halfWidth + 0.72,
-          halfWidth + 4.2,
+          halfWidth + halfVisualWidth + 0.28,
+          halfWidth + halfVisualWidth + 4.9,
           hash01(band, salt)
         );
-        const heroScale = positiveMod(band, 9) === 0 ? 1.28 : 1;
-        const height = lerp(0.85, 2.45, hash01(band, salt + 1)) * heroScale;
         this.position.set(lateral, -1.02, -zDistance);
         this.quaternion.setFromEuler(new THREE.Euler(
           0,
@@ -450,7 +455,7 @@ export class Environment {
         ));
         this.scale.set(
           (hash01(band, salt + 7) < 0.5 ? -1 : 1) *
-            height * lerp(0.88, 1.34, hash01(band, salt + 5)),
+            height * widthScale,
           height,
           1
         );

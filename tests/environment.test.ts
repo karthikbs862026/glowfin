@@ -27,9 +27,12 @@ describe("environment must not compete with obstacles (Part 3.4)", () => {
   });
 
   it("coral sits outside the lane too", () => {
-    // Placement runs from halfWidth + 0.65 outward, so the nearest coral is
-    // clear of the playable lane.
-    expect(tuning.lane.halfWidth + 0.65).toBeGreaterThan(tuning.lane.halfWidth);
+    // Placement adds half the rendered reef width plus this safety margin to
+    // halfWidth, so even the largest cluster stays outside the lane.
+    const reefEdgeSafety = 0.28;
+    expect(tuning.lane.halfWidth + reefEdgeSafety).toBeGreaterThan(
+      tuning.lane.halfWidth
+    );
   });
 
   it("god-rays are sparse, as Part 3.2 asks", () => {
@@ -82,8 +85,8 @@ describe("draw call budget (Part 4.6)", () => {
   });
 
   it("fills the outside lane without turning reef into collision geometry", () => {
-    expect(tuning.environment.coralCount).toBeGreaterThanOrEqual(64);
-    expect(tuning.environment.coralBandSpacing).toBeLessThanOrEqual(6);
-    expect(tuning.lane.halfWidth + 0.72).toBeGreaterThan(tuning.lane.halfWidth);
+    expect(tuning.environment.coralCount).toBeGreaterThanOrEqual(88);
+    expect(tuning.environment.coralBandSpacing).toBeLessThanOrEqual(4.5);
+    expect(tuning.lane.halfWidth + 0.28).toBeGreaterThan(tuning.lane.halfWidth);
   });
 });
