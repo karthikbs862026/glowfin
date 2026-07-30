@@ -72,9 +72,22 @@ const BODY_FRAGMENT = /* glsl */ `
       sin(vObjectPosition.x * 5.1 + vObjectPosition.z * 3.7) *
       sin(vObjectPosition.y * 6.3 - vObjectPosition.z * 2.1);
     float handPainted = 0.92 + 0.08 * broadMottle;
-    vec3 deepBody = mix(vec3(0.018, 0.115, 0.22), vColour, 0.72);
-    vec3 seaGlass = mix(deepBody, vec3(0.07, 0.48, 0.66), 0.22);
-    vec3 base = mix(seaGlass, momentumColour, 0.08 + uMomentum * 0.24);
+    float gillMask = smoothstep(0.03, 0.14, vColour.r - vColour.g);
+    float finMask = smoothstep(0.34, 0.46, vColour.g) *
+      (1.0 - gillMask);
+    vec3 authoredPigment = vec3(0.012, 0.17, 0.31);
+    authoredPigment = mix(
+      authoredPigment,
+      vec3(0.018, 0.34, 0.48),
+      finMask
+    );
+    authoredPigment = mix(
+      authoredPigment,
+      vec3(0.23, 0.075, 0.4),
+      gillMask
+    );
+    vec3 seaGlass = mix(authoredPigment, vColour, 0.18);
+    vec3 base = mix(seaGlass, momentumColour, 0.05 + uMomentum * 0.2);
     base *= handPainted * mix(0.68, 0.94, internal) *
       mix(0.68, 1.0, softVolume);
     base = mix(base, vec3(0.23, 0.29, 0.36), uCollision * 0.72);
@@ -86,6 +99,7 @@ const BODY_FRAGMENT = /* glsl */ `
       momentumColour * core * 0.045 * uGlow +
       rim * fresnel * uRimStrength * uGlow * 0.22 +
       vec3(0.42, 0.78, 0.94) * seaGlassSpecular;
+    colour = min(colour, vec3(0.54, 0.68, 0.76));
     gl_FragColor = vec4(colour, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>

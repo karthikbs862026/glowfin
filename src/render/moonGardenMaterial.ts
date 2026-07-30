@@ -127,6 +127,15 @@ const FRAGMENT = /* glsl */ `
     colour += vec3(0.018, 0.05, 0.07) * stoneWeight;
     colour += vec3(0.07, 0.29, 0.4) * moonRim *
       mix(0.15, 0.38, stoneWeight);
+    float wetSpecular = pow(
+      max(
+        dot(reflect(-keyDirection, normalize(vNormalW)), viewDirection),
+        0.0
+      ),
+      mix(18.0, 34.0, stoneWeight)
+    );
+    colour += vec3(0.18, 0.48, 0.58) * wetSpecular *
+      mix(0.025, 0.075, stoneWeight);
     // Living species keep their own cyan/violet/rose albedo and receive a
     // restrained translucent lift. They no longer read as unlit plastic rods.
     colour += vColour * livingWeight * (0.06 + moonRim * 0.12);

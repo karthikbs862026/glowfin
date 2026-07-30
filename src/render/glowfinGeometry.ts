@@ -33,13 +33,19 @@ function triangleCount(geometry: THREE.BufferGeometry): number {
 }
 
 function preparePart(part: RigPart): THREE.BufferGeometry {
+  let geometry = part.geometry;
+  if (geometry.index) {
+    const indexed = geometry;
+    geometry = geometry.toNonIndexed();
+    indexed.dispose();
+  }
   const quaternion = new THREE.Quaternion().setFromEuler(
     part.rotation ?? new THREE.Euler()
   );
-  part.geometry.applyMatrix4(
+  geometry.applyMatrix4(
     new THREE.Matrix4().compose(part.position, quaternion, part.scale)
   );
-  const vertices = part.geometry.getAttribute("position").count;
+  const vertices = geometry.getAttribute("position").count;
   const skinIndex = new Uint16Array(vertices * 4);
   const skinWeight = new Float32Array(vertices * 4);
   const colours = new Float32Array(vertices * 3);
@@ -50,19 +56,19 @@ function preparePart(part: RigPart): THREE.BufferGeometry {
     colours[index * 3 + 1] = part.colour.g;
     colours[index * 3 + 2] = part.colour.b;
   }
-  part.geometry.setAttribute(
+  geometry.setAttribute(
     "skinIndex",
     new THREE.Uint16BufferAttribute(skinIndex, 4)
   );
-  part.geometry.setAttribute(
+  geometry.setAttribute(
     "skinWeight",
     new THREE.Float32BufferAttribute(skinWeight, 4)
   );
-  part.geometry.setAttribute(
+  geometry.setAttribute(
     "color",
     new THREE.Float32BufferAttribute(colours, 3)
   );
-  return part.geometry;
+  return geometry;
 }
 
 function prepareEye(
@@ -70,6 +76,29 @@ function prepareEye(
   position: THREE.Vector3
 ): THREE.BufferGeometry {
   geometry.translate(position.x, position.y, position.z);
+  return geometry;
+}
+
+function createGillLeaf(radius: number, high: boolean): THREE.BufferGeometry {
+  const shape = new THREE.Shape([
+    new THREE.Vector2(0, -radius),
+    new THREE.Vector2(radius * 0.72, -radius * 0.35),
+    new THREE.Vector2(radius * 0.56, radius * 0.42),
+    new THREE.Vector2(0, radius),
+    new THREE.Vector2(-radius * 0.56, radius * 0.42),
+    new THREE.Vector2(-radius * 0.72, -radius * 0.35)
+  ]);
+  const depth = radius * 0.22;
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    steps: 1,
+    curveSegments: high ? 2 : 1,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: radius * 0.08,
+    bevelThickness: radius * 0.08
+  });
+  geometry.translate(0, 0, -depth * 0.5);
   return geometry;
 }
 
@@ -92,8 +121,8 @@ export function createGlowfinRigGeometry(
   const bodyParts: RigPart[] = [{
     geometry: new THREE.SphereGeometry(
       r,
-      high ? 48 : 34,
-      high ? 32 : 22
+      high ? 48 : 36,
+      high ? 32 : 24
     ),
     bone: 0,
     colour: cyan,
@@ -144,16 +173,20 @@ export function createGlowfinRigGeometry(
       );
       pivots.gills.push(pivot);
       bodyParts.push({
-        geometry: new THREE.SphereGeometry(
-          r * 0.20,
-          high ? 14 : 9,
-          high ? 9 : 6
-        ),
+        geometry: createGillLeaf(r * 0.31, high),
         bone,
         colour: gillViolet,
         position: pivot,
-        rotation: new THREE.Euler(0, side * 0.42, side * 0.24),
-        scale: new THREE.Vector3(0.86, 0.46, 2.05)
+        rotation: new THREE.Euler(
+          0,
+          side * 0.08,
+          side * (0.58 - index * 0.24)
+        ),
+        scale: new THREE.Vector3(
+          0.76 + index * 0.06,
+          1.05 - index * 0.08,
+          1
+        )
       });
       bone += 1;
     }

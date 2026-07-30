@@ -327,9 +327,8 @@ export class Environment {
     const env = this.cfg.environment;
     const count = Math.max(6, Math.floor(env.buildingCount * this.density));
     const perSide = Math.floor(count / 2);
-    const firstBand = Math.floor(
-      (forwardDistance + env.buildingBandSpacing * 0.55) /
-      env.buildingBandSpacing
+    const firstBand = Math.ceil(
+      (forwardDistance + 38) / env.buildingBandSpacing
     );
     for (const family of this.architecture) family.begin();
 
@@ -341,13 +340,13 @@ export class Environment {
         const zDistance = band * env.buildingBandSpacing +
           (hash01(band, salt + 4) - 0.5) * env.buildingBandSpacing * 0.45;
         const lateral = lerp(
-          env.buildingLateralMin,
+          Math.max(10.5, env.buildingLateralMin),
           env.buildingLateralMax,
           hash01(band, salt + 3)
         );
         const height = lerp(
-          env.buildingMinHeight,
-          env.buildingMaxHeight,
+          env.buildingMinHeight * 0.72,
+          Math.min(9.2, env.buildingMaxHeight),
           Math.pow(hash01(band, salt), 1.5)
         );
         const family = this.architecture[variant];

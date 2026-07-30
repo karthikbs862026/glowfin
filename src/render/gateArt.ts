@@ -144,6 +144,10 @@ export class MoonGardenGates {
 
     const contourGeometry = new THREE.BoxGeometry(1, 1, 1);
     const contourMaterial = new THREE.ShaderMaterial({
+      // The seam is authoritative clearance truth. Broken masonry may frame
+      // it, but contextual faces must never erase it in one camera/bloom state.
+      depthTest: false,
+      depthWrite: false,
       vertexShader: /* glsl */ `
         varying vec3 vLocalPosition;
         void main() {
