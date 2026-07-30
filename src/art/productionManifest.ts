@@ -26,7 +26,7 @@ export const PRODUCTION_ART = {
   },
   collapsedArch: {
     lod0: 396,
-    lod1: 312,
+    lod1: 300,
     lod2: 228,
     materials: 1
   },
@@ -37,15 +37,15 @@ export const PRODUCTION_ART = {
     materials: 1
   },
   mediumCoral: {
-    lod0: 780,
-    lod1: 336,
-    lod2: 126,
+    lod0: 740,
+    lod1: 360,
+    lod2: 150,
     materials: 1
   },
   heroCoral: {
-    lod0: 2048,
-    lod1: 1020,
-    lod2: 270,
+    lod0: 2008,
+    lod1: 1044,
+    lod2: 294,
     materials: 1
   },
   shellGarden: {

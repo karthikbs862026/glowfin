@@ -3,17 +3,17 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 
 export type ArtLod = 0 | 1 | 2;
 
-const MOONSTONE = new THREE.Color(0x315f73);
-const MOONSTONE_DARK = new THREE.Color(0x183c50);
+const MOONSTONE = new THREE.Color(0x214c63);
+const MOONSTONE_DARK = new THREE.Color(0x0d2a40);
 // Collision-critical stone gets its own brighter values. The surrounding
 // ruins deliberately stay subdued, but every surface that can end a run must
 // retain a 3:1 silhouette against the midnight lane even with caustics off.
-const OBSTACLE_MOONSTONE = new THREE.Color(0x47788a);
-const OBSTACLE_RECESS = new THREE.Color(0x254f63);
-const SHELL_GOLD = new THREE.Color(0x789c98);
-const LIVING_CYAN = new THREE.Color(0x176d82);
-const MOON_VIOLET = new THREE.Color(0x4b3b78);
-const HEART_ROSE = new THREE.Color(0x77375f);
+const OBSTACLE_MOONSTONE = new THREE.Color(0x28586d);
+const OBSTACLE_RECESS = new THREE.Color(0x102f45);
+const SHELL_GOLD = new THREE.Color(0x8aa997);
+const LIVING_CYAN = new THREE.Color(0x08758c);
+const MOON_VIOLET = new THREE.Color(0x493582);
+const HEART_ROSE = new THREE.Color(0x71305d);
 
 interface PartOptions {
   position?: THREE.Vector3;
@@ -326,7 +326,7 @@ export function createCollapsedArchGeometry(lod: ArtLod): THREE.BufferGeometry {
     // the arch from reading as another perfect luminous icon.
     if (
       (lod < 2 && index === Math.floor(blockCount * 0.54)) ||
-      (lod === 0 && index === Math.floor(blockCount * 0.54) + 1)
+      (lod < 2 && index === Math.floor(blockCount * 0.54) + 1)
     ) {
       continue;
     }
@@ -541,23 +541,56 @@ export function createMediumCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
         glowWeight: 0.42
       }
     ));
+    const tipPosition = new THREE.Vector3(
+      x + lean,
+      height,
+      0.05 * Math.sin(index * 1.3)
+    );
     parts.push(decorate(
-      new THREE.SphereGeometry(
-        0.12 + (index % 2) * 0.012,
-        radial * 2,
-        Math.max(2, radial - 1)
+      new THREE.IcosahedronGeometry(
+        0.072 + (index % 2) * 0.008,
+        0
       ),
       {
-        position: new THREE.Vector3(
-          x + lean,
-          height,
-          0.05 * Math.sin(index * 1.3)
-        ),
-        scale: new THREE.Vector3(1.06, 0.72, 1.02),
+        position: tipPosition,
+        scale: new THREE.Vector3(1.08, 0.74, 1.02),
         colour,
         glowWeight: 0.52
       }
     ));
+    if (lod < 2 && index < (lod === 0 ? 4 : 3)) {
+      const forkSide = index % 2 === 0 ? -1 : 1;
+      const forkPath = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(
+          x + lean * 0.12,
+          height * 0.55,
+          0.04 * Math.cos(index)
+        ),
+        new THREE.Vector3(
+          x + lean * 0.18 + forkSide * 0.08,
+          height * 0.68,
+          0.06
+        ),
+        new THREE.Vector3(
+          x + lean * 0.26 + forkSide * height * 0.2,
+          height * 0.82,
+          0.1 + index * 0.012
+        )
+      ]);
+      parts.push(decorate(
+        new THREE.TubeGeometry(
+          forkPath,
+          lod === 0 ? 4 : 3,
+          0.06,
+          radial,
+          false
+        ),
+        {
+          colour,
+          glowWeight: 0.47
+        }
+      ));
+    }
   }
   parts.push(decorate(
     new THREE.SphereGeometry(0.42, radial * 2, Math.max(4, radial)),

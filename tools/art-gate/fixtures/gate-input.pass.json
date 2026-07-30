@@ -326,7 +326,7 @@
         },
         {
           "level": 1,
-          "triangles": 312
+          "triangles": 300
         },
         {
           "level": 2,
@@ -366,15 +366,15 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 2048
+          "triangles": 2008
         },
         {
           "level": 1,
-          "triangles": 1020
+          "triangles": 1044
         },
         {
           "level": 2,
-          "triangles": 270
+          "triangles": 294
         }
       ]
     },
@@ -388,15 +388,15 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 780
+          "triangles": 740
         },
         {
           "level": 1,
-          "triangles": 336
+          "triangles": 360
         },
         {
           "level": 2,
-          "triangles": 126
+          "triangles": 150
         }
       ]
     },

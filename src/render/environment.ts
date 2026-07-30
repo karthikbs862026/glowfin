@@ -441,7 +441,8 @@ export class Environment {
           -side * lerp(0, 0.035, hash01(band, salt + 8))
         ));
         const mirror = hash01(band, salt + 10) < 0.5 ? -1 : 1;
-        const unitScale = height / family.height;
+        const silhouetteScale = [1, 0.86, 0.62][variant] ?? 0.8;
+        const unitScale = height * silhouetteScale / family.height;
         const widthStretch = [0.76, 0.62, 0.92][variant] ?? 0.8;
         const depthStretch = [0.74, 0.66, 0.86][variant] ?? 0.75;
         this.scale.set(

@@ -118,3 +118,13 @@ art. The current art-led refinement therefore:
 
 All revised LODs remain inside their existing family budgets, and reef placement
 continues to derive from measured bounds outside the unchanged lane.
+
+The next beauty frame showed that the material still made real volume look
+uniformly grey and that large near-complete arches competed with the obstacle.
+The follow-up keeps the same meshes/material count but darkens the moonstone
+palette, increases masonry-joint separation, preserves living colour under
+instance tint, removes bulbous coral caps in favour of small tips plus curved
+forks, breaks a second arch-crown course, and scales the collapsed-arch family
+to 62% of the shared architecture height. This is a visual correction only:
+lane bounds, gate placement, collision planes and contour dimensions do not
+change.

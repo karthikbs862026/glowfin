@@ -39,7 +39,7 @@ const VERTEX = /* glsl */ `
     #ifdef USE_INSTANCING_COLOR
       // Instance colour creates depth variation without bleaching vertex-authored
       // stone and living hues into the pale cyan seen in the rejected render.
-      vColour *= vec3(0.72) + instanceColor * 0.52;
+      vColour *= vec3(0.58) + instanceColor * 0.62;
     #endif
     vGlowWeight = glowWeight;
     vec4 mvPosition = viewMatrix * worldPosition;
@@ -91,7 +91,7 @@ const FRAGMENT = /* glsl */ `
     vec2 stoneUv = n.y > n.z
       ? vWorldPos.xz
       : vWorldPos.xy;
-    stoneUv *= vec2(0.34, 0.22);
+    stoneUv *= vec2(0.62, 0.42);
     vec2 cell = abs(fract(stoneUv + vec2(floor(stoneUv.y) * 0.37, 0.0)) - 0.5);
     float joint = 1.0 - smoothstep(0.025, 0.065, min(0.5 - cell.x, 0.5 - cell.y));
     float stoneWeight = 1.0 - smoothstep(0.08, 0.30, vGlowWeight);
@@ -116,7 +116,7 @@ const FRAGMENT = /* glsl */ `
     vec3 paintedStone =
       vColour * surfaceBreakup * mix(0.78, 1.1, keyLight);
     colour = mix(colour, paintedStone, stoneWeight * 0.34);
-    colour *= 1.0 - joint * 0.20 * stoneWeight;
+    colour *= 1.0 - joint * 0.28 * stoneWeight;
     colour *= mix(1.0, 0.84 + porousBreakup * 0.14, livingWeight);
     colour *= mix(1.0, 0.52, groundContact);
     colour += vec3(0.025, 0.065, 0.085) * stoneWeight;
@@ -289,7 +289,7 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     vec2 stoneUv = n.y > n.z
       ? vWorldPos.xz
       : vWorldPos.xy;
-    stoneUv *= vec2(0.36, 0.24);
+    stoneUv *= vec2(0.72, 0.5);
     vec2 cell = abs(fract(stoneUv + vec2(floor(stoneUv.y) * 0.35, 0.0)) - 0.5);
     float joint = 1.0 - smoothstep(0.028, 0.07, min(0.5 - cell.x, 0.5 - cell.y));
     vec3 blend = pow(abs(normalW), vec3(4.0));
@@ -309,7 +309,7 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     vec3 paintedStone =
       vColour * surfaceBreakup * mix(0.74, 1.08, keyLight);
     colour = mix(colour, paintedStone, 0.38);
-    colour *= 1.0 - joint * 0.18;
+    colour *= 1.0 - joint * 0.3;
     colour *= mix(1.0, 0.5, groundContact);
     float stoneWeight = 1.0 - smoothstep(0.28, 0.66, vGlowWeight);
     colour += vec3(0.035, 0.085, 0.11) * stoneWeight;
