@@ -119,7 +119,7 @@ const LIFE_RECTS: readonly UvRect[] = [
   { uMin: 0.75, vMin: 0, uMax: 1, vMax: 0.25 }
 ];
 
-const POINT_COUNT = 65;
+const POINT_COUNT = 81;
 
 export class Environment {
   readonly objects: THREE.Object3D[] = [];
@@ -578,8 +578,8 @@ export class Environment {
       const phase = time * lerp(0.18, 0.46, hash01(index, 902)) + band;
       this.pointPositions.setXYZ(
         index,
-        lerp(-15, 15, hash01(band, 903)) + Math.sin(phase) * 0.45,
-        lerp(-0.2, 8.2, hash01(band, 904)) + Math.cos(phase * 0.8) * 0.25,
+        lerp(-17, 17, hash01(band, 903)) + Math.sin(phase) * 0.45,
+        lerp(-0.2, 14.5, hash01(band, 904)) + Math.cos(phase * 0.8) * 0.25,
         -(band * 5 + hash01(band, 905) * 4)
       );
     }
@@ -594,9 +594,9 @@ export class Environment {
     const firstBand = Math.floor(forwardDistance / env.godRayBandSpacing);
     for (let index = 0; index < env.godRayCount; index++) {
       const band = firstBand + index + 1;
-      const side = hash01(band, 5055) < 0.5 ? -1 : 1;
+      const side = index % 2 === 0 ? -1 : 1;
       this.position.set(
-        side * lerp(7.5, 16, hash01(band, 5051)),
+        side * lerp(5.5, 13.5, hash01(band, 5051)),
         env.godRayHeight * 0.42,
         -(band * env.godRayBandSpacing)
       );
