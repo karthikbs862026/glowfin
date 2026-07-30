@@ -78,5 +78,13 @@ single broad material sample still flattened the obstacle face. The current
 pass therefore maps weathering at a smaller physical scale, adds raised
 irregular stone courses in front of the structural wall, quiets the floor
 behind the gameplay edge, and moves the narrow cyan core below the adjusted
-bloom threshold wherever possible. The 5.5px projected edge, gap width and
-collider planes are unchanged.
+bloom threshold wherever possible. At that stage the 5.5px projected edge,
+gap width and collider planes remained unchanged.
+
+Bounded failure diagnostics then localized every persistent max-state contrast
+failure to the bottom of the luminous strip, where it intersected the seabed
+and foundation. The cyan core now emerges from the masonry at Glowfin body
+height; the recessed dark channel and rubble continue to the floor. This
+removes a physically implausible glowing floor intersection without moving the
+wall plane or implying additional lateral clearance. The projected core width
+is the Art Bible's original 7px.

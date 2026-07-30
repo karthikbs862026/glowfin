@@ -282,10 +282,17 @@ export class MoonGardenGates {
           camera.fov,
           viewportHeightCss
         );
-        const contourHeight = wallHeight * 0.9;
+        // The luminous water core emerges from the masonry foundation instead
+        // of continuing through the seabed. The lower dark channel and rubble
+        // still carry the wall to the floor, while the measured cyan cue starts
+        // at Glowfin's body height where lateral clearance is actually judged.
+        const contourTop =
+          PROCEDURAL_GATE_VISUAL.wallFloorY + wallHeight * 0.9 + 0.12;
+        const contourBottom = PROCEDURAL_GATE_VISUAL.wallFloorY + 1.15;
+        const contourHeight = Math.max(0.5, contourTop - contourBottom);
         this.position.set(
           wall.colliderPlane - wall.gapDirection * contourWidth * 0.5,
-          PROCEDURAL_GATE_VISUAL.wallFloorY + contourHeight * 0.5 + 0.12,
+          contourBottom + contourHeight * 0.5,
           -gate.distance + wallDepth * 0.5 + 0.035
         );
         this.scale.set(
