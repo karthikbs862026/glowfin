@@ -148,17 +148,11 @@ export class GameView {
     moonstoneSurface.repeat.set(72 / 25, 4000 / 25);
     moonstoneSurface.anisotropy = maxAnisotropy;
 
-    const coralCluster = textureLoader.load(
-      "/art/moon-garden/coral-cluster.webp"
+    const reviewAtlas = textureLoader.load(
+      "/art/moon-garden/review-atlas.webp"
     );
-    coralCluster.colorSpace = THREE.SRGBColorSpace;
-    coralCluster.anisotropy = maxAnisotropy;
-
-    const brokenTower = textureLoader.load(
-      "/art/moon-garden/broken-tower.webp"
-    );
-    brokenTower.colorSpace = THREE.SRGBColorSpace;
-    brokenTower.anisotropy = maxAnisotropy;
+    reviewAtlas.colorSpace = THREE.SRGBColorSpace;
+    reviewAtlas.anisotropy = maxAnisotropy;
     const glowfinRear = textureLoader.load(
       "/art/moon-garden/glowfin-rear.webp"
     );
@@ -166,8 +160,7 @@ export class GameView {
     glowfinRear.anisotropy = maxAnisotropy;
     this.disposables.push(
       moonstoneSurface,
-      coralCluster,
-      brokenTower,
+      reviewAtlas,
       glowfinRear
     );
 
@@ -327,8 +320,7 @@ export class GameView {
 
     // --- drowned city, god-rays, responsive coral (Part 3.2 #3 and #5) ---
     this.environment = new Environment(cfg, {
-      brokenTower,
-      coralCluster
+      reviewAtlas
     });
     for (const object of this.environment.objects) this.scene.add(object);
 
@@ -504,8 +496,8 @@ export class GameView {
     return {
       activeMaterials: materials.size,
       godRayMeshes: this.cfg.environment.godRayCount,
-      // Four authored 1024px-or-smaller RGBA assets including mip overhead.
-      textureMemoryMB: 15
+      // Three authored 1024px-or-smaller RGBA assets including mip overhead.
+      textureMemoryMB: 13
     };
   }
 

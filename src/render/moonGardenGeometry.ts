@@ -8,8 +8,8 @@ const MOONSTONE_DARK = new THREE.Color(0x345c70);
 // Collision-critical stone gets its own brighter values. The surrounding
 // ruins deliberately stay subdued, but every surface that can end a run must
 // retain a 3:1 silhouette against the midnight lane even with caustics off.
-const OBSTACLE_MOONSTONE = new THREE.Color(0x5d8fa4);
-const OBSTACLE_RECESS = new THREE.Color(0x426f83);
+const OBSTACLE_MOONSTONE = new THREE.Color(0x76a7b5);
+const OBSTACLE_RECESS = new THREE.Color(0x547f8e);
 const SHELL_GOLD = new THREE.Color(0xf4d58b);
 const LIVING_CYAN = new THREE.Color(0x2c8fa8);
 const MOON_VIOLET = new THREE.Color(0x6856ad);

@@ -98,7 +98,7 @@ export class MoonGardenGates {
 
     const contourGeometry = new THREE.BoxGeometry(1, 1, 1);
     const contourMaterial = new THREE.MeshBasicMaterial({
-      color: 0xbdf4ff,
+      color: 0x63e0ff,
       toneMapped: false,
       // The contour shares the wall's front plane so its projected gap edge
       // remains collider-true. Polygon offset resolves the coplanar surface

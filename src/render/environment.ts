@@ -88,27 +88,29 @@ class InstancedBillboardFamily {
   private count = 0;
 
   constructor(
-    texture: THREE.Texture,
+    material: THREE.Material,
     aspect: number,
+    uvRect: { uMin: number; vMin: number; uMax: number; vMax: number },
     maxCount: number,
     disposables: Array<{ dispose(): void }>
   ) {
     const geometry = new THREE.PlaneGeometry(aspect, 1);
+    const uv = geometry.getAttribute("uv");
+    for (let index = 0; index < uv.count; index++) {
+      uv.setXY(
+        index,
+        lerp(uvRect.uMin, uvRect.uMax, uv.getX(index)),
+        lerp(uvRect.vMin, uvRect.vMax, uv.getY(index))
+      );
+    }
+    uv.needsUpdate = true;
     // Placement matrices refer to the grounded base, not the image centre.
     geometry.translate(0, 0.5, 0);
-    const material = new THREE.MeshBasicMaterial({
-      map: texture,
-      color: 0xffffff,
-      vertexColors: true,
-      alphaTest: 0.08,
-      side: THREE.DoubleSide,
-      depthWrite: true
-    });
     this.object = new THREE.InstancedMesh(geometry, material, maxCount);
     this.object.count = 0;
     this.object.frustumCulled = false;
     this.object.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    disposables.push(geometry, material);
+    disposables.push(geometry);
   }
 
   begin(): void {
@@ -130,8 +132,7 @@ class InstancedBillboardFamily {
 }
 
 export interface MoonGardenTextures {
-  brokenTower: THREE.Texture;
-  coralCluster: THREE.Texture;
+  reviewAtlas: THREE.Texture;
 }
 
 export class Environment {
@@ -167,9 +168,21 @@ export class Environment {
     });
     this.disposables.push(this.material);
 
+    const reviewMaterial = new THREE.MeshBasicMaterial({
+      map: textures.reviewAtlas,
+      color: 0xffffff,
+      vertexColors: true,
+      alphaTest: 0.08,
+      side: THREE.DoubleSide,
+      depthWrite: true,
+      fog: true
+    });
+    this.disposables.push(reviewMaterial);
+
     this.towers = new InstancedBillboardFamily(
-      textures.brokenTower,
+      reviewMaterial,
       683 / 1024,
+      { uMin: 0, vMin: 0.25, uMax: 0.5, vMax: 1 },
       env.buildingCount,
       this.disposables
     );
@@ -180,8 +193,9 @@ export class Environment {
       this.disposables
     );
     this.coral = new InstancedBillboardFamily(
-      textures.coralCluster,
+      reviewMaterial,
       1024 / 723,
+      { uMin: 0.5, vMin: 0, uMax: 1, vMax: 362 / 1024 },
       env.coralCount,
       this.disposables
     );
@@ -355,13 +369,16 @@ export class Environment {
           (lateral - env.buildingLateralMin) /
           Math.max(1, env.buildingLateralMax - env.buildingLateralMin)
         );
-        const brightness = env.buildingBrightness *
-          lerp(0.82, 1.28, hash01(band, salt + 5)) *
-          distanceFade;
+        const brightness = isTower
+          ? lerp(0.74, 0.98, hash01(band, salt + 5)) *
+            lerp(0.72, 1, distanceFade)
+          : env.buildingBrightness *
+            lerp(0.82, 1.28, hash01(band, salt + 5)) *
+            distanceFade;
         this.colour.setRGB(
-          brightness * 0.72,
-          brightness * 0.94,
-          brightness * 1.08
+          brightness * (isTower ? 0.92 : 0.72),
+          brightness * (isTower ? 0.97 : 0.94),
+          brightness * (isTower ? 1 : 1.08)
         );
         if (isTower) this.towers.add(this.matrix, this.colour);
         else this.spires.add(lod, this.matrix, this.colour);
@@ -404,7 +421,7 @@ export class Environment {
           1
         );
         this.matrix.compose(this.position, this.quaternion, this.scale);
-        const brightness = lerp(0.56, 0.82, hash01(band, salt + 4));
+        const brightness = lerp(0.82, 1, hash01(band, salt + 4));
         this.colour.setRGB(
           brightness * 0.78,
           brightness * 0.9,

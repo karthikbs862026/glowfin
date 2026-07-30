@@ -20,7 +20,8 @@ review. It must not be merged in its current state. The reset now includes:
 - truthful LOD wall fragments with independent cyan collider contours
 - an authored Moon-Garden seabed surface in place of generated road paving
 - authored broken-tower and reef-cluster review sources, instanced in the
-  playable renderer while their final GLB replacements are modeled
+  playable renderer from one shared atlas while their final GLB replacements
+  are modeled
 - fork-crowned spires and shader-sway ribbon kelp retained as interim depth
 - three hard-capped god-ray meshes
 - an in-camera Art-Bible acceptance target at

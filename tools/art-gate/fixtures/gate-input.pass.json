@@ -293,7 +293,7 @@
       "family": "artReviewImpostor",
       "collidable": false,
       "materials": 1,
-      "textureMemoryMB": 3.6,
+      "textureMemoryMB": 5.4,
       "maxTextureSizePx": 1024,
       "contour": "decorative",
       "lods": [
@@ -330,7 +330,7 @@
       "family": "artReviewImpostor",
       "collidable": false,
       "materials": 1,
-      "textureMemoryMB": 3.8,
+      "textureMemoryMB": 0,
       "maxTextureSizePx": 1024,
       "contour": "decorative",
       "lods": [
@@ -712,5 +712,5 @@
       "laneWidthFractionAtMaxMomentum": 0.12083333333333333
     }
   },
-  "compressedArtPayloadMB": 0.26
+  "compressedArtPayloadMB": 0.21
 }

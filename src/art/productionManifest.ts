@@ -50,13 +50,14 @@ export const PRODUCTION_ART = {
   brokenTowerReviewImpostor: {
     lod0: 2,
     materials: 1,
-    textureMemoryMB: 3.6,
+    // Shared 1024² tower/reef atlas is accounted here once.
+    textureMemoryMB: 5.4,
     maxTextureSizePx: 1024
   },
   coralReviewImpostor: {
     lod0: 2,
     materials: 1,
-    textureMemoryMB: 3.8,
+    textureMemoryMB: 0,
     maxTextureSizePx: 1024
   },
   glowfinReviewImpostor: {
