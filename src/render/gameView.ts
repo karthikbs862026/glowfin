@@ -56,6 +56,47 @@ export class GameView {
   private readonly wallCausticBase = new THREE.Color(0x63e0ff);
   private readonly wallCausticHot = new THREE.Color(0xff6be0);
   private readonly wallCausticScratch = new THREE.Color();
+  /**
+   * Mask material for the contrast probe. Outputs white only for obstacles
+   * within the reaction window; anything further reads as background.
+   *
+   * Without the depth limit the probe reports contrast for obstacles that fog
+   * has deliberately faded into the background — they measure 1:1 because they
+   * *are* the background, which is correct behaviour being scored as a failure.
+   * Only obstacles the player is expected to react to belong in the measurement.
+   */
+  private readonly maskObstacle = new THREE.ShaderMaterial({
+    uniforms: { uMaxDepth: { value: 1e9 } },
+    vertexShader: `
+      varying float vDepth;
+      void main() {
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vDepth = -mv.z;
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: `
+      precision mediump float;
+      uniform float uMaxDepth;
+      varying float vDepth;
+      void main() {
+        // Three states, not two:
+        //   1.0  obstacle inside the reaction window -> measure it
+        //   0.5  obstacle beyond the window          -> ignore entirely
+        //   0.0  (other mask material) true background
+        //
+        // A binary mask made distant obstacles read as background, so a near
+        // wall silhouetted against a far wall scored ~1:1 — two walls are
+        // nearly the same colour. The analysis side of this shipped two rounds
+        // ago; this shader half did not, so the fix was never actually live.
+        float inRange = step(vDepth, uMaxDepth);
+        gl_FragColor = vec4(vec3(mix(0.5, 1.0, inRange)), 1.0);
+      }
+    `
+  });
+  private readonly maskOther = new THREE.MeshBasicMaterial({ color: 0x000000 });
+  private readonly savedMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
+  private maskMode = false;
   readonly gpuName: string;
   private readonly gatePool: GateVisual[] = [];
   private readonly stripePool: THREE.Mesh[] = [];
@@ -79,17 +120,24 @@ export class GameView {
     this.scene.background = new THREE.Color(0x04060f);
     // Fog starts well beyond the sight distance so it never eats an obstacle
     // the player is supposed to be reading (Part 3.4).
+    // Fog must begin BEYOND the reaction window, not at its edge.
+    //
+    // It previously started at visibleAhead * 1.15 = 103.5 camera depth, while
+    // an obstacle at the far edge of the required 90-unit reaction window sits
+    // at 90 + camera distance = 103.5. Identical. The game was fading obstacles
+    // out at exactly the distance Part 4.5 requires them to stay readable, and
+    // the probe caught it as near-black obstacles on a near-black background.
     this.scene.fog = new THREE.Fog(
       0x04060f,
-      cfg.readability.visibleAheadUnits * 1.15,
-      cfg.readability.visibleAheadUnits * 2.4
+      cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier,
+      cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier
     );
 
     this.camera = new THREE.PerspectiveCamera(
       cfg.camera.fovAtZeroMomentum,
       window.innerWidth / window.innerHeight,
       0.1,
-      cfg.readability.visibleAheadUnits * 3
+      cfg.readability.visibleAheadUnits * (cfg.visual.fogFarMultiplier + 0.4)
     );
 
     this.scene.add(new THREE.AmbientLight(0x4488cc, 1.1));
@@ -99,8 +147,8 @@ export class GameView {
 
     const halfWidth = cfg.lane.halfWidth;
 
-    const fogNear = cfg.readability.visibleAheadUnits * 1.15;
-    const fogFar = cfg.readability.visibleAheadUnits * 2.4;
+    const fogNear = cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier;
+    const fogFar = cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier;
 
     // --- floor, with caustics (Part 3.2 priority 1) ---
     const floorGeo = new THREE.PlaneGeometry(halfWidth * 2, 4000);
@@ -168,12 +216,19 @@ export class GameView {
       fogColor: 0x04060f,
       fogNear,
       fogFar,
-      octaves: 3
+      octaves: 3,
+      edgeStrength: cfg.visual.obstacleEdgeStrength,
+      edgeWidthPixels: cfg.visual.obstacleEdgeWidthPixels,
+      edgeColor: 0xbdf4ff
     });
     const wallMat = this.wallMaterial;
     for (let i = 0; i < MAX_POOLED_GATES; i++) {
       const left = new THREE.Mesh(wallGeo, wallMat);
       const right = new THREE.Mesh(wallGeo, wallMat);
+      // Tagged so the contrast probe can identify obstacle silhouettes without
+      // the renderer keeping a parallel list in sync.
+      left.userData["isObstacle"] = true;
+      right.userData["isObstacle"] = true;
       left.visible = false;
       right.visible = false;
       this.scene.add(left, right);
@@ -215,6 +270,66 @@ export class GameView {
 
     this.gpuName = readGpuName(this.renderer.getContext());
     window.addEventListener("resize", this.handleResize);
+  }
+
+  /**
+   * Swap every material for flat white (obstacles) or black (everything else)
+   * so a render produces a silhouette mask. Used only by the contrast probe
+   * (Part 3.4 / 6.5); never during play.
+   */
+  setMaskMode(enabled: boolean): void {
+    if (enabled === this.maskMode) return;
+    this.maskMode = enabled;
+
+    if (enabled) {
+      // The trail is additive and depth-write-disabled during play. Swapping it
+      // for an opaque black material would make it a depth-writing occluder and
+      // punch false holes in the silhouette mask, so it is hidden instead.
+      this.trail.mesh.visible = false;
+      this.scene.traverse((object) => {
+        if (!(object instanceof THREE.Mesh)) return;
+        this.savedMaterials.set(object, object.material);
+        object.material = object.userData["isObstacle"] ? this.maskObstacle : this.maskOther;
+      });
+    } else {
+      for (const [mesh, material] of this.savedMaterials) mesh.material = material;
+      this.savedMaterials.clear();
+      this.trail.mesh.visible = true;
+    }
+  }
+
+  /**
+   * Read the framebuffer. Must run synchronously after a render, before the
+   * browser composites, or the buffer is already gone.
+   */
+  capturePixels(): { pixels: Uint8Array; width: number; height: number } {
+    const gl = this.renderer.getContext();
+    const width = this.renderer.domElement.width;
+    const height = this.renderer.domElement.height;
+    const pixels = new Uint8Array(width * height * 4);
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    return { pixels, width, height };
+  }
+
+  /** Limit which obstacles count as silhouettes, by view depth. */
+  setMaskMaxDepth(depth: number): void {
+    const uniform = this.maskObstacle.uniforms["uMaxDepth"];
+    if (uniform) uniform.value = depth;
+  }
+
+  /** Render the silhouette mask directly, bypassing post-processing. */
+  renderMask(): void {
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  /**
+   * Render the scene with no post-processing. Used by the probe to separate a
+   * genuine contrast problem from bloom bleed: a bright edge glows outward onto
+   * the pixels being sampled as background, which lowers measured contrast
+   * without the obstacle itself being any harder to see.
+   */
+  renderWithoutBloom(): void {
+    this.renderer.render(this.scene, this.camera);
   }
 
   /** Clear the ribbon so it does not streak across a fresh run. */
@@ -393,6 +508,8 @@ export class GameView {
     window.removeEventListener("resize", this.handleResize);
     for (const item of this.disposables) item.dispose();
     this.trail.dispose();
+    this.maskObstacle.dispose();
+    this.maskOther.dispose();
     this.composer.dispose();
     this.renderer.dispose();
   }
