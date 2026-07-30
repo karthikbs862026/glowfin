@@ -24,11 +24,15 @@ had large empty gaps, and nothing except Glowfin moved.
 - Increase outside-lane reef cadence and scale into continuous side banks.
   Placement is resolved from each atlas silhouette's inner edge, not its
   centre, so even large foreground clusters stay beyond the playable
-  half-width.
+  half-width. Bias most clusters toward that safe inner edge and scatter a
+  smaller number deeper into the world, avoiding both empty verges and a
+  hedge-like line.
 - Animate moon-minnow schools, lantern jellies, ribbon rays and garden spirits
   on deterministic world-band paths. They are non-collidable and use different
   depths, speeds and vertical ranges.
-- Add one moon source and a capped pool of drifting bioluminescent motes.
+- Add one moon source and a capped pool of drifting bioluminescent motes, with
+  enough upper-water coverage to break up the portrait field without reading
+  as gameplay objects.
 - Keep the first skyline layer inside the fog transition, distribute ambient
   swimmers through the upper water, and use feathered shafts plus a quiet
   radial haze so "moonlit" remains visible in portrait framing.
