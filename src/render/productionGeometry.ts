@@ -2,15 +2,15 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { ArtLod } from "./moonGardenGeometry";
 
-const STONE = new THREE.Color(0x25536a);
-const STONE_LIGHT = new THREE.Color(0x3d7181);
-const STONE_DARK = new THREE.Color(0x0b2639);
+const STONE = new THREE.Color(0x1b435b);
+const STONE_LIGHT = new THREE.Color(0x376d7d);
+const STONE_DARK = new THREE.Color(0x071c30);
 const JOINT = new THREE.Color(0x071b2b);
 const SHELL = new THREE.Color(0x8ea99d);
-const CYAN = new THREE.Color(0x1595a9);
-const CYAN_LIGHT = new THREE.Color(0x58c3cc);
-const VIOLET = new THREE.Color(0x5e4b94);
-const ROSE = new THREE.Color(0x8f476e);
+const CYAN = new THREE.Color(0x0d708b);
+const CYAN_LIGHT = new THREE.Color(0x2aafc0);
+const VIOLET = new THREE.Color(0x493a78);
+const ROSE = new THREE.Color(0x873c66);
 
 interface PartStyle {
   colour: THREE.Color;
@@ -208,14 +208,14 @@ export function createProductionWallGeometry(
   backingGeometry.translate(0, 0, -0.41);
   parts.push(styled(backingGeometry, {
     position: new THREE.Vector3(0, 0, -0.07),
-    colour: JOINT,
-    glow: 0.008
+    colour: STONE_DARK,
+    glow: 0.012
   }));
 
   const columns = lod === 0 ? 4 : lod === 1 ? 3 : 2;
   const rows = lod === 0 ? 4 : lod === 1 ? 3 : 1;
-  const courseWidth = 0.76 / columns;
-  const courseHeight = 0.62 / rows;
+  const courseWidth = 0.84 / columns;
+  const courseHeight = 0.88 / rows;
   for (let row = 0; row < rows; row++) {
     for (let column = 0; column < columns; column++) {
       if (
@@ -230,12 +230,12 @@ export function createProductionWallGeometry(
         innerX - gapDirection * 0.18,
         t
       );
-      const y = -0.41 + row * courseHeight +
+      const y = -0.36 + row * courseHeight +
         ((row + column + variant) % 2) * 0.012;
       parts.push(styled(
         stoneBlock(
           courseWidth * (0.88 + ((row + column) % 2) * 0.08),
-          courseHeight * 0.76,
+          courseHeight * 0.82,
           0.18,
           0.018 + (column % 2) * 0.008
         ),
@@ -732,13 +732,13 @@ export function createProductionKelp(lod: 0 | 1 | 2): THREE.BufferGeometry {
 
 export function createProductionSkyline(): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
-  const heights = [0.7, 1.18, 0.92, 1.52, 0.8, 1.26, 0.66];
+  const heights = [0.72, 1.08, 0.84, 1.28, 0.78, 1.0, 0.64];
   for (let index = 0; index < heights.length; index++) {
     const x = THREE.MathUtils.lerp(-1.55, 1.55, index / (heights.length - 1));
     const radial = index % 2 === 0 ? 6 : 8;
     parts.push(styled(new THREE.CylinderGeometry(
-      0.08 + (index % 3) * 0.025,
-      0.22 + (index % 2) * 0.055,
+      0.13 + (index % 3) * 0.025,
+      0.25 + (index % 2) * 0.055,
       heights[index] ?? 1,
       radial,
       1,
@@ -748,12 +748,40 @@ export function createProductionSkyline(): THREE.BufferGeometry {
       colour: index % 3 === 0 ? STONE : STONE_DARK,
       glow: 0.006
     }));
-    if (index % 2 === 1) {
-      parts.push(styled(new THREE.ConeGeometry(0.12, 0.38, radial), {
-        position: new THREE.Vector3(x, (heights[index] ?? 1) + 0.14, Math.sin(index) * 0.28),
-        rotation: new THREE.Euler(0, 0, index % 4 === 1 ? -0.18 : 0.18),
+    if (index % 3 === 0) {
+      const dome = new THREE.SphereGeometry(
+        0.22,
+        radial,
+        4,
+        0,
+        Math.PI * 2,
+        0,
+        Math.PI * 0.55
+      );
+      parts.push(styled(dome, {
+        position: new THREE.Vector3(
+          x,
+          heights[index] ?? 1,
+          Math.sin(index) * 0.28
+        ),
+        scale: new THREE.Vector3(1, 0.7, 0.86),
         colour: STONE,
         glow: 0.01
+      }));
+    } else if (index % 2 === 1) {
+      parts.push(styled(stoneBlock(0.28, 0.17, 0.28, 0.02), {
+        position: new THREE.Vector3(
+          x + (index % 4 === 1 ? -0.05 : 0.05),
+          (heights[index] ?? 1) + 0.03,
+          Math.sin(index) * 0.28
+        ),
+        rotation: new THREE.Euler(
+          0.02,
+          index % 4 === 1 ? -0.2 : 0.16,
+          index % 4 === 1 ? -0.14 : 0.12
+        ),
+        colour: STONE_LIGHT,
+        glow: 0.012
       }));
     }
   }

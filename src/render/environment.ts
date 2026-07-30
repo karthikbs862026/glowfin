@@ -388,28 +388,33 @@ export class Environment {
   }
 
   private updateSkyline(forwardDistance: number): void {
-    // Keep the first city layer inside the fog transition. The previous
-    // 150-unit spacing compressed the authored skyline into a thin, nearly
-    // black horizon strip and left half of the portrait empty.
-    const spacing = 112;
-    const count = this.density > 0.8 ? 3 : 2;
+    // Broad, offset city shelves create three readable depth bands without
+    // placing a single giant silhouette behind the playable opening.
+    const spacing = 86;
+    const count = this.density > 0.8 ? 4 : 3;
     const firstBand = Math.floor(forwardDistance / spacing) + 1;
     this.skyline.begin();
     for (let index = 0; index < count; index++) {
       const band = firstBand + index;
+      const side = index % 2 === 0 ? -1 : 1;
       this.position.set(
-        lerp(-4, 4, hash01(band, 712)),
-        -1.1,
-        -(band * spacing + 18)
+        side * lerp(8, 15, hash01(band, 712)),
+        -1.5 - index * 0.18,
+        -(band * spacing + 12 + index * 9)
       );
-      this.quaternion.identity();
+      this.quaternion.setFromEuler(new THREE.Euler(
+        0,
+        side * lerp(-0.06, 0.1, hash01(band, 717)),
+        side * lerp(-0.012, 0.018, hash01(band, 718))
+      ));
       this.scale.set(
-        lerp(17, 21, hash01(band, 713)),
-        lerp(17, 22, hash01(band, 714)),
-        lerp(10, 14, hash01(band, 716))
+        lerp(5.4, 7.6, hash01(band, 713)),
+        lerp(5.8, 8.6, hash01(band, 714)),
+        lerp(4.2, 6.8, hash01(band, 716))
       );
       this.matrix.compose(this.position, this.quaternion, this.scale);
-      const brightness = lerp(0.48, 0.68, hash01(band, 715));
+      const brightness =
+        lerp(0.34, 0.48, hash01(band, 715)) * (1 - index * 0.09);
       this.colour.setRGB(
         brightness * 0.65,
         brightness * 0.82,
@@ -438,11 +443,18 @@ export class Environment {
       for (let index = 0; index < perSide; index++) {
         const band = firstBand + index;
         const salt = side > 0 ? 9091 : 1213;
-        const variant = positiveMod(band + (side > 0 ? 2 : 0), 4);
+        const cluster = Math.floor(band / 3);
+        const clusterMember = positiveMod(band, 3);
+        const variant = positiveMod(
+          cluster * 3 + clusterMember + (side > 0 ? 2 : 0),
+          4
+        );
         const family = this.reef[variant];
         if (!family) continue;
-        const zDistance = band * env.coralBandSpacing +
-          (hash01(band, salt + 2) - 0.5) * env.coralBandSpacing * 0.55;
+        const clusterStart = cluster * env.coralBandSpacing * 3;
+        const localOffset = [0, 0.88, 2.05][clusterMember] ?? 0;
+        const zDistance = clusterStart + localOffset +
+          (hash01(band, salt + 2) - 0.5) * 0.58;
         const isHero = variant === 0 && positiveMod(band, 9) === 0;
         const desiredHeight = lerp(
           variant === 2 ? 0.68 : 0.9,
@@ -463,7 +475,12 @@ export class Environment {
         // promised by the acceptance target. A squared distribution still
         // scatters occasional clusters deeper into the world, avoiding a
         // hedge-like line while retaining the exact same safety calculation.
-        const depthIntoBank = Math.pow(hash01(band, salt), 2.25);
+        const depthIntoBank = THREE.MathUtils.clamp(
+          Math.pow(hash01(cluster, salt), 2.3) +
+            (clusterMember - 1) * 0.035,
+          0,
+          1
+        );
         const lateral = side * lerp(
           halfWidth + halfVisualWidth + 0.12,
           halfWidth + halfVisualWidth + 3.6,

@@ -135,6 +135,8 @@ const FRAGMENT = /* glsl */ `
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
     colour = mix(colour, uFogColor, fog);
     gl_FragColor = vec4(colour, 1.0);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
   }
 `;
 
@@ -338,6 +340,8 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
     colour = mix(colour, uFogColor, fog);
     gl_FragColor = vec4(colour, 1.0);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
   }
 `;
 

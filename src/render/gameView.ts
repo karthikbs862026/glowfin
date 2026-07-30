@@ -130,7 +130,7 @@ export class GameView {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.08;
+    this.renderer.toneMappingExposure = 1.0;
     // EffectComposer runs several passes and renderer.info auto-resets on each
     // one, so by the time stats() reads it, it describes bloom's final
     // fullscreen quad rather than the scene — the overlay showed "draws 1

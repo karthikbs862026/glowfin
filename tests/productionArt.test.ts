@@ -10,6 +10,7 @@ import {
   createProductionCollapsedArch,
   createProductionFanCoral,
   createProductionKelp,
+  createProductionSkyline,
   createProductionSpire,
   createProductionTower,
   createProductionWallGeometry,
@@ -95,6 +96,14 @@ describe("Phase 3B art geometry inventory", () => {
       );
       geometry.dispose();
     }
+  });
+
+  it("records the volumetric skyline cluster exactly", () => {
+    const geometry = createProductionSkyline();
+    expect(productionTriangles(geometry)).toBe(
+      PRODUCTION_ART.skylineCluster.lod2
+    );
+    geometry.dispose();
   });
 
   it("measures the straight lane contour and classifies broken wall art as context", () => {

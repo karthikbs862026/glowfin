@@ -66,7 +66,7 @@ export const PRODUCTION_ART = {
     materials: 1
   },
   skylineCluster: {
-    lod2: 264,
+    lod2: 388,
     materials: 1
   },
   moonMinnow: {

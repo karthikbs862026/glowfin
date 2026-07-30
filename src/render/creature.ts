@@ -72,19 +72,23 @@ const BODY_FRAGMENT = /* glsl */ `
       sin(vObjectPosition.x * 5.1 + vObjectPosition.z * 3.7) *
       sin(vObjectPosition.y * 6.3 - vObjectPosition.z * 2.1);
     float handPainted = 0.92 + 0.08 * broadMottle;
-    vec3 seaGlass = mix(vColour, vec3(0.20, 0.66, 0.79), 0.28);
-    vec3 base = mix(seaGlass, momentumColour, 0.18 + uMomentum * 0.34);
-    base *= handPainted * mix(0.72, 1.0, internal) * softVolume;
+    vec3 deepBody = mix(vec3(0.018, 0.115, 0.22), vColour, 0.72);
+    vec3 seaGlass = mix(deepBody, vec3(0.07, 0.48, 0.66), 0.22);
+    vec3 base = mix(seaGlass, momentumColour, 0.08 + uMomentum * 0.24);
+    base *= handPainted * mix(0.68, 0.94, internal) *
+      mix(0.68, 1.0, softVolume);
     base = mix(base, vec3(0.23, 0.29, 0.36), uCollision * 0.72);
     vec3 rim = mix(vec3(0.85, 0.965, 1.0), gold, uMomentum * 0.45);
     float core = smoothstep(-0.8, 0.55, vObjectPosition.y) *
       (1.0 - smoothstep(0.15, 1.25, abs(vObjectPosition.x)));
     float seaGlassSpecular = pow(max(facing, 0.0), 18.0) * 0.11;
-    vec3 colour = base * mix(0.46, 0.72, uGlow) +
-      momentumColour * core * 0.07 * uGlow +
-      rim * fresnel * uRimStrength * uGlow * 0.38 +
-      vec3(0.72, 0.93, 1.0) * seaGlassSpecular;
+    vec3 colour = base * mix(0.74, 0.94, uGlow) +
+      momentumColour * core * 0.045 * uGlow +
+      rim * fresnel * uRimStrength * uGlow * 0.22 +
+      vec3(0.42, 0.78, 0.94) * seaGlassSpecular;
     gl_FragColor = vec4(colour, 1.0);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
   }
 `;
 
@@ -113,8 +117,13 @@ const EYE_FRAGMENT = /* glsl */ `
     );
     float lens = smoothstep(0.18, 0.86, facing);
     vec3 socket = vec3(0.012, 0.026, 0.055);
-    vec3 iris = uColor * uGlow * mix(0.72, 1.35, facing);
-    gl_FragColor = vec4(mix(socket, iris, lens), 1.0);
+    vec3 iris = uColor * uGlow * mix(0.58, 1.08, facing);
+    float pupil = smoothstep(0.9, 0.985, facing);
+    vec3 eye = mix(socket, iris, lens);
+    eye = mix(eye, socket * 0.32, pupil);
+    eye += vec3(0.55, 0.9, 1.0) *
+      smoothstep(0.965, 0.998, facing) * 0.18;
+    gl_FragColor = vec4(eye, 1.0);
   }
 `;
 

@@ -238,9 +238,9 @@ export class MoonGardenGates {
         if (index >= MAX_GATE_PARTS) continue;
 
         const wallHeight = PROCEDURAL_GATE_VISUAL.wallHeight *
-          ([1, 0.88, 1.08][artVariant] ?? 1);
+          ([1.28, 1.16, 1.36][artVariant] ?? 1.24);
         const wallDepth = PROCEDURAL_GATE_VISUAL.wallDepth *
-          ([1.08, 0.9, 1][artVariant] ?? 1);
+          ([1.12, 1.02, 1.08][artVariant] ?? 1.08);
         this.position.set(
           wall.centreX,
           PROCEDURAL_GATE_VISUAL.wallFloorY + wallHeight / 2,
@@ -293,7 +293,7 @@ export class MoonGardenGates {
         this.position.set(
           wall.colliderPlane - wall.gapDirection * contourWidth * 0.5,
           contourBottom + contourHeight * 0.5,
-          -gate.distance + wallDepth * 0.5 + 0.18
+          -gate.distance + wallDepth * 0.64 + 0.32
         );
         this.scale.set(
           contourWidth,

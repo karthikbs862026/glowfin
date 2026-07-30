@@ -79,9 +79,9 @@ export function createGlowfinRigGeometry(
 ): GlowfinRigGeometry {
   const r = cfg.lane.creatureRadius;
   const high = lod === 0;
-  const cyan = new THREE.Color(0x56c8e8);
-  const finCyan = new THREE.Color(0x69d8ee);
-  const gillViolet = new THREE.Color(0xa77be8);
+  const cyan = new THREE.Color(0x1598c3);
+  const finCyan = new THREE.Color(0x2eb3d2);
+  const gillViolet = new THREE.Color(0x8d5fd0);
   const pivots = {
     finLeft: new THREE.Vector3(-r * 0.78, -r * 0.12, r * 0.18),
     finRight: new THREE.Vector3(r * 0.78, -r * 0.12, r * 0.18),
@@ -138,9 +138,9 @@ export function createGlowfinRigGeometry(
   for (const side of [-1, 1]) {
     for (let index = 0; index < 3; index++) {
       const pivot = new THREE.Vector3(
-        side * r * 0.72,
-        r * (0.43 - index * 0.25),
-        r * 0.10 + index * r * 0.13
+      side * r * 0.8,
+      r * (0.43 - index * 0.25),
+      r * (0.7 + index * 0.035)
       );
       pivots.gills.push(pivot);
       bodyParts.push({
@@ -166,7 +166,7 @@ export function createGlowfinRigGeometry(
   body.computeBoundingBox();
   body.computeBoundingSphere();
 
-  const eyeRadius = r * cfg.creature.eyeRadius;
+  const eyeRadius = r * cfg.creature.eyeRadius * 0.8;
   const eyeParts: THREE.BufferGeometry[] = [];
   for (const side of [-1, 1]) {
     eyeParts.push(prepareEye(
