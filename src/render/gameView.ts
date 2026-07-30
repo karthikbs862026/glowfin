@@ -20,6 +20,7 @@ import {
 import type { TierSettings } from "../perf/quality";
 import { readGpuName } from "../perf/metrics";
 import { TrailRibbon } from "./trail";
+import { Creature } from "./creature";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
@@ -45,8 +46,7 @@ export class GameView {
   readonly camera: THREE.PerspectiveCamera;
   private readonly renderer: THREE.WebGLRenderer;
 
-  private readonly creature: THREE.Mesh;
-  private readonly creatureMaterial: THREE.MeshStandardMaterial;
+  private readonly creature: Creature;
   private readonly floorMaterial: THREE.ShaderMaterial;
   private readonly wallMaterial: THREE.ShaderMaterial;
   private readonly trail: TrailRibbon;
@@ -236,17 +236,9 @@ export class GameView {
     }
     this.disposables.push(wallGeo, this.wallMaterial);
 
-    // --- creature ---
-    const bodyGeo = new THREE.SphereGeometry(cfg.lane.creatureRadius, 20, 14);
-    this.creatureMaterial = new THREE.MeshStandardMaterial({
-      color: 0x9fe8ff,
-      emissive: 0x35d0ff,
-      emissiveIntensity: 1.6,
-      roughness: 0.6
-    });
-    this.creature = new THREE.Mesh(bodyGeo, this.creatureMaterial);
-    this.scene.add(this.creature);
-    this.disposables.push(bodyGeo, this.creatureMaterial);
+    // --- creature (Part 3.1) ---
+    this.creature = new Creature(cfg);
+    this.scene.add(this.creature.group);
 
     // --- trail ribbon (Part 3.2 priority 2) ---
     this.trail = new TrailRibbon(cfg);
@@ -401,16 +393,9 @@ export class GameView {
       cfg.momentum.ceiling === 0 ? 0 : sim.momentum / cfg.momentum.ceiling;
     const worldZ = -sim.forwardDistance;
 
-    // --- creature ---
-    this.creature.position.set(sim.lateralPosition, 0, worldZ);
-    this.creatureMaterial.emissiveIntensity = lerp(0.25, 2.2, Math.max(0, lightFraction));
-    // Eye-hue stand-in: calm blue at rest, warm toward maximum momentum
-    // (Part 3.1). A sphere has no eyes yet; this previews the mapping.
-    this.creatureMaterial.emissive.setHSL(
-      lerp(0.55, 0.92, momentumFraction),
-      0.85,
-      0.55
-    );
+    // --- creature (Part 3.1) ---
+    this.creature.group.position.set(sim.lateralPosition, 0, worldZ);
+    this.creature.update(momentumFraction, lightFraction, sim.smoothedSteering, frameSec);
 
     // --- camera (Part 4.5: readability at speed) ---
     const behind = lerp(
@@ -508,6 +493,7 @@ export class GameView {
     window.removeEventListener("resize", this.handleResize);
     for (const item of this.disposables) item.dispose();
     this.trail.dispose();
+    this.creature.dispose();
     this.maskObstacle.dispose();
     this.maskOther.dispose();
     this.composer.dispose();

@@ -69,6 +69,30 @@
     "bloomThreshold": 0.62
   },
 
+  "creature": {
+    "$comment": "Part 3.1. Fins are deliberately oversized for silhouette readability at speed — this is a fairness property, not a style choice. Eye hue is the diegetic momentum indicator; whether it can replace a HUD meter is explicitly to be tested, not assumed.",
+    "bodyLength": 1.15,
+    "bodyHeight": 0.88,
+    "finFlutterHzAtZeroMomentum": 1.6,
+    "finFlutterHzAtMaxMomentum": 6.5,
+    "finFlutterAmplitude": 0.38,
+    "tailSwayAmplitude": 0.42,
+    "bankAngleMaxRadians": 0.55,
+    "bankSmoothingHalfLifeSec": 0.09,
+    "breathHz": 0.8,
+    "breathAmount": 0.05,
+    "eyeOffsetX": 0.90,
+    "eyeOffsetY": 0.46,
+    "eyeOffsetZ": -0.20,
+    "eyeRadius": 0.26,
+    "eyeHueCalm": 0.56,
+    "eyeHueMax": 0.92,
+    "rimStrength": 1.0,
+    "rimPower": 2.6,
+    "bodyGlowAtZeroLight": 0.18,
+    "bodyGlowAtFullLight": 0.95
+  },
+
   "trail": {
     "$comment": "Mesh ribbon, explicitly not particles (Part 3.3). segmentCount must stay at or under budgets.pools.maxTrailSegments.",
     "segmentCount": 26,
