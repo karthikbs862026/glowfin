@@ -32,6 +32,8 @@
     "contourReservedForCollidable": true
   },
   "contrast": {
+    "minimumFrameSamples": 12,
+    "minimumPerObstacleSamples": 12,
     "framePercentile": 10,
     "frameMinRatio": 3,
     "perObstaclePercentile": 10,

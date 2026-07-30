@@ -85,6 +85,8 @@ export function validateGateConfig(raw: unknown): Finding[] {
     "colliderTruth.edgeAlignmentToleranceWorldUnits",
     "colliderTruth.straightnessToleranceWorldUnits",
     "colliderTruth.minimumSamplesPerEdge",
+    "contrast.minimumFrameSamples",
+    "contrast.minimumPerObstacleSamples",
     "contrast.framePercentile",
     "contrast.frameMinRatio",
     "contrast.perObstaclePercentile",

@@ -257,6 +257,15 @@ describe("capture evidence cannot pass by omission", () => {
     assert.ok(codes(checkCapture(capture, config)).includes("CONTRAST_NOT_SAMPLED"));
   });
 
+  test("sparse contrast evidence cannot pass percentile interpolation", () => {
+    const capture = baseCapture();
+    capture.frameContrastRatios = [9];
+    capture.obstacles[0]!.ratios = [9];
+    const found = codes(checkCapture(capture, config));
+    assert.ok(found.includes("CONTRAST_SAMPLE_COVERAGE_INSUFFICIENT"));
+    assert.ok(found.includes("OBSTACLE_SAMPLE_COVERAGE_INSUFFICIENT"));
+  });
+
   test("one low-contrast obstacle fails inside passing frame", () => {
     const capture = baseCapture();
     capture.frameContrastRatios = Array.from({ length: 20 }, () => 5);

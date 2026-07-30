@@ -178,7 +178,9 @@ export class MoonGardenGates {
         this.scale.set(
           contourWidth,
           PROCEDURAL_GATE_VISUAL.wallHeight,
-          PROCEDURAL_GATE_VISUAL.wallDepth * 1.018
+          // Sit in front of the crescent relief for one uninterrupted evidence
+          // silhouette. This changes depth only; the x-plane remains collider truth.
+          PROCEDURAL_GATE_VISUAL.wallDepth * 1.14
         );
         this.matrix.compose(this.position, this.quaternion, this.scale);
         this.contours.setMatrixAt(contourCount, this.matrix);

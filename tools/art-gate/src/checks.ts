@@ -428,6 +428,13 @@ export function checkCapture(
       `Frame contrast evidence is empty or invalid at ${where}.`,
       "Art Bible §12"
     ));
+  } else if (frameRatios.length < cfg.contrast.minimumFrameSamples) {
+    findings.push(result(
+      "CONTRAST_SAMPLE_COVERAGE_INSUFFICIENT", "blocker",
+      `Frame has only ${frameRatios.length} contrast samples at ${where}.`,
+      "Art Bible §12",
+      { observed: frameRatios.length, limit: cfg.contrast.minimumFrameSamples }
+    ));
   } else {
     const value = percentile(frameRatios, cfg.contrast.framePercentile);
     if (value < cfg.contrast.frameMinRatio) {
@@ -454,6 +461,15 @@ export function checkCapture(
         "OBSTACLE_CONTRAST_NOT_SAMPLED", "blocker",
         `${obstacle.obstacleId} has empty or invalid contrast evidence at ${where}.`,
         "Art Bible §12"
+      ));
+      continue;
+    }
+    if (ratios.length < cfg.contrast.minimumPerObstacleSamples) {
+      findings.push(result(
+        "OBSTACLE_SAMPLE_COVERAGE_INSUFFICIENT", "blocker",
+        `${obstacle.obstacleId} has only ${ratios.length} contrast samples at ${where}.`,
+        "Art Bible §12",
+        { observed: ratios.length, limit: cfg.contrast.minimumPerObstacleSamples }
       ));
       continue;
     }

@@ -230,6 +230,8 @@ export interface GateConfig {
     contourReservedForCollidable: boolean;
   };
   contrast: {
+    minimumFrameSamples: number;
+    minimumPerObstacleSamples: number;
     framePercentile: number;
     frameMinRatio: number;
     perObstaclePercentile: number;
