@@ -88,3 +88,10 @@ height; the recessed dark channel and rubble continue to the floor. This
 removes a physically implausible glowing floor intersection without moving the
 wall plane or implying additional lateral clearance. The projected core width
 is the Art Bible's original 7px.
+
+The follow-up diagnostic proved the remaining reported failures were mask
+occlusion errors: beauty ruin materials were double-sided, while the flat mask
+replacements were front-sided. Broken-wall back faces therefore hid the cyan
+core in the player's frame but disappeared from the mask, causing dark stone
+pixels to be mislabeled as contour samples. Mask context now preserves
+double-sided depth behavior. No contrast threshold or percentile changed.

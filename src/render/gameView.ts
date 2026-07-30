@@ -102,9 +102,19 @@ export class GameView {
       }
     `
   });
-  /** Obstacle art outside the authoritative playable contour: ignore, not background. */
-  private readonly maskObstacleContext = new THREE.MeshBasicMaterial({ color: 0x808080 });
-  private readonly maskOther = new THREE.MeshBasicMaterial({ color: 0x000000 });
+  /**
+   * Mask replacements must preserve double-sided depth occlusion from the
+   * beauty materials. Front-sided replacements culled broken-wall back faces,
+   * exposing hidden contour pixels in the mask that the player never saw.
+   */
+  private readonly maskObstacleContext = new THREE.MeshBasicMaterial({
+    color: 0x808080,
+    side: THREE.DoubleSide
+  });
+  private readonly maskOther = new THREE.MeshBasicMaterial({
+    color: 0x000000,
+    side: THREE.DoubleSide
+  });
   private readonly savedMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
   private readonly savedVisibility = new Map<THREE.Object3D, boolean>();
   private maskMode = false;
