@@ -293,7 +293,7 @@ export class MoonGardenGates {
         this.position.set(
           wall.colliderPlane - wall.gapDirection * contourWidth * 0.5,
           contourBottom + contourHeight * 0.5,
-          -gate.distance + wallDepth * 0.5 + 0.035
+          -gate.distance + wallDepth * 0.5 + 0.18
         );
         this.scale.set(
           contourWidth,

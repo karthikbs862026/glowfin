@@ -89,9 +89,11 @@ removes a physically implausible glowing floor intersection without moving the
 wall plane or implying additional lateral clearance. The projected core width
 is the Art Bible's original 7px.
 
-The follow-up diagnostic proved the remaining reported failures were mask
-occlusion errors: beauty ruin materials were double-sided, while the flat mask
-replacements were front-sided. Broken-wall back faces therefore hid the cyan
-core in the player's frame but disappeared from the mask, causing dark stone
-pixels to be mislabeled as contour samples. Mask context now preserves
-double-sided depth behavior. No contrast threshold or percentile changed.
+A mask-parity audit aligned the flat context replacements with the beauty
+material's double-sided depth behavior. The next evidence run was unchanged,
+which ruled sidedness out as the blocker and left one state-dependent depth
+conflict: the contour front sat only about 0.02 world units ahead of the
+recessed wall after variant scaling. The cyan core now has 0.16 world units of
+camera-depth separation while remaining behind the raised masonry. Its x plane,
+projected width, gap and collider authority are unchanged. No contrast
+threshold or percentile changed.
