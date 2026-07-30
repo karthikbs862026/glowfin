@@ -202,7 +202,7 @@ export function createGlowfinRigGeometry(
     colour: finCyan,
     position: pivots.tail.clone().add(new THREE.Vector3(
       0,
-      r * 0.84,
+      r * 1.34,
       r * 0.16
     )),
     scale: new THREE.Vector3(0.36, 0.78, 0.11)
