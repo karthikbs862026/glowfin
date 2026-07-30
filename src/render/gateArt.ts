@@ -6,10 +6,13 @@ import {
   PROCEDURAL_GATE_VISUAL
 } from "../sim/gateGeometry";
 import {
-  createGateFoundationGeometry,
   type ArtLod
 } from "./moonGardenGeometry";
-import { createProductionWallGeometry } from "./productionGeometry";
+import { createGateFoundationGeometry } from "./moonGardenGeometry";
+import {
+  createProductionGateCanopyGeometry,
+  createProductionWallGeometry
+} from "./productionGeometry";
 import { createMoonstoneObstacleMaterial } from "./moonGardenMaterial";
 
 const MAX_GATE_PARTS = 32;
@@ -56,6 +59,7 @@ export class MoonGardenGates {
     ArtLod,
     Record<GateFacadeVariant, LodMeshes>
   >;
+  private readonly canopies: Record<ArtLod, THREE.InstancedMesh>;
   private readonly foundations: THREE.InstancedMesh;
   private readonly contours: THREE.InstancedMesh;
   private readonly matrix = new THREE.Matrix4();
@@ -128,6 +132,29 @@ export class MoonGardenGates {
         1: createVariant(2, 1),
         2: createVariant(2, 2)
       }
+    };
+    const createCanopy = (lod: ArtLod): THREE.InstancedMesh => {
+      const geometry = createProductionGateCanopyGeometry(
+        lod,
+        0
+      );
+      const mesh = new THREE.InstancedMesh(
+        geometry,
+        this.material,
+        MAX_GATE_PARTS
+      );
+      mesh.count = 0;
+      mesh.frustumCulled = false;
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      mesh.userData["isObstacleContext"] = true;
+      this.objects.push(mesh);
+      this.disposables.push(geometry);
+      return mesh;
+    };
+    this.canopies = {
+      0: createCanopy(0),
+      1: createCanopy(1),
+      2: createCanopy(2)
     };
 
     const foundationGeometry = createGateFoundationGeometry(0);
@@ -224,6 +251,11 @@ export class MoonGardenGates {
     };
     let foundationCount = 0;
     let contourCount = 0;
+    const canopyCounts: Record<ArtLod, number> = {
+      0: 0,
+      1: 0,
+      2: 0
+    };
     // Passed gates used to remain visible between the chase camera and
     // Glowfin, turning their outer wall mass into giant foreground cones and
     // slabs. Retire each gate as the creature clears it.
@@ -237,6 +269,30 @@ export class MoonGardenGates {
       const lod = lodForDistance(distanceAhead);
       const artVariant = gateFacadeVariant(gate);
       const walls = gateWallGeometry(gate, this.cfg.lane.halfWidth);
+      const wallHeight = PROCEDURAL_GATE_VISUAL.wallHeight *
+        ([1.08, 1.12, 1.16][artVariant] ?? 1.12);
+      const wallDepth = PROCEDURAL_GATE_VISUAL.wallDepth *
+        ([1.12, 1.02, 1.08][artVariant] ?? 1.08);
+      const canopy = this.canopies[lod];
+      const canopyIndex = canopyCounts[lod];
+      if (canopyIndex < MAX_GATE_PARTS) {
+        const gapWidth = gate.gapRight - gate.gapLeft;
+        const gapCentre = (gate.gapLeft + gate.gapRight) * 0.5;
+        this.position.set(
+          gapCentre,
+          PROCEDURAL_GATE_VISUAL.wallFloorY + wallHeight * 0.5,
+          -gate.distance - wallDepth * 0.08
+        );
+        this.quaternion.setFromEuler(new THREE.Euler(
+          0,
+          0,
+          (artVariant - 1) * 0.018
+        ));
+        this.scale.set(gapWidth, wallHeight, wallDepth);
+        this.matrix.compose(this.position, this.quaternion, this.scale);
+        canopy.setMatrixAt(canopyIndex, this.matrix);
+        canopyCounts[lod] += 1;
+      }
       for (const wall of walls) {
         if (wall.width <= 0.01 || contourCount >= MAX_GATE_PARTS) continue;
         const side = wall.side;
@@ -244,10 +300,6 @@ export class MoonGardenGates {
         const index = counts[lod][artVariant][side];
         if (index >= MAX_GATE_PARTS) continue;
 
-        const wallHeight = PROCEDURAL_GATE_VISUAL.wallHeight *
-          ([1.08, 1.12, 1.16][artVariant] ?? 1.12);
-        const wallDepth = PROCEDURAL_GATE_VISUAL.wallDepth *
-          ([1.12, 1.02, 1.08][artVariant] ?? 1.08);
         this.position.set(
           wall.centreX,
           PROCEDURAL_GATE_VISUAL.wallFloorY + wallHeight / 2,
@@ -314,6 +366,9 @@ export class MoonGardenGates {
     }
 
     for (const lod of [0, 1, 2] as const) {
+      const canopy = this.canopies[lod];
+      canopy.count = canopyCounts[lod];
+      canopy.instanceMatrix.needsUpdate = true;
       for (const variant of [0, 1, 2] as const) {
         for (const side of ["left", "right"] as const) {
           const mesh = this.lods[lod][variant][side];

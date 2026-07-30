@@ -189,12 +189,13 @@ export function createGlowfinRigGeometry(
     });
   }
 
-  // A slim peduncle keeps the raised fan physically connected to the body
-  // crown without dropping back into the eye line.
+  // The caudal peduncle follows the swim axis behind the body. The earlier
+  // vertical connector made the tail read as a dorsal antenna in the chase
+  // camera even though it was technically attached.
   bodyParts.push({
     geometry: new THREE.CapsuleGeometry(
-      r * 0.07,
-      r * 0.36,
+      r * 0.105,
+      r * 0.52,
       high ? 3 : 2,
       high ? 6 : 5
     ),
@@ -202,30 +203,37 @@ export function createGlowfinRigGeometry(
     colour: finCyan,
     position: pivots.tail.clone().add(new THREE.Vector3(
       0,
-      r * 0.93,
-      r * 0.16
+      r * 0.08,
+      r * 0.34
     )),
-    scale: new THREE.Vector3(0.7, 1, 0.42)
+    rotation: new THREE.Euler(Math.PI * 0.5, 0, 0),
+    scale: new THREE.Vector3(0.78, 1, 0.72)
   });
 
-  // A raised vertical caudal fan reads above the body from the chase camera.
-  // Keeping it off the lower silhouette prevents the projected tail from
-  // resembling a long nose beneath the eyes.
-  bodyParts.push({
-    geometry: new THREE.SphereGeometry(
-      r * 0.46,
-      high ? 19 : 12,
-      high ? 13 : 8
-    ),
-    bone: 3,
-    colour: finCyan,
-    position: pivots.tail.clone().add(new THREE.Vector3(
-      0,
-      r * 1.34,
-      r * 0.16
-    )),
-    scale: new THREE.Vector3(0.36, 0.78, 0.11)
-  });
+  // Two asymmetric lobes create a recognisable fish tail above and below the
+  // rear body silhouette instead of a single forehead-shaped oval.
+  for (const side of [-1, 1]) {
+    bodyParts.push({
+      geometry: new THREE.SphereGeometry(
+        r * 0.5,
+        high ? 17 : 11,
+        high ? 11 : 7
+      ),
+      bone: 3,
+      colour: finCyan,
+      position: pivots.tail.clone().add(new THREE.Vector3(
+        side * r * 0.08,
+        side * r * 0.56,
+        r * 0.68
+      )),
+      rotation: new THREE.Euler(
+        side * 0.08,
+        0,
+        -side * 0.22
+      ),
+      scale: new THREE.Vector3(0.46, 0.86, 0.12)
+    });
+  }
 
   let bone = 4;
   for (const side of [-1, 1]) {

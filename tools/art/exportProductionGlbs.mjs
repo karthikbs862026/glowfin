@@ -10,6 +10,7 @@ import {
   createProductionBranchCoral,
   createProductionCollapsedArch,
   createProductionFanCoral,
+  createProductionGateCanopyGeometry,
   createProductionJelly,
   createProductionKelp,
   createProductionMinnow,
@@ -268,6 +269,17 @@ function createGateAsset() {
   root.name = "MoonGate";
   for (const lod of [0, 1, 2]) {
     for (const variant of [0, 1, 2]) {
+      root.add(productionMesh(
+        createProductionGateCanopyGeometry(lod, variant),
+        `MoonGate_Canopy_Variant${variant}_LOD${lod}`,
+        stoneMaterial,
+        {
+          lod,
+          variant,
+          collidable: false,
+          role: "overhead-broken-masonry"
+        }
+      ));
       for (const gapDirection of [1, -1]) {
         const side = gapDirection === 1 ? "Left" : "Right";
         root.add(productionMesh(

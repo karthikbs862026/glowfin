@@ -162,3 +162,30 @@ This is the measurable silhouette and integration contract for the authored GLB
 set defined in `docs/art/moon-garden-production-glb-brief.md`. It does not turn
 the code-authored transition mesh into the final sculpt source. Collision
 planes, openings, course generation and simulation remain unchanged.
+
+## Cinematic portal and chase-camera correction
+
+The next portrait audit rejected the technically connected character tail and
+collider-safe gate silhouette because they still communicated the wrong
+objects: the tail looked like a dorsal antenna and the gate like two unrelated
+pointed pylons. The composition also devoted too much of the portrait to empty
+water, reducing every authored cue at the decision point.
+
+The production-transition contract now:
+
+- places a broken, non-colliding masonry canopy behind the two authoritative
+  wall seams so both halves read as one ruined portal at gameplay scale;
+- keeps the canopy above Glowfin's fixed flight plane and out of collider
+  evidence, while preserving the same lateral opening and straight seams;
+- exports that overhead masonry in every Moon-Gate GLB LOD/variant;
+- replaces the raised oval tail with a rear swim-axis peduncle and two caudal
+  lobes driven by the existing tail bone;
+- increases eye scale without adding a material or draw call;
+- tightens and lowers the chase camera so Glowfin, the gate and the reef banks
+  occupy more of the portrait without shortening the reaction window; and
+- quiets the reef pigment range so species read as living forms rather than
+  alternating neon rods.
+
+This pass changes only the visual camera and non-gameplay art. Course
+generation, movement, collision, gate positions and the 3:1 fairness rule are
+unchanged.

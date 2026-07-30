@@ -106,7 +106,7 @@
     "eyeOffsetX": 0.62,
     "eyeOffsetY": 0.34,
     "eyeOffsetZ": 0.82,
-    "eyeRadius": 0.14,
+    "eyeRadius": 0.17,
     "eyeHueCalm": 0.56,
     "eyeHueMax": 0.92,
     "rimStrength": 1.0,
@@ -127,13 +127,13 @@
   },
 
   "camera": {
-    "distanceBehindAtZeroMomentum": 9.0,
-    "distanceBehindAtMaxMomentum": 13.5,
-    "height": 4.0,
-    "lookHeight": 2.05,
-    "lookAheadUnits": 23.0,
-    "fovAtZeroMomentum": 59.0,
-    "fovAtMaxMomentum": 70.0,
+    "distanceBehindAtZeroMomentum": 7.2,
+    "distanceBehindAtMaxMomentum": 10.8,
+    "height": 3.25,
+    "lookHeight": 1.35,
+    "lookAheadUnits": 19.0,
+    "fovAtZeroMomentum": 52.0,
+    "fovAtMaxMomentum": 61.0,
     "lateralFollowFraction": 0.45
   },
 

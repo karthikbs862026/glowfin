@@ -220,3 +220,15 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   decorative masonry cannot erase fairness evidence in one bloom state.
 - Cost: the two sources add about 0.10 MB compressed and 2 MB decoded while the
   production bundle remains under 0.8 MB.
+
+## 2026-07-31 — Join the gate visually without changing its collider
+
+- The latest Chromium portrait still read the hero obstacle as two pointed
+  pylons and the connected tail as a dorsal antenna.
+- Decision: add a non-colliding broken masonry canopy behind the authoritative
+  wall seams, export it with the Moon-Gate GLB, and remodel Glowfin's tail along
+  the swim axis as a peduncle plus two caudal lobes.
+- Composition: tighten/lower the chase camera and enlarge the existing eye
+  geometry so the character, obstacle and reef occupy the decision frame.
+- Safety: no generated gate position, lateral opening, collision plane,
+  contour width, movement value or contrast threshold changes.

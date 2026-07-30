@@ -7,10 +7,10 @@ const STONE_LIGHT = new THREE.Color(0x1f6382);
 const STONE_DARK = new THREE.Color(0x03172a);
 const JOINT = new THREE.Color(0x071b2b);
 const SHELL = new THREE.Color(0x668b82);
-const CYAN = new THREE.Color(0x08758a);
-const CYAN_LIGHT = new THREE.Color(0x20aeb9);
-const VIOLET = new THREE.Color(0x512b70);
-const ROSE = new THREE.Color(0x8b335d);
+const CYAN = new THREE.Color(0x0b6375);
+const CYAN_LIGHT = new THREE.Color(0x2b9fa5);
+const VIOLET = new THREE.Color(0x4c396c);
+const ROSE = new THREE.Color(0x793d63);
 
 interface PartStyle {
   colour: THREE.Color;
@@ -474,6 +474,111 @@ export function createProductionWallGeometry(
   positions.needsUpdate = true;
   geometry.computeBoundingBox();
   return geometry;
+}
+
+/**
+ * A non-colliding overhead ruin that visually joins the two authoritative wall
+ * halves into one broken moon gate. The opening remains clear at Glowfin's
+ * flight height; the canopy sits behind the collider-aligned seams and carries
+ * only the upper architectural silhouette.
+ */
+export function createProductionGateCanopyGeometry(
+  lod: ArtLod,
+  variant: 0 | 1 | 2
+): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
+  const samples = lod === 0 ? 10 : lod === 1 ? 7 : 4;
+  const segments = [
+    [0.06 * Math.PI, 0.42 * Math.PI],
+    [0.58 * Math.PI, 0.94 * Math.PI]
+  ] as const;
+
+  // A dark continuous core makes the arch read as one heavy construction,
+  // while the deliberate crown break keeps the ancient-ruin silhouette.
+  for (const [start, end] of segments) {
+    parts.push(styled(archRibbonSegment(
+      start,
+      end,
+      samples,
+      0.53,
+      0.405,
+      0.02,
+      0.25
+    ), {
+      position: new THREE.Vector3(0, 0, -0.08),
+      colour: STONE_DARK,
+      glow: 0.008
+    }));
+  }
+
+  const stoneCount = lod === 0 ? 12 : lod === 1 ? 8 : 4;
+  for (let index = 0; index < stoneCount; index++) {
+    if (
+      (variant === 1 && index === Math.floor(stoneCount * 0.42)) ||
+      (variant === 2 && index === Math.floor(stoneCount * 0.68))
+    ) {
+      continue;
+    }
+    const side = index < stoneCount / 2 ? 1 : -1;
+    const localIndex = index % Math.ceil(stoneCount / 2);
+    const localCount = Math.ceil(stoneCount / 2);
+    const t = localCount <= 1 ? 0.5 : localIndex / (localCount - 1);
+    const angle = side > 0
+      ? THREE.MathUtils.lerp(0.08 * Math.PI, 0.41 * Math.PI, t)
+      : THREE.MathUtils.lerp(0.92 * Math.PI, 0.59 * Math.PI, t);
+    const x = Math.cos(angle) * 0.47;
+    const y = 0.02 + Math.sin(angle) * 0.47;
+    parts.push(styled(stoneBlock(
+      0.135 + (index % 3) * 0.012,
+      0.105 + (index % 2) * 0.012,
+      0.31,
+      0.018
+    ), {
+      position: new THREE.Vector3(
+        x,
+        y + Math.sin(index * 2.1 + variant) * 0.006,
+        0.11 + Math.sin(index * 1.7) * 0.018
+      ),
+      rotation: new THREE.Euler(
+        Math.sin(index * 1.3) * 0.022,
+        Math.sin(index * 0.9) * 0.035,
+        side * (Math.PI * 0.5 - angle) +
+          Math.sin(index * 1.9 + variant) * 0.035
+      ),
+      colour: index % 4 === 0 ? SHELL : index % 2 === 0
+        ? STONE_LIGHT
+        : STONE,
+      glow: index % 4 === 0 ? 0.08 : 0.018
+    }));
+  }
+
+  // Hanging mineral teeth make the crown break unmistakably damaged rather
+  // than an accidentally incomplete perfect ring.
+  if (lod < 2) {
+    for (const side of [-1, 1]) {
+      parts.push(styled(new THREE.ConeGeometry(
+        0.035,
+        0.16 + variant * 0.018,
+        lod === 0 ? 6 : 5,
+        1
+      ), {
+        position: new THREE.Vector3(
+          side * (0.11 + variant * 0.018),
+          0.41 - variant * 0.012,
+          0.13
+        ),
+        rotation: new THREE.Euler(
+          0,
+          side * 0.08,
+          side * (0.13 + variant * 0.025)
+        ),
+        colour: SHELL,
+        glow: 0.09
+      }));
+    }
+  }
+
+  return merged(parts);
 }
 
 export function createProductionCollapsedArch(lod: ArtLod): THREE.BufferGeometry {
