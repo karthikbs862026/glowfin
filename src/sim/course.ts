@@ -26,6 +26,11 @@ export interface Gate {
   templateId: string;
   /** Difficulty tier at spawn time. */
   tier: number;
+  /**
+   * Stable authored facade family. Optional so replay fixtures from older
+   * revisions remain readable; newly generated gates always populate it.
+   */
+  artVariant?: 0 | 1 | 2;
 }
 
 interface GateTemplate {
@@ -195,6 +200,7 @@ export class CourseGenerator {
   private readonly profile: MomentumProfile;
   private readonly generated: Gate[] = [];
   private nextDistance: number;
+  private nextArtVariant = 0;
 
   constructor(
     readonly seed: number,
@@ -330,7 +336,10 @@ export class CourseGenerator {
       gapLeft: center - halfGap,
       gapRight: center + halfGap,
       templateId,
-      tier
+      tier,
+      // Cycle without adjacent repeats. Keeping this on the gate prevents art
+      // from changing when old gates are pruned from the endless-runner pool.
+      artVariant: (this.nextArtVariant++ % 3) as 0 | 1 | 2
     };
   }
 }

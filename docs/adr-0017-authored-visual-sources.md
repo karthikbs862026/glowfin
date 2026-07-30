@@ -29,25 +29,26 @@ the frame closer to the Concept-First Art Bible.
    organic gravel/silt Moon-Garden seabed surface at
    `public/art/moon-garden/moonstone-seabed.webp`.
 4. Replace the active generated broken-tower and coral silhouettes with
-   authored, instanced review impostors packed into one runtime material:
-   - `public/art/moon-garden/review-atlas.webp`
-   - `art/phase3b-broken-tower-source.webp`
-   - `art/phase3b-coral-cluster-source.webp`
-5. Overlay the collision gate's generated stone mass with the authored
-   collider-aligned facade at
-   `public/art/moon-garden/gate-wall-fragment.webp`. Its continuous inner edge
+   authored, instanced review impostors packed into two runtime atlases:
+   - `public/art/moon-garden/gate-variation-atlas.png`
+   - `public/art/moon-garden/world-variation-atlas.png`
+   - full-resolution source plates in `docs/art/`
+5. Overlay the collision gate's generated stone mass with one of three
+   collider-aligned facades from the gate atlas. Every continuous inner edge
    stays on the runtime collider plane, and the independent cyan contour
    remains the gameplay truth.
 6. Replace the rejected pale generated creature in the review frame with the
    approved authored rear silhouette at
    `public/art/moon-garden/glowfin-rear.webp`, while its final rigged GLB is
    modeled. The deterministic rig remains the animation-state prototype.
-7. Keep those impostors explicitly classified as temporary review assets in
+7. Add four moving ambient-life families, a layered distant skyline, four reef
+   families and moonlit motes. They remain non-collidable and quality-scaled.
+8. Keep those impostors explicitly classified as temporary review assets in
    the structural gate. Their texture memory and compressed payload are
    measured; they are not reported as production GLBs.
-8. Preserve deterministic collision planes and the independent straight cyan
+9. Preserve deterministic collision planes and the independent straight cyan
    playable contour.
-9. Require final modeled, UV-authored, optimized GLB replacements before
+10. Require final modeled, UV-authored, optimized GLB replacements before
    Phase 3B can be called game-ready.
 
 ## Acceptance target
@@ -62,7 +63,7 @@ painted false clearance.
 
 - The live draft can be reviewed against recognizable authored art instead of
   abstract primitive stand-ins.
-- The branch incurs about 11 MB of decoded texture memory and 0.18 MB of
+- The branch incurs about 14 MB of decoded texture memory and 0.4 MB of
   compressed runtime art payload, both below the Phase 3 budgets.
 - Review impostors are camera-dependent and cannot ship as final 3D assets.
 - The next production order is Glowfin, gate/wall fragment, broken tower,

@@ -172,6 +172,36 @@ function decorativeManifests(): AssetManifest[] {
       ]
     },
     {
+      name: "moon-garden-layered-city-skyline",
+      family: "artReviewImpostor",
+      collidable: false,
+      materials: PRODUCTION_ART.skylineReviewImpostor.materials,
+      textureMemoryMB:
+        PRODUCTION_ART.skylineReviewImpostor.textureMemoryMB,
+      maxTextureSizePx:
+        PRODUCTION_ART.skylineReviewImpostor.maxTextureSizePx,
+      contour: "none",
+      lods: [{
+        level: 0,
+        triangles: PRODUCTION_ART.skylineReviewImpostor.lod0
+      }]
+    },
+    {
+      name: "moon-garden-ambient-life-atlas",
+      family: "artReviewImpostor",
+      collidable: false,
+      materials: PRODUCTION_ART.ambientLifeReviewImpostor.materials,
+      textureMemoryMB:
+        PRODUCTION_ART.ambientLifeReviewImpostor.textureMemoryMB,
+      maxTextureSizePx:
+        PRODUCTION_ART.ambientLifeReviewImpostor.maxTextureSizePx,
+      contour: "none",
+      lods: [{
+        level: 0,
+        triangles: PRODUCTION_ART.ambientLifeReviewImpostor.lod0
+      }]
+    },
+    {
       name: "moon-garden-god-ray",
       family: "godRayMesh",
       collidable: false,
@@ -236,6 +266,6 @@ export function buildVerticalSliceEvidence(
         laneWidthFractionAtMaxMomentum: 1.45 / (LANE_HALF_WIDTH * 2)
       }
     },
-    compressedArtPayloadMB: 0.21
+    compressedArtPayloadMB: 1.55
   };
 }

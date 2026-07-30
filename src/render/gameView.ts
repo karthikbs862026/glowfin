@@ -149,26 +149,26 @@ export class GameView {
     moonstoneSurface.repeat.set(72 / 25, 4000 / 25);
     moonstoneSurface.anisotropy = maxAnisotropy;
 
-    const reviewAtlas = textureLoader.load(
-      "/art/moon-garden/review-atlas.webp"
-    );
-    reviewAtlas.colorSpace = THREE.SRGBColorSpace;
-    reviewAtlas.anisotropy = maxAnisotropy;
     const glowfinRear = textureLoader.load(
       "/art/moon-garden/glowfin-rear.webp"
     );
     glowfinRear.colorSpace = THREE.SRGBColorSpace;
     glowfinRear.anisotropy = maxAnisotropy;
-    const gateWallFragment = textureLoader.load(
-      "/art/moon-garden/gate-wall-fragment.webp"
+    const gateVariationAtlas = textureLoader.load(
+      "/art/moon-garden/gate-variation-atlas.png"
     );
-    gateWallFragment.colorSpace = THREE.SRGBColorSpace;
-    gateWallFragment.anisotropy = maxAnisotropy;
+    gateVariationAtlas.colorSpace = THREE.SRGBColorSpace;
+    gateVariationAtlas.anisotropy = maxAnisotropy;
+    const worldVariationAtlas = textureLoader.load(
+      "/art/moon-garden/world-variation-atlas.png"
+    );
+    worldVariationAtlas.colorSpace = THREE.SRGBColorSpace;
+    worldVariationAtlas.anisotropy = maxAnisotropy;
     this.disposables.push(
       moonstoneSurface,
-      reviewAtlas,
       glowfinRear,
-      gateWallFragment
+      gateVariationAtlas,
+      worldVariationAtlas
     );
 
     const backgroundCanvas = document.createElement("canvas");
@@ -184,10 +184,11 @@ export class GameView {
       0,
       backgroundCanvas.height
     );
-    backgroundGradient.addColorStop(0, "#020817");
-    backgroundGradient.addColorStop(0.48, "#0b2942");
-    backgroundGradient.addColorStop(0.76, "#17425a");
-    backgroundGradient.addColorStop(1, "#0e2a3d");
+    backgroundGradient.addColorStop(0, "#020a1c");
+    backgroundGradient.addColorStop(0.36, "#08243f");
+    backgroundGradient.addColorStop(0.68, "#144864");
+    backgroundGradient.addColorStop(0.86, "#1a5269");
+    backgroundGradient.addColorStop(1, "#0d2c41");
     backgroundContext.fillStyle = backgroundGradient;
     backgroundContext.fillRect(
       0,
@@ -304,7 +305,7 @@ export class GameView {
 
     // --- game-ready wall-fragment kit with independently truthful contours ---
     this.gates = new MoonGardenGates(cfg, {
-      wallFragmentFacade: gateWallFragment
+      wallFragmentAtlas: gateVariationAtlas
     });
     this.wallMaterial = this.gates.material;
     for (const object of this.gates.objects) this.scene.add(object);
@@ -315,7 +316,8 @@ export class GameView {
 
     // --- drowned city, god-rays, responsive coral (Part 3.2 #3 and #5) ---
     this.environment = new Environment(cfg, {
-      reviewAtlas
+      worldAtlas: worldVariationAtlas,
+      architectureMaterial: this.gates.facadeMaterial
     });
     for (const object of this.environment.objects) this.scene.add(object);
 
@@ -452,6 +454,7 @@ export class GameView {
     if (wallIntensity) {
       wallIntensity.value = this.cfg.visual.causticIntensityWall * intensityScale;
     }
+    this.environment.setDensity(settings.ambientLifeDensity);
   }
 
   /**
@@ -500,8 +503,9 @@ export class GameView {
     return {
       activeMaterials: materials.size,
       godRayMeshes: this.cfg.environment.godRayCount,
-      // Four authored 1024px-or-smaller RGBA assets including mip overhead.
-      textureMemoryMB: 11
+      // Five GPU-loaded RGBA sources including mip overhead. Source plates that
+      // were packed into the two runtime atlases are not double-counted.
+      textureMemoryMB: 14
     };
   }
 

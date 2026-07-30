@@ -14,7 +14,36 @@ import { createMoonstoneObstacleMaterial } from "./moonGardenMaterial";
 const MAX_GATE_PARTS = 32;
 
 export interface MoonGardenGateTextures {
-  wallFragmentFacade: THREE.Texture;
+  wallFragmentAtlas: THREE.Texture;
+}
+
+export type GateFacadeVariant = 0 | 1 | 2;
+
+/** Stable fallback for hand-authored/test gates that predate `artVariant`. */
+export function gateFacadeVariant(gate: Gate): GateFacadeVariant {
+  if (gate.artVariant === 0 || gate.artVariant === 1 || gate.artVariant === 2) {
+    return gate.artVariant;
+  }
+  const bucket = Math.abs(Math.round(gate.distance * 10));
+  return (bucket % 3) as GateFacadeVariant;
+}
+
+function createAtlasPlane(
+  uMin: number,
+  uMax: number
+): THREE.PlaneGeometry {
+  const geometry = new THREE.PlaneGeometry(1, 1);
+  const uv = geometry.getAttribute("uv");
+  for (let index = 0; index < uv.count; index++) {
+    uv.setXY(
+      index,
+      THREE.MathUtils.lerp(uMin, uMax, uv.getX(index)),
+      uv.getY(index)
+    );
+  }
+  uv.needsUpdate = true;
+  geometry.translate(0, 0.5, 0);
+  return geometry;
 }
 
 export function contourWorldWidth(
@@ -43,9 +72,14 @@ function lodForDistance(distanceAhead: number): ArtLod {
 export class MoonGardenGates {
   readonly objects: THREE.Object3D[] = [];
   readonly material: THREE.ShaderMaterial;
+  readonly facadeMaterial: THREE.MeshBasicMaterial;
 
   private readonly lods: Record<ArtLod, LodMeshes>;
-  private readonly facades: THREE.InstancedMesh;
+  private readonly facades: readonly [
+    THREE.InstancedMesh,
+    THREE.InstancedMesh,
+    THREE.InstancedMesh
+  ];
   private readonly contours: THREE.InstancedMesh;
   private readonly matrix = new THREE.Matrix4();
   private readonly position = new THREE.Vector3();
@@ -108,10 +142,8 @@ export class MoonGardenGates {
     // the playable frame while the final UV-authored GLB is modeled. Its
     // source image has one perfectly straight inner edge; mirroring happens
     // away from that edge, so it never implies extra clearance.
-    const facadeGeometry = new THREE.PlaneGeometry(1, 1);
-    facadeGeometry.translate(0, 0.5, 0);
-    const facadeMaterial = new THREE.MeshBasicMaterial({
-      map: textures?.wallFragmentFacade ?? null,
+    this.facadeMaterial = new THREE.MeshBasicMaterial({
+      map: textures?.wallFragmentAtlas ?? null,
       color: 0xffffff,
       alphaTest: 0.08,
       side: THREE.DoubleSide,
@@ -122,21 +154,31 @@ export class MoonGardenGates {
       polygonOffsetFactor: -4,
       polygonOffsetUnits: -4
     });
-    this.facades = new THREE.InstancedMesh(
-      facadeGeometry,
-      facadeMaterial,
-      MAX_GATE_PARTS
-    );
-    this.facades.count = 0;
-    this.facades.frustumCulled = false;
-    this.facades.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.facades.userData["isObstacleContext"] = true;
-    // The mask scores the authoritative cyan contour. This review facade is
-    // hidden only in the semantic mask so its slight camera-facing offset
-    // cannot occlude the collider-truth sample geometry.
-    this.facades.userData["hideInArtMask"] = true;
-    this.facades.renderOrder = 500;
-    this.objects.push(this.facades);
+    const facadeUvColumns = [
+      [0, 341 / 1024],
+      [341 / 1024, 682 / 1024],
+      [682 / 1024, 1]
+    ] as const;
+    this.facades = facadeUvColumns.map(([uMin, uMax]) => {
+      const geometry = createAtlasPlane(uMin, uMax);
+      const mesh = new THREE.InstancedMesh(
+        geometry,
+        this.facadeMaterial,
+        MAX_GATE_PARTS
+      );
+      mesh.count = 0;
+      mesh.frustumCulled = false;
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      mesh.userData["isObstacleContext"] = true;
+      // The mask scores the authoritative cyan contour. Review facades are
+      // hidden only in the semantic mask so their camera-facing depth offset
+      // cannot occlude the collider-truth sample geometry.
+      mesh.userData["hideInArtMask"] = true;
+      mesh.renderOrder = 500;
+      this.objects.push(mesh);
+      this.disposables.push(geometry);
+      return mesh;
+    }) as unknown as typeof this.facades;
 
     const contourGeometry = new THREE.BoxGeometry(1, 1, 1);
     const contourMaterial = new THREE.MeshBasicMaterial({
@@ -165,8 +207,7 @@ export class MoonGardenGates {
     this.objects.push(this.contours);
     this.disposables.push(
       this.material,
-      facadeGeometry,
-      facadeMaterial,
+      this.facadeMaterial,
       contourGeometry,
       contourMaterial
     );
@@ -183,7 +224,7 @@ export class MoonGardenGates {
       1: { left: 0, right: 0 },
       2: { left: 0, right: 0 }
     };
-    let facadeCount = 0;
+    const facadeCounts = [0, 0, 0];
     let contourCount = 0;
     const near = forwardDistance - 25;
     const far = forwardDistance + this.cfg.readability.visibleAheadUnits * 1.6;
@@ -193,6 +234,7 @@ export class MoonGardenGates {
       if (gate.distance > far) break;
       const distanceAhead = gate.distance - forwardDistance;
       const lod = lodForDistance(distanceAhead);
+      const facadeVariant = gateFacadeVariant(gate);
       const walls = gateWallGeometry(gate, this.cfg.lane.halfWidth);
       for (const wall of walls) {
         if (wall.width <= 0.01 || contourCount >= MAX_GATE_PARTS) continue;
@@ -236,8 +278,10 @@ export class MoonGardenGates {
           1
         );
         this.matrix.compose(this.position, this.quaternion, this.scale);
-        this.facades.setMatrixAt(facadeCount, this.matrix);
-        facadeCount += 1;
+        const facade = this.facades[facadeVariant];
+        const facadeIndex = facadeCounts[facadeVariant] ?? 0;
+        facade.setMatrixAt(facadeIndex, this.matrix);
+        facadeCounts[facadeVariant] = facadeIndex + 1;
 
         // The luminous strip retreats into the collidable wall instead of
         // protruding into the safe gap. Its outer plane is exactly colliderPlane.
@@ -271,8 +315,12 @@ export class MoonGardenGates {
         mesh.instanceMatrix.needsUpdate = true;
       }
     }
-    this.facades.count = facadeCount;
-    this.facades.instanceMatrix.needsUpdate = true;
+    for (let variant = 0; variant < this.facades.length; variant++) {
+      const facade = this.facades[variant];
+      if (!facade) continue;
+      facade.count = facadeCounts[variant] ?? 0;
+      facade.instanceMatrix.needsUpdate = true;
+    }
     this.contours.count = contourCount;
     this.contours.instanceMatrix.needsUpdate = true;
   }

@@ -71,8 +71,8 @@
 
   "environment": {
     "$comment": "Drowned city, god-rays and responsive coral. All three are instanced (one draw call each) because the draw budget is 90 and the scene already sits at 62. Everything here is BACKGROUND: it must never compete with obstacle silhouettes (Part 3.4), which is why buildings sit well outside the lane and coral is dim until it reacts.",
-    "buildingCount": 28,
-    "buildingBandSpacing": 32.0,
+    "buildingCount": 18,
+    "buildingBandSpacing": 29.0,
     "buildingMinHeight": 7.0,
     "buildingMaxHeight": 30.0,
     "buildingLateralMin": 9.5,
@@ -83,8 +83,8 @@
     "godRayIntensity": 0.16,
     "godRayWidth": 3.6,
     "godRayHeight": 32.0,
-    "coralCount": 36,
-    "coralBandSpacing": 10.0,
+    "coralCount": 72,
+    "coralBandSpacing": 5.4,
     "coralPulseRadiusUnits": 9.0,
     "coralPulseDecayPerSec": 1.9,
     "coralBaseGlow": 0.12,

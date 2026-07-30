@@ -35,11 +35,14 @@
 *.blend filter=lfs diff=lfs merge=lfs -text
 *.aep filter=lfs diff=lfs merge=lfs -text
 
-# Temporary Phase 3B visual-review sources are each <=150 KB and stay as
-# ordinary Git blobs so PR previews/checkouts do not depend on unpublished LFS
-# objects. Final production textures and all GLBs remain LFS-tracked.
+# Temporary Phase 3B visual-review sources and their two packed runtime atlases
+# stay as ordinary Git blobs so PR previews/checkouts do not depend on
+# unpublished LFS objects. Final production textures and all GLBs remain
+# LFS-tracked.
 docs/art/*.webp -filter -diff -merge -text
+docs/art/*.png -filter -diff -merge -text
 public/art/moon-garden/*.webp -filter -diff -merge -text
+public/art/moon-garden/*.png -filter -diff -merge -text
 
 # Note: small UI/marketing SVGs and icons are intentionally left as regular
 # git text files (diffable). Reassess if that stops being true.

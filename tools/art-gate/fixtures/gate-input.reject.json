@@ -293,7 +293,7 @@
       "family": "artReviewImpostor",
       "collidable": false,
       "materials": 1,
-      "textureMemoryMB": 2.1,
+      "textureMemoryMB": 5.4,
       "maxTextureSizePx": 1024,
       "contour": "decorative",
       "lods": [
@@ -308,7 +308,7 @@
       "family": "artReviewImpostor",
       "collidable": false,
       "materials": 1,
-      "textureMemoryMB": 5.4,
+      "textureMemoryMB": 0,
       "maxTextureSizePx": 1024,
       "contour": "decorative",
       "lods": [
@@ -345,7 +345,7 @@
       "family": "artReviewImpostor",
       "collidable": false,
       "materials": 1,
-      "textureMemoryMB": 0,
+      "textureMemoryMB": 5.4,
       "maxTextureSizePx": 1024,
       "contour": "decorative",
       "lods": [
@@ -370,6 +370,36 @@
         {
           "level": 1,
           "triangles": 120
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-layered-city-skyline",
+      "family": "artReviewImpostor",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "maxTextureSizePx": 1024,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 2
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-ambient-life-atlas",
+      "family": "artReviewImpostor",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "maxTextureSizePx": 1024,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 2
         }
       ]
     },
@@ -727,5 +757,5 @@
       "laneWidthFractionAtMaxMomentum": 0.12083333333333333
     }
   },
-  "compressedArtPayloadMB": 0.21
+  "compressedArtPayloadMB": 1.55
 }

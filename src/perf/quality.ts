@@ -22,6 +22,8 @@ export interface TierSettings {
   /** Bloom is the most expensive effect here — first thing dropped under load. */
   bloomEnabled: boolean;
   bloomResolutionScale: number;
+  /** Scales non-gameplay reef, skyline, motes and ambient-creature pools. */
+  ambientLifeDensity: number;
 }
 
 const TIER_ORDER: QualityTier[] = ["low", "medium", "high"];

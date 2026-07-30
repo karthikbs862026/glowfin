@@ -67,6 +67,16 @@ describe("course generation", () => {
     }
   });
 
+  it("cycles obstacle art without adjacent repeats", () => {
+    const { gates } = generate(99);
+    for (let index = 1; index < gates.length; index++) {
+      expect(gates[index]?.artVariant).not.toBe(gates[index - 1]?.artVariant);
+    }
+    expect(new Set(gates.slice(0, 12).map((gate) => gate.artVariant))).toEqual(
+      new Set([0, 1, 2])
+    );
+  });
+
   it("leaves a clear runway before the first gate", () => {
     const { gates } = generate(7);
     expect(gates[0]?.distance ?? 0).toBeGreaterThanOrEqual(

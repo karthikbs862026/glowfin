@@ -153,3 +153,12 @@ in-camera acceptance target, then place authored seabed, broken-tower and reef
 sources into the real renderer as clearly labelled review impostors. They may
 guide and validate composition, but Phase 3B still requires optimized GLB
 replacements. PR #7 stays draft and unmergeable until owner visual approval.
+
+## ADR-0018: Moon-Garden density, variation and ambient life
+
+**Decision:** Preserve the original deterministic gate positions and openings,
+but cycle three collider-safe facade families without adjacent repeats. Pack
+four reef families, a layered centre-open skyline and four moving ambient-life
+families into bounded atlases; enrich only outside-lane dressing; scale
+non-gameplay density by quality tier. PR #7 remains draft until the actual
+portrait render passes owner visual review.

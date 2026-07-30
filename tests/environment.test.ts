@@ -64,9 +64,10 @@ describe("coral response (Part 3.2 priority 5)", () => {
 
 describe("draw call budget (Part 4.6)", () => {
   it("the complete LOD art kit remains instanced and budgeted", () => {
-    // Authored tower/reef review sources cost one draw each; spire and kelp LOD
-    // buckets plus god rays make eight worst-case environment draws.
-    const environmentDraws = 8;
+    // Three architecture variants, one skyline, four reefs, four ambient-life
+    // families, god rays and moon/motes remain fourteen fixed draws even as
+    // their represented object count and course distance grow.
+    const environmentDraws = 14;
     const conservativeSceneWithoutEnvironment = 64;
     expect(conservativeSceneWithoutEnvironment + environmentDraws).toBeLessThan(
       budgets.scene.maxDrawCalls
@@ -74,7 +75,15 @@ describe("draw call budget (Part 4.6)", () => {
     const representedObjects =
       tuning.environment.buildingCount +
         tuning.environment.godRayCount +
-        tuning.environment.coralCount;
+        tuning.environment.coralCount +
+        24 +
+        64;
     expect(representedObjects).toBeGreaterThan(environmentDraws * 8);
+  });
+
+  it("fills the outside lane without turning reef into collision geometry", () => {
+    expect(tuning.environment.coralCount).toBeGreaterThanOrEqual(64);
+    expect(tuning.environment.coralBandSpacing).toBeLessThanOrEqual(6);
+    expect(tuning.lane.halfWidth + 0.72).toBeGreaterThan(tuning.lane.halfWidth);
   });
 });

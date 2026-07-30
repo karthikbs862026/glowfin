@@ -73,8 +73,8 @@ describe("Phase 3B art geometry inventory", () => {
     const context = gates.objects.filter((object) => object.userData["isObstacleContext"]);
     const maskHidden = gates.objects.filter((object) => object.userData["hideInArtMask"]);
     expect(contours).toHaveLength(1);
-    expect(context).toHaveLength(7);
-    expect(maskHidden).toHaveLength(1);
+    expect(context).toHaveLength(9);
+    expect(maskHidden).toHaveLength(3);
     gates.dispose();
   });
 

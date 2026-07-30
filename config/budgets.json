@@ -44,9 +44,9 @@
     "upgradeAfterGoodWindows": 6,
     "cooldownMs": 4000,
     "tiers": {
-      "high": { "pixelRatioCap": 2.0, "causticOctaves": 3, "causticsEnabled": true, "bloomEnabled": true, "bloomResolutionScale": 0.5 },
-      "medium": { "pixelRatioCap": 1.5, "causticOctaves": 2, "causticsEnabled": true, "bloomEnabled": true, "bloomResolutionScale": 0.33 },
-      "low": { "pixelRatioCap": 1.0, "causticOctaves": 1, "causticsEnabled": false, "bloomEnabled": false, "bloomResolutionScale": 0.25 }
+      "high": { "pixelRatioCap": 2.0, "causticOctaves": 3, "causticsEnabled": true, "bloomEnabled": true, "bloomResolutionScale": 0.5, "ambientLifeDensity": 1.0 },
+      "medium": { "pixelRatioCap": 1.5, "causticOctaves": 2, "causticsEnabled": true, "bloomEnabled": true, "bloomResolutionScale": 0.33, "ambientLifeDensity": 0.68 },
+      "low": { "pixelRatioCap": 1.0, "causticOctaves": 1, "causticsEnabled": false, "bloomEnabled": false, "bloomResolutionScale": 0.25, "ambientLifeDensity": 0.38 }
     }
   }
 }

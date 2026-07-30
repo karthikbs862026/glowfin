@@ -50,14 +50,15 @@ export const PRODUCTION_ART = {
   brokenTowerReviewImpostor: {
     lod0: 2,
     materials: 1,
-    // Shared 1024² tower/reef atlas is accounted here once.
-    textureMemoryMB: 5.4,
+    // Shares the 1024² gate/architecture atlas accounted on the gate family.
+    textureMemoryMB: 0,
     maxTextureSizePx: 1024
   },
   coralReviewImpostor: {
     lod0: 2,
     materials: 1,
-    textureMemoryMB: 0,
+    // Shared 1024² world atlas: reef, skyline and ambient life.
+    textureMemoryMB: 5.4,
     maxTextureSizePx: 1024
   },
   glowfinReviewImpostor: {
@@ -69,7 +70,19 @@ export const PRODUCTION_ART = {
   gateWallReviewImpostor: {
     lod0: 2,
     materials: 1,
-    textureMemoryMB: 2.1,
+    textureMemoryMB: 5.4,
+    maxTextureSizePx: 1024
+  },
+  skylineReviewImpostor: {
+    lod0: 2,
+    materials: 1,
+    textureMemoryMB: 0,
+    maxTextureSizePx: 1024
+  },
+  ambientLifeReviewImpostor: {
+    lod0: 2,
+    materials: 1,
+    textureMemoryMB: 0,
     maxTextureSizePx: 1024
   }
 } as const;
