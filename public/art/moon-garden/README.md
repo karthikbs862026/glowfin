@@ -10,9 +10,10 @@ and are budgeted by the art gate, but they are **review impostors**, not final
 | `moonstone-seabed.webp` | Organic gravel/silt Moon-Garden floor albedo | Retain as atlas candidate after seam/material review |
 | `review-atlas.webp` | Shared instanced tower + reef review material | UV-authored, optimized GLBs and production atlas |
 | `glowfin-rear.webp` | Rear-camera character review silhouette | Final skinned Glowfin GLB and approved animation set |
+| `gate-wall-fragment.webp` | Collider-aligned Moon-Garden gate facade | Final modeled wall-fragment GLB with locked playable edge |
 
 All runtime images are WebP, have a maximum dimension of 1024px, contain no
-text or third-party marks, and together add about 0.13 MB compressed / 9 MB
+text or third-party marks, and together add about 0.18 MB compressed / 11 MB
 decoded with mip overhead.
 
 The source prompts required Moon-Garden blue-grey stone, restrained shell-gold,

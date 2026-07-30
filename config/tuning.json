@@ -84,7 +84,7 @@
     "godRayWidth": 3.6,
     "godRayHeight": 32.0,
     "coralCount": 36,
-    "coralBandSpacing": 14.0,
+    "coralBandSpacing": 10.0,
     "coralPulseRadiusUnits": 9.0,
     "coralPulseDecayPerSec": 1.9,
     "coralBaseGlow": 0.12,

@@ -13,6 +13,10 @@ import { createMoonstoneObstacleMaterial } from "./moonGardenMaterial";
 
 const MAX_GATE_PARTS = 32;
 
+export interface MoonGardenGateTextures {
+  wallFragmentFacade: THREE.Texture;
+}
+
 export function contourWorldWidth(
   screenPixels: number,
   viewDepth: number,
@@ -41,6 +45,7 @@ export class MoonGardenGates {
   readonly material: THREE.ShaderMaterial;
 
   private readonly lods: Record<ArtLod, LodMeshes>;
+  private readonly facades: THREE.InstancedMesh;
   private readonly contours: THREE.InstancedMesh;
   private readonly matrix = new THREE.Matrix4();
   private readonly position = new THREE.Vector3();
@@ -48,7 +53,10 @@ export class MoonGardenGates {
   private readonly scale = new THREE.Vector3();
   private readonly disposables: Array<{ dispose(): void }> = [];
 
-  constructor(private readonly cfg: TuningConfig) {
+  constructor(
+    private readonly cfg: TuningConfig,
+    textures?: MoonGardenGateTextures
+  ) {
     const fogNear = cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier;
     const fogFar = cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier;
     this.material = createMoonstoneObstacleMaterial({
@@ -96,6 +104,37 @@ export class MoonGardenGates {
       }
     };
 
+    // Authored facade establishes the approved manta/nautilus architecture in
+    // the playable frame while the final UV-authored GLB is modeled. Its
+    // source image has one perfectly straight inner edge; mirroring happens
+    // away from that edge, so it never implies extra clearance.
+    const facadeGeometry = new THREE.PlaneGeometry(1, 1);
+    facadeGeometry.translate(0, 0.5, 0);
+    const facadeMaterial = new THREE.MeshBasicMaterial({
+      map: textures?.wallFragmentFacade ?? null,
+      color: 0xffffff,
+      alphaTest: 0.08,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      fog: true,
+      toneMapped: false
+    });
+    this.facades = new THREE.InstancedMesh(
+      facadeGeometry,
+      facadeMaterial,
+      MAX_GATE_PARTS
+    );
+    this.facades.count = 0;
+    this.facades.frustumCulled = false;
+    this.facades.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.facades.userData["isObstacleContext"] = true;
+    // The mask scores the authoritative cyan contour. This review facade is
+    // hidden only in the semantic mask so its slight camera-facing offset
+    // cannot occlude the collider-truth sample geometry.
+    this.facades.userData["hideInArtMask"] = true;
+    this.facades.renderOrder = 500;
+    this.objects.push(this.facades);
+
     const contourGeometry = new THREE.BoxGeometry(1, 1, 1);
     const contourMaterial = new THREE.MeshBasicMaterial({
       color: 0x63e0ff,
@@ -123,6 +162,8 @@ export class MoonGardenGates {
     this.objects.push(this.contours);
     this.disposables.push(
       this.material,
+      facadeGeometry,
+      facadeMaterial,
       contourGeometry,
       contourMaterial
     );
@@ -139,6 +180,7 @@ export class MoonGardenGates {
       1: { left: 0, right: 0 },
       2: { left: 0, right: 0 }
     };
+    let facadeCount = 0;
     let contourCount = 0;
     const near = forwardDistance - 25;
     const far = forwardDistance + this.cfg.readability.visibleAheadUnits * 1.6;
@@ -172,6 +214,25 @@ export class MoonGardenGates {
         target.setMatrixAt(index, this.matrix);
         counts[lod][side] += 1;
 
+        // Keep the generated facade's straight inner edge on the exact
+        // runtime collider plane. The right wall mirrors the image by using a
+        // negative x scale; all ornament still retreats into the wall mass.
+        const facadeWidth = Math.max(2.6, Math.min(4.2, wall.width + 0.75));
+        const facadeHeight = 6.8;
+        this.position.set(
+          wall.colliderPlane - wall.gapDirection * facadeWidth * 0.5,
+          PROCEDURAL_GATE_VISUAL.wallFloorY,
+          -gate.distance + PROCEDURAL_GATE_VISUAL.wallDepth * 0.5 + 0.01
+        );
+        this.scale.set(
+          wall.gapDirection > 0 ? facadeWidth : -facadeWidth,
+          facadeHeight,
+          1
+        );
+        this.matrix.compose(this.position, this.quaternion, this.scale);
+        this.facades.setMatrixAt(facadeCount, this.matrix);
+        facadeCount += 1;
+
         // The luminous strip retreats into the collidable wall instead of
         // protruding into the safe gap. Its outer plane is exactly colliderPlane.
         const contourWidth = contourWorldWidth(
@@ -204,6 +265,8 @@ export class MoonGardenGates {
         mesh.instanceMatrix.needsUpdate = true;
       }
     }
+    this.facades.count = facadeCount;
+    this.facades.instanceMatrix.needsUpdate = true;
     this.contours.count = contourCount;
     this.contours.instanceMatrix.needsUpdate = true;
   }

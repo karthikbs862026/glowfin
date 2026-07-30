@@ -168,9 +168,11 @@ export class Environment {
     });
     this.disposables.push(this.material);
 
-    const reviewMaterial = new THREE.MeshBasicMaterial({
+    const createReviewMaterial = (
+      colour: THREE.ColorRepresentation
+    ): THREE.MeshBasicMaterial => new THREE.MeshBasicMaterial({
       map: textures.reviewAtlas,
-      color: 0xffffff,
+      color: colour,
       // These are authored colour plates, not dark albedo waiting for scene
       // lights. The previous tone-mapped/instance-tinted path crushed both
       // tower and coral cards to black silhouettes in the actual capture.
@@ -181,10 +183,14 @@ export class Environment {
       fog: true,
       toneMapped: false
     });
-    this.disposables.push(reviewMaterial);
+    // Distant architecture stays quieter than the living reef. Sharing the
+    // atlas does not require sharing a brightness hierarchy.
+    const towerMaterial = createReviewMaterial(0xb8ced8);
+    const reefMaterial = createReviewMaterial(0xffffff);
+    this.disposables.push(towerMaterial, reefMaterial);
 
     this.towers = new InstancedBillboardFamily(
-      reviewMaterial,
+      towerMaterial,
       683 / 1024,
       { uMin: 0, vMin: 0.25, uMax: 0.5, vMax: 1 },
       env.buildingCount,
@@ -197,7 +203,7 @@ export class Environment {
       this.disposables
     );
     this.coral = new InstancedBillboardFamily(
-      reviewMaterial,
+      reefMaterial,
       1024 / 723,
       { uMin: 0.5, vMin: 0, uMax: 1, vMax: 362 / 1024 },
       env.coralCount,
@@ -345,14 +351,16 @@ export class Environment {
         );
         const sink = lerp(
           0,
-          5,
+          1.25,
           (lateral - env.buildingLateralMin) /
             Math.max(1, env.buildingLateralMax - env.buildingLateralMin)
         );
 
         this.position.set(
           side * lateral,
-          height * 0.5 - 1 - sink,
+          // Billboard geometry is already translated so local y=0 is its
+          // base. Adding half the height again made every tower float.
+          -1 - sink,
           -zDistance
         );
         // Tiny outward lean only; silhouettes never fall across the corridor.

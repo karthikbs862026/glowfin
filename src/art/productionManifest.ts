@@ -65,6 +65,12 @@ export const PRODUCTION_ART = {
     materials: 1,
     textureMemoryMB: 1.7,
     maxTextureSizePx: 706
+  },
+  gateWallReviewImpostor: {
+    lod0: 2,
+    materials: 1,
+    textureMemoryMB: 2.1,
+    maxTextureSizePx: 1024
   }
 } as const;
 

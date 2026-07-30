@@ -106,6 +106,7 @@ export class GameView {
   private readonly maskObstacleContext = new THREE.MeshBasicMaterial({ color: 0x808080 });
   private readonly maskOther = new THREE.MeshBasicMaterial({ color: 0x000000 });
   private readonly savedMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
+  private readonly savedVisibility = new Map<THREE.Object3D, boolean>();
   private maskMode = false;
   readonly gpuName: string;
   private readonly speedInlays: THREE.InstancedMesh;
@@ -158,10 +159,16 @@ export class GameView {
     );
     glowfinRear.colorSpace = THREE.SRGBColorSpace;
     glowfinRear.anisotropy = maxAnisotropy;
+    const gateWallFragment = textureLoader.load(
+      "/art/moon-garden/gate-wall-fragment.webp"
+    );
+    gateWallFragment.colorSpace = THREE.SRGBColorSpace;
+    gateWallFragment.anisotropy = maxAnisotropy;
     this.disposables.push(
       moonstoneSurface,
       reviewAtlas,
-      glowfinRear
+      glowfinRear,
+      gateWallFragment
     );
 
     const backgroundCanvas = document.createElement("canvas");
@@ -296,7 +303,9 @@ export class GameView {
     this.disposables.push(inlayGeo, inlayMaterial);
 
     // --- game-ready wall-fragment kit with independently truthful contours ---
-    this.gates = new MoonGardenGates(cfg);
+    this.gates = new MoonGardenGates(cfg, {
+      wallFragmentFacade: gateWallFragment
+    });
     this.wallMaterial = this.gates.material;
     for (const object of this.gates.objects) this.scene.add(object);
 
@@ -350,6 +359,11 @@ export class GameView {
       this.trail.mesh.visible = false;
       this.scene.traverse((object) => {
         if (!(object instanceof THREE.Mesh)) return;
+        if (object.userData["hideInArtMask"]) {
+          this.savedVisibility.set(object, object.visible);
+          object.visible = false;
+          return;
+        }
         this.savedMaterials.set(object, object.material);
         object.material = object.userData["isObstacle"]
           ? this.maskObstacle
@@ -360,6 +374,10 @@ export class GameView {
     } else {
       for (const [mesh, material] of this.savedMaterials) mesh.material = material;
       this.savedMaterials.clear();
+      for (const [object, visible] of this.savedVisibility) {
+        object.visible = visible;
+      }
+      this.savedVisibility.clear();
       this.trail.mesh.visible = true;
     }
   }
@@ -482,8 +500,8 @@ export class GameView {
     return {
       activeMaterials: materials.size,
       godRayMeshes: this.cfg.environment.godRayCount,
-      // Three authored 1024px-or-smaller RGBA assets including mip overhead.
-      textureMemoryMB: 9
+      // Four authored 1024px-or-smaller RGBA assets including mip overhead.
+      textureMemoryMB: 11
     };
   }
 

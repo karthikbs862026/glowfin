@@ -100,6 +100,21 @@ function decorativeManifests(): AssetManifest[] {
       }]
     },
     {
+      name: "moon-garden-authored-gate-wall-review-impostor",
+      family: "artReviewImpostor",
+      collidable: false,
+      materials: PRODUCTION_ART.gateWallReviewImpostor.materials,
+      textureMemoryMB:
+        PRODUCTION_ART.gateWallReviewImpostor.textureMemoryMB,
+      maxTextureSizePx:
+        PRODUCTION_ART.gateWallReviewImpostor.maxTextureSizePx,
+      contour: "decorative",
+      lods: [{
+        level: 0,
+        triangles: PRODUCTION_ART.gateWallReviewImpostor.lod0
+      }]
+    },
+    {
       name: "moon-garden-authored-broken-tower-review-impostor",
       family: "artReviewImpostor",
       collidable: false,
