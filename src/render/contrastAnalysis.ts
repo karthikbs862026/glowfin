@@ -139,21 +139,26 @@ export function analyseContrast(
       const hereObstacle = isMeasurableObstacle(mask, here);
       const nextObstacle = isMeasurableObstacle(mask, next);
       if (hereObstacle === nextObstacle) continue;
-      if (hereObstacle && !isBackground(mask, next)) continue;
-      if (nextObstacle && !isBackground(mask, here)) continue;
 
       let insideIndex = -1;
-      let outsideIndex = -1;
       for (let distance = offset; distance >= 0; distance--) {
         const candidateInside =
           rowStart + (hereObstacle ? x - distance : x + 1 + distance) * 4;
+        if (isMeasurableObstacle(mask, candidateInside)) {
+          insideIndex = candidateInside;
+          break;
+        }
+      }
+
+      // At 1x DPR an exact coplanar contour can anti-alias through the mask's
+      // mid-value "ignore" class for one pixel before reaching true background.
+      // Search across only the configured inset, so that narrow raster fringe
+      // is bridged but a real obstacle-to-obstacle/context boundary is not.
+      let outsideIndex = -1;
+      for (let distance = offset; distance >= 0; distance--) {
         const candidateOutside =
           rowStart + (hereObstacle ? x + 1 + distance : x - distance) * 4;
-        if (
-          isMeasurableObstacle(mask, candidateInside) &&
-          isBackground(mask, candidateOutside)
-        ) {
-          insideIndex = candidateInside;
+        if (isBackground(mask, candidateOutside)) {
           outsideIndex = candidateOutside;
           break;
         }
