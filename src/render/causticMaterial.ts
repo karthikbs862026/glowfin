@@ -47,6 +47,8 @@ export interface CausticParams {
   surfaceScale?: number;
   /** Blend from the flat base colour to the authored albedo. */
   surfaceWeight?: number;
+  /** True gameplay half-width; used only to darken the non-playable seabed. */
+  routeHalfWidth?: number;
   /** Lit border along face edges. Zero disables it (used for the floor). */
   edgeStrength?: number;
   /** Border thickness in screen pixels. */
@@ -84,6 +86,7 @@ const FRAGMENT = /* glsl */ `
   uniform vec3 uFogColor;
   uniform float uFogNear;
   uniform float uFogFar;
+  uniform float uRouteHalfWidth;
   #ifdef USE_SURFACE_MAP
     uniform sampler2D uSurfaceMap;
     uniform float uSurfaceScale;
@@ -155,6 +158,19 @@ const FRAGMENT = /* glsl */ `
     #endif
     colour += uCausticColor * pattern * uIntensity * facing;
 
+    // The route is a moonlit region of the same organic seabed, not a raised
+    // road. Darkening only beyond the authoritative lane half-width preserves
+    // truthful navigation while letting outside-lane reef read as a bank.
+    float route = 1.0 - smoothstep(
+      uRouteHalfWidth * 0.92,
+      uRouteHalfWidth * 1.42,
+      abs(vWorldPos.x)
+    );
+    colour *= mix(0.7, 1.0, route);
+    float moonTrack = exp(-abs(vWorldPos.x) * 0.72) *
+      (0.72 + 0.28 * sin(vWorldPos.z * 0.24 + uTime * 0.28));
+    colour += vec3(0.025, 0.075, 0.095) * moonTrack;
+
     // Lit border along the face edges.
     //
     // This exists for fairness, not decoration. The floor's caustics animate
@@ -210,6 +226,7 @@ export function createCausticMaterial(params: CausticParams): THREE.ShaderMateri
       uSurfaceMap: { value: params.surfaceMap ?? null },
       uSurfaceScale: { value: params.surfaceScale ?? 0.08 },
       uSurfaceWeight: { value: params.surfaceWeight ?? 0.86 },
+      uRouteHalfWidth: { value: params.routeHalfWidth ?? 6 },
       uEdgeStrength: { value: params.edgeStrength ?? 0 },
       uEdgeWidthPixels: { value: params.edgeWidthPixels ?? 7 },
       uEdgeColor: { value: new THREE.Color(params.edgeColor ?? 0xbdf4ff) }
