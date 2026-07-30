@@ -161,11 +161,6 @@ export class GameView {
     );
     glowfinRear.colorSpace = THREE.SRGBColorSpace;
     glowfinRear.anisotropy = maxAnisotropy;
-    const gateVariationAtlas = textureLoader.load(
-      "/art/moon-garden/gate-variation-atlas.png"
-    );
-    gateVariationAtlas.colorSpace = THREE.SRGBColorSpace;
-    gateVariationAtlas.anisotropy = maxAnisotropy;
     const worldVariationAtlas = textureLoader.load(
       "/art/moon-garden/world-variation-atlas.png"
     );
@@ -175,7 +170,6 @@ export class GameView {
       moonstoneSurface,
       moonstoneFloorSurface,
       glowfinRear,
-      gateVariationAtlas,
       worldVariationAtlas
     );
 
@@ -331,9 +325,7 @@ export class GameView {
     this.disposables.push(inlayGeo, inlayMaterial);
 
     // --- game-ready wall-fragment kit with independently truthful contours ---
-    this.gates = new MoonGardenGates(cfg, {
-      wallFragmentAtlas: gateVariationAtlas
-    });
+    this.gates = new MoonGardenGates(cfg);
     this.wallMaterial = this.gates.material;
     for (const object of this.gates.objects) this.scene.add(object);
 
@@ -343,8 +335,7 @@ export class GameView {
 
     // --- drowned city, god-rays, responsive coral (Part 3.2 #3 and #5) ---
     this.environment = new Environment(cfg, {
-      worldAtlas: worldVariationAtlas,
-      architectureMaterial: this.gates.facadeMaterial
+      worldAtlas: worldVariationAtlas
     });
     for (const object of this.environment.objects) this.scene.add(object);
 

@@ -8,6 +8,19 @@
  */
 import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
+import {
+  createBrokenTowerGeometry,
+  createHeroCoralGeometry,
+  createMediumCoralGeometry,
+  createRibbonKelpGeometry,
+  createShellGardenGeometry,
+  createSpireGeometry,
+  createWallFragmentGeometry
+} from "./moonGardenGeometry";
+import {
+  createMoonGardenMaterial,
+  updateMoonGardenMaterial
+} from "./moonGardenMaterial";
 
 interface UvRect {
   uMin: number;
@@ -85,9 +98,55 @@ class InstancedBillboardFamily {
   }
 }
 
+class InstancedVolumeFamily {
+  readonly object: THREE.InstancedMesh;
+  readonly halfWidth: number;
+  readonly height: number;
+  private count = 0;
+
+  constructor(
+    geometry: THREE.BufferGeometry,
+    material: THREE.Material,
+    maxCount: number,
+    disposables: Array<{ dispose(): void }>
+  ) {
+    geometry.computeBoundingBox();
+    const bounds = geometry.boundingBox;
+    if (!bounds) throw new Error("Moon-Garden volume is missing bounds.");
+    geometry.translate(0, -bounds.min.y, 0);
+    geometry.computeBoundingBox();
+    const groundedBounds = geometry.boundingBox;
+    if (!groundedBounds) throw new Error("Moon-Garden volume could not be grounded.");
+    this.halfWidth = (groundedBounds.max.x - groundedBounds.min.x) * 0.5;
+    this.height = Math.max(0.01, groundedBounds.max.y - groundedBounds.min.y);
+
+    this.object = new THREE.InstancedMesh(geometry, material, maxCount);
+    this.object.count = 0;
+    this.object.frustumCulled = false;
+    this.object.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    disposables.push(geometry);
+  }
+
+  begin(): void {
+    this.count = 0;
+  }
+
+  add(matrix: THREE.Matrix4, colour: THREE.Color): void {
+    if (this.count >= this.object.instanceMatrix.count) return;
+    this.object.setMatrixAt(this.count, matrix);
+    this.object.setColorAt(this.count, colour);
+    this.count += 1;
+  }
+
+  finish(): void {
+    this.object.count = this.count;
+    this.object.instanceMatrix.needsUpdate = true;
+    if (this.object.instanceColor) this.object.instanceColor.needsUpdate = true;
+  }
+}
+
 export interface MoonGardenTextures {
   worldAtlas: THREE.Texture;
-  architectureMaterial: THREE.Material;
 }
 
 const SKYLINE_RECT: UvRect = {
@@ -96,20 +155,6 @@ const SKYLINE_RECT: UvRect = {
   uMax: 1,
   vMax: 1
 };
-
-const ARCHITECTURE_RECTS: readonly UvRect[] = [
-  { uMin: 0, vMin: 0, uMax: 341 / 1024, vMax: 1 },
-  { uMin: 341 / 1024, vMin: 0, uMax: 682 / 1024, vMax: 1 },
-  { uMin: 682 / 1024, vMin: 0, uMax: 1, vMax: 1 }
-];
-
-// Bottom-left 512² of the world atlas contains a 2×2 reef sheet.
-const REEF_RECTS: readonly UvRect[] = [
-  { uMin: 0, vMin: 0.25, uMax: 0.25, vMax: 0.5 },
-  { uMin: 0.25, vMin: 0.25, uMax: 0.5, vMax: 0.5 },
-  { uMin: 0, vMin: 0, uMax: 0.25, vMax: 0.25 },
-  { uMin: 0.25, vMin: 0, uMax: 0.5, vMax: 0.25 }
-];
 
 // Bottom-right 512² contains fish, jelly, ray and garden-spirit groups.
 const LIFE_RECTS: readonly UvRect[] = [
@@ -125,9 +170,10 @@ export class Environment {
   readonly objects: THREE.Object3D[] = [];
 
   private readonly worldMaterial: THREE.MeshBasicMaterial;
-  private readonly architecture: readonly InstancedBillboardFamily[];
+  private readonly volumeMaterial: THREE.ShaderMaterial;
+  private readonly architecture: readonly InstancedVolumeFamily[];
   private readonly skyline: InstancedBillboardFamily;
-  private readonly reef: readonly InstancedBillboardFamily[];
+  private readonly reef: readonly InstancedVolumeFamily[];
   private readonly life: readonly InstancedBillboardFamily[];
   private readonly godRays: THREE.InstancedMesh;
   private readonly moonAndMotes: THREE.Points;
@@ -155,13 +201,30 @@ export class Environment {
       fog: true,
       toneMapped: false
     });
-    this.disposables.push(this.worldMaterial);
+    const fogNear =
+      cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier;
+    const fogFar =
+      cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier;
+    this.volumeMaterial = createMoonGardenMaterial({
+      fogColor: 0x12364c,
+      fogNear,
+      fogFar,
+      glowRadius: cfg.environment.coralPulseRadiusUnits
+    });
+    this.disposables.push(this.worldMaterial, this.volumeMaterial);
 
-    this.architecture = ARCHITECTURE_RECTS.map((rect) =>
-      new InstancedBillboardFamily(
-        textures.architectureMaterial,
-        1 / 3,
-        rect,
+    // Architecture and reef closest to play are real shaded volumes. Only the
+    // far skyline and tiny ambient swimmers remain camera-facing atlas art.
+    // This is the key transition away from the "stickers on a floor" look.
+    const architectureGeometry = [
+      createBrokenTowerGeometry(1),
+      createSpireGeometry(1),
+      createWallFragmentGeometry(1, 1)
+    ] as const;
+    this.architecture = architectureGeometry.map((geometry) =>
+      new InstancedVolumeFamily(
+        geometry,
+        this.volumeMaterial,
         env.buildingCount,
         this.disposables
       )
@@ -173,11 +236,16 @@ export class Environment {
       4,
       this.disposables
     );
-    this.reef = REEF_RECTS.map((rect) =>
-      new InstancedBillboardFamily(
-        this.worldMaterial,
-        1,
-        rect,
+    const reefGeometry = [
+      createHeroCoralGeometry(1),
+      createMediumCoralGeometry(1),
+      createShellGardenGeometry(1),
+      createRibbonKelpGeometry(1)
+    ] as const;
+    this.reef = reefGeometry.map((geometry) =>
+      new InstancedVolumeFamily(
+        geometry,
+        this.volumeMaterial,
         env.coralCount,
         this.disposables
       )
@@ -315,6 +383,12 @@ export class Environment {
   ): void {
     const time = forwardDistance /
       Math.max(1, this.cfg.speed.forwardAtZeroMomentum);
+    updateMoonGardenMaterial(
+      this.volumeMaterial,
+      time,
+      this.position.set(lateralPosition, -0.15, -forwardDistance),
+      momentumFraction
+    );
     this.updateArchitecture(forwardDistance);
     this.updateSkyline(forwardDistance);
     this.updateReef(forwardDistance, lateralPosition, momentumFraction);
@@ -350,6 +424,8 @@ export class Environment {
           env.buildingMaxHeight * 0.86,
           Math.pow(hash01(band, salt), 1.5)
         );
+        const family = this.architecture[variant];
+        if (!family) continue;
         const sink = lerp(
           0,
           1.1,
@@ -359,23 +435,26 @@ export class Environment {
         this.position.set(side * lateral, -1 - sink, -zDistance);
         this.quaternion.setFromEuler(new THREE.Euler(
           0,
-          0,
+          side * lerp(-0.16, 0.1, hash01(band, salt + 9)),
           -side * lerp(0, 0.035, hash01(band, salt + 8))
         ));
         const mirror = hash01(band, salt + 10) < 0.5 ? -1 : 1;
+        const unitScale = height / family.height;
+        const widthStretch = [0.92, 0.72, 1.12][variant] ?? 1;
+        const depthStretch = [0.82, 0.7, 0.92][variant] ?? 0.8;
         this.scale.set(
-          mirror * lerp(4.2, 7.6, hash01(band, salt + 1)),
-          height,
-          1
+          mirror * unitScale * widthStretch,
+          unitScale,
+          unitScale * depthStretch
         );
         this.matrix.compose(this.position, this.quaternion, this.scale);
-        const brightness = lerp(0.56, 0.82, hash01(band, salt + 5));
+        const brightness = lerp(0.36, 0.58, hash01(band, salt + 5));
         this.colour.setRGB(
-          brightness * 0.82,
-          brightness * 0.9,
+          brightness * 0.74,
+          brightness * 0.88,
           brightness
         );
-        this.architecture[variant]?.add(this.matrix, this.colour);
+        family.add(this.matrix, this.colour);
       }
     }
     for (const family of this.architecture) family.finish();
@@ -433,15 +512,22 @@ export class Environment {
         const band = firstBand + index;
         const salt = side > 0 ? 9091 : 1213;
         const variant = positiveMod(band + (side > 0 ? 2 : 0), 4);
+        const family = this.reef[variant];
+        if (!family) continue;
         const zDistance = band * env.coralBandSpacing +
           (hash01(band, salt + 2) - 0.5) * env.coralBandSpacing * 0.55;
-        const heroScale = positiveMod(band, 9) === 0 ? 1.28 : 1;
-        const height = lerp(1.2, 4, hash01(band, salt + 1)) * heroScale;
-        const widthScale = lerp(0.9, 1.34, hash01(band, salt + 5));
-        // Place from the atlas silhouette's inner edge, not its centre. This
-        // lets large foreground reef form a continuous bank without ever
-        // teaching the player that decoration inside the lane is collidable.
-        const halfVisualWidth = height * widthScale * 0.5;
+        const isHero = variant === 0 && positiveMod(band, 9) === 0;
+        const desiredHeight = lerp(
+          variant === 2 ? 0.7 : 1,
+          variant === 3 ? 3.3 : 2.5,
+          hash01(band, salt + 1)
+        ) * (isHero ? 1.24 : 1);
+        const unitScale = desiredHeight / family.height;
+        const widthStretch = lerp(0.88, 1.22, hash01(band, salt + 5));
+        const depthStretch = [0.9, 0.78, 0.84, 0.62][variant] ?? 0.8;
+        // Place from the actual 3D bounds' inner edge. Larger volumetric reef
+        // can overlap in depth while remaining entirely outside gameplay.
+        const halfVisualWidth = family.halfWidth * unitScale * widthStretch;
         // Most clusters hug the safe edge to form the continuous garden banks
         // promised by the acceptance target. A squared distribution still
         // scatters occasional clusters deeper into the world, avoiding a
@@ -455,14 +541,14 @@ export class Environment {
         this.position.set(lateral, -1.02, -zDistance);
         this.quaternion.setFromEuler(new THREE.Euler(
           0,
-          0,
+          side * lerp(-0.28, 0.22, hash01(band, salt + 8)),
           side * lerp(-0.025, 0.045, hash01(band, salt + 6))
         ));
         this.scale.set(
           (hash01(band, salt + 7) < 0.5 ? -1 : 1) *
-            height * widthScale,
-          height,
-          1
+            unitScale * widthStretch,
+          unitScale,
+          unitScale * depthStretch
         );
         this.matrix.compose(this.position, this.quaternion, this.scale);
 
@@ -479,7 +565,7 @@ export class Environment {
           brightness * 0.9,
           brightness
         );
-        this.reef[variant]?.add(this.matrix, this.colour);
+        family.add(this.matrix, this.colour);
       }
     }
     for (const family of this.reef) family.finish();

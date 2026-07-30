@@ -138,6 +138,17 @@ export function createWallFragmentGeometry(
       glowWeight: 0.1
     }
   ));
+  // Dark stone channel immediately behind the gameplay seam. The emissive
+  // contour is rendered independently on the exact collider plane, while this
+  // inset makes it read as moon-water held inside masonry rather than a post.
+  parts.push(decorate(
+    new THREE.BoxGeometry(0.085, 0.9, 1.04),
+    {
+      position: new THREE.Vector3(gapDirection * 0.435, -0.02, 0),
+      colour: OBSTACLE_RECESS,
+      glowWeight: 0.02
+    }
+  ));
   parts.push(decorate(
     new THREE.BoxGeometry(0.045, 0.74, 1.035, 1, ribSegments, 1),
     {
@@ -358,6 +369,161 @@ export function createMediumCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
       scale: new THREE.Vector3(1.28, 0.28, 0.86),
       colour: MOONSTONE_DARK,
       glowWeight: 0.16
+    }
+  ));
+  return merge(parts);
+}
+
+/**
+ * The signature Moon-Garden ecology cluster. Unlike the previous flat atlas
+ * card, this is a genuinely volumetric composition: a crescent ruin fragment,
+ * layered reef branches and a skirt of stones share one grounded silhouette.
+ */
+export function createHeroCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
+  const radial = lod === 0 ? 46 : lod === 1 ? 28 : 14;
+  const tube = lod === 0 ? 8 : lod === 1 ? 5 : 3;
+  const parts: THREE.BufferGeometry[] = [];
+
+  const coral = createMediumCoralGeometry(lod);
+  coral.scale(0.82, 0.88, 0.82);
+  coral.translate(0.14, 0.02, 0.18);
+  parts.push(coral);
+
+  for (const [index, radius] of [0.72, 0.53].entries()) {
+    parts.push(decorate(
+      new THREE.TorusGeometry(
+        radius,
+        index === 0 ? 0.105 : 0.072,
+        tube,
+        radial,
+        Math.PI * (index === 0 ? 1.16 : 1.08)
+      ),
+      {
+        position: new THREE.Vector3(-0.18, 0.58, -0.12 - index * 0.06),
+        rotation: new THREE.Euler(
+          0.08,
+          index === 0 ? -0.18 : 0.12,
+          index === 0 ? 0.48 : 0.62
+        ),
+        scale: new THREE.Vector3(1, 1.18, 0.72),
+        colour: index === 0 ? MOONSTONE_DARK : SHELL_GOLD,
+        glowWeight: index === 0 ? 0.12 : 0.64
+      }
+    ));
+  }
+
+  const rockCount = lod === 2 ? 3 : 4;
+  for (let index = 0; index < rockCount; index++) {
+    const x = -0.72 + index * (1.44 / Math.max(1, rockCount - 1));
+    const radius = index % 2 === 0 ? 0.22 : 0.17;
+    parts.push(decorate(
+      new THREE.DodecahedronGeometry(radius, 0),
+      {
+        position: new THREE.Vector3(
+          x,
+          radius * 0.55,
+          0.04 + Math.sin(index * 1.8) * 0.18
+        ),
+        rotation: new THREE.Euler(index * 0.32, index * 0.51, index * 0.19),
+        scale: new THREE.Vector3(1.18, 0.72, 0.92),
+        colour: index === 1 ? MOONSTONE : MOONSTONE_DARK,
+        glowWeight: 0.08
+      }
+    ));
+  }
+
+  return merge(parts);
+}
+
+/**
+ * A low shell-rosette garden used between taller reef clusters. It provides
+ * physical overlap and contact detail without creating obstacle-like height.
+ */
+export function createShellGardenGeometry(lod: ArtLod): THREE.BufferGeometry {
+  const radial = lod === 0 ? 20 : lod === 1 ? 14 : 8;
+  const tube = lod === 0 ? 5 : lod === 1 ? 4 : 3;
+  const shellCount = lod === 2 ? 2 : 3;
+  const parts: THREE.BufferGeometry[] = [];
+
+  for (let index = 0; index < shellCount; index++) {
+    const radius = [0.34, 0.27, 0.23][index] ?? 0.23;
+    const colour = index === 0
+      ? MOON_VIOLET
+      : index === 1
+        ? LIVING_CYAN
+        : HEART_ROSE;
+    parts.push(decorate(
+      new THREE.TorusGeometry(
+        radius,
+        radius * 0.24,
+        tube,
+        radial,
+        Math.PI * 1.62
+      ),
+      {
+        position: new THREE.Vector3(
+          (index - 1) * 0.38,
+          0.23 + index * 0.05,
+          (index % 2 === 0 ? -1 : 1) * 0.12
+        ),
+        rotation: new THREE.Euler(
+          Math.PI * 0.46,
+          index * 0.52,
+          -0.42 + index * 0.34
+        ),
+        scale: new THREE.Vector3(1, 0.72, 1),
+        colour,
+        glowWeight: 0.72
+      }
+    ));
+  }
+
+  const rockCount = lod === 2 ? 1 : 2;
+  for (let index = 0; index < rockCount; index++) {
+    const radius = 0.18 - index * 0.025;
+    parts.push(decorate(
+      new THREE.DodecahedronGeometry(radius, 0),
+      {
+        position: new THREE.Vector3(index === 0 ? -0.56 : 0.58, radius * 0.55, 0),
+        rotation: new THREE.Euler(index * 0.4, index * 0.8, -index * 0.2),
+        scale: new THREE.Vector3(1.28, 0.68, 0.95),
+        colour: MOONSTONE_DARK,
+        glowWeight: 0.08
+      }
+    ));
+  }
+
+  return merge(parts);
+}
+
+export function createGateFoundationGeometry(lod: ArtLod): THREE.BufferGeometry {
+  const rockCount = lod === 0 ? 6 : lod === 1 ? 4 : 3;
+  const parts: THREE.BufferGeometry[] = [];
+  for (let index = 0; index < rockCount; index++) {
+    const t = index / (rockCount - 1);
+    const radius = 0.11 + (index % 3) * 0.025;
+    parts.push(decorate(
+      new THREE.DodecahedronGeometry(radius, 0),
+      {
+        position: new THREE.Vector3(
+          THREE.MathUtils.lerp(-0.44, 0.44, t),
+          radius * 0.55,
+          Math.sin(index * 1.71) * 0.15
+        ),
+        rotation: new THREE.Euler(index * 0.31, index * 0.69, -index * 0.23),
+        scale: new THREE.Vector3(1.24, 0.68, 1.08),
+        colour: index % 3 === 0 ? MOONSTONE : MOONSTONE_DARK,
+        glowWeight: 0.06
+      }
+    ));
+  }
+  parts.push(decorate(
+    new THREE.BoxGeometry(0.94, 0.1, 0.54),
+    {
+      position: new THREE.Vector3(0, 0.025, 0),
+      rotation: new THREE.Euler(0, 0.08, 0),
+      colour: OBSTACLE_RECESS,
+      glowWeight: 0.04
     }
   ));
   return merge(parts);

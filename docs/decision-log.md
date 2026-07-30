@@ -166,3 +166,13 @@ the fog transition, moon shafts/haze were restored, facades were made more
 monumental only outside the fixed gap, and the cyan contour was moved below the
 bloom threshold. Browser shader/WebGL errors now fail capture. PR #7 remains
 draft until the actual portrait render passes owner visual review.
+
+## ADR-0019: Volumetric Moon-Garden integration
+
+**Decision:** Retire the runtime gate, tower and reef billboard treatment.
+Render collider-locked gate walls, foundations, near/mid architecture and four
+reef families as instanced volumetric meshes with one coherent Moon-Garden
+material. Keep billboard art only for distant skyline/ambient life and the
+temporary Glowfin review silhouette. Mesh bounds, rather than image-card
+centres, now enforce outside-lane placement. PR #7 remains draft until its real
+Chromium portrait is visually accepted.

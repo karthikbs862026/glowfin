@@ -30,8 +30,8 @@ export interface GateWallGeometry {
 }
 
 export const PROCEDURAL_GATE_VISUAL = {
-  wallHeight: 4,
-  wallDepth: 1.4,
+  wallHeight: 6.2,
+  wallDepth: 1.9,
   wallFloorY: -1
 } as const;
 

@@ -69,6 +69,7 @@ const FRAGMENT = /* glsl */ `
     vec3 keyDirection = normalize(vec3(-0.35, 0.82, 0.45));
     float keyLight = dot(normalize(vNormalW), keyDirection) * 0.5 + 0.5;
     float topLight = mix(0.68, 1.18, keyLight);
+    float groundContact = 1.0 - smoothstep(-0.96, -0.18, vWorldPos.y);
     float distanceToGlow = distance(vWorldPos.xz, uGlowCentre.xz);
     float wake = 1.0 - smoothstep(0.0, uGlowRadius, distanceToGlow);
     wake *= wake * vGlowWeight;
@@ -87,9 +88,15 @@ const FRAGMENT = /* glsl */ `
     vec2 cell = abs(fract(stoneUv + vec2(floor(stoneUv.y) * 0.37, 0.0)) - 0.5);
     float joint = 1.0 - smoothstep(0.025, 0.065, min(0.5 - cell.x, 0.5 - cell.y));
     float stoneWeight = 1.0 - smoothstep(0.22, 0.58, vGlowWeight);
+    float livingWeight = smoothstep(0.3, 0.72, vGlowWeight);
+    float porousBreakup = 0.5 + 0.5 * sin(
+      vWorldPos.x * 8.7 + sin(vWorldPos.y * 6.2) + vWorldPos.z * 7.1
+    );
 
     vec3 colour = vColour * broadWash * topLight;
     colour *= 1.0 - joint * 0.20 * stoneWeight;
+    colour *= mix(1.0, 0.84 + porousBreakup * 0.14, livingWeight);
+    colour *= mix(1.0, 0.58, groundContact);
     colour += vec3(0.055, 0.12, 0.15) * stoneWeight;
     colour += awakened * wake * mix(0.32, 0.84, uMomentum);
 
@@ -240,6 +247,10 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     float wash = 0.88 + 0.12 * sin(
       vWorldPos.y * 0.76 + vWorldPos.x * 0.18 + vWorldPos.z * 0.09
     );
+    float stoneMottle = 0.92 + 0.08 * sin(
+      vWorldPos.x * 2.7 + sin(vWorldPos.y * 1.9) + vWorldPos.z * 2.1
+    );
+    float groundContact = 1.0 - smoothstep(-0.96, -0.08, vWorldPos.y);
     vec2 stoneUv = n.y > n.z
       ? vWorldPos.xz
       : vWorldPos.xy;
@@ -247,8 +258,9 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     vec2 cell = abs(fract(stoneUv + vec2(floor(stoneUv.y) * 0.35, 0.0)) - 0.5);
     float joint = 1.0 - smoothstep(0.028, 0.07, min(0.5 - cell.x, 0.5 - cell.y));
 
-    vec3 colour = vColour * wash * mix(0.72, 1.16, keyLight);
+    vec3 colour = vColour * wash * stoneMottle * mix(0.72, 1.16, keyLight);
     colour *= 1.0 - joint * 0.18;
+    colour *= mix(1.0, 0.62, groundContact);
     float stoneWeight = 1.0 - smoothstep(0.28, 0.66, vGlowWeight);
     colour += vec3(0.09, 0.18, 0.23) * stoneWeight;
     colour += uCausticColor * pattern * uIntensity * facing;

@@ -10,9 +10,9 @@ export const PRODUCTION_ART = {
     bones: 10
   },
   wallFragment: {
-    lod0: 1464,
-    lod1: 624,
-    lod2: 174,
+    lod0: 1476,
+    lod1: 636,
+    lod2: 186,
     materials: 1,
     maxReliefDepth: 0.07
   },
@@ -32,6 +32,24 @@ export const PRODUCTION_ART = {
     lod0: 920,
     lod1: 432,
     lod2: 96,
+    materials: 1
+  },
+  heroCoral: {
+    lod0: 2536,
+    lod1: 1136,
+    lod2: 372,
+    materials: 1
+  },
+  shellGarden: {
+    lod0: 672,
+    lod1: 408,
+    lod2: 132,
+    materials: 1
+  },
+  gateFoundation: {
+    lod0: 228,
+    lod1: 156,
+    lod2: 120,
     materials: 1
   },
   ribbonKelp: {
@@ -76,7 +94,8 @@ export const PRODUCTION_ART = {
   skylineReviewImpostor: {
     lod0: 2,
     materials: 1,
-    textureMemoryMB: 0,
+    // Owns the shared 1024² skyline/life atlas plus the 384² seabed map.
+    textureMemoryMB: 6.2,
     maxTextureSizePx: 1024
   },
   ambientLifeReviewImpostor: {

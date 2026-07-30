@@ -3,8 +3,11 @@ import { tuning } from "../src/core/config";
 import { PRODUCTION_ART } from "../src/art/productionManifest";
 import {
   createBrokenTowerGeometry,
+  createGateFoundationGeometry,
+  createHeroCoralGeometry,
   createMediumCoralGeometry,
   createRibbonKelpGeometry,
+  createShellGardenGeometry,
   createSpireGeometry,
   createWallFragmentGeometry,
   geometryTriangles
@@ -30,6 +33,18 @@ describe("Phase 3B art geometry inventory", () => {
       [
         "mediumCoral",
         (lod: 0 | 1 | 2) => createMediumCoralGeometry(lod)
+      ],
+      [
+        "heroCoral",
+        (lod: 0 | 1 | 2) => createHeroCoralGeometry(lod)
+      ],
+      [
+        "shellGarden",
+        (lod: 0 | 1 | 2) => createShellGardenGeometry(lod)
+      ],
+      [
+        "gateFoundation",
+        (lod: 0 | 1 | 2) => createGateFoundationGeometry(lod)
       ]
     ] as const;
 
@@ -73,8 +88,8 @@ describe("Phase 3B art geometry inventory", () => {
     const context = gates.objects.filter((object) => object.userData["isObstacleContext"]);
     const maskHidden = gates.objects.filter((object) => object.userData["hideInArtMask"]);
     expect(contours).toHaveLength(1);
-    expect(context).toHaveLength(9);
-    expect(maskHidden).toHaveLength(3);
+    expect(context).toHaveLength(7);
+    expect(maskHidden).toHaveLength(0);
     gates.dispose();
   });
 

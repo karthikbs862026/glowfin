@@ -14,7 +14,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1464,
+          "triangles": 1476,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -49,7 +49,7 @@
         },
         {
           "level": 1,
-          "triangles": 624,
+          "triangles": 636,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -84,7 +84,7 @@
         },
         {
           "level": 2,
-          "triangles": 174,
+          "triangles": 186,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -131,7 +131,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1464,
+          "triangles": 1476,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -166,7 +166,7 @@
         },
         {
           "level": 1,
-          "triangles": 624,
+          "triangles": 636,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -201,7 +201,7 @@
         },
         {
           "level": 2,
-          "triangles": 174,
+          "triangles": 186,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -289,32 +289,24 @@
       ]
     },
     {
-      "name": "moon-garden-authored-gate-wall-review-impostor",
-      "family": "artReviewImpostor",
-      "collidable": false,
-      "materials": 1,
-      "textureMemoryMB": 5.4,
-      "maxTextureSizePx": 1024,
-      "contour": "decorative",
-      "lods": [
-        {
-          "level": 0,
-          "triangles": 2
-        }
-      ]
-    },
-    {
-      "name": "moon-garden-authored-broken-tower-review-impostor",
-      "family": "artReviewImpostor",
+      "name": "moon-garden-volumetric-broken-tower",
+      "family": "brokenTower",
       "collidable": false,
       "materials": 1,
       "textureMemoryMB": 0,
-      "maxTextureSizePx": 1024,
       "contour": "decorative",
       "lods": [
         {
           "level": 0,
-          "triangles": 2
+          "triangles": 4384
+        },
+        {
+          "level": 1,
+          "triangles": 1592
+        },
+        {
+          "level": 2,
+          "triangles": 508
         }
       ]
     },
@@ -341,17 +333,86 @@
       ]
     },
     {
-      "name": "moon-garden-authored-coral-review-impostor",
-      "family": "artReviewImpostor",
+      "name": "moon-garden-volumetric-hero-coral",
+      "family": "heroCoral",
       "collidable": false,
       "materials": 1,
-      "textureMemoryMB": 5.4,
-      "maxTextureSizePx": 1024,
+      "textureMemoryMB": 0,
       "contour": "decorative",
       "lods": [
         {
           "level": 0,
-          "triangles": 2
+          "triangles": 2536
+        },
+        {
+          "level": 1,
+          "triangles": 1136
+        },
+        {
+          "level": 2,
+          "triangles": 372
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-volumetric-medium-coral",
+      "family": "mediumCoral",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 920
+        },
+        {
+          "level": 1,
+          "triangles": 432
+        },
+        {
+          "level": 2,
+          "triangles": 96
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-volumetric-shell-garden",
+      "family": "mediumCoral",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 672
+        },
+        {
+          "level": 1,
+          "triangles": 408
+        },
+        {
+          "level": 2,
+          "triangles": 132
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-gate-rubble-foundation",
+      "family": "smallProp",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 228
+        },
+        {
+          "level": 1,
+          "triangles": 156
         }
       ]
     },
@@ -378,7 +439,7 @@
       "family": "artReviewImpostor",
       "collidable": false,
       "materials": 1,
-      "textureMemoryMB": 0,
+      "textureMemoryMB": 6.2,
       "maxTextureSizePx": 1024,
       "contour": "none",
       "lods": [
@@ -429,12 +490,12 @@
         "min": [
           -6,
           -1,
-          99.3
+          99.05
         ],
         "max": [
           -2,
-          3,
-          100.7
+          5.2,
+          100.95
         ]
       },
       "source": {
@@ -453,12 +514,12 @@
         "min": [
           2,
           -1,
-          99.3
+          99.05
         ],
         "max": [
           6,
-          3,
-          100.7
+          5.2,
+          100.95
         ]
       },
       "source": {
@@ -757,5 +818,5 @@
       "laneWidthFractionAtMaxMomentum": 0.12083333333333333
     }
   },
-  "compressedArtPayloadMB": 1.55
+  "compressedArtPayloadMB": 0.75
 }

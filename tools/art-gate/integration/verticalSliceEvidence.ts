@@ -100,35 +100,16 @@ function decorativeManifests(): AssetManifest[] {
       }]
     },
     {
-      name: "moon-garden-authored-gate-wall-review-impostor",
-      family: "artReviewImpostor",
+      name: "moon-garden-volumetric-broken-tower",
+      family: "brokenTower",
       collidable: false,
-      materials: PRODUCTION_ART.gateWallReviewImpostor.materials,
-      textureMemoryMB:
-        PRODUCTION_ART.gateWallReviewImpostor.textureMemoryMB,
-      maxTextureSizePx:
-        PRODUCTION_ART.gateWallReviewImpostor.maxTextureSizePx,
-      contour: "decorative",
-      lods: [{
-        level: 0,
-        triangles: PRODUCTION_ART.gateWallReviewImpostor.lod0
-      }]
-    },
-    {
-      name: "moon-garden-authored-broken-tower-review-impostor",
-      family: "artReviewImpostor",
-      collidable: false,
-      materials: PRODUCTION_ART.brokenTowerReviewImpostor.materials,
-      textureMemoryMB:
-        PRODUCTION_ART.brokenTowerReviewImpostor.textureMemoryMB,
-      maxTextureSizePx:
-        PRODUCTION_ART.brokenTowerReviewImpostor.maxTextureSizePx,
+      materials: PRODUCTION_ART.brokenTower.materials,
+      textureMemoryMB: 0,
       contour: "decorative",
       lods: [
-        {
-          level: 0,
-          triangles: PRODUCTION_ART.brokenTowerReviewImpostor.lod0
-        }
+        { level: 0, triangles: PRODUCTION_ART.brokenTower.lod0 },
+        { level: 1, triangles: PRODUCTION_ART.brokenTower.lod1 },
+        { level: 2, triangles: PRODUCTION_ART.brokenTower.lod2 }
       ]
     },
     {
@@ -145,18 +126,54 @@ function decorativeManifests(): AssetManifest[] {
       ]
     },
     {
-      name: "moon-garden-authored-coral-review-impostor",
-      family: "artReviewImpostor",
+      name: "moon-garden-volumetric-hero-coral",
+      family: "heroCoral",
       collidable: false,
-      materials: PRODUCTION_ART.coralReviewImpostor.materials,
-      textureMemoryMB: PRODUCTION_ART.coralReviewImpostor.textureMemoryMB,
-      maxTextureSizePx: PRODUCTION_ART.coralReviewImpostor.maxTextureSizePx,
+      materials: PRODUCTION_ART.heroCoral.materials,
+      textureMemoryMB: 0,
       contour: "decorative",
       lods: [
-        {
-          level: 0,
-          triangles: PRODUCTION_ART.coralReviewImpostor.lod0
-        }
+        { level: 0, triangles: PRODUCTION_ART.heroCoral.lod0 },
+        { level: 1, triangles: PRODUCTION_ART.heroCoral.lod1 },
+        { level: 2, triangles: PRODUCTION_ART.heroCoral.lod2 }
+      ]
+    },
+    {
+      name: "moon-garden-volumetric-medium-coral",
+      family: "mediumCoral",
+      collidable: false,
+      materials: PRODUCTION_ART.mediumCoral.materials,
+      textureMemoryMB: 0,
+      contour: "decorative",
+      lods: [
+        { level: 0, triangles: PRODUCTION_ART.mediumCoral.lod0 },
+        { level: 1, triangles: PRODUCTION_ART.mediumCoral.lod1 },
+        { level: 2, triangles: PRODUCTION_ART.mediumCoral.lod2 }
+      ]
+    },
+    {
+      name: "moon-garden-volumetric-shell-garden",
+      family: "mediumCoral",
+      collidable: false,
+      materials: PRODUCTION_ART.shellGarden.materials,
+      textureMemoryMB: 0,
+      contour: "decorative",
+      lods: [
+        { level: 0, triangles: PRODUCTION_ART.shellGarden.lod0 },
+        { level: 1, triangles: PRODUCTION_ART.shellGarden.lod1 },
+        { level: 2, triangles: PRODUCTION_ART.shellGarden.lod2 }
+      ]
+    },
+    {
+      name: "moon-garden-gate-rubble-foundation",
+      family: "smallProp",
+      collidable: false,
+      materials: PRODUCTION_ART.gateFoundation.materials,
+      textureMemoryMB: 0,
+      contour: "decorative",
+      lods: [
+        { level: 0, triangles: PRODUCTION_ART.gateFoundation.lod0 },
+        { level: 1, triangles: PRODUCTION_ART.gateFoundation.lod1 }
       ]
     },
     {
@@ -266,6 +283,6 @@ export function buildVerticalSliceEvidence(
         laneWidthFractionAtMaxMomentum: 1.45 / (LANE_HALF_WIDTH * 2)
       }
     },
-    compressedArtPayloadMB: 1.55
+    compressedArtPayloadMB: 0.75
   };
 }
