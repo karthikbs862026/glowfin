@@ -525,7 +525,8 @@ export class Environment {
     for (const family of this.life) family.begin();
 
     const fishCount = Math.max(4, Math.round(14 * this.density));
-    const fishFirst = Math.floor((forwardDistance - 12) / 25);
+    const fishSpacing = 13;
+    const fishFirst = Math.floor((forwardDistance - 8) / fishSpacing);
     for (let index = 0; index < fishCount; index++) {
       const band = fishFirst + index;
       const phase = time * 0.72 + band * 1.91;
@@ -533,7 +534,7 @@ export class Environment {
       this.position.set(
         Math.sin(phase) * 8.2,
         lerp(4.2, 12.8, hash01(band, 812)) + Math.sin(phase * 0.7) * 0.5,
-        -(band * 25 + hash01(band, 813) * 6)
+        -(band * fishSpacing + hash01(band, 813) * 3.2)
       );
       this.quaternion.identity();
       const size = lerp(0.3, 0.56, hash01(band, 814));

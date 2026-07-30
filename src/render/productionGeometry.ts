@@ -575,7 +575,8 @@ function coralRockBase(
     lod === 0 ? 7 : 5
   ), {
     position: new THREE.Vector3(0, 0.07, 0),
-    scale: new THREE.Vector3(1.35, 0.32, 0.92),
+    rotation: new THREE.Euler(0.04, 0.16, -0.035),
+    scale: new THREE.Vector3(1.18, 0.48, 0.94),
     colour: STONE_DARK,
     glow: 0.01
   }));

@@ -113,9 +113,17 @@ const BODY_FRAGMENT = /* glsl */ `
       momentumColour * core * 0.045 * uGlow +
       rim * fresnel * uRimStrength * uGlow * 0.22 +
       vec3(0.42, 0.78, 0.94) * seaGlassSpecular;
+    // Preserve Glowfin's authored blue/teal identity under ACES. The previous
+    // equal-channel lift made the body read as grey plastic in the browser
+    // even though the source pigment was saturated.
+    colour *= mix(
+      vec3(0.58, 1.02, 1.16),
+      vec3(0.92, 0.72, 1.04),
+      gillMask
+    );
     colour = min(
       colour * 0.66,
-      vec3(0.27, 0.52, 0.62)
+      vec3(0.24, 0.54, 0.68)
     );
     gl_FragColor = vec4(colour, 1.0);
     #include <tonemapping_fragment>

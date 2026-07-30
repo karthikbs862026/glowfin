@@ -174,9 +174,9 @@ export function createGlowfinRigGeometry(
   for (const side of [-1, 1]) {
     for (let index = 0; index < 3; index++) {
       const pivot = new THREE.Vector3(
-        side * r * (1.04 + index * 0.045),
-        r * (0.48 - index * 0.34),
-        r * (0.34 + index * 0.025)
+        side * r * (1.02 + index * 0.075),
+        r * (0.54 - index * 0.31),
+        r * (0.3 + index * 0.018)
       );
       pivots.gills.push(pivot);
       bodyParts.push({
@@ -187,7 +187,7 @@ export function createGlowfinRigGeometry(
         rotation: new THREE.Euler(
           side * 0.06,
           side * 0.12,
-          side * (0.9 - index * 0.55)
+          side * (1.08 - index * 0.52)
         ),
         scale: new THREE.Vector3(
           0.9 + index * 0.04,
