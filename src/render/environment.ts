@@ -95,7 +95,7 @@ export interface MoonGardenTextures {
   livingMap: THREE.Texture;
 }
 
-const POINT_COUNT = 129;
+const POINT_COUNT = 193;
 
 export class Environment {
   readonly objects: THREE.Object3D[] = [];
@@ -170,7 +170,7 @@ export class Environment {
         this.disposables
       )
     );
-    const lifeCaps = [10, 8, 5, 10];
+    const lifeCaps = [24, 12, 6, 10];
     const lifeGeometry = [
       createProductionMinnow(),
       createProductionJelly(),
@@ -524,8 +524,8 @@ export class Environment {
   private updateLife(forwardDistance: number, time: number): void {
     for (const family of this.life) family.begin();
 
-    const fishCount = Math.max(4, Math.round(14 * this.density));
-    const fishSpacing = 13;
+    const fishCount = Math.max(8, Math.round(22 * this.density));
+    const fishSpacing = 9;
     const fishFirst = Math.floor((forwardDistance - 8) / fishSpacing);
     for (let index = 0; index < fishCount; index++) {
       const band = fishFirst + index;
@@ -537,7 +537,7 @@ export class Environment {
         -(band * fishSpacing + hash01(band, 813) * 3.2)
       );
       this.quaternion.identity();
-      const size = lerp(0.3, 0.56, hash01(band, 814));
+      const size = lerp(0.22, 0.44, hash01(band, 814));
       this.scale.set(direction * size * 1.3, size, 1);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.72, 0.86, 1);

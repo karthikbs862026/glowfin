@@ -2,9 +2,9 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { ArtLod } from "./moonGardenGeometry";
 
-const STONE = new THREE.Color(0x0d3850);
-const STONE_LIGHT = new THREE.Color(0x286278);
-const STONE_DARK = new THREE.Color(0x041522);
+const STONE = new THREE.Color(0x0a395e);
+const STONE_LIGHT = new THREE.Color(0x1f6382);
+const STONE_DARK = new THREE.Color(0x03172a);
 const JOINT = new THREE.Color(0x071b2b);
 const SHELL = new THREE.Color(0x668b82);
 const CYAN = new THREE.Color(0x08758a);
@@ -193,10 +193,10 @@ export function createProductionWallGeometry(
     new THREE.Vector2(innerX, 0.34 + variant * 0.018),
     new THREE.Vector2(gapDirection * 0.42, 0.44 - variant * 0.012),
     new THREE.Vector2(gapDirection * 0.27, 0.49 - variant * 0.018),
-    new THREE.Vector2(gapDirection * 0.1, 0.42 + variant * 0.012),
-    new THREE.Vector2(-gapDirection * 0.08, 0.27 + variant * 0.02),
-    new THREE.Vector2(-gapDirection * 0.28, 0.25 - variant * 0.018),
-    new THREE.Vector2(outerX, 0.16 - variant * 0.025),
+    new THREE.Vector2(gapDirection * 0.12, 0.31 + variant * 0.012),
+    new THREE.Vector2(-gapDirection * 0.05, 0.06 + variant * 0.02),
+    new THREE.Vector2(-gapDirection * 0.26, -0.16 - variant * 0.018),
+    new THREE.Vector2(outerX, -0.27 - variant * 0.02),
     new THREE.Vector2(outerX, -0.5)
   ]);
   const backingGeometry = new THREE.ExtrudeGeometry(backing, {
@@ -220,6 +220,13 @@ export function createProductionWallGeometry(
   const courseHeight = 0.88 / rows;
   for (let row = 0; row < rows; row++) {
     for (let column = 0; column < columns; column++) {
+      // The outer wall is a low collapsed bank; courses accumulate only as
+      // they approach the inner pier. This makes the pair read as a broken
+      // arch instead of two rectangular panels.
+      const allowedRows = 1 + Math.floor(
+        column / Math.max(1, columns - 1) * (rows - 1)
+      );
+      if (row >= allowedRows) continue;
       if (
         (row === rows - 1 && column === 0) ||
         (variant === 1 && row === rows - 1 && column === columns - 1)
