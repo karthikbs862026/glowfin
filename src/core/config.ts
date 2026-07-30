@@ -68,6 +68,28 @@ export interface TuningConfig {
     bloomRadius: number;
     bloomThreshold: number;
   };
+  creature: {
+    bodyLength: number;
+    bodyHeight: number;
+    finFlutterHzAtZeroMomentum: number;
+    finFlutterHzAtMaxMomentum: number;
+    finFlutterAmplitude: number;
+    tailSwayAmplitude: number;
+    bankAngleMaxRadians: number;
+    bankSmoothingHalfLifeSec: number;
+    breathHz: number;
+    breathAmount: number;
+    eyeOffsetX: number;
+    eyeOffsetY: number;
+    eyeOffsetZ: number;
+    eyeRadius: number;
+    eyeHueCalm: number;
+    eyeHueMax: number;
+    rimStrength: number;
+    rimPower: number;
+    bodyGlowAtZeroLight: number;
+    bodyGlowAtFullLight: number;
+  };
   trail: {
     segmentCount: number;
     sampleIntervalSec: number;
@@ -158,6 +180,26 @@ const RULES: Record<string, Rule> = {
   "visual.bloomStrength": { min: 0, max: 4, note: "bloom intensity; this is what makes emissive read as glowing" },
   "visual.bloomRadius": { min: 0, max: 2, note: "bloom spread" },
   "visual.bloomThreshold": { min: 0, max: 2, note: "luminance above which pixels bloom" },
+  "creature.bodyLength": { min: 0.5, max: 3, note: "body z scale; longer reads faster" },
+  "creature.bodyHeight": { min: 0.3, max: 2, note: "body y scale; lower reads pudgier" },
+  "creature.finFlutterHzAtZeroMomentum": { min: 0, max: 20, note: "fin beat rate at rest" },
+  "creature.finFlutterHzAtMaxMomentum": { min: 0, max: 30, note: "fin beat rate at ceiling" },
+  "creature.finFlutterAmplitude": { min: 0, max: 1.5, note: "fin beat angle, radians" },
+  "creature.tailSwayAmplitude": { min: 0, max: 1.5, note: "tail sway angle, radians" },
+  "creature.bankAngleMaxRadians": { min: 0, max: 1.2, note: "roll into a turn; reads as intent and helps the player see their own steering" },
+  "creature.bankSmoothingHalfLifeSec": { min: 0, max: 0.4, note: "bank easing; too high and the creature lags the input the player gave" },
+  "creature.breathHz": { min: 0, max: 5, note: "idle squash-and-stretch rate" },
+  "creature.breathAmount": { min: 0, max: 0.4, note: "idle squash-and-stretch depth" },
+  "creature.eyeOffsetX": { min: 0, max: 2, note: "eye lateral offset as a multiple of creatureRadius — must exceed ~0.85 or the eye hides inside the body silhouette when viewed from the chase camera" },
+  "creature.eyeOffsetY": { min: -1, max: 2, note: "eye height offset" },
+  "creature.eyeOffsetZ": { min: -2, max: 2, note: "eye forward offset; too negative and the eye sits on the far side of the body" },
+  "creature.eyeRadius": { min: 0.05, max: 1, note: "eye size as a multiple of creatureRadius" },
+  "creature.eyeHueCalm": { min: 0, max: 1, note: "eye hue at rest (Part 3.1: calm blue)" },
+  "creature.eyeHueMax": { min: 0, max: 1, note: "eye hue at ceiling (Part 3.1: warm pink/gold)" },
+  "creature.rimStrength": { min: 0, max: 5, note: "fresnel rim; sells glowing from within (Part 3.2 priority 4)" },
+  "creature.rimPower": { min: 0.5, max: 8, note: "rim tightness" },
+  "creature.bodyGlowAtZeroLight": { min: 0, max: 3, note: "body brightness when light is depleted — dimming IS the danger signal (ADR-0006)" },
+  "creature.bodyGlowAtFullLight": { min: 0, max: 4, note: "body brightness at full light" },
   "trail.segmentCount": { min: 4, max: 96, note: "ribbon segments; capped by budgets.pools.maxTrailSegments" },
   "trail.sampleIntervalSec": { min: 0.004, max: 0.2, note: "how often a ribbon point is recorded" },
   "trail.widthAtZeroMomentum": { min: 0.01, max: 6, note: "ribbon width at rest" },

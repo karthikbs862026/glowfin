@@ -49,6 +49,21 @@
         color: #8a7bff;
         font-variant-numeric: tabular-nums;
       }
+      #hud-momentum {
+        width: min(220px, 52vw);
+        height: 3px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.07);
+        overflow: hidden;
+        margin-top: -4px;
+      }
+      #hud-momentum-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: 999px;
+        background: hsl(202, 90%, 62%);
+        transition: width 70ms linear, background 220ms linear;
+      }
       #hud-light {
         width: min(220px, 52vw);
         height: 6px;
@@ -101,6 +116,7 @@
         <div id="hud-multiplier">x1.0</div>
       </div>
       <div id="hud-light"><div id="hud-light-fill"></div></div>
+      <div id="hud-momentum"><div id="hud-momentum-fill"></div></div>
     </div>
 
     <div id="hud-gameover">

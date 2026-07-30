@@ -93,7 +93,16 @@ function frame(nowMs: number): void {
 
   const lightFraction = run.light / tuning.light.max;
   view.render(run.sim, run.gates, lightFraction, run.sim.elapsedSec, frameSec);
-  hud.update(run.scoring.score, run.scoring.multiplier, lightFraction);
+  const momentumFraction =
+    tuning.momentum.ceiling === 0 ? 0 : run.sim.momentum / tuning.momentum.ceiling;
+  hud.update(
+    run.scoring.score,
+    run.scoring.multiplier,
+    lightFraction,
+    momentumFraction,
+    tuning.creature.eyeHueCalm,
+    tuning.creature.eyeHueMax
+  );
 
   // --- performance (Part 4.6 / 6.8) ---
   // Frame time is measured in wall clock, not simulated time: slow-mo makes the
