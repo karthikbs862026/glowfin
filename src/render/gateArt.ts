@@ -72,9 +72,11 @@ export class MoonGardenGates {
       mesh.count = 0;
       mesh.frustumCulled = false;
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      // The stone gives the contour visual context, but the contour is the
-      // authoritative playable edge that the contrast gate must measure.
-      mesh.userData["isObstacleContext"] = true;
+      // Every wall fragment is backed by the runtime collider and therefore
+      // belongs in the fairness mask. The cyan contour remains the clearest
+      // player cue, but treating collidable stone as mere context lets a dark
+      // or occluded wall escape the contrast gate.
+      mesh.userData["isObstacle"] = true;
       this.objects.push(mesh);
       this.disposables.push(geometry);
       return mesh;
