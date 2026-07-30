@@ -182,7 +182,10 @@ export class MoonGardenGates {
 
     const contourGeometry = new THREE.BoxGeometry(1, 1, 1);
     const contourMaterial = new THREE.MeshBasicMaterial({
-      color: 0x63e0ff,
+      // Deliberately below the global bloom threshold. This remains a
+      // high-contrast pale-cyan edge against moonstone, but no longer washes
+      // the adjacent safe-gap pixel into the same luminance on medium quality.
+      color: 0x48bfd2,
       toneMapped: false,
       // The contour shares the wall's front plane so its projected gap edge
       // remains collider-true. Polygon offset resolves the coplanar surface
@@ -262,8 +265,12 @@ export class MoonGardenGates {
         // Keep the generated facade's straight inner edge on the exact
         // runtime collider plane. The right wall mirrors the image by using a
         // negative x scale; all ornament still retreats into the wall mass.
-        const facadeWidth = Math.max(2.6, Math.min(4.2, wall.width + 0.75));
-        const facadeHeight = 6.8;
+        const facadeWidthBoost = [1.35, 1.05, 1.2][facadeVariant] ?? 1.1;
+        const facadeWidth = Math.max(
+          3.2,
+          Math.min(5.2, wall.width + facadeWidthBoost)
+        );
+        const facadeHeight = [9.2, 8.2, 7.6][facadeVariant] ?? 8.2;
         this.position.set(
           wall.colliderPlane - wall.gapDirection * facadeWidth * 0.5,
           PROCEDURAL_GATE_VISUAL.wallFloorY,

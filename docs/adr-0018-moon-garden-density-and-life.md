@@ -27,8 +27,17 @@ had large empty gaps, and nothing except Glowfin moved.
   on deterministic world-band paths. They are non-collidable and use different
   depths, speeds and vertical ranges.
 - Add one moon source and a capped pool of drifting bioluminescent motes.
+- Keep the first skyline layer inside the fog transition, distribute ambient
+  swimmers through the upper water, and use feathered shafts plus a quiet
+  radial haze so "moonlit" remains visible in portrait framing.
+- Keep the collider-truth contour below the global bloom threshold. It remains
+  pale cyan and at least 3:1 against the world, but cannot wash into a detached
+  fluorescent post at the medium-quality bloom resolution.
 - Scale all non-gameplay density to 1.0 / 0.68 / 0.38 on high / medium / low
   quality tiers.
+- Treat browser page errors and shader/WebGL console errors as capture
+  failures; a missing atmosphere layer cannot silently pass on numeric scene
+  budgets.
 - Keep the PR draft until the actual Chromium portrait artifact passes owner
   visual review; technical gates remain necessary but not sufficient.
 

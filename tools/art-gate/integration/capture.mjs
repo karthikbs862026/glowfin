@@ -40,6 +40,18 @@ try {
     hasTouch: true
   });
   const page = await context.newPage();
+  const renderErrors = [];
+  page.on("pageerror", (error) => {
+    renderErrors.push(`page error: ${error.message}`);
+  });
+  page.on("console", (message) => {
+    if (
+      message.type() === "error" &&
+      /(?:webgl|shader|gl_invalid|program)/i.test(message.text())
+    ) {
+      renderErrors.push(`console error: ${message.text()}`);
+    }
+  });
   const target = new URL("art-gate.html", baseUrl);
   target.searchParams.set("tier", tier);
   target.searchParams.set("device", device);
@@ -50,6 +62,11 @@ try {
     { timeout: 60_000 }
   );
   const bundle = await page.evaluate(() => window.__GLOWFIN_ART_GATE__);
+  if (renderErrors.length > 0) {
+    throw new Error(
+      `Browser render reported shader/WebGL failures: ${renderErrors.join("; ")}`
+    );
+  }
   if (!bundle || !Array.isArray(bundle.captures)) {
     throw new Error("Browser did not expose structured art-gate evidence.");
   }

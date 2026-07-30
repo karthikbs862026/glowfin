@@ -172,7 +172,7 @@ export class GameView {
     );
 
     const backgroundCanvas = document.createElement("canvas");
-    backgroundCanvas.width = 4;
+    backgroundCanvas.width = 128;
     backgroundCanvas.height = 256;
     const backgroundContext = backgroundCanvas.getContext("2d");
     if (!backgroundContext) {
@@ -184,12 +184,30 @@ export class GameView {
       0,
       backgroundCanvas.height
     );
-    backgroundGradient.addColorStop(0, "#020a1c");
-    backgroundGradient.addColorStop(0.36, "#08243f");
-    backgroundGradient.addColorStop(0.68, "#144864");
-    backgroundGradient.addColorStop(0.86, "#1a5269");
-    backgroundGradient.addColorStop(1, "#0d2c41");
+    backgroundGradient.addColorStop(0, "#06152b");
+    backgroundGradient.addColorStop(0.34, "#0b2f4d");
+    backgroundGradient.addColorStop(0.66, "#18516a");
+    backgroundGradient.addColorStop(0.86, "#1a566d");
+    backgroundGradient.addColorStop(1, "#0d3045");
     backgroundContext.fillStyle = backgroundGradient;
+    backgroundContext.fillRect(
+      0,
+      0,
+      backgroundCanvas.width,
+      backgroundCanvas.height
+    );
+    const moonHaze = backgroundContext.createRadialGradient(
+      backgroundCanvas.width * 0.5,
+      backgroundCanvas.height * 0.14,
+      2,
+      backgroundCanvas.width * 0.5,
+      backgroundCanvas.height * 0.14,
+      backgroundCanvas.width * 0.72
+    );
+    moonHaze.addColorStop(0, "rgba(112, 205, 235, 0.24)");
+    moonHaze.addColorStop(0.38, "rgba(70, 154, 196, 0.12)");
+    moonHaze.addColorStop(1, "rgba(18, 66, 99, 0)");
+    backgroundContext.fillStyle = moonHaze;
     backgroundContext.fillRect(
       0,
       0,

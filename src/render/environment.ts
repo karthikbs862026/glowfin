@@ -238,8 +238,8 @@ export class Environment {
           float horizontal = 1.0 - smoothstep(0.04, 0.5, abs(vUv.x - 0.5));
           float lowerFade = smoothstep(0.0, 0.22, vUv.y);
           float upperFade = 1.0 - smoothstep(0.78, 1.0, vUv.y);
-          float alpha = horizontal * lowerFade * upperFade * 0.12;
-          gl_FragColor = vec4(vTint * alpha * 1.35, alpha);
+          float alpha = horizontal * lowerFade * upperFade * 0.2;
+          gl_FragColor = vec4(vTint * 2.2, alpha);
         }
       `
     });
@@ -346,8 +346,8 @@ export class Environment {
           hash01(band, salt + 3)
         );
         const height = lerp(
-          env.buildingMinHeight * 0.8,
-          env.buildingMaxHeight * 0.72,
+          env.buildingMinHeight * 0.95,
+          env.buildingMaxHeight * 0.86,
           Math.pow(hash01(band, salt), 1.5)
         );
         const sink = lerp(
@@ -382,7 +382,10 @@ export class Environment {
   }
 
   private updateSkyline(forwardDistance: number): void {
-    const spacing = 150;
+    // Keep the first city layer inside the fog transition. The previous
+    // 150-unit spacing compressed the authored skyline into a thin, nearly
+    // black horizon strip and left half of the portrait empty.
+    const spacing = 112;
     const count = this.density > 0.8 ? 3 : 2;
     const firstBand = Math.floor(forwardDistance / spacing) + 1;
     this.skyline.begin();
@@ -390,17 +393,17 @@ export class Environment {
       const band = firstBand + index;
       this.position.set(
         lerp(-4, 4, hash01(band, 712)),
-        -1.35,
-        -(band * spacing + 28)
+        -1.1,
+        -(band * spacing + 18)
       );
       this.quaternion.identity();
       this.scale.set(
-        lerp(62, 76, hash01(band, 713)),
-        lerp(17, 22, hash01(band, 714)),
+        lerp(58, 72, hash01(band, 713)),
+        lerp(26, 36, hash01(band, 714)),
         1
       );
       this.matrix.compose(this.position, this.quaternion, this.scale);
-      const brightness = lerp(0.38, 0.58, hash01(band, 715));
+      const brightness = lerp(0.48, 0.68, hash01(band, 715));
       this.colour.setRGB(
         brightness * 0.65,
         brightness * 0.82,
@@ -483,7 +486,7 @@ export class Environment {
       const direction = hash01(band, 811) < 0.5 ? -1 : 1;
       this.position.set(
         Math.sin(phase) * 10.5,
-        lerp(2.8, 6.8, hash01(band, 812)) + Math.sin(phase * 0.7) * 0.4,
+        lerp(4.2, 9.8, hash01(band, 812)) + Math.sin(phase * 0.7) * 0.5,
         -(band * 25 + hash01(band, 813) * 6)
       );
       this.quaternion.identity();
@@ -499,11 +502,11 @@ export class Environment {
     for (let index = 0; index < jellyCount; index++) {
       const band = jellyFirst + index;
       const side = hash01(band, 821) < 0.5 ? -1 : 1;
-      const rise = positiveMod(time * 0.48 + hash01(band, 822) * 7, 7);
+      const rise = positiveMod(time * 0.48 + hash01(band, 822) * 9, 9);
       this.position.set(
         side * lerp(7.8, 15, hash01(band, 823)) +
           Math.sin(time * 0.45 + band) * 0.65,
-        0.4 + rise,
+        1.2 + rise,
         -(band * 38 + 8)
       );
       this.quaternion.identity();
@@ -522,7 +525,7 @@ export class Environment {
       const phase = time * 0.28 + band * 2.4;
       this.position.set(
         Math.sin(phase) * 13,
-        6.5 + Math.sin(phase * 1.4) * 1.2,
+        9.5 + Math.sin(phase * 1.4) * 1.8,
         -(band * 58 + 24)
       );
       this.quaternion.setFromEuler(new THREE.Euler(0, 0, Math.cos(phase) * 0.08));
@@ -556,8 +559,9 @@ export class Environment {
   }
 
   private updateMoonAndMotes(forwardDistance: number, time: number): void {
-    // A quiet moon-disc/bioluminescent source sits above the open corridor.
-    this.pointPositions.setXYZ(0, 0, 9.2, -forwardDistance - 148);
+    // A quiet moon-disc/bioluminescent source sits high above the open
+    // corridor, rather than merging with the gate at the horizon.
+    this.pointPositions.setXYZ(0, 0, 17.5, -forwardDistance - 124);
     const activeMotes = Math.max(20, Math.floor((POINT_COUNT - 1) * this.density));
     const firstBand = Math.floor((forwardDistance - 18) / 5);
     for (let index = 1; index < POINT_COUNT; index++) {
@@ -607,9 +611,9 @@ export class Environment {
         lerp(0.55, 1.05, hash01(band, 5054)) *
         lerp(0.78, 1.15, momentumFraction);
       this.colour.setRGB(
-        strength * 0.55,
-        strength * 0.85,
-        strength
+        strength * 2.6,
+        strength * 3.8,
+        strength * 4.6
       );
       this.godRays.setColorAt(index, this.colour);
     }

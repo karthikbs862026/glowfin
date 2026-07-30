@@ -160,5 +160,9 @@ replacements. PR #7 stays draft and unmergeable until owner visual approval.
 but cycle three collider-safe facade families without adjacent repeats. Pack
 four reef families, a layered centre-open skyline and four moving ambient-life
 families into bounded atlases; enrich only outside-lane dressing; scale
-non-gameplay density by quality tier. PR #7 remains draft until the actual
-portrait render passes owner visual review.
+non-gameplay density by quality tier. The first Chromium pass exposed a
+medium-tier bloom wash and an upper-water void, so the skyline was moved inside
+the fog transition, moon shafts/haze were restored, facades were made more
+monumental only outside the fixed gap, and the cyan contour was moved below the
+bloom threshold. Browser shader/WebGL errors now fail capture. PR #7 remains
+draft until the actual portrait render passes owner visual review.
