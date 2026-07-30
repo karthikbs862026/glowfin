@@ -167,9 +167,12 @@ const FRAGMENT = /* glsl */ `
       abs(vWorldPos.x)
     );
     colour *= mix(0.7, 1.0, route);
-    float moonTrack = exp(-abs(vWorldPos.x) * 0.72) *
-      (0.72 + 0.28 * sin(vWorldPos.z * 0.24 + uTime * 0.28));
-    colour += vec3(0.025, 0.075, 0.095) * moonTrack;
+    float moonTrack = exp(-abs(vWorldPos.x) * 1.35) * (
+      0.68 +
+      0.2 * sin(vWorldPos.z * 0.17 + uTime * 0.28) +
+      0.12 * sin(vWorldPos.z * 0.53 - uTime * 0.19)
+    );
+    colour += vec3(0.035, 0.09, 0.11) * moonTrack;
 
     // Lit border along the face edges.
     //
