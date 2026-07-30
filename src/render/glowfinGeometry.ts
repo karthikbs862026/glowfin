@@ -189,6 +189,25 @@ export function createGlowfinRigGeometry(
     });
   }
 
+  // A slim peduncle keeps the raised fan physically connected to the body
+  // crown without dropping back into the eye line.
+  bodyParts.push({
+    geometry: new THREE.CapsuleGeometry(
+      r * 0.07,
+      r * 0.36,
+      high ? 3 : 2,
+      high ? 6 : 5
+    ),
+    bone: 3,
+    colour: finCyan,
+    position: pivots.tail.clone().add(new THREE.Vector3(
+      0,
+      r * 0.93,
+      r * 0.16
+    )),
+    scale: new THREE.Vector3(0.7, 1, 0.42)
+  });
+
   // A raised vertical caudal fan reads above the body from the chase camera.
   // Keeping it off the lower silhouette prevents the projected tail from
   // resembling a long nose beneath the eyes.

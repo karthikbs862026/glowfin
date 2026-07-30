@@ -4,8 +4,8 @@
  */
 export const PRODUCTION_ART = {
   glowfin: {
-    lod0: 7088,
-    lod1: 3600,
+    lod0: 7244,
+    lod1: 3690,
     materials: 2,
     bones: 10
   },

@@ -267,11 +267,11 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 7088
+          "triangles": 7244
         },
         {
           "level": 1,
-          "triangles": 3600
+          "triangles": 3690
         }
       ]
     },
