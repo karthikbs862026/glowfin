@@ -202,10 +202,10 @@ export function createGlowfinRigGeometry(
     colour: finCyan,
     position: pivots.tail.clone().add(new THREE.Vector3(
       0,
-      r * 0.52,
+      r * 0.84,
       r * 0.16
     )),
-    scale: new THREE.Vector3(0.39, 0.72, 0.12)
+    scale: new THREE.Vector3(0.36, 0.78, 0.11)
   });
 
   let bone = 4;

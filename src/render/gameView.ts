@@ -214,11 +214,11 @@ export class GameView {
       0,
       backgroundCanvas.height
     );
-    backgroundGradient.addColorStop(0, "#05091d");
-    backgroundGradient.addColorStop(0.3, "#101b3b");
-    backgroundGradient.addColorStop(0.62, "#103e59");
-    backgroundGradient.addColorStop(0.84, "#145268");
-    backgroundGradient.addColorStop(1, "#092d43");
+    backgroundGradient.addColorStop(0, "#071329");
+    backgroundGradient.addColorStop(0.3, "#102746");
+    backgroundGradient.addColorStop(0.62, "#12455f");
+    backgroundGradient.addColorStop(0.84, "#17576d");
+    backgroundGradient.addColorStop(1, "#0a3349");
     backgroundContext.fillStyle = backgroundGradient;
     backgroundContext.fillRect(
       0,
@@ -234,8 +234,8 @@ export class GameView {
       backgroundCanvas.height * 0.14,
       backgroundCanvas.width * 0.72
     );
-    moonHaze.addColorStop(0, "rgba(112, 205, 235, 0.2)");
-    moonHaze.addColorStop(0.38, "rgba(70, 154, 196, 0.09)");
+    moonHaze.addColorStop(0, "rgba(128, 218, 241, 0.27)");
+    moonHaze.addColorStop(0.38, "rgba(76, 166, 207, 0.13)");
     moonHaze.addColorStop(1, "rgba(18, 66, 99, 0)");
     backgroundContext.fillStyle = moonHaze;
     backgroundContext.fillRect(
