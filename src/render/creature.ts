@@ -72,9 +72,9 @@ const BODY_FRAGMENT = /* glsl */ `
     vec3 rim = mix(vec3(0.85, 0.965, 1.0), gold, uMomentum * 0.45);
     float core = smoothstep(-0.8, 0.55, vObjectPosition.y) *
       (1.0 - smoothstep(0.15, 1.25, abs(vObjectPosition.x)));
-    vec3 colour = base * mix(0.58, 0.92, uGlow) +
-      momentumColour * core * 0.10 * uGlow +
-      rim * fresnel * uRimStrength * uGlow * 0.62;
+    vec3 colour = base * mix(0.46, 0.72, uGlow) +
+      momentumColour * core * 0.07 * uGlow +
+      rim * fresnel * uRimStrength * uGlow * 0.38;
     gl_FragColor = vec4(colour, 1.0);
   }
 `;

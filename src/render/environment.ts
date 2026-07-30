@@ -109,7 +109,7 @@ export class Environment {
     const fogNear = cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier;
     const fogFar = cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier;
     this.material = createMoonGardenMaterial({
-      fogColor: 0x071425,
+      fogColor: 0x0a263b,
       fogNear,
       fogFar,
       glowRadius: env.coralPulseRadiusUnits
@@ -167,16 +167,45 @@ export class Environment {
       "color",
       new THREE.BufferAttribute(rayColours, 3)
     );
-    const rayMaterial = new THREE.MeshBasicMaterial({
-      vertexColors: true,
+    const rayMaterial = new THREE.ShaderMaterial({
       transparent: true,
-      opacity: 0.2,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       depthTest: false,
       side: THREE.DoubleSide,
-      fog: true,
-      toneMapped: false
+      toneMapped: false,
+      vertexShader: /* glsl */ `
+        varying vec2 vUv;
+        varying vec3 vTint;
+        void main() {
+          vUv = uv;
+          vTint = vec3(0.48, 0.78, 1.0);
+          #ifdef USE_INSTANCING_COLOR
+            vTint *= instanceColor;
+          #endif
+          vec4 localPosition = vec4(position, 1.0);
+          #ifdef USE_INSTANCING
+            localPosition = instanceMatrix * localPosition;
+          #endif
+          gl_Position = projectionMatrix * modelViewMatrix * localPosition;
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        precision mediump float;
+        varying vec2 vUv;
+        varying vec3 vTint;
+        void main() {
+          float horizontal = 1.0 - smoothstep(
+            0.04,
+            0.5,
+            abs(vUv.x - 0.5)
+          );
+          float lowerFade = smoothstep(0.0, 0.22, vUv.y);
+          float upperFade = 1.0 - smoothstep(0.78, 1.0, vUv.y);
+          float alpha = horizontal * lowerFade * upperFade * 0.16;
+          gl_FragColor = vec4(vTint * alpha * 1.4, alpha);
+        }
+      `
     });
     this.godRays = new THREE.InstancedMesh(
       rayGeometry,

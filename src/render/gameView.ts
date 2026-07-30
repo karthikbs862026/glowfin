@@ -125,7 +125,34 @@ export class GameView {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
 
-    this.scene.background = new THREE.Color(0x020916);
+    const backgroundCanvas = document.createElement("canvas");
+    backgroundCanvas.width = 4;
+    backgroundCanvas.height = 256;
+    const backgroundContext = backgroundCanvas.getContext("2d");
+    if (!backgroundContext) {
+      throw new Error("2D canvas is required for the Moon-Garden water gradient.");
+    }
+    const backgroundGradient = backgroundContext.createLinearGradient(
+      0,
+      0,
+      0,
+      backgroundCanvas.height
+    );
+    backgroundGradient.addColorStop(0, "#020817");
+    backgroundGradient.addColorStop(0.48, "#071b31");
+    backgroundGradient.addColorStop(0.76, "#0b2940");
+    backgroundGradient.addColorStop(1, "#071725");
+    backgroundContext.fillStyle = backgroundGradient;
+    backgroundContext.fillRect(
+      0,
+      0,
+      backgroundCanvas.width,
+      backgroundCanvas.height
+    );
+    const backgroundTexture = new THREE.CanvasTexture(backgroundCanvas);
+    backgroundTexture.colorSpace = THREE.SRGBColorSpace;
+    this.scene.background = backgroundTexture;
+    this.disposables.push(backgroundTexture);
     // Fog starts well beyond the sight distance so it never eats an obstacle
     // the player is supposed to be reading (Part 3.4).
     // Fog must begin BEYOND the reaction window, not at its edge.
@@ -136,7 +163,7 @@ export class GameView {
     // out at exactly the distance Part 4.5 requires them to stay readable, and
     // the probe caught it as near-black obstacles on a near-black background.
     this.scene.fog = new THREE.Fog(
-      0x071425,
+      0x0a263b,
       cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier,
       cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier
     );
@@ -166,7 +193,7 @@ export class GameView {
     // while the narrower route keeps the playable corridor legible.
     const seabedGeo = new THREE.PlaneGeometry(72, 4000);
     const seabedMaterial = new THREE.MeshStandardMaterial({
-      color: 0x061522,
+      color: 0x123346,
       roughness: 1,
       metalness: 0
     });
@@ -178,13 +205,13 @@ export class GameView {
 
     const floorGeo = new THREE.PlaneGeometry(halfWidth * 2.05, 4000);
     this.floorMaterial = createCausticMaterial({
-      baseColor: 0x10293b,
+      baseColor: 0x285a72,
       causticColor: 0x2ea8d8,
       scale: cfg.visual.causticScaleFloor,
       intensity: cfg.visual.causticIntensityFloor,
       sharpness: cfg.visual.causticSharpness,
       speed: cfg.visual.causticSpeed,
-      fogColor: 0x071425,
+      fogColor: 0x0a263b,
       fogNear,
       fogFar,
       octaves: 3
@@ -220,11 +247,11 @@ export class GameView {
     );
     inlayGeo.rotateX(-Math.PI / 2);
     inlayGeo.rotateZ(-Math.PI * 0.59);
-    inlayGeo.scale(halfWidth * 0.73, 1, 1.45);
+    inlayGeo.scale(2.15, 1, 0.74);
     const inlayMaterial = new THREE.MeshBasicMaterial({
       color: 0x55bdd7,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.09,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       toneMapped: false

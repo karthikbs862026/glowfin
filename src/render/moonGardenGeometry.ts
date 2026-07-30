@@ -3,17 +3,17 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 
 export type ArtLod = 0 | 1 | 2;
 
-const MOONSTONE = new THREE.Color(0x315c71);
-const MOONSTONE_DARK = new THREE.Color(0x20384a);
+const MOONSTONE = new THREE.Color(0x4f7f94);
+const MOONSTONE_DARK = new THREE.Color(0x345c70);
 // Collision-critical stone gets its own brighter values. The surrounding
 // ruins deliberately stay subdued, but every surface that can end a run must
 // retain a 3:1 silhouette against the midnight lane even with caustics off.
-const OBSTACLE_MOONSTONE = new THREE.Color(0x46758a);
-const OBSTACLE_RECESS = new THREE.Color(0x365f74);
+const OBSTACLE_MOONSTONE = new THREE.Color(0x5d8fa4);
+const OBSTACLE_RECESS = new THREE.Color(0x426f83);
 const SHELL_GOLD = new THREE.Color(0xf4d58b);
-const LIVING_CYAN = new THREE.Color(0x63e0ff);
-const MOON_VIOLET = new THREE.Color(0x8b6be8);
-const HEART_ROSE = new THREE.Color(0xf06ab9);
+const LIVING_CYAN = new THREE.Color(0x2c8fa8);
+const MOON_VIOLET = new THREE.Color(0x6856ad);
+const HEART_ROSE = new THREE.Color(0xb84e8e);
 
 interface PartOptions {
   position?: THREE.Vector3;
