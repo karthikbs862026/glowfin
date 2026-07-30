@@ -185,7 +185,7 @@ export class MoonGardenGates {
       // Deliberately below the global bloom threshold. This remains a
       // high-contrast pale-cyan edge against moonstone, but no longer washes
       // the adjacent safe-gap pixel into the same luminance on medium quality.
-      color: 0x59cde0,
+      color: 0x67d7e7,
       toneMapped: false,
       // The contour shares the wall's front plane so its projected gap edge
       // remains collider-true. Polygon offset resolves the coplanar surface
