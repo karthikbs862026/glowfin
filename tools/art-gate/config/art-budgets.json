@@ -1,0 +1,121 @@
+{
+  "$schema": "./art-budgets.schema.json",
+  "configVersion": "1.1.0",
+  "sourceOfTruth": "Glowfin Phase 3 Concept-First Art Bible v1; runtime baseline 75c661b",
+  "scene": {
+    "drawCalls": { "hard": 90, "minSpikeHeadroom": 12 },
+    "triangles": { "warning": 120000, "hard": 150000 },
+    "textureMemoryMB": { "warning": 36, "hard": 48 },
+    "activeArtMaterials": { "hardMaxExclusive": 12 },
+    "compressedArtPayloadMB": { "hard": 6 },
+    "godRayMeshes": { "hard": 3 }
+  },
+  "camera": {
+    "forwardSpeedMax": 45,
+    "visibleDistanceAhead": 90,
+    "minReactionWindowMs": 700
+  },
+  "lod": {
+    "bands": [
+      { "level": 0, "nearWorldUnits": 0, "farWorldUnits": 30 },
+      { "level": 1, "nearWorldUnits": 30, "farWorldUnits": 70 },
+      { "level": 2, "nearWorldUnits": 70, "farWorldUnits": 90 }
+    ],
+    "silhouetteToleranceWorldUnits": 0.02
+  },
+  "colliderTruth": {
+    "edgeAlignmentToleranceWorldUnits": 0.05,
+    "straightnessToleranceWorldUnits": 0.05,
+    "minimumSamplesPerEdge": 5,
+    "allowFalseClearance": false,
+    "allowGapProtrusion": false,
+    "contourReservedForCollidable": true
+  },
+  "contrast": {
+    "framePercentile": 10,
+    "frameMinRatio": 3,
+    "perObstaclePercentile": 10,
+    "perObstacleMinRatio": 3
+  },
+  "creature": {
+    "viewportWidthFractionMin": 0.08,
+    "viewportWidthFractionMax": 0.1,
+    "eyeGlowPixelsMin": 4,
+    "eyeGlowPixelsMax": 6,
+    "maxBones": 18,
+    "maxMaterials": 2,
+    "maxTextureSizePx": 1024,
+    "requiredStates": ["calm", "mid", "max", "collision", "recovery"],
+    "requiredClips": ["breathe", "propulsion", "bank", "collisionSquash", "recovery"],
+    "animationDriver": "simulation"
+  },
+  "trail": {
+    "maxLaneWidthFractionAtMaxMomentum": 0.18,
+    "implementation": "mesh-ribbon",
+    "particleReplacementAllowed": false
+  },
+  "performance": {
+    "minMedianFps": 30,
+    "maxColdStartMs": 3500,
+    "maxInputToVisibleMs": 80,
+    "maxSteadyStateHeapMB": 220,
+    "maxSoakHeapGrowthMB": 60,
+    "maxPools": {
+      "gates": 16,
+      "stripes": 40,
+      "trailSegments": 96,
+      "particles": 128
+    }
+  },
+  "assetFamilies": {
+    "glowfin": { "lod0": [6000, 8000], "lod1": [3000, 4000], "lod2": null, "maxMaterials": 2, "strategy": "single-skinned-mesh", "collidable": false },
+    "brokenTower": { "lod0": [3500, 4500], "lod1": [1500, 2200], "lod2": [400, 700], "maxMaterials": 1, "strategy": "instanced-archetype", "collidable": true },
+    "collapsedArchPair": { "lod0": [4000, 5000], "lod1": [1800, 2500], "lod2": [500, 800], "maxMaterials": 1, "strategy": "mirrored-modules", "collidable": true },
+    "spire": { "lod0": [1500, 2000], "lod1": [600, 900], "lod2": [150, 300], "maxMaterials": 1, "strategy": "background-instancing", "collidable": false },
+    "wallFragment": { "lod0": [1000, 1600], "lod1": [450, 800], "lod2": [120, 250], "maxMaterials": 1, "strategy": "core-gate-archetype", "collidable": true },
+    "heroCoral": { "lod0": [2000, 2800], "lod1": [800, 1300], "lod2": [250, 400], "maxMaterials": 1, "strategy": "outside-lane-signature", "collidable": false },
+    "mediumCoral": { "lod0": [600, 1000], "lod1": [250, 450], "lod2": [80, 160], "maxMaterials": 1, "strategy": "instanced-family", "collidable": false },
+    "smallProp": { "lod0": [80, 400], "lod1": [40, 160], "lod2": null, "maxMaterials": 1, "strategy": "atlas-instancing", "collidable": false },
+    "ribbonKelp": { "lod0": [300, 600], "lod1": [120, 250], "lod2": null, "maxMaterials": 1, "strategy": "vertex-sway", "collidable": false },
+    "godRayMesh": { "lod0": [12, 24], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "hard-capped-three", "collidable": false }
+  },
+  "captureTiers": {
+    "structural": {
+      "requireCaptures": false,
+      "acceptedSourceKinds": ["static-analysis"],
+      "devices": [],
+      "expectedStates": [],
+      "requireRealDevice": false,
+      "requiredSoakMinutes": 0
+    },
+    "fast": {
+      "requireCaptures": true,
+      "acceptedSourceKinds": ["ci-emulated"],
+      "devices": ["ci-chromium"],
+      "expectedStates": [
+        { "device": "ci-chromium", "momentum": "low", "bloom": false, "caustics": true, "quality": "high" },
+        { "device": "ci-chromium", "momentum": "mid", "bloom": true, "caustics": true, "quality": "medium" },
+        { "device": "ci-chromium", "momentum": "max", "bloom": true, "caustics": true, "quality": "high" },
+        { "device": "ci-chromium", "momentum": "max", "bloom": false, "caustics": false, "quality": "low" }
+      ],
+      "requireRealDevice": false,
+      "requiredSoakMinutes": 0
+    },
+    "full": {
+      "requireCaptures": true,
+      "acceptedSourceKinds": ["ci-emulated"],
+      "devices": ["ci-chromium"],
+      "expectedStates": [],
+      "requireRealDevice": false,
+      "requiredSoakMinutes": 0
+    },
+    "signoff": {
+      "requireCaptures": true,
+      "acceptedSourceKinds": ["real-device"],
+      "devices": ["android-reference", "ios-safari-reference"],
+      "expectedStates": [],
+      "requireRealDevice": true,
+      "requiredSoakMinutes": 30
+    }
+  }
+}

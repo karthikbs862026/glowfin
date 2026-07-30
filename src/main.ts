@@ -15,7 +15,6 @@ import { Hud } from "./render/hud";
 import { DebugOverlay } from "./render/debugOverlay";
 import { QualityController } from "./perf/quality";
 import { PerfMonitor, checkBudgets } from "./perf/metrics";
-import { runContrastProbe, showProbeResult } from "./render/contrastProbe";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
 if (!canvas) throw new Error("Canvas #glowfin-canvas not found");
@@ -141,10 +140,19 @@ function isProbeRequested(): boolean {
   return new URLSearchParams(window.location.search).get("probe") === "contrast";
 }
 
-if (isProbeRequested()) {
-  const result = runContrastProbe(view, tuning);
-  showProbeResult(result);
-  console.info(result.lines.join("\n"));
-} else {
+async function start(): Promise<void> {
+  if (isProbeRequested()) {
+    const {
+      runContrastProbe,
+      showProbeResult
+    } = await import("./render/contrastProbe");
+    const result = runContrastProbe(view, tuning);
+    showProbeResult(result);
+    console.info(result.lines.join("\n"));
+    return;
+  }
+
   requestAnimationFrame(frame);
 }
+
+void start();

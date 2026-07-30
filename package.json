@@ -11,6 +11,14 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
+    "art-gate:fixtures": "node --experimental-strip-types tools/art-gate/fixtures/generate.ts",
+    "art-gate:test": "npm run art-gate:fixtures && node --experimental-strip-types --test tools/art-gate/test/gate.node.ts",
+    "art-gate:baseline": "node --experimental-strip-types tools/art-gate/integration/buildProceduralBaseline.ts --output build/art-gate-structural.json",
+    "art-gate:structural": "npm run art-gate:baseline && node --experimental-strip-types tools/art-gate/src/cli.ts --config tools/art-gate/config/art-budgets.json --input build/art-gate-structural.json --tier structural",
+    "art-gate:capture:fast": "node --experimental-strip-types tools/art-gate/integration/capture.mjs --tier fast --output build/art-gate-fast.json --screenshot build/art-gate-fast.png",
+    "art-gate:capture:full": "node --experimental-strip-types tools/art-gate/integration/capture.mjs --tier full --output build/art-gate-full.json --screenshot build/art-gate-full.png",
+    "art-gate:run:fast": "node --experimental-strip-types tools/art-gate/src/cli.ts --config tools/art-gate/config/art-budgets.json --input build/art-gate-fast.json --tier fast",
+    "art-gate:run:full": "node --experimental-strip-types tools/art-gate/src/cli.ts --config tools/art-gate/config/art-budgets.json --input build/art-gate-full.json --tier full",
     "check:bundle-size": "node scripts/check-bundle-size.mjs",
     "check:no-debug": "node scripts/check-no-debug.mjs"
   },
@@ -18,6 +26,7 @@
     "three": "^0.165.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@types/three": "^0.165.0",
     "@typescript-eslint/eslint-plugin": "^8.65.0",
     "@typescript-eslint/parser": "^8.65.0",

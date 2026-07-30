@@ -1,0 +1,442 @@
+{
+  "evidenceVersion": "1.1.0",
+  "runtimeRevision": "fixture-runtime-revision",
+  "assets": [
+    {
+      "name": "procedural-left-wall",
+      "family": "wallFragment",
+      "collidable": false,
+      "baselineProcedural": true,
+      "runtimeObstacleId": "procedural-gate-left",
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "collision-cyan",
+      "maxReliefDepth": 0,
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 12,
+          "playableEdge": {
+            "axis": "x",
+            "gapDirection": 1,
+            "samples": [
+              {
+                "height": -0.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 0.5,
+                "depth": 0,
+                "visualPlane": -2.3
+              },
+              {
+                "height": 1.5,
+                "depth": 0,
+                "visualPlane": -2.3
+              },
+              {
+                "height": 2.5,
+                "depth": 0,
+                "visualPlane": -2.3
+              },
+              {
+                "height": 3,
+                "depth": 0,
+                "visualPlane": -2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "procedural-right-wall",
+      "family": "wallFragment",
+      "collidable": true,
+      "baselineProcedural": true,
+      "runtimeObstacleId": "procedural-gate-right",
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "collision-cyan",
+      "maxReliefDepth": 0,
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 12,
+          "playableEdge": {
+            "axis": "x",
+            "gapDirection": -1,
+            "samples": [
+              {
+                "height": -0.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 0.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 1.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 2.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 3,
+                "depth": 0,
+                "visualPlane": 2
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "runtimeObstacles": [
+    {
+      "id": "procedural-gate-left",
+      "family": "wallFragment",
+      "axis": "x",
+      "gapDirection": 1,
+      "colliderPlane": -2,
+      "colliderEnvelope": {
+        "min": [
+          -6,
+          -1,
+          99.3
+        ],
+        "max": [
+          -2,
+          3,
+          100.7
+        ]
+      },
+      "source": {
+        "module": "src/sim/gateGeometry.ts",
+        "exportName": "gateWallGeometry",
+        "runtimeRevision": "fixture-runtime-revision"
+      }
+    },
+    {
+      "id": "procedural-gate-right",
+      "family": "wallFragment",
+      "axis": "x",
+      "gapDirection": -1,
+      "colliderPlane": 2,
+      "colliderEnvelope": {
+        "min": [
+          2,
+          -1,
+          99.3
+        ],
+        "max": [
+          6,
+          3,
+          100.7
+        ]
+      },
+      "source": {
+        "module": "src/sim/gateGeometry.ts",
+        "exportName": "gateWallGeometry",
+        "runtimeRevision": "fixture-runtime-revision"
+      }
+    }
+  ],
+  "captures": [
+    {
+      "seed": 20260730,
+      "device": "ci-chromium",
+      "source": {
+        "kind": "ci-emulated",
+        "browser": "Chromium fixture",
+        "platform": "linux",
+        "evidenceId": "fixture-0"
+      },
+      "state": {
+        "momentum": "low",
+        "bloom": false,
+        "caustics": true,
+        "quality": "high"
+      },
+      "drawCalls": 66,
+      "triangles": 4200,
+      "textureMemoryMB": 0,
+      "activeMaterials": 9,
+      "godRayMeshes": 3,
+      "frameContrastRatios": [
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2
+      ],
+      "obstacles": [
+        {
+          "obstacleId": "procedural-gate-pair",
+          "ratios": [
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1
+          ]
+        }
+      ]
+    },
+    {
+      "seed": 20260731,
+      "device": "ci-chromium",
+      "source": {
+        "kind": "ci-emulated",
+        "browser": "Chromium fixture",
+        "platform": "linux",
+        "evidenceId": "fixture-1"
+      },
+      "state": {
+        "momentum": "mid",
+        "bloom": true,
+        "caustics": true,
+        "quality": "medium"
+      },
+      "drawCalls": 66,
+      "triangles": 4200,
+      "textureMemoryMB": 0,
+      "activeMaterials": 9,
+      "godRayMeshes": 3,
+      "frameContrastRatios": [
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2
+      ],
+      "obstacles": [
+        {
+          "obstacleId": "procedural-gate-pair",
+          "ratios": [
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1
+          ]
+        }
+      ]
+    },
+    {
+      "seed": 20260732,
+      "device": "ci-chromium",
+      "source": {
+        "kind": "ci-emulated",
+        "browser": "Chromium fixture",
+        "platform": "linux",
+        "evidenceId": "fixture-2"
+      },
+      "state": {
+        "momentum": "max",
+        "bloom": true,
+        "caustics": true,
+        "quality": "high"
+      },
+      "drawCalls": 66,
+      "triangles": 4200,
+      "textureMemoryMB": 0,
+      "activeMaterials": 9,
+      "godRayMeshes": 3,
+      "frameContrastRatios": [
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2
+      ],
+      "obstacles": [
+        {
+          "obstacleId": "procedural-gate-pair",
+          "ratios": [
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8,
+            1.8
+          ]
+        }
+      ]
+    },
+    {
+      "seed": 20260733,
+      "device": "ci-chromium",
+      "source": {
+        "kind": "ci-emulated",
+        "browser": "Chromium fixture",
+        "platform": "linux",
+        "evidenceId": "fixture-3"
+      },
+      "state": {
+        "momentum": "max",
+        "bloom": false,
+        "caustics": false,
+        "quality": "low"
+      },
+      "drawCalls": 66,
+      "triangles": 4200,
+      "textureMemoryMB": 0,
+      "activeMaterials": 9,
+      "godRayMeshes": 3,
+      "frameContrastRatios": [
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2,
+        4.2
+      ],
+      "obstacles": [
+        {
+          "obstacleId": "procedural-gate-pair",
+          "ratios": [
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1,
+            4.1
+          ]
+        }
+      ]
+    }
+  ],
+  "renderEvidence": {
+    "trail": {
+      "implementation": "mesh-ribbon",
+      "particleReplacementUsed": false,
+      "laneWidthFractionAtMaxMomentum": 0.12083333333333333
+    }
+  },
+  "compressedArtPayloadMB": 0
+}

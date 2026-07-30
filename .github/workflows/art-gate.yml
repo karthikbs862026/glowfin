@@ -1,0 +1,109 @@
+name: art-gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  structural:
+    name: structural
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Gate self-tests
+        run: npm run art-gate:test
+      - name: Current procedural baseline
+        run: npm run art-gate:structural
+
+  fast:
+    name: fast-render
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    needs: structural
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Start deterministic capture host
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 4173 > /tmp/glowfin-vite.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/glowfin-vite.log
+          exit 1
+      - run: npm run art-gate:capture:fast
+      - name: Validate reduced PR matrix
+        run: |
+          npm run art-gate:run:fast | tee build/art-gate-fast-report.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: art-gate-fast-evidence
+          path: |
+            build/art-gate-fast.json
+            build/art-gate-fast.png
+            build/art-gate-fast-report.txt
+
+  full:
+    name: full-render
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    needs: structural
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Start deterministic capture host
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 4173 > /tmp/glowfin-vite.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/glowfin-vite.log
+          exit 1
+      - run: npm run art-gate:capture:full
+      - name: Validate full emulated matrix
+        run: |
+          npm run art-gate:run:full | tee build/art-gate-full-report.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: art-gate-full-evidence
+          path: |
+            build/art-gate-full.json
+            build/art-gate-full.png
+            build/art-gate-full-report.txt
