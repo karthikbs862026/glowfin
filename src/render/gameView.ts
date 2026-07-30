@@ -13,11 +13,19 @@ import type { TuningConfig } from "../core/config";
 import type { Gate } from "../sim/course";
 import type { SimState } from "../sim/state";
 import {
+  gateWallGeometry,
+  PROCEDURAL_GATE_VISUAL
+} from "../sim/gateGeometry";
+import {
   createCausticMaterial,
   setCausticOctaves,
   advanceCausticTime
 } from "./causticMaterial";
-import type { TierSettings } from "../perf/quality";
+import {
+  tierSettings,
+  type QualityTier,
+  type TierSettings
+} from "../perf/quality";
 import { readGpuName } from "../perf/metrics";
 import { TrailRibbon } from "./trail";
 import { Creature } from "./creature";
@@ -30,8 +38,6 @@ import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPa
 const MAX_POOLED_GATES = 16;
 const MAX_POOLED_STRIPES = 40;
 const STRIPE_SPACING_UNITS = 14;
-const WALL_HEIGHT = 4;
-const WALL_DEPTH = 1.4;
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
@@ -363,6 +369,57 @@ export class GameView {
     }
   }
 
+  /**
+   * Deterministic capture override. Unlike normal adaptive quality, the art
+   * matrix must be able to force bloom and caustics independently.
+   */
+  setCaptureEffects(
+    quality: QualityTier,
+    bloom: boolean,
+    caustics: boolean
+  ): void {
+    const settings = tierSettings(quality);
+    this.setQuality(settings);
+
+    this.bloomEnabled = bloom;
+    this.bloomPass.enabled = bloom;
+
+    const floorIntensity = this.floorMaterial.uniforms["uIntensity"];
+    const wallIntensity = this.wallMaterial.uniforms["uIntensity"];
+    if (floorIntensity) {
+      floorIntensity.value = caustics
+        ? this.cfg.visual.causticIntensityFloor
+        : 0;
+    }
+    if (wallIntensity) {
+      wallIntensity.value = caustics
+        ? this.cfg.visual.causticIntensityWall
+        : 0;
+    }
+  }
+
+  /** Metrics the capture harness cannot infer reliably from render.info. */
+  artStats(): {
+    activeMaterials: number;
+    godRayMeshes: number;
+    textureMemoryMB: number;
+  } {
+    const materials = new Set<string>();
+    this.scene.traverse((object) => {
+      if (!(object instanceof THREE.Mesh) || !object.visible) return;
+      const list = Array.isArray(object.material)
+        ? object.material
+        : [object.material];
+      for (const material of list) materials.add(material.uuid);
+    });
+    return {
+      activeMaterials: materials.size,
+      godRayMeshes: this.cfg.environment.godRayCount,
+      // Current Phase 3A procedural build has no resident art textures.
+      textureMemoryMB: 0
+    };
+  }
+
   /** Live draw-call and triangle counts, for the Part 4.6 budget check. */
   stats(): { drawCalls: number; triangles: number } {
     return {
@@ -474,21 +531,38 @@ export class GameView {
       slot++;
 
       const z = -gate.distance;
-      const leftWidth = gate.gapLeft - -halfWidth;
-      const rightWidth = halfWidth - gate.gapRight;
+      const [leftWall, rightWall] = gateWallGeometry(gate, halfWidth);
 
-      if (leftWidth > 0.01) {
+      if (leftWall.width > 0.01) {
         visual.left.visible = true;
-        visual.left.scale.set(leftWidth, WALL_HEIGHT, WALL_DEPTH);
-        visual.left.position.set(-halfWidth + leftWidth / 2, WALL_HEIGHT / 2 - 1, z);
+        visual.left.scale.set(
+          leftWall.width,
+          PROCEDURAL_GATE_VISUAL.wallHeight,
+          PROCEDURAL_GATE_VISUAL.wallDepth
+        );
+        visual.left.position.set(
+          leftWall.centreX,
+          PROCEDURAL_GATE_VISUAL.wallHeight / 2 +
+            PROCEDURAL_GATE_VISUAL.wallFloorY,
+          z
+        );
       } else {
         visual.left.visible = false;
       }
 
-      if (rightWidth > 0.01) {
+      if (rightWall.width > 0.01) {
         visual.right.visible = true;
-        visual.right.scale.set(rightWidth, WALL_HEIGHT, WALL_DEPTH);
-        visual.right.position.set(halfWidth - rightWidth / 2, WALL_HEIGHT / 2 - 1, z);
+        visual.right.scale.set(
+          rightWall.width,
+          PROCEDURAL_GATE_VISUAL.wallHeight,
+          PROCEDURAL_GATE_VISUAL.wallDepth
+        );
+        visual.right.position.set(
+          rightWall.centreX,
+          PROCEDURAL_GATE_VISUAL.wallHeight / 2 +
+            PROCEDURAL_GATE_VISUAL.wallFloorY,
+          z
+        );
       } else {
         visual.right.visible = false;
       }

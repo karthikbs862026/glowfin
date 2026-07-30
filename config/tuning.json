@@ -78,7 +78,7 @@
     "buildingLateralMin": 11.0,
     "buildingLateralMax": 34.0,
     "buildingBrightness": 0.085,
-    "godRayCount": 5,
+    "godRayCount": 3,
     "godRayBandSpacing": 130.0,
     "godRayIntensity": 0.085,
     "godRayWidth": 2.6,

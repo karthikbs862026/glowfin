@@ -9,6 +9,7 @@
  */
 import type { TuningConfig } from "../core/config";
 import type { Gate } from "./course";
+import { gateClearance } from "./gateGeometry";
 
 export interface SweptSegment {
   /** Forward distance at the start of the step. */
@@ -55,13 +56,11 @@ export function evaluateGate(
   const t = (gate.distance - fromDistance) / span;
   const lateralAtGate = lerp(fromLateral, toLateral, t);
 
-  const r = cfg.lane.creatureRadius;
-  const creatureLeft = lateralAtGate - r;
-  const creatureRight = lateralAtGate + r;
-
-  const leftClearance = creatureLeft - gate.gapLeft;
-  const rightClearance = gate.gapRight - creatureRight;
-  const clearance = Math.min(leftClearance, rightClearance);
+  const { clearance } = gateClearance(
+    lateralAtGate,
+    cfg.lane.creatureRadius,
+    gate
+  );
 
   return { gate, collided: clearance < 0, clearance };
 }

@@ -36,6 +36,8 @@ export interface ContrastReport {
   medianRatio: number;
   /** Samples below the configured floor. */
   failures: ContrastSample[];
+  /** Raw deterministic edge ratios used by the Phase 3A capture gate. */
+  ratios: number[];
   passed: boolean;
 }
 
@@ -162,6 +164,7 @@ export function analyseContrast(
       p10Ratio: 0,
       medianRatio: 0,
       failures: [],
+      ratios: [],
       passed: false
     };
   }
@@ -173,6 +176,7 @@ export function analyseContrast(
     p10Ratio: sorted[Math.floor(sorted.length * 0.1)] ?? 0,
     medianRatio: sorted[Math.floor(sorted.length / 2)] ?? 0,
     failures,
+    ratios: sorted,
     // Pass when the 10th percentile clears the floor: at least 90% of the
     // silhouette is readable. Not "no sample ever dips below".
     passed: (sorted[Math.floor(sorted.length * ALLOWED_FAILURE_FRACTION)] ?? 0) >= minimumRatio

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://glowfin.local/schemas/art-budgets.schema.json",
+  "title": "Glowfin Phase 3 art-gate configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "configVersion",
+    "sourceOfTruth",
+    "scene",
+    "camera",
+    "lod",
+    "colliderTruth",
+    "contrast",
+    "creature",
+    "trail",
+    "performance",
+    "assetFamilies",
+    "captureTiers"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "configVersion": { "type": "string", "minLength": 1 },
+    "sourceOfTruth": { "type": "string", "minLength": 1 },
+    "scene": { "type": "object" },
+    "camera": { "type": "object" },
+    "lod": { "type": "object" },
+    "colliderTruth": { "type": "object" },
+    "contrast": { "type": "object" },
+    "creature": { "type": "object" },
+    "trail": { "type": "object" },
+    "performance": { "type": "object" },
+    "assetFamilies": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["lod0", "lod1", "lod2", "maxMaterials", "strategy", "collidable"]
+      }
+    },
+    "captureTiers": {
+      "type": "object",
+      "required": ["structural", "fast", "full", "signoff"],
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "requireCaptures",
+          "acceptedSourceKinds",
+          "devices",
+          "expectedStates",
+          "requireRealDevice",
+          "requiredSoakMinutes"
+        ]
+      }
+    }
+  }
+}
