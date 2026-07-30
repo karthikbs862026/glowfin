@@ -111,9 +111,9 @@ export function runArtGateCapture(
       },
       cfg.readability.minObstacleContrastRatio,
       {
-        // The authoritative seam is seven CSS pixels wide. A two-CSS-pixel
-        // inset clears its antialiased boundary while leaving a real interior
-        // sample even when the low tier renders at a fractional pixel ratio.
+        // A two-CSS-pixel inset clears the seam's antialiased boundary while
+        // leaving a real interior sample even when the low tier renders at a
+        // fractional pixel ratio.
         offsetPx: Math.max(1, Math.floor(2 * view.capturePixelRatio())),
         rowStride: Math.max(1, Math.round(4 * view.capturePixelRatio()))
       }

@@ -66,7 +66,7 @@ describe("Phase 3B production art manifest", () => {
     gates.dispose();
   });
 
-  it("keeps the collision contour seven display pixels through camera changes", () => {
+  it("keeps the configured collision-contour width through camera changes", () => {
     const depth = 51.5;
     const fov = tuning.camera.fovAtMaxMomentum;
     const viewportHeight = 1680;
