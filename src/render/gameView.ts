@@ -292,7 +292,8 @@ export class GameView {
       octaves: 3,
       surfaceMap: moonstoneFloorSurface,
       surfaceScale: 0.16,
-      surfaceWeight: 0.92
+      surfaceWeight: 0.92,
+      routeHalfWidth: cfg.lane.halfWidth
     });
     const floor = new THREE.Mesh(floorGeo, this.floorMaterial);
     floor.rotation.x = -Math.PI / 2;
