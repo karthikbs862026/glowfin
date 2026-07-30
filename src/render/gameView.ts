@@ -21,6 +21,7 @@ import type { TierSettings } from "../perf/quality";
 import { readGpuName } from "../perf/metrics";
 import { TrailRibbon } from "./trail";
 import { Creature } from "./creature";
+import { Environment } from "./environment";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
@@ -47,6 +48,7 @@ export class GameView {
   private readonly renderer: THREE.WebGLRenderer;
 
   private readonly creature: Creature;
+  private readonly environment: Environment;
   private readonly floorMaterial: THREE.ShaderMaterial;
   private readonly wallMaterial: THREE.ShaderMaterial;
   private readonly trail: TrailRibbon;
@@ -240,6 +242,10 @@ export class GameView {
     this.creature = new Creature(cfg);
     this.scene.add(this.creature.group);
 
+    // --- drowned city, god-rays, responsive coral (Part 3.2 #3 and #5) ---
+    this.environment = new Environment(cfg);
+    for (const object of this.environment.objects) this.scene.add(object);
+
     // --- trail ribbon (Part 3.2 priority 2) ---
     this.trail = new TrailRibbon(cfg);
     this.scene.add(this.trail.mesh);
@@ -324,9 +330,10 @@ export class GameView {
     this.renderer.render(this.scene, this.camera);
   }
 
-  /** Clear the ribbon so it does not streak across a fresh run. */
+  /** Clear the ribbon and any live coral glow so a fresh run starts clean. */
   resetTrail(): void {
     this.trail.reset();
+    this.environment.reset();
   }
 
   /** Apply a quality tier (Part 4.6 dynamic scaling). */
@@ -429,6 +436,13 @@ export class GameView {
       frameSec
     );
 
+    this.environment.update(
+      sim.forwardDistance,
+      sim.lateralPosition,
+      momentumFraction,
+      frameSec
+    );
+
     this.updateStripes(sim.forwardDistance);
     this.updateGates(sim.forwardDistance, gates);
 
@@ -494,6 +508,7 @@ export class GameView {
     for (const item of this.disposables) item.dispose();
     this.trail.dispose();
     this.creature.dispose();
+    this.environment.dispose();
     this.maskObstacle.dispose();
     this.maskOther.dispose();
     this.composer.dispose();

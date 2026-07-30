@@ -69,6 +69,28 @@
     "bloomThreshold": 0.62
   },
 
+  "environment": {
+    "$comment": "Drowned city, god-rays and responsive coral. All three are instanced (one draw call each) because the draw budget is 90 and the scene already sits at 62. Everything here is BACKGROUND: it must never compete with obstacle silhouettes (Part 3.4), which is why buildings sit well outside the lane and coral is dim until it reacts.",
+    "buildingCount": 48,
+    "buildingBandSpacing": 24.0,
+    "buildingMinHeight": 5.0,
+    "buildingMaxHeight": 38.0,
+    "buildingLateralMin": 11.0,
+    "buildingLateralMax": 34.0,
+    "buildingBrightness": 0.085,
+    "godRayCount": 5,
+    "godRayBandSpacing": 130.0,
+    "godRayIntensity": 0.085,
+    "godRayWidth": 2.6,
+    "godRayHeight": 32.0,
+    "coralCount": 72,
+    "coralBandSpacing": 10.0,
+    "coralPulseRadiusUnits": 9.0,
+    "coralPulseDecayPerSec": 1.9,
+    "coralBaseGlow": 0.18,
+    "coralPulseGlow": 2.6
+  },
+
   "creature": {
     "$comment": "Part 3.1. Fins are deliberately oversized for silhouette readability at speed — this is a fairness property, not a style choice. Eye hue is the diegetic momentum indicator; whether it can replace a HUD meter is explicitly to be tested, not assumed.",
     "bodyLength": 1.15,
@@ -81,16 +103,16 @@
     "bankSmoothingHalfLifeSec": 0.09,
     "breathHz": 0.8,
     "breathAmount": 0.05,
-    "eyeOffsetX": 0.90,
+    "eyeOffsetX": 0.88,
     "eyeOffsetY": 0.46,
     "eyeOffsetZ": -0.20,
-    "eyeRadius": 0.26,
+    "eyeRadius": 0.34,
     "eyeHueCalm": 0.56,
     "eyeHueMax": 0.92,
     "rimStrength": 1.0,
     "rimPower": 2.6,
     "bodyGlowAtZeroLight": 0.18,
-    "bodyGlowAtFullLight": 0.95
+    "bodyGlowAtFullLight": 0.72
   },
 
   "trail": {

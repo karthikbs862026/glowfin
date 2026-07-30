@@ -68,6 +68,26 @@ export interface TuningConfig {
     bloomRadius: number;
     bloomThreshold: number;
   };
+  environment: {
+    buildingCount: number;
+    buildingBandSpacing: number;
+    buildingMinHeight: number;
+    buildingMaxHeight: number;
+    buildingLateralMin: number;
+    buildingLateralMax: number;
+    buildingBrightness: number;
+    godRayCount: number;
+    godRayBandSpacing: number;
+    godRayIntensity: number;
+    godRayWidth: number;
+    godRayHeight: number;
+    coralCount: number;
+    coralBandSpacing: number;
+    coralPulseRadiusUnits: number;
+    coralPulseDecayPerSec: number;
+    coralBaseGlow: number;
+    coralPulseGlow: number;
+  };
   creature: {
     bodyLength: number;
     bodyHeight: number;
@@ -180,6 +200,24 @@ const RULES: Record<string, Rule> = {
   "visual.bloomStrength": { min: 0, max: 4, note: "bloom intensity; this is what makes emissive read as glowing" },
   "visual.bloomRadius": { min: 0, max: 2, note: "bloom spread" },
   "visual.bloomThreshold": { min: 0, max: 2, note: "luminance above which pixels bloom" },
+  "environment.buildingCount": { min: 0, max: 200, note: "instanced, so this is 1 draw call regardless" },
+  "environment.buildingBandSpacing": { min: 4, max: 200, note: "distance between building bands" },
+  "environment.buildingMinHeight": { min: 0.5, max: 200, note: "shortest ruin" },
+  "environment.buildingMaxHeight": { min: 0.5, max: 300, note: "tallest ruin" },
+  "environment.buildingLateralMin": { min: 0, max: 200, note: "nearest a ruin may sit to the lane centre — must clear the lane or it becomes an obstacle the player cannot hit" },
+  "environment.buildingLateralMax": { min: 0, max: 400, note: "furthest ruin" },
+  "environment.buildingBrightness": { min: 0, max: 2, note: "kept low: background must never compete with obstacle silhouettes (Part 3.4)" },
+  "environment.godRayCount": { min: 0, max: 40, note: "Part 3.2 asks for sparse and selective, not everywhere" },
+  "environment.godRayBandSpacing": { min: 10, max: 500, note: "distance between shafts; large keeps them rare" },
+  "environment.godRayIntensity": { min: 0, max: 2, note: "additive, so this can only brighten — never darkens an obstacle" },
+  "environment.godRayWidth": { min: 0.5, max: 60, note: "shaft width" },
+  "environment.godRayHeight": { min: 1, max: 120, note: "shaft height" },
+  "environment.coralCount": { min: 0, max: 400, note: "instanced" },
+  "environment.coralBandSpacing": { min: 1, max: 100, note: "distance between coral clusters" },
+  "environment.coralPulseRadiusUnits": { min: 0.5, max: 60, note: "how close the creature must pass to trigger a pulse (Part 3.2 priority 5)" },
+  "environment.coralPulseDecayPerSec": { min: 0.1, max: 20, note: "how fast a pulse fades" },
+  "environment.coralBaseGlow": { min: 0, max: 3, note: "resting brightness" },
+  "environment.coralPulseGlow": { min: 0, max: 8, note: "peak brightness when the creature passes" },
   "creature.bodyLength": { min: 0.5, max: 3, note: "body z scale; longer reads faster" },
   "creature.bodyHeight": { min: 0.3, max: 2, note: "body y scale; lower reads pudgier" },
   "creature.finFlutterHzAtZeroMomentum": { min: 0, max: 20, note: "fin beat rate at rest" },
