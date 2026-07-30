@@ -147,6 +147,7 @@ class InstancedVolumeFamily {
 
 export interface MoonGardenTextures {
   worldAtlas: THREE.Texture;
+  surfaceMap: THREE.Texture;
 }
 
 const SKYLINE_RECT: UvRect = {
@@ -209,7 +210,8 @@ export class Environment {
       fogColor: 0x12364c,
       fogNear,
       fogFar,
-      glowRadius: cfg.environment.coralPulseRadiusUnits
+      glowRadius: cfg.environment.coralPulseRadiusUnits,
+      surfaceMap: textures.surfaceMap
     });
     this.disposables.push(this.worldMaterial, this.volumeMaterial);
 

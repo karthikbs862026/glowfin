@@ -155,6 +155,13 @@ export class GameView {
     const moonstoneFloorSurface = moonstoneSurface.clone();
     moonstoneFloorSurface.repeat.set(1, 1);
     moonstoneFloorSurface.anisotropy = maxAnisotropy;
+    const moonstoneVolumeSurface = textureLoader.load(
+      "/art/moon-garden/moonstone-surface.webp"
+    );
+    moonstoneVolumeSurface.colorSpace = THREE.SRGBColorSpace;
+    moonstoneVolumeSurface.wrapS = THREE.MirroredRepeatWrapping;
+    moonstoneVolumeSurface.wrapT = THREE.MirroredRepeatWrapping;
+    moonstoneVolumeSurface.anisotropy = maxAnisotropy;
 
     const glowfinRear = textureLoader.load(
       "/art/moon-garden/glowfin-rear.webp"
@@ -169,6 +176,7 @@ export class GameView {
     this.disposables.push(
       moonstoneSurface,
       moonstoneFloorSurface,
+      moonstoneVolumeSurface,
       glowfinRear,
       worldVariationAtlas
     );
@@ -325,7 +333,7 @@ export class GameView {
     this.disposables.push(inlayGeo, inlayMaterial);
 
     // --- game-ready wall-fragment kit with independently truthful contours ---
-    this.gates = new MoonGardenGates(cfg);
+    this.gates = new MoonGardenGates(cfg, moonstoneVolumeSurface);
     this.wallMaterial = this.gates.material;
     for (const object of this.gates.objects) this.scene.add(object);
 
@@ -335,7 +343,8 @@ export class GameView {
 
     // --- drowned city, god-rays, responsive coral (Part 3.2 #3 and #5) ---
     this.environment = new Environment(cfg, {
-      worldAtlas: worldVariationAtlas
+      worldAtlas: worldVariationAtlas,
+      surfaceMap: moonstoneVolumeSurface
     });
     for (const object of this.environment.objects) this.scene.add(object);
 
@@ -521,9 +530,9 @@ export class GameView {
     return {
       activeMaterials: materials.size,
       godRayMeshes: this.cfg.environment.godRayCount,
-      // Five GPU-loaded RGBA sources including mip overhead. Source plates that
-      // were packed into the two runtime atlases are not double-counted.
-      textureMemoryMB: 14
+      // Six GPU-loaded RGBA sources including mip overhead. Source plates that
+      // were packed into runtime atlases are not double-counted.
+      textureMemoryMB: 15.4
     };
   }
 

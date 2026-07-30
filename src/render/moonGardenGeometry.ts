@@ -135,8 +135,6 @@ export function createWallFragmentGeometry(
   gapDirection: 1 | -1,
   variant: 0 | 1 | 2 = 0
 ): THREE.BufferGeometry {
-  const radial = lod === 0 ? 42 : lod === 1 ? 27 : 13;
-  const tube = lod === 0 ? 8 : lod === 1 ? 5 : 3;
   const ribSegments = lod === 0 ? 14 : lod === 1 ? 8 : 2;
   const parts: THREE.BufferGeometry[] = [
     decorate(extrudedWallShape(gapDirection, variant), {
@@ -188,25 +186,43 @@ export function createWallFragmentGeometry(
     }
   ));
 
-  parts.push(decorate(
-    new THREE.TorusGeometry(0.24, 0.024, tube, radial, Math.PI * 1.42),
-    {
-      position: new THREE.Vector3(-gapDirection * 0.09, -0.02, 0.515),
-      rotation: new THREE.Euler(0, 0, gapDirection > 0 ? -0.8 : Math.PI - 0.8),
-      scale: new THREE.Vector3(0.78, 1, 1),
-      colour: SHELL_GOLD,
-      glowWeight: 0.18
-    }
-  ));
-
-  if (lod < 2) {
+  const inlayCount = lod === 0 ? 8 : lod === 1 ? 6 : 3;
+  for (let index = 0; index < inlayCount; index++) {
+    const t = index / Math.max(1, inlayCount - 1);
+    const angle = THREE.MathUtils.lerp(-0.76, 0.76, t);
+    const detail = lod === 0 || (lod === 1 && index < inlayCount - 1)
+      ? 1
+      : 0;
     parts.push(decorate(
-      new THREE.TorusGeometry(0.35, 0.018, Math.max(3, tube - 2), radial, Math.PI * 0.9),
+      new THREE.IcosahedronGeometry(0.035 + (index % 2) * 0.006, detail),
       {
-        position: new THREE.Vector3(gapDirection * 0.02, -0.11, 0.51),
-        rotation: new THREE.Euler(0, 0, gapDirection > 0 ? 1.25 : -1.89),
-        colour: OBSTACLE_RECESS,
-        glowWeight: 0.03
+        position: new THREE.Vector3(
+          -gapDirection * (0.08 + Math.cos(angle) * 0.19),
+          -0.08 + Math.sin(angle) * 0.24 + (index === 3 ? -0.035 : 0),
+          0.518 + Math.sin(index * 1.9) * 0.006
+        ),
+        scale: new THREE.Vector3(1.3, 0.72, 0.82),
+        colour: index % 3 === 0 ? MOONSTONE : SHELL_GOLD,
+        glowWeight: index % 3 === 0 ? 0.02 : 0.12
+      }
+    ));
+  }
+
+  const frontStoneCount = lod === 0 ? 5 : lod === 1 ? 4 : 1;
+  for (let index = 0; index < frontStoneCount; index++) {
+    const radius = 0.045 + (index % 3) * 0.008;
+    parts.push(decorate(
+      new THREE.DodecahedronGeometry(radius, 0),
+      {
+        position: new THREE.Vector3(
+          gapDirection * THREE.MathUtils.lerp(-0.32, 0.24, index / Math.max(1, frontStoneCount - 1)),
+          -0.45 + radius * 0.62,
+          0.54 + Math.sin(index * 2.1) * 0.025
+        ),
+        rotation: new THREE.Euler(index * 0.31, index * 0.67, index * 0.17),
+        scale: new THREE.Vector3(1.2, 0.68, 1),
+        colour: index % 2 === 0 ? OBSTACLE_RECESS : OBSTACLE_MOONSTONE,
+        glowWeight: 0.01
       }
     ));
   }

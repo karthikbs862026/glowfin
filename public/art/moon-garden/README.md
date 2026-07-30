@@ -9,11 +9,12 @@ rigged Glowfin and optimized production texture pipeline.
 | Asset | Runtime role | Production replacement |
 | --- | --- | --- |
 | `moonstone-seabed.webp` | Organic gravel/silt Moon-Garden floor albedo | Retain as atlas candidate after seam/material review |
+| `moonstone-surface.webp` | Triplanar hand-painted weathering on real ruin and reef volumes | Retain after final authored GLB/material bake |
 | `world-variation-atlas.png` | Distant centre-open skyline and four tiny ambient-life families | Production skyline/ambient-life atlas |
 | `glowfin-rear.webp` | Rear-camera character review silhouette | Final skinned Glowfin GLB and approved animation set |
 
 All runtime images have a maximum dimension of 1024px, contain no text or
-third-party marks, and together add about 0.2 MB compressed / 8 MB decoded
+third-party marks, and together add about 0.25 MB compressed / 9.4 MB decoded
 with mip overhead. Source plates live in `docs/art/`; only runtime images are
 copied into the production bundle.
 

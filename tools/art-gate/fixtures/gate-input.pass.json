@@ -8,13 +8,14 @@
       "collidable": true,
       "runtimeObstacleId": "procedural-gate-left",
       "materials": 1,
-      "textureMemoryMB": 0,
+      "textureMemoryMB": 1.4,
+      "maxTextureSizePx": 512,
       "contour": "collision-cyan",
       "maxReliefDepth": 0.07,
       "lods": [
         {
           "level": 0,
-          "triangles": 1476,
+          "triangles": 1120,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -49,7 +50,7 @@
         },
         {
           "level": 1,
-          "triangles": 636,
+          "triangles": 768,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -84,7 +85,7 @@
         },
         {
           "level": 2,
-          "triangles": 186,
+          "triangles": 204,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -125,13 +126,14 @@
       "collidable": true,
       "runtimeObstacleId": "procedural-gate-right",
       "materials": 1,
-      "textureMemoryMB": 0,
+      "textureMemoryMB": 1.4,
+      "maxTextureSizePx": 512,
       "contour": "collision-cyan",
       "maxReliefDepth": 0.07,
       "lods": [
         {
           "level": 0,
-          "triangles": 1476,
+          "triangles": 1120,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -166,7 +168,7 @@
         },
         {
           "level": 1,
-          "triangles": 636,
+          "triangles": 768,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -201,7 +203,7 @@
         },
         {
           "level": 2,
-          "triangles": 186,
+          "triangles": 204,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -840,5 +842,5 @@
       "laneWidthFractionAtMaxMomentum": 0.12083333333333333
     }
   },
-  "compressedArtPayloadMB": 0.75
+  "compressedArtPayloadMB": 0.79
 }

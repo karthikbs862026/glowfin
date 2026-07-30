@@ -56,6 +56,8 @@ const FRAGMENT = /* glsl */ `
   uniform vec3 uFogColor;
   uniform float uFogNear;
   uniform float uFogFar;
+  uniform sampler2D uSurfaceMap;
+  uniform float uSurfaceScale;
   varying vec3 vWorldPos;
   varying vec3 vNormalW;
   varying vec3 vColour;
@@ -87,13 +89,25 @@ const FRAGMENT = /* glsl */ `
     stoneUv *= vec2(0.34, 0.22);
     vec2 cell = abs(fract(stoneUv + vec2(floor(stoneUv.y) * 0.37, 0.0)) - 0.5);
     float joint = 1.0 - smoothstep(0.025, 0.065, min(0.5 - cell.x, 0.5 - cell.y));
-    float stoneWeight = 1.0 - smoothstep(0.22, 0.58, vGlowWeight);
+    float stoneWeight = 1.0 - smoothstep(0.08, 0.30, vGlowWeight);
     float livingWeight = smoothstep(0.3, 0.72, vGlowWeight);
     float porousBreakup = 0.5 + 0.5 * sin(
       vWorldPos.x * 8.7 + sin(vWorldPos.y * 6.2) + vWorldPos.z * 7.1
     );
+    vec3 blend = pow(abs(normalize(vNormalW)), vec3(4.0));
+    blend /= max(0.0001, blend.x + blend.y + blend.z);
+    vec3 surface =
+      texture2D(uSurfaceMap, vWorldPos.zy * uSurfaceScale).rgb * blend.x +
+      texture2D(uSurfaceMap, vWorldPos.xz * uSurfaceScale).rgb * blend.y +
+      texture2D(uSurfaceMap, vWorldPos.xy * uSurfaceScale).rgb * blend.z;
+    vec3 surfaceBreakup = clamp(
+      surface / vec3(0.24, 0.31, 0.36),
+      vec3(0.52),
+      vec3(1.55)
+    );
 
     vec3 colour = vColour * broadWash * topLight;
+    colour *= mix(vec3(1.0), surfaceBreakup, stoneWeight * 0.72);
     colour *= 1.0 - joint * 0.20 * stoneWeight;
     colour *= mix(1.0, 0.84 + porousBreakup * 0.14, livingWeight);
     colour *= mix(1.0, 0.52, groundContact);
@@ -111,6 +125,7 @@ export interface MoonGardenMaterialOptions {
   fogNear: number;
   fogFar: number;
   glowRadius: number;
+  surfaceMap: THREE.Texture;
 }
 
 /**
@@ -122,7 +137,8 @@ export function createMoonGardenMaterial({
   fogColor,
   fogNear,
   fogFar,
-  glowRadius
+  glowRadius,
+  surfaceMap
 }: MoonGardenMaterialOptions): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     vertexColors: true,
@@ -136,7 +152,9 @@ export function createMoonGardenMaterial({
       uMomentum: { value: 0 },
       uFogColor: { value: new THREE.Color(fogColor) },
       uFogNear: { value: fogNear },
-      uFogFar: { value: fogFar }
+      uFogFar: { value: fogFar },
+      uSurfaceMap: { value: surfaceMap },
+      uSurfaceScale: { value: 0.16 }
     },
     vertexShader: VERTEX,
     fragmentShader: FRAGMENT
@@ -203,6 +221,8 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
   uniform vec3 uFogColor;
   uniform float uFogNear;
   uniform float uFogFar;
+  uniform sampler2D uSurfaceMap;
+  uniform float uSurfaceScale;
   varying vec3 vWorldPos;
   varying vec3 vNormalW;
   varying vec3 vColour;
@@ -257,8 +277,20 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     stoneUv *= vec2(0.36, 0.24);
     vec2 cell = abs(fract(stoneUv + vec2(floor(stoneUv.y) * 0.35, 0.0)) - 0.5);
     float joint = 1.0 - smoothstep(0.028, 0.07, min(0.5 - cell.x, 0.5 - cell.y));
+    vec3 blend = pow(abs(normalW), vec3(4.0));
+    blend /= max(0.0001, blend.x + blend.y + blend.z);
+    vec3 surface =
+      texture2D(uSurfaceMap, vWorldPos.zy * uSurfaceScale).rgb * blend.x +
+      texture2D(uSurfaceMap, vWorldPos.xz * uSurfaceScale).rgb * blend.y +
+      texture2D(uSurfaceMap, vWorldPos.xy * uSurfaceScale).rgb * blend.z;
+    vec3 surfaceBreakup = clamp(
+      surface / vec3(0.24, 0.31, 0.36),
+      vec3(0.5),
+      vec3(1.58)
+    );
 
     vec3 colour = vColour * wash * stoneMottle * mix(0.54, 1.02, keyLight);
+    colour *= surfaceBreakup;
     colour *= 1.0 - joint * 0.18;
     colour *= mix(1.0, 0.5, groundContact);
     float stoneWeight = 1.0 - smoothstep(0.28, 0.66, vGlowWeight);
@@ -281,6 +313,7 @@ export interface MoonstoneObstacleMaterialOptions {
   fogNear: number;
   fogFar: number;
   octaves: number;
+  surfaceMap: THREE.Texture;
 }
 
 export function createMoonstoneObstacleMaterial({
@@ -291,7 +324,8 @@ export function createMoonstoneObstacleMaterial({
   fogColor,
   fogNear,
   fogFar,
-  octaves
+  octaves,
+  surfaceMap
 }: MoonstoneObstacleMaterialOptions): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     vertexColors: true,
@@ -305,7 +339,9 @@ export function createMoonstoneObstacleMaterial({
       uSharpness: { value: sharpness },
       uFogColor: { value: new THREE.Color(fogColor) },
       uFogNear: { value: fogNear },
-      uFogFar: { value: fogFar }
+      uFogFar: { value: fogFar },
+      uSurfaceMap: { value: surfaceMap },
+      uSurfaceScale: { value: 0.16 }
     },
     vertexShader: OBSTACLE_VERTEX,
     fragmentShader: OBSTACLE_FRAGMENT

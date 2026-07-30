@@ -46,7 +46,8 @@ function wallManifest(
     collidable: true,
     runtimeObstacleId,
     materials: PRODUCTION_ART.wallFragment.materials,
-    textureMemoryMB: 0,
+    textureMemoryMB: PRODUCTION_ART.wallFragment.textureMemoryMB,
+    maxTextureSizePx: PRODUCTION_ART.wallFragment.maxTextureSizePx,
     contour: "collision-cyan",
     maxReliefDepth: PRODUCTION_ART.wallFragment.maxReliefDepth,
     lods: lods.map(([level, triangles]) => ({
@@ -296,6 +297,6 @@ export function buildVerticalSliceEvidence(
         laneWidthFractionAtMaxMomentum: 1.45 / (LANE_HALF_WIDTH * 2)
       }
     },
-    compressedArtPayloadMB: 0.75
+    compressedArtPayloadMB: 0.79
   };
 }

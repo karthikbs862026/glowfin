@@ -32,6 +32,9 @@ contact, occlusion, material continuity or an animated-film sense of place.
 - Apply one coherent material response across volumetric ruins and ecology:
   broad hand-painted colour breakup, directional moon wash, base darkening,
   fog and Glowfin-centred local bioluminescence.
+- Triplanar-map one 512px hand-painted moonstone surface across actual wall
+  thickness and background volumes. Shared weathering now wraps form without
+  returning to camera-facing facade cards or unique UV materials.
 - Use the Art Bible acceptance frame plus the owner-provided screenshot and
   generated volumetric paint-over as the in-camera composition target. The
   paint-over is reference evidence, never a runtime background.

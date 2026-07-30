@@ -64,7 +64,10 @@ export class MoonGardenGates {
   private readonly scale = new THREE.Vector3();
   private readonly disposables: Array<{ dispose(): void }> = [];
 
-  constructor(private readonly cfg: TuningConfig) {
+  constructor(
+    private readonly cfg: TuningConfig,
+    surfaceMap: THREE.Texture = new THREE.Texture()
+  ) {
     const fogNear = cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier;
     const fogFar = cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier;
     this.material = createMoonstoneObstacleMaterial({
@@ -75,7 +78,8 @@ export class MoonGardenGates {
       fogColor: 0x12364c,
       fogNear,
       fogFar,
-      octaves: 3
+      octaves: 3,
+      surfaceMap
     });
 
     const createSide = (
@@ -157,10 +161,10 @@ export class MoonGardenGates {
         void main() {
           float endFade = smoothstep(-0.5, -0.42, vLocalPosition.y) *
             (1.0 - smoothstep(0.42, 0.5, vLocalPosition.y));
-          float waterFlow = 0.88 + 0.08 *
+          float waterFlow = 0.94 + 0.06 *
             sin(vLocalPosition.y * 31.0 + vLocalPosition.z * 4.0);
-          vec3 deepCyan = vec3(0.08, 0.50, 0.66);
-          vec3 moonCyan = vec3(0.14, 0.78, 0.92);
+          vec3 deepCyan = vec3(0.20, 0.61, 0.70);
+          vec3 moonCyan = vec3(0.40, 0.84, 0.90);
           gl_FragColor = vec4(mix(deepCyan, moonCyan, endFade) * waterFlow, 1.0);
         }
       `,
