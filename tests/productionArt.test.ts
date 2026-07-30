@@ -2,17 +2,19 @@ import { describe, expect, it } from "vitest";
 import { tuning } from "../src/core/config";
 import { PRODUCTION_ART } from "../src/art/productionManifest";
 import {
-  createBrokenTowerGeometry,
-  createCollapsedArchGeometry,
-  createGateFoundationGeometry,
-  createHeroCoralGeometry,
-  createMediumCoralGeometry,
-  createRibbonKelpGeometry,
-  createShellGardenGeometry,
-  createSpireGeometry,
-  createWallFragmentGeometry,
-  geometryTriangles
+  createGateFoundationGeometry
 } from "../src/render/moonGardenGeometry";
+import {
+  createProductionAnemone,
+  createProductionBranchCoral,
+  createProductionCollapsedArch,
+  createProductionFanCoral,
+  createProductionKelp,
+  createProductionSpire,
+  createProductionTower,
+  createProductionWallGeometry,
+  productionTriangles
+} from "../src/render/productionGeometry";
 import { createGlowfinRigGeometry } from "../src/render/glowfinGeometry";
 import { contourWorldWidth, MoonGardenGates } from "../src/render/gateArt";
 
@@ -21,31 +23,31 @@ describe("Phase 3B art geometry inventory", () => {
     const families = [
       [
         "wallFragment",
-        (lod: 0 | 1 | 2) => createWallFragmentGeometry(lod, 1)
+        (lod: 0 | 1 | 2) => createProductionWallGeometry(lod, 1, 0)
       ],
       [
         "brokenTower",
-        (lod: 0 | 1 | 2) => createBrokenTowerGeometry(lod)
+        (lod: 0 | 1 | 2) => createProductionTower(lod)
       ],
       [
         "collapsedArch",
-        (lod: 0 | 1 | 2) => createCollapsedArchGeometry(lod)
+        (lod: 0 | 1 | 2) => createProductionCollapsedArch(lod)
       ],
       [
         "spire",
-        (lod: 0 | 1 | 2) => createSpireGeometry(lod)
+        (lod: 0 | 1 | 2) => createProductionSpire(lod)
       ],
       [
         "mediumCoral",
-        (lod: 0 | 1 | 2) => createMediumCoralGeometry(lod)
+        (lod: 0 | 1 | 2) => createProductionBranchCoral(lod)
       ],
       [
         "heroCoral",
-        (lod: 0 | 1 | 2) => createHeroCoralGeometry(lod)
+        (lod: 0 | 1 | 2) => createProductionAnemone(lod)
       ],
       [
         "shellGarden",
-        (lod: 0 | 1 | 2) => createShellGardenGeometry(lod)
+        (lod: 0 | 1 | 2) => createProductionFanCoral(lod)
       ],
       [
         "gateFoundation",
@@ -56,7 +58,7 @@ describe("Phase 3B art geometry inventory", () => {
     for (const [family, create] of families) {
       for (const lod of [0, 1, 2] as const) {
         const geometry = create(lod);
-        expect(geometryTriangles(geometry)).toBe(
+        expect(productionTriangles(geometry)).toBe(
           PRODUCTION_ART[family][`lod${lod}`]
         );
         geometry.dispose();
@@ -68,8 +70,8 @@ describe("Phase 3B art geometry inventory", () => {
     for (const lod of [0, 1, 2] as const) {
       const signatures = new Set<string>();
       for (const variant of [0, 1, 2] as const) {
-        const left = createWallFragmentGeometry(lod, 1, variant);
-        const right = createWallFragmentGeometry(lod, -1, variant);
+        const left = createProductionWallGeometry(lod, 1, variant);
+        const right = createProductionWallGeometry(lod, -1, variant);
         left.computeBoundingBox();
         right.computeBoundingBox();
         expect(left.boundingBox?.max.x).toBeCloseTo(0.5, 6);
@@ -87,8 +89,8 @@ describe("Phase 3B art geometry inventory", () => {
 
   it("records the three-blade kelp cluster LODs exactly", () => {
     for (const lod of [0, 1] as const) {
-      const geometry = createRibbonKelpGeometry(lod);
-      expect(geometryTriangles(geometry)).toBe(
+      const geometry = createProductionKelp(lod);
+      expect(productionTriangles(geometry)).toBe(
         PRODUCTION_ART.ribbonKelp[`lod${lod}`]
       );
       geometry.dispose();
@@ -136,8 +138,8 @@ describe("Phase 3B art geometry inventory", () => {
 
   it("keeps ribbon kelp inside its two approved budgets", () => {
     for (const lod of [0, 1] as const) {
-      const geometry = createRibbonKelpGeometry(lod);
-      expect(geometryTriangles(geometry)).toBe(
+      const geometry = createProductionKelp(lod);
+      expect(productionTriangles(geometry)).toBe(
         PRODUCTION_ART.ribbonKelp[`lod${lod}`]
       );
       geometry.dispose();

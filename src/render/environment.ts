@@ -9,25 +9,23 @@
 import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
 import {
-  createBrokenTowerGeometry,
-  createCollapsedArchGeometry,
-  createHeroCoralGeometry,
-  createMediumCoralGeometry,
-  createRibbonKelpGeometry,
-  createShellGardenGeometry,
-  createSpireGeometry
-} from "./moonGardenGeometry";
+  createProductionAnemone,
+  createProductionBranchCoral,
+  createProductionCollapsedArch,
+  createProductionFanCoral,
+  createProductionJelly,
+  createProductionKelp,
+  createProductionMinnow,
+  createProductionRay,
+  createProductionSkyline,
+  createProductionSpire,
+  createProductionSpirit,
+  createProductionTower
+} from "./productionGeometry";
 import {
   createMoonGardenMaterial,
   updateMoonGardenMaterial
 } from "./moonGardenMaterial";
-
-interface UvRect {
-  uMin: number;
-  vMin: number;
-  uMax: number;
-  vMax: number;
-}
 
 function hash01(a: number, salt: number): number {
   let h = Math.imul(a ^ salt, 0x27d4eb2d);
@@ -45,59 +43,6 @@ function positiveMod(value: number, modulus: number): number {
   return ((value % modulus) + modulus) % modulus;
 }
 
-function createAtlasPlane(aspect: number, uvRect: UvRect): THREE.PlaneGeometry {
-  const geometry = new THREE.PlaneGeometry(aspect, 1);
-  const uv = geometry.getAttribute("uv");
-  for (let index = 0; index < uv.count; index++) {
-    uv.setXY(
-      index,
-      lerp(uvRect.uMin, uvRect.uMax, uv.getX(index)),
-      lerp(uvRect.vMin, uvRect.vMax, uv.getY(index))
-    );
-  }
-  uv.needsUpdate = true;
-  // Matrices position the grounded base rather than the image centre.
-  geometry.translate(0, 0.5, 0);
-  return geometry;
-}
-
-class InstancedBillboardFamily {
-  readonly object: THREE.InstancedMesh;
-  private count = 0;
-
-  constructor(
-    material: THREE.Material,
-    aspect: number,
-    uvRect: UvRect,
-    maxCount: number,
-    disposables: Array<{ dispose(): void }>
-  ) {
-    const geometry = createAtlasPlane(aspect, uvRect);
-    this.object = new THREE.InstancedMesh(geometry, material, maxCount);
-    this.object.count = 0;
-    this.object.frustumCulled = false;
-    this.object.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    disposables.push(geometry);
-  }
-
-  begin(): void {
-    this.count = 0;
-  }
-
-  add(matrix: THREE.Matrix4, colour: THREE.Color): void {
-    if (this.count >= this.object.instanceMatrix.count) return;
-    this.object.setMatrixAt(this.count, matrix);
-    this.object.setColorAt(this.count, colour);
-    this.count += 1;
-  }
-
-  finish(): void {
-    this.object.count = this.count;
-    this.object.instanceMatrix.needsUpdate = true;
-    if (this.object.instanceColor) this.object.instanceColor.needsUpdate = true;
-  }
-}
-
 class InstancedVolumeFamily {
   readonly object: THREE.InstancedMesh;
   readonly halfWidth: number;
@@ -108,12 +53,13 @@ class InstancedVolumeFamily {
     geometry: THREE.BufferGeometry,
     material: THREE.Material,
     maxCount: number,
-    disposables: Array<{ dispose(): void }>
+    disposables: Array<{ dispose(): void }>,
+    grounded = true
   ) {
     geometry.computeBoundingBox();
     const bounds = geometry.boundingBox;
     if (!bounds) throw new Error("Moon-Garden volume is missing bounds.");
-    geometry.translate(0, -bounds.min.y, 0);
+    if (grounded) geometry.translate(0, -bounds.min.y, 0);
     geometry.computeBoundingBox();
     const groundedBounds = geometry.boundingBox;
     if (!groundedBounds) throw new Error("Moon-Garden volume could not be grounded.");
@@ -146,36 +92,19 @@ class InstancedVolumeFamily {
 }
 
 export interface MoonGardenTextures {
-  worldAtlas: THREE.Texture;
   surfaceMap: THREE.Texture;
 }
-
-const SKYLINE_RECT: UvRect = {
-  uMin: 0,
-  vMin: 1 - 306 / 1024,
-  uMax: 1,
-  vMax: 1
-};
-
-// Bottom-right 512² contains fish, jelly, ray and garden-spirit groups.
-const LIFE_RECTS: readonly UvRect[] = [
-  { uMin: 0.5, vMin: 0.25, uMax: 0.75, vMax: 0.5 },
-  { uMin: 0.75, vMin: 0.25, uMax: 1, vMax: 0.5 },
-  { uMin: 0.5, vMin: 0, uMax: 0.75, vMax: 0.25 },
-  { uMin: 0.75, vMin: 0, uMax: 1, vMax: 0.25 }
-];
 
 const POINT_COUNT = 129;
 
 export class Environment {
   readonly objects: THREE.Object3D[] = [];
 
-  private readonly worldMaterial: THREE.MeshBasicMaterial;
   private readonly volumeMaterial: THREE.ShaderMaterial;
   private readonly architecture: readonly InstancedVolumeFamily[];
-  private readonly skyline: InstancedBillboardFamily;
+  private readonly skyline: InstancedVolumeFamily;
   private readonly reef: readonly InstancedVolumeFamily[];
-  private readonly life: readonly InstancedBillboardFamily[];
+  private readonly life: readonly InstancedVolumeFamily[];
   private readonly godRays: THREE.InstancedMesh;
   private readonly moonAndMotes: THREE.Points;
   private readonly pointPositions: THREE.BufferAttribute;
@@ -193,15 +122,6 @@ export class Environment {
     textures: MoonGardenTextures
   ) {
     const env = cfg.environment;
-    this.worldMaterial = new THREE.MeshBasicMaterial({
-      map: textures.worldAtlas,
-      color: 0xffffff,
-      alphaTest: 0.08,
-      side: THREE.DoubleSide,
-      depthWrite: true,
-      fog: true,
-      toneMapped: false
-    });
     const fogNear =
       cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier;
     const fogFar =
@@ -213,15 +133,14 @@ export class Environment {
       glowRadius: cfg.environment.coralPulseRadiusUnits,
       surfaceMap: textures.surfaceMap
     });
-    this.disposables.push(this.worldMaterial, this.volumeMaterial);
+    this.disposables.push(this.volumeMaterial);
 
-    // Architecture and reef closest to play are real shaded volumes. Only the
-    // far skyline and tiny ambient swimmers remain camera-facing atlas art.
-    // This is the key transition away from the "stickers on a floor" look.
+    // Every visible world family is volumetric. The former skyline and
+    // ambient-life atlas cards are retired rather than hidden at distance.
     const architectureGeometry = [
-      createBrokenTowerGeometry(1),
-      createSpireGeometry(1),
-      createCollapsedArchGeometry(1)
+      createProductionTower(1),
+      createProductionSpire(1),
+      createProductionCollapsedArch(1)
     ] as const;
     this.architecture = architectureGeometry.map((geometry) =>
       new InstancedVolumeFamily(
@@ -231,18 +150,17 @@ export class Environment {
         this.disposables
       )
     );
-    this.skyline = new InstancedBillboardFamily(
-      this.worldMaterial,
-      1024 / 306,
-      SKYLINE_RECT,
+    this.skyline = new InstancedVolumeFamily(
+      createProductionSkyline(),
+      this.volumeMaterial,
       4,
       this.disposables
     );
     const reefGeometry = [
-      createHeroCoralGeometry(1),
-      createMediumCoralGeometry(1),
-      createShellGardenGeometry(1),
-      createRibbonKelpGeometry(1)
+      createProductionBranchCoral(1),
+      createProductionFanCoral(1),
+      createProductionAnemone(1),
+      createProductionKelp(1)
     ] as const;
     this.reef = reefGeometry.map((geometry) =>
       new InstancedVolumeFamily(
@@ -253,13 +171,19 @@ export class Environment {
       )
     );
     const lifeCaps = [10, 8, 5, 10];
-    this.life = LIFE_RECTS.map((rect, index) =>
-      new InstancedBillboardFamily(
-        this.worldMaterial,
-        1,
-        rect,
+    const lifeGeometry = [
+      createProductionMinnow(),
+      createProductionJelly(),
+      createProductionRay(),
+      createProductionSpirit()
+    ] as const;
+    this.life = lifeGeometry.map((geometry, index) =>
+      new InstancedVolumeFamily(
+        geometry,
+        this.volumeMaterial,
         lifeCaps[index] ?? 8,
-        this.disposables
+        this.disposables,
+        false
       )
     );
     this.objects.push(
@@ -480,9 +404,9 @@ export class Environment {
       );
       this.quaternion.identity();
       this.scale.set(
-        lerp(58, 72, hash01(band, 713)),
-        lerp(26, 36, hash01(band, 714)),
-        1
+        lerp(17, 21, hash01(band, 713)),
+        lerp(17, 22, hash01(band, 714)),
+        lerp(10, 14, hash01(band, 716))
       );
       this.matrix.compose(this.position, this.quaternion, this.scale);
       const brightness = lerp(0.48, 0.68, hash01(band, 715));

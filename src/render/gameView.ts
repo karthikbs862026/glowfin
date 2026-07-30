@@ -128,6 +128,9 @@ export class GameView {
     private readonly cfg: TuningConfig
   ) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.08;
     // EffectComposer runs several passes and renderer.info auto-resets on each
     // one, so by the time stats() reads it, it describes bloom's final
     // fullscreen quad rather than the scene — the overlay showed "draws 1
@@ -173,22 +176,10 @@ export class GameView {
     moonstoneVolumeSurface.wrapT = THREE.MirroredRepeatWrapping;
     moonstoneVolumeSurface.anisotropy = maxAnisotropy;
 
-    const glowfinRear = textureLoader.load(
-      "/art/moon-garden/glowfin-rear.webp"
-    );
-    glowfinRear.colorSpace = THREE.SRGBColorSpace;
-    glowfinRear.anisotropy = maxAnisotropy;
-    const worldVariationAtlas = textureLoader.load(
-      "/art/moon-garden/world-variation-atlas.png"
-    );
-    worldVariationAtlas.colorSpace = THREE.SRGBColorSpace;
-    worldVariationAtlas.anisotropy = maxAnisotropy;
     this.disposables.push(
       moonstoneSurface,
       moonstoneFloorSurface,
-      moonstoneVolumeSurface,
-      glowfinRear,
-      worldVariationAtlas
+      moonstoneVolumeSurface
     );
 
     const backgroundCanvas = document.createElement("canvas");
@@ -348,12 +339,11 @@ export class GameView {
     for (const object of this.gates.objects) this.scene.add(object);
 
     // --- creature (Part 3.1) ---
-    this.creature = new Creature(cfg, glowfinRear);
+    this.creature = new Creature(cfg);
     this.scene.add(this.creature.group);
 
     // --- drowned city, god-rays, responsive coral (Part 3.2 #3 and #5) ---
     this.environment = new Environment(cfg, {
-      worldAtlas: worldVariationAtlas,
       surfaceMap: moonstoneVolumeSurface
     });
     for (const object of this.environment.objects) this.scene.add(object);
@@ -540,9 +530,10 @@ export class GameView {
     return {
       activeMaterials: materials.size,
       godRayMeshes: this.cfg.environment.godRayCount,
-      // Six GPU-loaded RGBA sources including mip overhead. Source plates that
-      // were packed into runtime atlases are not double-counted.
-      textureMemoryMB: 15.4
+      // Two authored moonstone sources plus the independently sampled floor
+      // clone and tiny generated water gradient. Review-character and
+      // skyline/life atlas textures are no longer loaded.
+      textureMemoryMB: 8.3
     };
   }
 

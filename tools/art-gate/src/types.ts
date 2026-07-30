@@ -29,6 +29,8 @@ export type AssetFamily =
   | "heroCoral"
   | "mediumCoral"
   | "smallProp"
+  | "distantSkyline"
+  | "ambientCreature"
   | "artReviewImpostor"
   | "ribbonKelp"
   | "godRayMesh";

@@ -134,3 +134,31 @@ the legacy shell family, not the new tube coral. Flattened spheres are removed.
 Shell gardens now use beveled, extruded scalloped fans with nested inner lobes
 and four neutral rubble feet. The family remains instanced in the existing draw
 and its measured outer bound is still the input to lane-safe placement.
+
+## Production-transition recognizability pass
+
+Owner review rejected the technically volumetric scene because object identity
+was still unreadable at gameplay scale. Polygon count was not the root cause:
+the gate remained one decorated slab, four reef families shared similar blob
+silhouettes, the skyline and ambient life were still camera-facing cards, and
+the rear-view Glowfin plate concealed banking and thickness.
+
+The next pass changes the art grammar rather than adding more decoration:
+
+- gate halves are assembled from visible masonry courses, a stacked inner pier,
+  broken arch voussoirs, buttress and grounded rubble;
+- the outside-lane ecology is split into staghorn, sea-fan, anemone and ribbon
+  kelp silhouettes;
+- skyline landmarks, minnows, jellies, rays and garden spirits are volumetric
+  instanced geometry;
+- the ten-bone Glowfin mesh is visible and the review card is removed;
+- face lighting, joints, cavities, contact darkening and wet highlights have
+  wider value separation;
+- the renderer uses sRGB output and ACES filmic tone mapping;
+- the two retired runtime impostor textures are removed from the production
+  payload.
+
+This is the measurable silhouette and integration contract for the authored GLB
+set defined in `docs/art/moon-garden-production-glb-brief.md`. It does not turn
+the code-authored transition mesh into the final sculpt source. Collision
+planes, openings, course generation and simulation remain unchanged.

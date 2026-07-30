@@ -10,48 +10,48 @@ export const PRODUCTION_ART = {
     bones: 10
   },
   wallFragment: {
-    lod0: 1200,
-    lod1: 772,
-    lod2: 216,
+    lod0: 1088,
+    lod1: 736,
+    lod2: 200,
     materials: 1,
     maxReliefDepth: 0.07,
     textureMemoryMB: 1.4,
     maxTextureSizePx: 512
   },
   brokenTower: {
-    lod0: 4384,
-    lod1: 1592,
-    lod2: 508,
+    lod0: 3520,
+    lod1: 1520,
+    lod2: 432,
     materials: 1
   },
   collapsedArch: {
-    lod0: 396,
-    lod1: 300,
-    lod2: 228,
+    lod0: 480,
+    lod1: 324,
+    lod2: 212,
     materials: 1
   },
   spire: {
-    lod0: 1960,
-    lod1: 868,
-    lod2: 240,
+    lod0: 1568,
+    lod1: 688,
+    lod2: 244,
     materials: 1
   },
   mediumCoral: {
-    lod0: 740,
-    lod1: 360,
-    lod2: 150,
+    lod0: 842,
+    lod1: 418,
+    lod2: 90,
     materials: 1
   },
   heroCoral: {
-    lod0: 2008,
-    lod1: 1044,
-    lod2: 294,
+    lod0: 2352,
+    lod1: 1198,
+    lod2: 300,
     materials: 1
   },
   shellGarden: {
-    lod0: 840,
-    lod1: 432,
-    lod2: 148,
+    lod0: 698,
+    lod1: 444,
+    lod2: 117,
     materials: 1
   },
   gateFoundation: {
@@ -61,57 +61,34 @@ export const PRODUCTION_ART = {
     materials: 1
   },
   ribbonKelp: {
-    lod0: 312,
-    lod1: 120,
+    lod0: 396,
+    lod1: 244,
+    materials: 1
+  },
+  skylineCluster: {
+    lod2: 264,
+    materials: 1
+  },
+  moonMinnow: {
+    lod0: 94,
+    materials: 1
+  },
+  lanternJelly: {
+    lod0: 206,
+    materials: 1
+  },
+  ribbonRay: {
+    lod0: 144,
+    materials: 1
+  },
+  gardenSpirit: {
+    lod0: 160,
     materials: 1
   },
   godRayMesh: {
     lod0: 12,
     materials: 1
   },
-  /**
-   * Temporary authored review sources on the visual-reset branch. These are
-   * real runtime assets, but explicitly are not substitutes for final GLBs.
-   */
-  brokenTowerReviewImpostor: {
-    lod0: 2,
-    materials: 1,
-    // Shares the 1024² gate/architecture atlas accounted on the gate family.
-    textureMemoryMB: 0,
-    maxTextureSizePx: 1024
-  },
-  coralReviewImpostor: {
-    lod0: 2,
-    materials: 1,
-    // Shared 1024² world atlas: reef, skyline and ambient life.
-    textureMemoryMB: 5.4,
-    maxTextureSizePx: 1024
-  },
-  glowfinReviewImpostor: {
-    lod0: 2,
-    materials: 1,
-    textureMemoryMB: 1.7,
-    maxTextureSizePx: 706
-  },
-  gateWallReviewImpostor: {
-    lod0: 2,
-    materials: 1,
-    textureMemoryMB: 5.4,
-    maxTextureSizePx: 1024
-  },
-  skylineReviewImpostor: {
-    lod0: 2,
-    materials: 1,
-    // Owns the shared 1024² skyline/life atlas plus the 384² seabed map.
-    textureMemoryMB: 6.2,
-    maxTextureSizePx: 1024
-  },
-  ambientLifeReviewImpostor: {
-    lod0: 2,
-    materials: 1,
-    textureMemoryMB: 0,
-    maxTextureSizePx: 1024
-  }
 } as const;
 
 export const GLOWFIN_ANIMATION = {

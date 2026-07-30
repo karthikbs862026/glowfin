@@ -88,19 +88,6 @@ function decorativeManifests(): AssetManifest[] {
       ]
     },
     {
-      name: "glowfin-authored-rear-review-impostor",
-      family: "artReviewImpostor",
-      collidable: false,
-      materials: PRODUCTION_ART.glowfinReviewImpostor.materials,
-      textureMemoryMB: PRODUCTION_ART.glowfinReviewImpostor.textureMemoryMB,
-      maxTextureSizePx: PRODUCTION_ART.glowfinReviewImpostor.maxTextureSizePx,
-      contour: "none",
-      lods: [{
-        level: 0,
-        triangles: PRODUCTION_ART.glowfinReviewImpostor.lod0
-      }]
-    },
-    {
       name: "moon-garden-volumetric-broken-tower",
       family: "brokenTower",
       collidable: false,
@@ -203,34 +190,52 @@ function decorativeManifests(): AssetManifest[] {
       ]
     },
     {
-      name: "moon-garden-layered-city-skyline",
-      family: "artReviewImpostor",
+      name: "moon-garden-volumetric-skyline-cluster",
+      family: "distantSkyline",
       collidable: false,
-      materials: PRODUCTION_ART.skylineReviewImpostor.materials,
-      textureMemoryMB:
-        PRODUCTION_ART.skylineReviewImpostor.textureMemoryMB,
-      maxTextureSizePx:
-        PRODUCTION_ART.skylineReviewImpostor.maxTextureSizePx,
+      materials: PRODUCTION_ART.skylineCluster.materials,
+      textureMemoryMB: 0,
       contour: "none",
       lods: [{
         level: 0,
-        triangles: PRODUCTION_ART.skylineReviewImpostor.lod0
+        triangles: PRODUCTION_ART.skylineCluster.lod2
       }]
     },
     {
-      name: "moon-garden-ambient-life-atlas",
-      family: "artReviewImpostor",
+      name: "moon-garden-moon-minnow",
+      family: "ambientCreature",
       collidable: false,
-      materials: PRODUCTION_ART.ambientLifeReviewImpostor.materials,
-      textureMemoryMB:
-        PRODUCTION_ART.ambientLifeReviewImpostor.textureMemoryMB,
-      maxTextureSizePx:
-        PRODUCTION_ART.ambientLifeReviewImpostor.maxTextureSizePx,
+      materials: PRODUCTION_ART.moonMinnow.materials,
+      textureMemoryMB: 0,
       contour: "none",
-      lods: [{
-        level: 0,
-        triangles: PRODUCTION_ART.ambientLifeReviewImpostor.lod0
-      }]
+      lods: [{ level: 0, triangles: PRODUCTION_ART.moonMinnow.lod0 }]
+    },
+    {
+      name: "moon-garden-lantern-jelly",
+      family: "ambientCreature",
+      collidable: false,
+      materials: PRODUCTION_ART.lanternJelly.materials,
+      textureMemoryMB: 0,
+      contour: "none",
+      lods: [{ level: 0, triangles: PRODUCTION_ART.lanternJelly.lod0 }]
+    },
+    {
+      name: "moon-garden-ribbon-ray",
+      family: "ambientCreature",
+      collidable: false,
+      materials: PRODUCTION_ART.ribbonRay.materials,
+      textureMemoryMB: 0,
+      contour: "none",
+      lods: [{ level: 0, triangles: PRODUCTION_ART.ribbonRay.lod0 }]
+    },
+    {
+      name: "moon-garden-garden-spirit",
+      family: "ambientCreature",
+      collidable: false,
+      materials: PRODUCTION_ART.gardenSpirit.materials,
+      textureMemoryMB: 0,
+      contour: "none",
+      lods: [{ level: 0, triangles: PRODUCTION_ART.gardenSpirit.lod0 }]
     },
     {
       name: "moon-garden-god-ray",
@@ -297,6 +302,6 @@ export function buildVerticalSliceEvidence(
         laneWidthFractionAtMaxMomentum: 1.45 / (LANE_HALF_WIDTH * 2)
       }
     },
-    compressedArtPayloadMB: 0.79
+    compressedArtPayloadMB: 0.09
   };
 }

@@ -85,6 +85,8 @@
     "heroCoral": { "lod0": [2000, 2800], "lod1": [800, 1300], "lod2": [250, 400], "maxMaterials": 1, "strategy": "outside-lane-signature", "collidable": false },
     "mediumCoral": { "lod0": [600, 1000], "lod1": [250, 450], "lod2": [80, 160], "maxMaterials": 1, "strategy": "instanced-family", "collidable": false },
     "smallProp": { "lod0": [80, 400], "lod1": [40, 160], "lod2": null, "maxMaterials": 1, "strategy": "atlas-instancing", "collidable": false },
+    "distantSkyline": { "lod0": [200, 400], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "far-field-volumetric-instancing", "collidable": false },
+    "ambientCreature": { "lod0": [70, 240], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "low-poly-volumetric-instancing", "collidable": false },
     "artReviewImpostor": { "lod0": [2, 4], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "temporary-authored-review-source", "collidable": false },
     "ribbonKelp": { "lod0": [300, 600], "lod1": [120, 250], "lod2": null, "maxMaterials": 1, "strategy": "vertex-sway", "collidable": false },
     "godRayMesh": { "lod0": [12, 24], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "hard-capped-three", "collidable": false }

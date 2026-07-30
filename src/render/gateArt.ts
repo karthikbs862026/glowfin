@@ -7,9 +7,9 @@ import {
 } from "../sim/gateGeometry";
 import {
   createGateFoundationGeometry,
-  createWallFragmentGeometry,
   type ArtLod
 } from "./moonGardenGeometry";
+import { createProductionWallGeometry } from "./productionGeometry";
 import { createMoonstoneObstacleMaterial } from "./moonGardenMaterial";
 
 const MAX_GATE_PARTS = 32;
@@ -87,7 +87,7 @@ export class MoonGardenGates {
       gapDirection: 1 | -1,
       variant: GateFacadeVariant
     ) => {
-      const geometry = createWallFragmentGeometry(lod, gapDirection, variant);
+      const geometry = createProductionWallGeometry(lod, gapDirection, variant);
       const mesh = new THREE.InstancedMesh(
         geometry,
         this.material,

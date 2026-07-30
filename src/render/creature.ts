@@ -49,9 +49,16 @@ const BODY_FRAGMENT = /* glsl */ `
 
   void main() {
     vec3 viewDir = normalize(vViewPosition);
-    float facing = clamp(dot(normalize(vNormalV), viewDir), 0.0, 1.0);
+    vec3 normalV = normalize(vNormalV);
+    float facing = clamp(dot(normalV, viewDir), 0.0, 1.0);
     float fresnel = pow(1.0 - facing, uRimPower);
     float internal = mix(0.46, 1.0, facing);
+    float moonKey = clamp(
+      dot(normalV, normalize(vec3(-0.46, 0.72, 0.52))) * 0.5 + 0.5,
+      0.0,
+      1.0
+    );
+    float softVolume = mix(0.46, 1.14, smoothstep(0.08, 0.95, moonKey));
 
     vec3 cyan = vec3(0.388, 0.878, 1.0);
     vec3 violet = vec3(0.545, 0.420, 0.910);
@@ -67,14 +74,16 @@ const BODY_FRAGMENT = /* glsl */ `
     float handPainted = 0.92 + 0.08 * broadMottle;
     vec3 seaGlass = mix(vColour, vec3(0.20, 0.66, 0.79), 0.28);
     vec3 base = mix(seaGlass, momentumColour, 0.18 + uMomentum * 0.34);
-    base *= handPainted * mix(0.72, 1.0, internal);
+    base *= handPainted * mix(0.72, 1.0, internal) * softVolume;
     base = mix(base, vec3(0.23, 0.29, 0.36), uCollision * 0.72);
     vec3 rim = mix(vec3(0.85, 0.965, 1.0), gold, uMomentum * 0.45);
     float core = smoothstep(-0.8, 0.55, vObjectPosition.y) *
       (1.0 - smoothstep(0.15, 1.25, abs(vObjectPosition.x)));
+    float seaGlassSpecular = pow(max(facing, 0.0), 18.0) * 0.11;
     vec3 colour = base * mix(0.46, 0.72, uGlow) +
       momentumColour * core * 0.07 * uGlow +
-      rim * fresnel * uRimStrength * uGlow * 0.38;
+      rim * fresnel * uRimStrength * uGlow * 0.38 +
+      vec3(0.72, 0.93, 1.0) * seaGlassSpecular;
     gl_FragColor = vec4(colour, 1.0);
   }
 `;
@@ -118,7 +127,6 @@ export class Creature {
 
   private readonly body: THREE.SkinnedMesh;
   private readonly eyes: THREE.Mesh;
-  private readonly reviewBillboard: THREE.Mesh;
   private readonly rootBone = new THREE.Bone();
   private readonly finLeftBone = new THREE.Bone();
   private readonly finRightBone = new THREE.Bone();
@@ -132,10 +140,7 @@ export class Creature {
   private breathPhase = 0;
   private bank = 0;
 
-  constructor(
-    private readonly cfg: TuningConfig,
-    reviewTexture: THREE.Texture
-  ) {
+  constructor(private readonly cfg: TuningConfig) {
     const rig = createGlowfinRigGeometry(cfg, 0);
     this.bodyMaterial = new THREE.ShaderMaterial({
       vertexColors: true,
@@ -191,30 +196,12 @@ export class Creature {
     this.body.frustumCulled = false;
 
     this.eyes = new THREE.Mesh(rig.eyes, this.eyeMaterial);
-    // The first generated rig remains the deterministic animation prototype,
-    // but owner review rejected its visible form. Until the approved GLB is
-    // modeled, an authored rear-view source carries the review silhouette.
-    // It is deliberately labelled and budgeted as an impostor, not final art.
-    this.body.visible = false;
-    this.eyes.visible = false;
-    const reviewGeometry = new THREE.PlaneGeometry(2.28, 2.28 * (453 / 706));
-    const reviewMaterial = new THREE.MeshBasicMaterial({
-      map: reviewTexture,
-      color: 0xffffff,
-      alphaTest: 0.08,
-      side: THREE.DoubleSide,
-      depthWrite: true
-    });
-    this.reviewBillboard = new THREE.Mesh(reviewGeometry, reviewMaterial);
-    this.reviewBillboard.position.y = 0.08;
-    this.group.add(this.body, this.eyes, this.reviewBillboard);
+    this.group.add(this.body, this.eyes);
     this.disposables.push(
       rig.body,
       rig.eyes,
       this.bodyMaterial,
-      this.eyeMaterial,
-      reviewGeometry,
-      reviewMaterial
+      this.eyeMaterial
     );
   }
 
@@ -273,12 +260,6 @@ export class Creature {
       lerp(1, 0.86, collisionFraction) *
       lerp(1, 1.06, recoveryFraction)
     );
-    this.reviewBillboard.scale.set(
-      1 + Math.abs(flutter) * 0.035,
-      breath * collisionSquash * recoveryExpand,
-      1
-    );
-
     const glow = lerp(
       cfg.bodyGlowAtZeroLight,
       cfg.bodyGlowAtFullLight,

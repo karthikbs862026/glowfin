@@ -15,7 +15,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1200,
+          "triangles": 1088,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -50,7 +50,7 @@
         },
         {
           "level": 1,
-          "triangles": 772,
+          "triangles": 736,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -85,7 +85,7 @@
         },
         {
           "level": 2,
-          "triangles": 216,
+          "triangles": 200,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -133,7 +133,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1200,
+          "triangles": 1088,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -168,7 +168,7 @@
         },
         {
           "level": 1,
-          "triangles": 772,
+          "triangles": 736,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -203,7 +203,7 @@
         },
         {
           "level": 2,
-          "triangles": 216,
+          "triangles": 200,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -276,21 +276,6 @@
       ]
     },
     {
-      "name": "glowfin-authored-rear-review-impostor",
-      "family": "artReviewImpostor",
-      "collidable": false,
-      "materials": 1,
-      "textureMemoryMB": 1.7,
-      "maxTextureSizePx": 706,
-      "contour": "none",
-      "lods": [
-        {
-          "level": 0,
-          "triangles": 2
-        }
-      ]
-    },
-    {
       "name": "moon-garden-volumetric-broken-tower",
       "family": "brokenTower",
       "collidable": false,
@@ -300,15 +285,15 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 4384
+          "triangles": 3520
         },
         {
           "level": 1,
-          "triangles": 1592
+          "triangles": 1520
         },
         {
           "level": 2,
-          "triangles": 508
+          "triangles": 432
         }
       ]
     },
@@ -322,15 +307,15 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 396
+          "triangles": 480
         },
         {
           "level": 1,
-          "triangles": 300
+          "triangles": 324
         },
         {
           "level": 2,
-          "triangles": 228
+          "triangles": 212
         }
       ]
     },
@@ -344,15 +329,15 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1960
+          "triangles": 1568
         },
         {
           "level": 1,
-          "triangles": 868
+          "triangles": 688
         },
         {
           "level": 2,
-          "triangles": 240
+          "triangles": 244
         }
       ]
     },
@@ -366,15 +351,15 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 2008
+          "triangles": 2352
         },
         {
           "level": 1,
-          "triangles": 1044
+          "triangles": 1198
         },
         {
           "level": 2,
-          "triangles": 294
+          "triangles": 300
         }
       ]
     },
@@ -388,15 +373,15 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 740
+          "triangles": 842
         },
         {
           "level": 1,
-          "triangles": 360
+          "triangles": 418
         },
         {
           "level": 2,
-          "triangles": 150
+          "triangles": 90
         }
       ]
     },
@@ -410,15 +395,15 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 840
+          "triangles": 698
         },
         {
           "level": 1,
-          "triangles": 432
+          "triangles": 444
         },
         {
           "level": 2,
-          "triangles": 148
+          "triangles": 117
         }
       ]
     },
@@ -450,41 +435,81 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 312
+          "triangles": 396
         },
         {
           "level": 1,
-          "triangles": 120
+          "triangles": 244
         }
       ]
     },
     {
-      "name": "moon-garden-layered-city-skyline",
-      "family": "artReviewImpostor",
-      "collidable": false,
-      "materials": 1,
-      "textureMemoryMB": 6.2,
-      "maxTextureSizePx": 1024,
-      "contour": "none",
-      "lods": [
-        {
-          "level": 0,
-          "triangles": 2
-        }
-      ]
-    },
-    {
-      "name": "moon-garden-ambient-life-atlas",
-      "family": "artReviewImpostor",
+      "name": "moon-garden-volumetric-skyline-cluster",
+      "family": "distantSkyline",
       "collidable": false,
       "materials": 1,
       "textureMemoryMB": 0,
-      "maxTextureSizePx": 1024,
       "contour": "none",
       "lods": [
         {
           "level": 0,
-          "triangles": 2
+          "triangles": 264
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-moon-minnow",
+      "family": "ambientCreature",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 94
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-lantern-jelly",
+      "family": "ambientCreature",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 206
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-ribbon-ray",
+      "family": "ambientCreature",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 144
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-garden-spirit",
+      "family": "ambientCreature",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 160
         }
       ]
     },
@@ -842,5 +867,5 @@
       "laneWidthFractionAtMaxMomentum": 0.12083333333333333
     }
   },
-  "compressedArtPayloadMB": 0.79
+  "compressedArtPayloadMB": 0.09
 }

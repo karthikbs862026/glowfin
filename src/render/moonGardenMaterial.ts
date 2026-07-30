@@ -37,9 +37,11 @@ const VERTEX = /* glsl */ `
 
     vColour = color;
     #ifdef USE_INSTANCING_COLOR
-      // Instance colour creates depth variation without bleaching vertex-authored
-      // stone and living hues into the pale cyan seen in the rejected render.
-      vColour *= vec3(0.58) + instanceColor * 0.62;
+      // Preserve the authored material family. Instance colour now contributes
+      // only subtle depth variation; the old strong multiply pushed stone,
+      // coral and creatures toward the same grey-cyan value.
+      vec3 instanceTint = vec3(0.78) + instanceColor * 0.34;
+      vColour *= mix(vec3(1.0), instanceTint, 0.24);
     #endif
     vGlowWeight = glowWeight;
     vec4 mvPosition = viewMatrix * worldPosition;
@@ -70,7 +72,7 @@ const FRAGMENT = /* glsl */ `
     );
     vec3 keyDirection = normalize(vec3(-0.35, 0.82, 0.45));
     float keyLight = dot(normalize(vNormalW), keyDirection) * 0.5 + 0.5;
-    float topLight = mix(0.54, 1.02, keyLight);
+    float topLight = mix(0.3, 1.16, smoothstep(0.08, 0.94, keyLight));
     vec3 viewDirection = normalize(cameraPosition - vWorldPos);
     float moonRim = pow(
       1.0 - clamp(abs(dot(normalize(vNormalW), viewDirection)), 0.0, 1.0),
@@ -111,6 +113,8 @@ const FRAGMENT = /* glsl */ `
       vec3(1.55)
     );
 
+    float cavity = smoothstep(0.12, 0.78, keyLight) *
+      mix(0.7, 1.0, broadWash);
     vec3 colour = vColour * broadWash * topLight;
     colour *= mix(vec3(1.0), surfaceBreakup, stoneWeight * 0.72);
     vec3 paintedStone =
@@ -118,11 +122,15 @@ const FRAGMENT = /* glsl */ `
     colour = mix(colour, paintedStone, stoneWeight * 0.34);
     colour *= 1.0 - joint * 0.28 * stoneWeight;
     colour *= mix(1.0, 0.84 + porousBreakup * 0.14, livingWeight);
-    colour *= mix(1.0, 0.52, groundContact);
-    colour += vec3(0.025, 0.065, 0.085) * stoneWeight;
-    colour += vec3(0.08, 0.32, 0.44) * moonRim *
-      mix(0.16, 0.34, stoneWeight);
-    colour += awakened * wake * mix(0.18, 0.58, uMomentum);
+    colour *= mix(1.0, 0.46, groundContact);
+    colour *= mix(0.82, 1.0, cavity * stoneWeight + livingWeight);
+    colour += vec3(0.018, 0.05, 0.07) * stoneWeight;
+    colour += vec3(0.07, 0.29, 0.4) * moonRim *
+      mix(0.15, 0.38, stoneWeight);
+    // Living species keep their own cyan/violet/rose albedo and receive a
+    // restrained translucent lift. They no longer read as unlit plastic rods.
+    colour += vColour * livingWeight * (0.06 + moonRim * 0.12);
+    colour += awakened * wake * livingWeight * mix(0.16, 0.52, uMomentum);
 
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
     colour = mix(colour, uFogColor, fog);
@@ -304,16 +312,26 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
       vec3(1.58)
     );
 
-    vec3 colour = vColour * wash * stoneMottle * mix(0.54, 1.02, keyLight);
+    float sculptLight = mix(
+      0.28,
+      1.18,
+      smoothstep(0.08, 0.94, keyLight)
+    );
+    vec3 colour = vColour * wash * stoneMottle * sculptLight;
     colour *= surfaceBreakup;
     vec3 paintedStone =
       vColour * surfaceBreakup * mix(0.74, 1.08, keyLight);
     colour = mix(colour, paintedStone, 0.38);
-    colour *= 1.0 - joint * 0.3;
-    colour *= mix(1.0, 0.5, groundContact);
+    colour *= 1.0 - joint * 0.43;
+    colour *= mix(1.0, 0.43, groundContact);
     float stoneWeight = 1.0 - smoothstep(0.28, 0.66, vGlowWeight);
     colour += vec3(0.035, 0.085, 0.11) * stoneWeight;
-    colour += vec3(0.08, 0.34, 0.46) * moonRim * 0.22;
+    colour += vec3(0.08, 0.34, 0.46) * moonRim * 0.28;
+    float wetSpecular = pow(
+      max(dot(reflect(-keyDirection, normalW), viewDirection), 0.0),
+      22.0
+    );
+    colour += vec3(0.46, 0.72, 0.82) * wetSpecular * 0.12;
     colour += uCausticColor * pattern * uIntensity * facing;
     colour += vColour * vGlowWeight * 0.035;
 

@@ -191,3 +191,15 @@ broad procedural colour still read as slabs. Add one 512px hand-painted
 moonstone surface through triplanar mapping, break the perfect crescent into
 embedded mineral fragments, raise irregular masonry courses on the wall face,
 and reduce floor/caustic competition behind the collider-true cyan core.
+## 2026-07-31 — Start the Moon-Garden production-asset transition
+
+- Owner evidence: the latest volumetric frame still made individual objects
+  difficult to identify and did not meet the animated-film target.
+- Decision: stop treating added procedural detail as final art. Retire every
+  runtime character, skyline and ambient-life card; make each reef species and
+  ruin family identifiable by silhouette; expose the real skinned Glowfin; and
+  use the result as the locked integration contract for authored GLBs.
+- Safety: the deterministic 12-unit lane, generated gate positions, collider
+  planes, contour width and solvability remain unchanged.
+- Release status: Draft PR #7 remains unmergeable until the GLB/PBR replacement,
+  browser matrix and Android/iOS sign-off meet the Concept-First Art Bible.
