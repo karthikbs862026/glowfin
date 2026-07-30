@@ -49,9 +49,9 @@ export const PRODUCTION_ART = {
     materials: 1
   },
   shellGarden: {
-    lod0: 648,
-    lod1: 264,
-    lod2: 140,
+    lod0: 840,
+    lod1: 432,
+    lod2: 148,
     materials: 1
   },
   gateFoundation: {

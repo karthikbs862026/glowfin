@@ -689,73 +689,115 @@ export function createHeroCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
   return merge(parts);
 }
 
+function createScallopedFanGeometry(
+  radius: number,
+  lobes: number,
+  depth: number
+): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  const segments = lobes * 2;
+  shape.moveTo(-radius, 0);
+  for (let index = 0; index <= segments; index++) {
+    const t = index / segments;
+    const angle = Math.PI * (1 - t);
+    const scallop = 1 + Math.sin(t * Math.PI * lobes) * 0.08;
+    shape.lineTo(
+      Math.cos(angle) * radius * scallop,
+      Math.sin(angle) * radius * scallop
+    );
+  }
+  shape.lineTo(radius * 0.36, -radius * 0.14);
+  shape.lineTo(-radius * 0.36, -radius * 0.14);
+  shape.closePath();
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    steps: 1,
+    curveSegments: 1,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: depth * 0.35,
+    bevelThickness: depth * 0.35
+  });
+  geometry.translate(0, 0, -depth * 0.5);
+  return geometry;
+}
+
 /**
  * A low shell-rosette garden used between taller reef clusters. It provides
  * physical overlap and contact detail without creating obstacle-like height.
  */
 export function createShellGardenGeometry(lod: ArtLod): THREE.BufferGeometry {
-  const radial = lod === 0 ? 6 : lod === 1 ? 5 : 4;
-  const vertical = lod === 0 ? 4 : lod === 1 ? 3 : 2;
-  const shellCount = lod === 2 ? 2 : 3;
+  const shellCount = lod === 2 ? 1 : 3;
   const parts: THREE.BufferGeometry[] = [];
 
   for (let index = 0; index < shellCount; index++) {
-    const radius = [0.25, 0.21, 0.18][index] ?? 0.18;
+    const radius = [0.3, 0.25, 0.21][index] ?? 0.2;
     const colour = index === 0
       ? MOON_VIOLET
       : index === 1
         ? LIVING_CYAN
         : HEART_ROSE;
     parts.push(decorate(
-      new THREE.SphereGeometry(radius, radial * 2, vertical),
+      createScallopedFanGeometry(
+        radius,
+        lod === 0 ? 6 : lod === 1 ? 5 : 3,
+        lod === 2 ? 0.045 : 0.065
+      ),
       {
         position: new THREE.Vector3(
-          (index - 1) * 0.38,
-          radius * 0.62 + 0.05 + index * 0.025,
-          (index % 2 === 0 ? -1 : 1) * 0.12
+          (index - 1) * 0.4,
+          radius * 0.28 + 0.045,
+          (index % 2 === 0 ? -1 : 1) * 0.13
         ),
-        rotation: new THREE.Euler(index * 0.17, index * 0.52, -0.18 + index * 0.2),
-        scale: new THREE.Vector3(1.35, 0.72, 1.08),
+        rotation: new THREE.Euler(
+          -0.2 + index * 0.08,
+          -0.35 + index * 0.4,
+          -0.18 + index * 0.2
+        ),
+        scale: new THREE.Vector3(1.08, 1.2, 1),
         colour,
         glowWeight: 0.38
       }
     ));
-    if (lod < 2) {
-      const petalCount = lod === 0 ? 5 : 3;
-      for (let petal = 0; petal < petalCount; petal++) {
-        const angle = petal / petalCount * Math.PI * 2 + index * 0.43;
-        parts.push(decorate(
-          new THREE.SphereGeometry(
-            radius * 0.46,
-            lod === 0 ? 6 : 4,
-            lod === 0 ? 3 : 2
+    if (lod === 0) {
+      parts.push(decorate(
+        createScallopedFanGeometry(
+          radius * 0.58,
+          lod === 0 ? 5 : 4,
+          0.04
+        ),
+        {
+          position: new THREE.Vector3(
+            (index - 1) * 0.4,
+            radius * 0.31 + 0.06,
+            (index % 2 === 0 ? -1 : 1) * 0.13 + 0.05
           ),
-          {
-            position: new THREE.Vector3(
-              (index - 1) * 0.38 + Math.cos(angle) * radius * 0.72,
-              radius * 0.62 + 0.04,
-              (index % 2 === 0 ? -1 : 1) * 0.12 +
-                Math.sin(angle) * radius * 0.72
-            ),
-            scale: new THREE.Vector3(1.25, 0.62, 0.9),
-            colour,
-            glowWeight: 0.31
-          }
-        ));
-      }
+          rotation: new THREE.Euler(
+            -0.2 + index * 0.08,
+            -0.35 + index * 0.4,
+            -0.18 + index * 0.2
+          ),
+          colour: index % 2 === 0 ? LIVING_CYAN : SHELL_GOLD,
+          glowWeight: 0.22
+        }
+      ));
     }
   }
 
-  const rockCount = lod === 2 ? 3 : 2;
+  const rockCount = lod === 0 ? 4 : lod === 1 ? 3 : 2;
   for (let index = 0; index < rockCount; index++) {
-    const radius = 0.18 - index * 0.025;
+    const radius = 0.16 - (index % 3) * 0.018;
     parts.push(decorate(
       new THREE.DodecahedronGeometry(radius, 0),
       {
-        position: new THREE.Vector3(index === 0 ? -0.56 : 0.58, radius * 0.55, 0),
+        position: new THREE.Vector3(
+          THREE.MathUtils.lerp(-0.58, 0.58, index / Math.max(1, rockCount - 1)),
+          radius * 0.52,
+          Math.sin(index * 1.7) * 0.13
+        ),
         rotation: new THREE.Euler(index * 0.4, index * 0.8, -index * 0.2),
         scale: new THREE.Vector3(1.28, 0.68, 0.95),
-        colour: MOONSTONE_DARK,
+        colour: index % 2 === 0 ? MOONSTONE_DARK : MOONSTONE,
         glowWeight: 0.02
       }
     ));

@@ -128,3 +128,9 @@ forks, breaks a second arch-crown course, and scales the collapsed-arch family
 to 62% of the shared architecture height. This is a visual correction only:
 lane bounds, gate placement, collision planes and contour dimensions do not
 change.
+
+The final near-reef audit identified the remaining long cyan/magenta shapes as
+the legacy shell family, not the new tube coral. Flattened spheres are removed.
+Shell gardens now use beveled, extruded scalloped fans with nested inner lobes
+and four neutral rubble feet. The family remains instanced in the existing draw
+and its measured outer bound is still the input to lane-safe placement.
