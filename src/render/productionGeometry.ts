@@ -190,10 +190,10 @@ export function createProductionWallGeometry(
   // create the visible silhouette and readable joints in front of it.
   const backing = new THREE.Shape([
     new THREE.Vector2(innerX, -0.5),
-    new THREE.Vector2(innerX, 0.34 + variant * 0.018),
-    new THREE.Vector2(gapDirection * 0.42, 0.44 - variant * 0.012),
-    new THREE.Vector2(gapDirection * 0.27, 0.49 - variant * 0.018),
-    new THREE.Vector2(gapDirection * 0.12, 0.31 + variant * 0.012),
+    new THREE.Vector2(innerX, 0.54 + variant * 0.014),
+    new THREE.Vector2(gapDirection * 0.42, 0.59 - variant * 0.012),
+    new THREE.Vector2(gapDirection * 0.27, 0.46 - variant * 0.018),
+    new THREE.Vector2(gapDirection * 0.12, 0.28 + variant * 0.012),
     new THREE.Vector2(-gapDirection * 0.05, 0.06 + variant * 0.02),
     new THREE.Vector2(-gapDirection * 0.26, -0.16 - variant * 0.018),
     new THREE.Vector2(outerX, -0.27 - variant * 0.02),
@@ -287,27 +287,44 @@ export function createProductionWallGeometry(
     ));
   }
 
-  // A recessed arch channel gives the irregular voussoirs one continuous
-  // architectural gesture. It remains behind the stone and entirely inside
-  // collidable mass, so it cannot suggest false playable clearance.
+  // A recessed curved shoulder gives the irregular voussoirs one continuous
+  // architectural gesture. Unlike a perfect torus, the rising ribbon seats
+  // directly on the collapsed bank and aims inward toward the broken opening.
   if (lod < 2) {
-    const archRadius = 0.48;
-    const archCentre = new THREE.Vector3(
-      innerX - gapDirection * archRadius,
-      0.08,
-      0.43
-    );
+    const samples = lod === 0 ? 9 : 6;
+    const upper: THREE.Vector2[] = [];
+    const lower: THREE.Vector2[] = [];
+    for (let index = 0; index <= samples; index++) {
+      const t = index / samples;
+      const x = THREE.MathUtils.lerp(
+        outerX + gapDirection * 0.15,
+        innerX - gapDirection * 0.055,
+        t
+      );
+      const centreY = 0.01 + Math.pow(t, 0.76) * 0.56 +
+        Math.sin(t * Math.PI * 2 + variant) * 0.008;
+      const thickness = THREE.MathUtils.lerp(0.14, 0.1, t);
+      upper.push(new THREE.Vector2(x, centreY + thickness * 0.5));
+      lower.push(new THREE.Vector2(x, centreY - thickness * 0.5));
+    }
+    const shoulder = new THREE.Shape();
+    const first = upper[0];
+    if (!first) throw new Error("Moon-gate shoulder requires samples.");
+    shoulder.moveTo(first.x, first.y);
+    for (const point of upper.slice(1)) shoulder.lineTo(point.x, point.y);
+    for (const point of lower.reverse()) shoulder.lineTo(point.x, point.y);
+    shoulder.closePath();
     parts.push(styled(
-      new THREE.TorusGeometry(
-        archRadius,
-        lod === 0 ? 0.052 : 0.045,
-        lod === 0 ? 5 : 3,
-        lod === 0 ? 18 : 8,
-        1.34
-      ),
+      new THREE.ExtrudeGeometry(shoulder, {
+        depth: 0.19,
+        steps: 1,
+        bevelEnabled: lod === 0,
+        bevelSegments: 1,
+        bevelSize: 0.014,
+        bevelThickness: 0.014
+      }),
       {
-        position: archCentre,
-        scale: new THREE.Vector3(gapDirection, 1, 0.82),
+        position: new THREE.Vector3(0, 0, 0.36),
         colour: JOINT,
         glow: 0.006
       }
@@ -325,12 +342,13 @@ export function createProductionWallGeometry(
       continue;
     }
     const t = index / Math.max(1, archStones - 1);
-    const angle = THREE.MathUtils.lerp(0.04, 1.32, t);
-    const radius = 0.48;
-    const x =
-      innerX - gapDirection * radius +
-      gapDirection * Math.cos(angle) * radius;
-    const y = 0.08 + Math.sin(angle) * radius;
+    const x = THREE.MathUtils.lerp(
+      outerX + gapDirection * 0.17,
+      innerX - gapDirection * 0.075,
+      t
+    );
+    const y = 0.015 + Math.pow(t, 0.76) * 0.56;
+    const tangent = THREE.MathUtils.lerp(0.74, 0.42, t);
     parts.push(styled(
       stoneBlock(
         0.18 + (index % 2) * 0.014,
@@ -347,7 +365,7 @@ export function createProductionWallGeometry(
         rotation: new THREE.Euler(
           Math.sin(index * 1.4) * 0.026,
           gapDirection * Math.sin(index) * 0.045,
-          gapDirection * (angle - Math.PI * 0.5)
+          gapDirection * tangent
         ),
         colour: index % 3 === 0 ? SHELL : STONE_LIGHT,
         glow: index % 3 === 0 ? 0.09 : 0.02
