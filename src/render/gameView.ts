@@ -130,7 +130,10 @@ export class GameView {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.0;
+    // The deeper directional material pass intentionally removed broad
+    // caustic wash. A small filmic exposure lift keeps midtones above the
+    // Art-Bible floor without flattening stone cavities or clipping bloom.
+    this.renderer.toneMappingExposure = 1.06;
     // EffectComposer runs several passes and renderer.info auto-resets on each
     // one, so by the time stats() reads it, it describes bloom's final
     // fullscreen quad rather than the scene — the overlay showed "draws 1
