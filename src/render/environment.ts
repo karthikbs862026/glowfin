@@ -10,12 +10,12 @@ import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
 import {
   createBrokenTowerGeometry,
+  createCollapsedArchGeometry,
   createHeroCoralGeometry,
   createMediumCoralGeometry,
   createRibbonKelpGeometry,
   createShellGardenGeometry,
-  createSpireGeometry,
-  createWallFragmentGeometry
+  createSpireGeometry
 } from "./moonGardenGeometry";
 import {
   createMoonGardenMaterial,
@@ -219,7 +219,7 @@ export class Environment {
     const architectureGeometry = [
       createBrokenTowerGeometry(1),
       createSpireGeometry(1),
-      createWallFragmentGeometry(1, 1)
+      createCollapsedArchGeometry(1)
     ] as const;
     this.architecture = architectureGeometry.map((geometry) =>
       new InstancedVolumeFamily(
@@ -402,7 +402,7 @@ export class Environment {
     const count = Math.max(6, Math.floor(env.buildingCount * this.density));
     const perSide = Math.floor(count / 2);
     const firstBand = Math.floor(
-      (forwardDistance - env.buildingBandSpacing * 1.5) /
+      (forwardDistance + env.buildingBandSpacing * 0.55) /
       env.buildingBandSpacing
     );
     for (const family of this.architecture) family.begin();
@@ -420,8 +420,8 @@ export class Environment {
           hash01(band, salt + 3)
         );
         const height = lerp(
-          env.buildingMinHeight * 0.95,
-          env.buildingMaxHeight * 0.86,
+          env.buildingMinHeight,
+          env.buildingMaxHeight,
           Math.pow(hash01(band, salt), 1.5)
         );
         const family = this.architecture[variant];
@@ -440,18 +440,18 @@ export class Environment {
         ));
         const mirror = hash01(band, salt + 10) < 0.5 ? -1 : 1;
         const unitScale = height / family.height;
-        const widthStretch = [0.92, 0.72, 1.12][variant] ?? 1;
-        const depthStretch = [0.82, 0.7, 0.92][variant] ?? 0.8;
+        const widthStretch = [0.76, 0.62, 0.92][variant] ?? 0.8;
+        const depthStretch = [0.74, 0.66, 0.86][variant] ?? 0.75;
         this.scale.set(
           mirror * unitScale * widthStretch,
           unitScale,
           unitScale * depthStretch
         );
         this.matrix.compose(this.position, this.quaternion, this.scale);
-        const brightness = lerp(0.36, 0.58, hash01(band, salt + 5));
+        const brightness = lerp(0.28, 0.43, hash01(band, salt + 5));
         this.colour.setRGB(
-          brightness * 0.74,
-          brightness * 0.88,
+          brightness * 0.67,
+          brightness * 0.84,
           brightness
         );
         family.add(this.matrix, this.colour);
@@ -518,10 +518,10 @@ export class Environment {
           (hash01(band, salt + 2) - 0.5) * env.coralBandSpacing * 0.55;
         const isHero = variant === 0 && positiveMod(band, 9) === 0;
         const desiredHeight = lerp(
-          variant === 2 ? 0.7 : 1,
-          variant === 3 ? 3.3 : 2.5,
+          variant === 2 ? 0.55 : 0.72,
+          variant === 3 ? 2.05 : 1.72,
           hash01(band, salt + 1)
-        ) * (isHero ? 1.24 : 1);
+        ) * (isHero ? 1.18 : 1);
         const unitScale = desiredHeight / family.height;
         const widthStretch = lerp(0.88, 1.22, hash01(band, salt + 5));
         const depthStretch = [0.9, 0.78, 0.84, 0.62][variant] ?? 0.8;
@@ -559,10 +559,10 @@ export class Environment {
           0,
           1 - distance / Math.max(1, env.coralPulseRadiusUnits)
         );
-        const brightness = 0.76 + response * 0.34 + momentumFraction * 0.04;
+        const brightness = 0.56 + response * 0.22 + momentumFraction * 0.025;
         this.colour.setRGB(
-          brightness * 0.82,
-          brightness * 0.9,
+          brightness * 0.76,
+          brightness * 0.88,
           brightness
         );
         family.add(this.matrix, this.colour);

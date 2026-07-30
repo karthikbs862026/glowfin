@@ -78,6 +78,7 @@
   "assetFamilies": {
     "glowfin": { "lod0": [6000, 8000], "lod1": [3000, 4000], "lod2": null, "maxMaterials": 2, "strategy": "single-skinned-mesh", "collidable": false },
     "brokenTower": { "lod0": [3500, 4500], "lod1": [1500, 2200], "lod2": [400, 700], "maxMaterials": 1, "strategy": "outside-lane-instanced-archetype", "collidable": false },
+    "collapsedArchRuin": { "lod0": [300, 500], "lod1": [200, 350], "lod2": [160, 260], "maxMaterials": 1, "strategy": "outside-lane-block-arch", "collidable": false },
     "collapsedArchPair": { "lod0": [4000, 5000], "lod1": [1800, 2500], "lod2": [500, 800], "maxMaterials": 1, "strategy": "mirrored-modules", "collidable": true },
     "spire": { "lod0": [1500, 2000], "lod1": [600, 900], "lod2": [150, 300], "maxMaterials": 1, "strategy": "background-instancing", "collidable": false },
     "wallFragment": { "lod0": [1000, 1600], "lod1": [450, 800], "lod2": [120, 250], "maxMaterials": 1, "strategy": "core-gate-archetype", "collidable": true },

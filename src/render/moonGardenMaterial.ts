@@ -37,9 +37,9 @@ const VERTEX = /* glsl */ `
 
     vColour = color;
     #ifdef USE_INSTANCING_COLOR
-      // Instance colour is a restrained lighting/tint control. Multiplying
-      // two already-dark colours made the Moon-Garden disappear into black.
-      vColour *= vec3(0.58) + instanceColor * 1.18;
+      // Instance colour creates depth variation without bleaching vertex-authored
+      // stone and living hues into the pale cyan seen in the rejected render.
+      vColour *= vec3(0.72) + instanceColor * 0.52;
     #endif
     vGlowWeight = glowWeight;
     vec4 mvPosition = viewMatrix * worldPosition;
@@ -68,7 +68,7 @@ const FRAGMENT = /* glsl */ `
     );
     vec3 keyDirection = normalize(vec3(-0.35, 0.82, 0.45));
     float keyLight = dot(normalize(vNormalW), keyDirection) * 0.5 + 0.5;
-    float topLight = mix(0.68, 1.18, keyLight);
+    float topLight = mix(0.54, 1.02, keyLight);
     float groundContact = 1.0 - smoothstep(-0.96, -0.18, vWorldPos.y);
     float distanceToGlow = distance(vWorldPos.xz, uGlowCentre.xz);
     float wake = 1.0 - smoothstep(0.0, uGlowRadius, distanceToGlow);
@@ -96,9 +96,9 @@ const FRAGMENT = /* glsl */ `
     vec3 colour = vColour * broadWash * topLight;
     colour *= 1.0 - joint * 0.20 * stoneWeight;
     colour *= mix(1.0, 0.84 + porousBreakup * 0.14, livingWeight);
-    colour *= mix(1.0, 0.58, groundContact);
-    colour += vec3(0.055, 0.12, 0.15) * stoneWeight;
-    colour += awakened * wake * mix(0.32, 0.84, uMomentum);
+    colour *= mix(1.0, 0.52, groundContact);
+    colour += vec3(0.025, 0.065, 0.085) * stoneWeight;
+    colour += awakened * wake * mix(0.18, 0.58, uMomentum);
 
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
     colour = mix(colour, uFogColor, fog);
@@ -258,13 +258,13 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     vec2 cell = abs(fract(stoneUv + vec2(floor(stoneUv.y) * 0.35, 0.0)) - 0.5);
     float joint = 1.0 - smoothstep(0.028, 0.07, min(0.5 - cell.x, 0.5 - cell.y));
 
-    vec3 colour = vColour * wash * stoneMottle * mix(0.72, 1.16, keyLight);
+    vec3 colour = vColour * wash * stoneMottle * mix(0.54, 1.02, keyLight);
     colour *= 1.0 - joint * 0.18;
-    colour *= mix(1.0, 0.62, groundContact);
+    colour *= mix(1.0, 0.5, groundContact);
     float stoneWeight = 1.0 - smoothstep(0.28, 0.66, vGlowWeight);
-    colour += vec3(0.09, 0.18, 0.23) * stoneWeight;
+    colour += vec3(0.035, 0.085, 0.11) * stoneWeight;
     colour += uCausticColor * pattern * uIntensity * facing;
-    colour += vColour * vGlowWeight * 0.08;
+    colour += vColour * vGlowWeight * 0.035;
 
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
     colour = mix(colour, uFogColor, fog);

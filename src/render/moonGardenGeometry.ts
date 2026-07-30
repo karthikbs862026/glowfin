@@ -3,17 +3,17 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 
 export type ArtLod = 0 | 1 | 2;
 
-const MOONSTONE = new THREE.Color(0x4f7f94);
-const MOONSTONE_DARK = new THREE.Color(0x345c70);
+const MOONSTONE = new THREE.Color(0x315f73);
+const MOONSTONE_DARK = new THREE.Color(0x183c50);
 // Collision-critical stone gets its own brighter values. The surrounding
 // ruins deliberately stay subdued, but every surface that can end a run must
 // retain a 3:1 silhouette against the midnight lane even with caustics off.
-const OBSTACLE_MOONSTONE = new THREE.Color(0x76a7b5);
-const OBSTACLE_RECESS = new THREE.Color(0x547f8e);
-const SHELL_GOLD = new THREE.Color(0xf4d58b);
-const LIVING_CYAN = new THREE.Color(0x2c8fa8);
-const MOON_VIOLET = new THREE.Color(0x6856ad);
-const HEART_ROSE = new THREE.Color(0xb84e8e);
+const OBSTACLE_MOONSTONE = new THREE.Color(0x47788a);
+const OBSTACLE_RECESS = new THREE.Color(0x254f63);
+const SHELL_GOLD = new THREE.Color(0x789c98);
+const LIVING_CYAN = new THREE.Color(0x176d82);
+const MOON_VIOLET = new THREE.Color(0x4b3b78);
+const HEART_ROSE = new THREE.Color(0x77375f);
 
 interface PartOptions {
   position?: THREE.Vector3;
@@ -74,17 +74,45 @@ function merge(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
   return result;
 }
 
-function extrudedWallShape(gapDirection: 1 | -1): THREE.ExtrudeGeometry {
+function extrudedWallShape(
+  gapDirection: 1 | -1,
+  variant: 0 | 1 | 2
+): THREE.ExtrudeGeometry {
   const inner = 0.5 * gapDirection;
   const outer = -0.5 * gapDirection;
+  const crowns = [
+    [
+      [0.5, 0.5],
+      [0.34, 0.48],
+      [0.18, 0.37],
+      [-0.02, 0.42],
+      [-0.21, 0.25],
+      [-0.5, 0.16]
+    ],
+    [
+      [0.5, 0.5],
+      [0.39, 0.43],
+      [0.22, 0.49],
+      [0.04, 0.31],
+      [-0.18, 0.36],
+      [-0.5, 0.22]
+    ],
+    [
+      [0.5, 0.5],
+      [0.31, 0.46],
+      [0.13, 0.29],
+      [-0.04, 0.35],
+      [-0.27, 0.19],
+      [-0.5, 0.12]
+    ]
+  ] as const;
+  const crown = crowns[variant];
   const points = [
     new THREE.Vector2(inner, -0.5),
-    new THREE.Vector2(inner, 0.5),
-    new THREE.Vector2(0.31 * gapDirection, 0.47),
-    new THREE.Vector2(0.13 * gapDirection, 0.38),
-    new THREE.Vector2(-0.04 * gapDirection, 0.44),
-    new THREE.Vector2(-0.23 * gapDirection, 0.27),
-    new THREE.Vector2(outer, 0.18),
+    ...crown.map(([x, y]) => new THREE.Vector2(
+      x * gapDirection,
+      y
+    )),
     new THREE.Vector2(outer, -0.5)
   ];
   const shape = new THREE.Shape(points);
@@ -104,25 +132,26 @@ function extrudedWallShape(gapDirection: 1 | -1): THREE.ExtrudeGeometry {
  */
 export function createWallFragmentGeometry(
   lod: ArtLod,
-  gapDirection: 1 | -1
+  gapDirection: 1 | -1,
+  variant: 0 | 1 | 2 = 0
 ): THREE.BufferGeometry {
   const radial = lod === 0 ? 42 : lod === 1 ? 27 : 13;
   const tube = lod === 0 ? 8 : lod === 1 ? 5 : 3;
   const ribSegments = lod === 0 ? 14 : lod === 1 ? 8 : 2;
   const parts: THREE.BufferGeometry[] = [
-    decorate(extrudedWallShape(gapDirection), {
+    decorate(extrudedWallShape(gapDirection, variant), {
       colour: OBSTACLE_MOONSTONE,
-      glowWeight: 0.08
+      glowWeight: 0.025
     }),
     // A recessed copy creates the broad layered stone face seen in the Art
     // Bible without touching the collider-truth edge. It is shifted toward the
     // wall mass and slightly raised toward the camera, so the base reads as a
     // sculpted frame rather than one flat extruded card.
-    decorate(extrudedWallShape(gapDirection), {
+    decorate(extrudedWallShape(gapDirection, variant), {
       position: new THREE.Vector3(-gapDirection * 0.065, -0.055, 0),
       scale: new THREE.Vector3(0.82, 0.80, 1.035),
       colour: OBSTACLE_RECESS,
-      glowWeight: 0.04
+      glowWeight: 0.015
     })
   ];
 
@@ -135,7 +164,7 @@ export function createWallFragmentGeometry(
     {
       position: new THREE.Vector3(innerX, -0.02, 0),
       colour: OBSTACLE_RECESS,
-      glowWeight: 0.1
+      glowWeight: 0.025
     }
   ));
   // Dark stone channel immediately behind the gameplay seam. The emissive
@@ -146,7 +175,7 @@ export function createWallFragmentGeometry(
     {
       position: new THREE.Vector3(gapDirection * 0.435, -0.02, 0),
       colour: OBSTACLE_RECESS,
-      glowWeight: 0.02
+      glowWeight: 0.01
     }
   ));
   parts.push(decorate(
@@ -155,7 +184,7 @@ export function createWallFragmentGeometry(
       position: new THREE.Vector3(gapDirection * 0.16, -0.09, 0),
       rotation: new THREE.Euler(0, 0, -gapDirection * 0.16),
       colour: SHELL_GOLD,
-      glowWeight: 0.62
+      glowWeight: 0.12
     }
   ));
 
@@ -166,7 +195,7 @@ export function createWallFragmentGeometry(
       rotation: new THREE.Euler(0, 0, gapDirection > 0 ? -0.8 : Math.PI - 0.8),
       scale: new THREE.Vector3(0.78, 1, 1),
       colour: SHELL_GOLD,
-      glowWeight: 0.78
+      glowWeight: 0.18
     }
   ));
 
@@ -177,7 +206,90 @@ export function createWallFragmentGeometry(
         position: new THREE.Vector3(gapDirection * 0.02, -0.11, 0.51),
         rotation: new THREE.Euler(0, 0, gapDirection > 0 ? 1.25 : -1.89),
         colour: OBSTACLE_RECESS,
-        glowWeight: 0.18
+        glowWeight: 0.03
+      }
+    ));
+  }
+
+  return merge(parts);
+}
+
+/**
+ * A low, broken arch family for the middle-depth architecture layer. Individual
+ * voussoir blocks, buttresses and rubble create real parallax and irregular
+ * negative space without borrowing the collider wall's bright material.
+ */
+export function createCollapsedArchGeometry(lod: ArtLod): THREE.BufferGeometry {
+  const blockCount = lod === 0 ? 9 : lod === 1 ? 7 : 5;
+  const parts: THREE.BufferGeometry[] = [];
+
+  for (const side of [-1, 1]) {
+    parts.push(decorate(
+      new THREE.BoxGeometry(
+        lod === 2 ? 0.32 : 0.38,
+        0.62,
+        0.48,
+        1,
+        lod === 0 ? 4 : 2,
+        1
+      ),
+      {
+        position: new THREE.Vector3(side * 0.52, 0.31, 0),
+        rotation: new THREE.Euler(0, side * 0.05, -side * 0.035),
+        colour: side < 0 ? MOONSTONE_DARK : MOONSTONE,
+        glowWeight: 0.015
+      }
+    ));
+  }
+
+  for (let index = 0; index < blockCount; index++) {
+    // Missing crown stones keep the silhouette visibly collapsed and prevent
+    // the arch from reading as another perfect luminous icon.
+    if (
+      (lod < 2 && index === Math.floor(blockCount * 0.54)) ||
+      (lod === 0 && index === Math.floor(blockCount * 0.54) + 1)
+    ) {
+      continue;
+    }
+    const t = index / Math.max(1, blockCount - 1);
+    const angle = THREE.MathUtils.lerp(0.16 * Math.PI, 0.84 * Math.PI, t);
+    const x = Math.cos(angle) * 0.58;
+    const y = 0.5 + Math.sin(angle) * 0.52;
+    parts.push(decorate(
+      new THREE.BoxGeometry(0.24, 0.19, 0.5),
+      {
+        position: new THREE.Vector3(x, y, Math.sin(index * 1.7) * 0.025),
+        rotation: new THREE.Euler(
+          Math.sin(index * 0.9) * 0.035,
+          Math.sin(index * 1.3) * 0.05,
+          angle - Math.PI / 2
+        ),
+        scale: new THREE.Vector3(
+          0.9 + (index % 2) * 0.12,
+          0.9 + ((index + 1) % 2) * 0.08,
+          1
+        ),
+        colour: index % 3 === 0 ? MOONSTONE : MOONSTONE_DARK,
+        glowWeight: 0.02
+      }
+    ));
+  }
+
+  const rubbleCount = lod === 0 ? 6 : lod === 1 ? 4 : 3;
+  for (let index = 0; index < rubbleCount; index++) {
+    const radius = 0.11 + (index % 3) * 0.025;
+    parts.push(decorate(
+      new THREE.DodecahedronGeometry(radius, 0),
+      {
+        position: new THREE.Vector3(
+          THREE.MathUtils.lerp(-0.83, 0.83, index / Math.max(1, rubbleCount - 1)),
+          radius * 0.58,
+          Math.sin(index * 1.9) * 0.22
+        ),
+        rotation: new THREE.Euler(index * 0.31, index * 0.73, index * 0.19),
+        scale: new THREE.Vector3(1.2, 0.68, 1),
+        colour: MOONSTONE_DARK,
+        glowWeight: 0.01
       }
     ));
   }
@@ -316,8 +428,8 @@ export function createSpireGeometry(lod: ArtLod): THREE.BufferGeometry {
 }
 
 export function createMediumCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
-  const radial = lod === 0 ? 8 : lod === 1 ? 6 : 4;
-  const vertical = lod === 0 ? 5 : lod === 1 ? 3 : 1;
+  const radial = lod === 0 ? 5 : lod === 1 ? 4 : 3;
+  const capSegments = lod === 0 ? 2 : 1;
   const branches = lod === 0 ? 5 : lod === 1 ? 4 : 3;
   const parts: THREE.BufferGeometry[] = [];
   const offsets = [-0.44, -0.22, 0, 0.23, 0.45];
@@ -328,11 +440,16 @@ export function createMediumCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
     const height = heights[index] ?? 0.6;
     const colour = index % 3 === 0
       ? LIVING_CYAN
-      : index % 3 === 1
-        ? MOON_VIOLET
-        : HEART_ROSE;
+        : index % 3 === 1
+          ? MOON_VIOLET
+          : HEART_ROSE;
     parts.push(decorate(
-      new THREE.CylinderGeometry(0.085, 0.17, height, radial, vertical, false),
+      new THREE.CapsuleGeometry(
+        0.12,
+        Math.max(0.12, height - 0.24),
+        capSegments,
+        radial
+      ),
       {
         position: new THREE.Vector3(x, height * 0.5, 0.06 * Math.sin(index * 1.7)),
         rotation: new THREE.Euler(
@@ -341,23 +458,32 @@ export function createMediumCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
           x * -0.72
         ),
         colour,
-        glowWeight: 0.92
+        glowWeight: 0.42
       }
     ));
-    const cupCount = lod === 0 ? 3 : 2;
-    if (lod < 2 && index < cupCount) {
+    if (lod < 2 && index < 3) {
+      const forkSide = index % 2 === 0 ? -1 : 1;
+      const forkLength = height * 0.38;
       parts.push(decorate(
-        new THREE.TorusGeometry(
-          0.105,
-          0.034,
-          3,
-          lod === 0 ? 12 : 10
+        new THREE.CapsuleGeometry(
+          0.075,
+          Math.max(0.08, forkLength - 0.15),
+          Math.max(2, capSegments - 1),
+          radial
         ),
         {
-          position: new THREE.Vector3(x, height, 0.06 * Math.sin(index * 1.7)),
-          rotation: new THREE.Euler(Math.PI / 2, 0, 0),
+          position: new THREE.Vector3(
+            x + forkSide * height * 0.11,
+            height * 0.69,
+            0.07 + index * 0.018
+          ),
+          rotation: new THREE.Euler(
+            forkSide * 0.08,
+            index * 0.35,
+            -forkSide * 0.72
+          ),
           colour,
-          glowWeight: 1
+          glowWeight: 0.5
         }
       ));
     }
@@ -368,7 +494,7 @@ export function createMediumCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
       position: new THREE.Vector3(0, 0.04, 0),
       scale: new THREE.Vector3(1.28, 0.28, 0.86),
       colour: MOONSTONE_DARK,
-      glowWeight: 0.16
+      glowWeight: 0.035
     }
   ));
   return merge(parts);
@@ -380,8 +506,6 @@ export function createMediumCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
  * layered reef branches and a skirt of stones share one grounded silhouette.
  */
 export function createHeroCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
-  const radial = lod === 0 ? 46 : lod === 1 ? 28 : 14;
-  const tube = lod === 0 ? 8 : lod === 1 ? 5 : 3;
   const parts: THREE.BufferGeometry[] = [];
 
   const coral = createMediumCoralGeometry(lod);
@@ -389,25 +513,27 @@ export function createHeroCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
   coral.translate(0.14, 0.02, 0.18);
   parts.push(coral);
 
-  for (const [index, radius] of [0.72, 0.53].entries()) {
+  const archBlocks = lod === 0 ? 8 : lod === 1 ? 6 : 4;
+  for (let index = 0; index < archBlocks; index++) {
+    if (index === Math.floor(archBlocks * 0.58)) continue;
+    const t = index / Math.max(1, archBlocks - 1);
+    const angle = THREE.MathUtils.lerp(0.1 * Math.PI, 0.9 * Math.PI, t);
+    const radius = 0.64;
     parts.push(decorate(
-      new THREE.TorusGeometry(
-        radius,
-        index === 0 ? 0.105 : 0.072,
-        tube,
-        radial,
-        Math.PI * (index === 0 ? 1.16 : 1.08)
-      ),
+      new THREE.BoxGeometry(0.26, 0.19, 0.27),
       {
-        position: new THREE.Vector3(-0.18, 0.58, -0.12 - index * 0.06),
-        rotation: new THREE.Euler(
-          0.08,
-          index === 0 ? -0.18 : 0.12,
-          index === 0 ? 0.48 : 0.62
+        position: new THREE.Vector3(
+          -0.2 + Math.cos(angle) * radius,
+          0.25 + Math.sin(angle) * radius,
+          -0.13 + Math.sin(index * 1.4) * 0.035
         ),
-        scale: new THREE.Vector3(1, 1.18, 0.72),
-        colour: index === 0 ? MOONSTONE_DARK : SHELL_GOLD,
-        glowWeight: index === 0 ? 0.12 : 0.64
+        rotation: new THREE.Euler(
+          Math.sin(index) * 0.04,
+          Math.sin(index * 0.7) * 0.08,
+          angle - Math.PI / 2
+        ),
+        colour: index % 3 === 0 ? MOONSTONE : MOONSTONE_DARK,
+        glowWeight: 0.02
       }
     ));
   }
@@ -427,7 +553,31 @@ export function createHeroCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
         rotation: new THREE.Euler(index * 0.32, index * 0.51, index * 0.19),
         scale: new THREE.Vector3(1.18, 0.72, 0.92),
         colour: index === 1 ? MOONSTONE : MOONSTONE_DARK,
-        glowWeight: 0.08
+        glowWeight: 0.02
+      }
+    ));
+  }
+
+  const anemoneCount = lod === 0 ? 13 : lod === 1 ? 6 : 0;
+  for (let index = 0; index < anemoneCount; index++) {
+    const angle = index * 2.399963;
+    const ring = 0.22 + (index % 4) * 0.13;
+    const radius = 0.105 + (index % 3) * 0.018;
+    parts.push(decorate(
+      new THREE.IcosahedronGeometry(radius, 1),
+      {
+        position: new THREE.Vector3(
+          -0.08 + Math.cos(angle) * ring,
+          radius * 0.72 + (index % 2) * 0.035,
+          0.12 + Math.sin(angle) * ring * 0.62
+        ),
+        scale: new THREE.Vector3(1.25, 0.7, 1),
+        colour: index % 3 === 0
+          ? LIVING_CYAN
+          : index % 3 === 1
+            ? MOON_VIOLET
+            : HEART_ROSE,
+        glowWeight: 0.28
       }
     ));
   }
@@ -440,45 +590,59 @@ export function createHeroCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
  * physical overlap and contact detail without creating obstacle-like height.
  */
 export function createShellGardenGeometry(lod: ArtLod): THREE.BufferGeometry {
-  const radial = lod === 0 ? 20 : lod === 1 ? 14 : 8;
-  const tube = lod === 0 ? 5 : lod === 1 ? 4 : 3;
+  const radial = lod === 0 ? 6 : lod === 1 ? 5 : 4;
+  const vertical = lod === 0 ? 4 : lod === 1 ? 3 : 2;
   const shellCount = lod === 2 ? 2 : 3;
   const parts: THREE.BufferGeometry[] = [];
 
   for (let index = 0; index < shellCount; index++) {
-    const radius = [0.34, 0.27, 0.23][index] ?? 0.23;
+    const radius = [0.25, 0.21, 0.18][index] ?? 0.18;
     const colour = index === 0
       ? MOON_VIOLET
       : index === 1
         ? LIVING_CYAN
         : HEART_ROSE;
     parts.push(decorate(
-      new THREE.TorusGeometry(
-        radius,
-        radius * 0.24,
-        tube,
-        radial,
-        Math.PI * 1.62
-      ),
+      new THREE.SphereGeometry(radius, radial * 2, vertical),
       {
         position: new THREE.Vector3(
           (index - 1) * 0.38,
-          0.23 + index * 0.05,
+          radius * 0.62 + 0.05 + index * 0.025,
           (index % 2 === 0 ? -1 : 1) * 0.12
         ),
-        rotation: new THREE.Euler(
-          Math.PI * 0.46,
-          index * 0.52,
-          -0.42 + index * 0.34
-        ),
-        scale: new THREE.Vector3(1, 0.72, 1),
+        rotation: new THREE.Euler(index * 0.17, index * 0.52, -0.18 + index * 0.2),
+        scale: new THREE.Vector3(1.35, 0.72, 1.08),
         colour,
-        glowWeight: 0.72
+        glowWeight: 0.38
       }
     ));
+    if (lod < 2) {
+      const petalCount = lod === 0 ? 5 : 3;
+      for (let petal = 0; petal < petalCount; petal++) {
+        const angle = petal / petalCount * Math.PI * 2 + index * 0.43;
+        parts.push(decorate(
+          new THREE.SphereGeometry(
+            radius * 0.46,
+            lod === 0 ? 6 : 4,
+            lod === 0 ? 3 : 2
+          ),
+          {
+            position: new THREE.Vector3(
+              (index - 1) * 0.38 + Math.cos(angle) * radius * 0.72,
+              radius * 0.62 + 0.04,
+              (index % 2 === 0 ? -1 : 1) * 0.12 +
+                Math.sin(angle) * radius * 0.72
+            ),
+            scale: new THREE.Vector3(1.25, 0.62, 0.9),
+            colour,
+            glowWeight: 0.31
+          }
+        ));
+      }
+    }
   }
 
-  const rockCount = lod === 2 ? 1 : 2;
+  const rockCount = lod === 2 ? 3 : 2;
   for (let index = 0; index < rockCount; index++) {
     const radius = 0.18 - index * 0.025;
     parts.push(decorate(
@@ -488,7 +652,7 @@ export function createShellGardenGeometry(lod: ArtLod): THREE.BufferGeometry {
         rotation: new THREE.Euler(index * 0.4, index * 0.8, -index * 0.2),
         scale: new THREE.Vector3(1.28, 0.68, 0.95),
         colour: MOONSTONE_DARK,
-        glowWeight: 0.08
+        glowWeight: 0.02
       }
     ));
   }

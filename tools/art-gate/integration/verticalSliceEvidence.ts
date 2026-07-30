@@ -113,6 +113,19 @@ function decorativeManifests(): AssetManifest[] {
       ]
     },
     {
+      name: "moon-garden-volumetric-collapsed-arch",
+      family: "collapsedArchRuin",
+      collidable: false,
+      materials: PRODUCTION_ART.collapsedArch.materials,
+      textureMemoryMB: 0,
+      contour: "decorative",
+      lods: [
+        { level: 0, triangles: PRODUCTION_ART.collapsedArch.lod0 },
+        { level: 1, triangles: PRODUCTION_ART.collapsedArch.lod1 },
+        { level: 2, triangles: PRODUCTION_ART.collapsedArch.lod2 }
+      ]
+    },
+    {
       name: "moon-garden-forked-spire",
       family: "spire",
       collidable: false,

@@ -176,3 +176,12 @@ material. Keep billboard art only for distant skyline/ambient life and the
 temporary Glowfin review silhouette. Mesh bounds, rather than image-card
 centres, now enforce outside-lane placement. PR #7 remains draft until its real
 Chromium portrait is visually accepted.
+
+**Rendered correction:** The first volumetric browser frame was rejected for
+oversized foreground ruins, bleached stone, hidden contour evidence and
+toy-like rod/ring coral. The follow-up replaces reused obstacle scenery with a
+dedicated collapsed-block arch, moves architecture into a bounded mid-depth
+band, creates three distinct wall crowns, remodels reef as rounded forked
+branches/anemones on shared rubble, and places the restrained blue seam just
+camera-forward of its inset stone channel. Collider planes and openings remain
+unchanged.

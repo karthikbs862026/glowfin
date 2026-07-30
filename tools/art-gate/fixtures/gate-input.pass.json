@@ -311,6 +311,28 @@
       ]
     },
     {
+      "name": "moon-garden-volumetric-collapsed-arch",
+      "family": "collapsedArchRuin",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 372
+        },
+        {
+          "level": 1,
+          "triangles": 256
+        },
+        {
+          "level": 2,
+          "triangles": 208
+        }
+      ]
+    },
+    {
       "name": "moon-garden-forked-spire",
       "family": "spire",
       "collidable": false,
@@ -342,15 +364,15 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 2536
+          "triangles": 2068
         },
         {
           "level": 1,
-          "triangles": 1136
+          "triangles": 1108
         },
         {
           "level": 2,
-          "triangles": 372
+          "triangles": 270
         }
       ]
     },
@@ -364,15 +386,15 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 920
+          "triangles": 800
         },
         {
           "level": 1,
-          "triangles": 432
+          "triangles": 424
         },
         {
           "level": 2,
-          "triangles": 96
+          "triangles": 126
         }
       ]
     },
@@ -386,15 +408,15 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 672
+          "triangles": 648
         },
         {
           "level": 1,
-          "triangles": 408
+          "triangles": 264
         },
         {
           "level": 2,
-          "triangles": 132
+          "triangles": 140
         }
       ]
     },

@@ -23,7 +23,7 @@ contact, occlusion, material continuity or an animated-film sense of place.
 - Add a shared volumetric rubble foundation that retreats inside the wall mass
   and visually embeds each obstacle into the seabed.
 - Replace near/mid architecture cards with instanced broken-tower, spire and
-  wall-fragment volumes using one shared Moon-Garden material.
+  collapsed-block arch volumes using one shared Moon-Garden material.
 - Replace all four near/mid reef cards with instanced hero coral, medium coral,
   shell-garden and three-blade kelp volumes. Placement is resolved from each
   mesh's measured bounds so no scale or yaw can enter the gameplay lane.
@@ -47,3 +47,25 @@ contact, occlusion, material continuity or an animated-film sense of place.
 - The world atlas is now used only for the far skyline and ambient life.
 - The final rigged Glowfin GLB and full device/render matrix remain open before
   Phase 3B can be considered mergeable.
+
+## Browser review correction
+
+The first Chromium frame proved that “volumetric” was necessary but not
+sufficient. It exposed pale overlit stone, giant near-camera ruin crops,
+perfect ring ornaments, toy-like coral rods and a contour hidden behind the
+wall face. That frame remains rejected.
+
+The corrective pass therefore:
+
+- removes architecture from the camera's near/behind band and caps it to a
+  mid-depth silhouette range;
+- adds a dedicated non-collidable collapsed-block arch rather than reusing the
+  bright obstacle wall as scenery;
+- replaces cylinders and perfect reef rings with rounded forked branches,
+  anemone lobes, broken masonry and shared rock skirts;
+- provides three distinct collider-safe wall crowns, selected by the existing
+  deterministic art variant;
+- darkens stone, caustics and living colours while preserving localized
+  bioluminescence; and
+- renders a thin blue contour just camera-forward of the recessed channel so
+  ordinary depth testing cannot hide the authoritative edge.

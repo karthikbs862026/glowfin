@@ -52,7 +52,10 @@ export class MoonGardenGates {
   readonly objects: THREE.Object3D[] = [];
   readonly material: THREE.ShaderMaterial;
 
-  private readonly lods: Record<ArtLod, LodMeshes>;
+  private readonly lods: Record<
+    ArtLod,
+    Record<GateFacadeVariant, LodMeshes>
+  >;
   private readonly foundations: THREE.InstancedMesh;
   private readonly contours: THREE.InstancedMesh;
   private readonly matrix = new THREE.Matrix4();
@@ -75,8 +78,12 @@ export class MoonGardenGates {
       octaves: 3
     });
 
-    const createSide = (lod: ArtLod, gapDirection: 1 | -1) => {
-      const geometry = createWallFragmentGeometry(lod, gapDirection);
+    const createSide = (
+      lod: ArtLod,
+      gapDirection: 1 | -1,
+      variant: GateFacadeVariant
+    ) => {
+      const geometry = createWallFragmentGeometry(lod, gapDirection, variant);
       const mesh = new THREE.InstancedMesh(
         geometry,
         this.material,
@@ -94,18 +101,28 @@ export class MoonGardenGates {
       return mesh;
     };
 
+    const createVariant = (
+      lod: ArtLod,
+      variant: GateFacadeVariant
+    ): LodMeshes => ({
+      left: createSide(lod, 1, variant),
+      right: createSide(lod, -1, variant)
+    });
     this.lods = {
       0: {
-        left: createSide(0, 1),
-        right: createSide(0, -1)
+        0: createVariant(0, 0),
+        1: createVariant(0, 1),
+        2: createVariant(0, 2)
       },
       1: {
-        left: createSide(1, 1),
-        right: createSide(1, -1)
+        0: createVariant(1, 0),
+        1: createVariant(1, 1),
+        2: createVariant(1, 2)
       },
       2: {
-        left: createSide(2, 1),
-        right: createSide(2, -1)
+        0: createVariant(2, 0),
+        1: createVariant(2, 1),
+        2: createVariant(2, 2)
       }
     };
 
@@ -140,17 +157,14 @@ export class MoonGardenGates {
         void main() {
           float endFade = smoothstep(-0.5, -0.42, vLocalPosition.y) *
             (1.0 - smoothstep(0.42, 0.5, vLocalPosition.y));
-          float waterFlow = 0.94 + 0.06 *
+          float waterFlow = 0.88 + 0.08 *
             sin(vLocalPosition.y * 31.0 + vLocalPosition.z * 4.0);
-          vec3 deepCyan = vec3(0.20, 0.61, 0.70);
-          vec3 moonCyan = vec3(0.40, 0.84, 0.90);
+          vec3 deepCyan = vec3(0.08, 0.50, 0.66);
+          vec3 moonCyan = vec3(0.14, 0.78, 0.92);
           gl_FragColor = vec4(mix(deepCyan, moonCyan, endFade) * waterFlow, 1.0);
         }
       `,
-      toneMapped: false,
-      polygonOffset: true,
-      polygonOffsetFactor: -8,
-      polygonOffsetUnits: -8
+      toneMapped: false
     });
     this.contours = new THREE.InstancedMesh(
       contourGeometry,
@@ -180,10 +194,25 @@ export class MoonGardenGates {
     camera: THREE.PerspectiveCamera,
     viewportHeightCss: number
   ): void {
-    const counts: Record<ArtLod, { left: number; right: number }> = {
-      0: { left: 0, right: 0 },
-      1: { left: 0, right: 0 },
-      2: { left: 0, right: 0 }
+    const counts: Record<
+      ArtLod,
+      Record<GateFacadeVariant, { left: number; right: number }>
+    > = {
+      0: {
+        0: { left: 0, right: 0 },
+        1: { left: 0, right: 0 },
+        2: { left: 0, right: 0 }
+      },
+      1: {
+        0: { left: 0, right: 0 },
+        1: { left: 0, right: 0 },
+        2: { left: 0, right: 0 }
+      },
+      2: {
+        0: { left: 0, right: 0 },
+        1: { left: 0, right: 0 },
+        2: { left: 0, right: 0 }
+      }
     };
     let foundationCount = 0;
     let contourCount = 0;
@@ -200,8 +229,8 @@ export class MoonGardenGates {
       for (const wall of walls) {
         if (wall.width <= 0.01 || contourCount >= MAX_GATE_PARTS) continue;
         const side = wall.side;
-        const target = this.lods[lod][side];
-        const index = counts[lod][side];
+        const target = this.lods[lod][artVariant][side];
+        const index = counts[lod][artVariant][side];
         if (index >= MAX_GATE_PARTS) continue;
 
         const wallHeight = PROCEDURAL_GATE_VISUAL.wallHeight *
@@ -221,7 +250,7 @@ export class MoonGardenGates {
         );
         this.matrix.compose(this.position, this.quaternion, this.scale);
         target.setMatrixAt(index, this.matrix);
-        counts[lod][side] += 1;
+        counts[lod][artVariant][side] += 1;
 
         // A shared bed of rubble sits beneath the same volumetric masonry.
         // Its inner edge retreats slightly into the wall so no stone implies
@@ -253,12 +282,12 @@ export class MoonGardenGates {
         this.position.set(
           wall.colliderPlane - wall.gapDirection * contourWidth * 0.5,
           PROCEDURAL_GATE_VISUAL.wallFloorY + contourHeight * 0.5 + 0.12,
-          -gate.distance
+          -gate.distance + wallDepth * 0.5 + 0.035
         );
         this.scale.set(
           contourWidth,
           contourHeight,
-          wallDepth * 0.72
+          0.04
         );
         this.matrix.compose(this.position, this.quaternion, this.scale);
         this.contours.setMatrixAt(contourCount, this.matrix);
@@ -267,10 +296,12 @@ export class MoonGardenGates {
     }
 
     for (const lod of [0, 1, 2] as const) {
-      for (const side of ["left", "right"] as const) {
-        const mesh = this.lods[lod][side];
-        mesh.count = counts[lod][side];
-        mesh.instanceMatrix.needsUpdate = true;
+      for (const variant of [0, 1, 2] as const) {
+        for (const side of ["left", "right"] as const) {
+          const mesh = this.lods[lod][variant][side];
+          mesh.count = counts[lod][variant][side];
+          mesh.instanceMatrix.needsUpdate = true;
+        }
       }
     }
     this.foundations.count = foundationCount;

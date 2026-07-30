@@ -22,6 +22,12 @@ export const PRODUCTION_ART = {
     lod2: 508,
     materials: 1
   },
+  collapsedArch: {
+    lod0: 372,
+    lod1: 256,
+    lod2: 208,
+    materials: 1
+  },
   spire: {
     lod0: 1960,
     lod1: 868,
@@ -29,21 +35,21 @@ export const PRODUCTION_ART = {
     materials: 1
   },
   mediumCoral: {
-    lod0: 920,
-    lod1: 432,
-    lod2: 96,
+    lod0: 800,
+    lod1: 424,
+    lod2: 126,
     materials: 1
   },
   heroCoral: {
-    lod0: 2536,
-    lod1: 1136,
-    lod2: 372,
+    lod0: 2068,
+    lod1: 1108,
+    lod2: 270,
     materials: 1
   },
   shellGarden: {
-    lod0: 672,
-    lod1: 408,
-    lod2: 132,
+    lod0: 648,
+    lod1: 264,
+    lod2: 140,
     materials: 1
   },
   gateFoundation: {

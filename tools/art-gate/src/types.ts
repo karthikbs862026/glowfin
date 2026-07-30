@@ -22,6 +22,7 @@ export interface Finding {
 export type AssetFamily =
   | "glowfin"
   | "brokenTower"
+  | "collapsedArchRuin"
   | "collapsedArchPair"
   | "spire"
   | "wallFragment"
