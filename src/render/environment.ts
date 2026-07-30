@@ -520,13 +520,17 @@ export class Environment {
           (hash01(band, salt + 2) - 0.5) * env.coralBandSpacing * 0.55;
         const isHero = variant === 0 && positiveMod(band, 9) === 0;
         const desiredHeight = lerp(
-          variant === 2 ? 0.55 : 0.72,
-          variant === 3 ? 2.05 : 1.72,
+          variant === 2 ? 0.68 : 0.9,
+          variant === 3 ? 2.1 : 1.95,
           hash01(band, salt + 1)
         ) * (isHero ? 1.18 : 1);
         const unitScale = desiredHeight / family.height;
-        const widthStretch = lerp(0.88, 1.22, hash01(band, salt + 5));
-        const depthStretch = [0.9, 0.78, 0.84, 0.62][variant] ?? 0.8;
+        const widthStretch = lerp(
+          variant === 3 ? 0.92 : 1.08,
+          variant === 3 ? 1.22 : 1.48,
+          hash01(band, salt + 5)
+        );
+        const depthStretch = [1.05, 0.92, 0.96, 0.72][variant] ?? 0.9;
         // Place from the actual 3D bounds' inner edge. Larger volumetric reef
         // can overlap in depth while remaining entirely outside gameplay.
         const halfVisualWidth = family.halfWidth * unitScale * widthStretch;
@@ -536,7 +540,7 @@ export class Environment {
         // hedge-like line while retaining the exact same safety calculation.
         const depthIntoBank = Math.pow(hash01(band, salt), 2.25);
         const lateral = side * lerp(
-          halfWidth + halfVisualWidth + 0.28,
+          halfWidth + halfVisualWidth + 0.12,
           halfWidth + halfVisualWidth + 3.6,
           depthIntoBank
         );

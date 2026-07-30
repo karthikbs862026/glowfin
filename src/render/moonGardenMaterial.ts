@@ -71,6 +71,11 @@ const FRAGMENT = /* glsl */ `
     vec3 keyDirection = normalize(vec3(-0.35, 0.82, 0.45));
     float keyLight = dot(normalize(vNormalW), keyDirection) * 0.5 + 0.5;
     float topLight = mix(0.54, 1.02, keyLight);
+    vec3 viewDirection = normalize(cameraPosition - vWorldPos);
+    float moonRim = pow(
+      1.0 - clamp(abs(dot(normalize(vNormalW), viewDirection)), 0.0, 1.0),
+      2.2
+    );
     float groundContact = 1.0 - smoothstep(-0.96, -0.18, vWorldPos.y);
     float distanceToGlow = distance(vWorldPos.xz, uGlowCentre.xz);
     float wake = 1.0 - smoothstep(0.0, uGlowRadius, distanceToGlow);
@@ -109,13 +114,14 @@ const FRAGMENT = /* glsl */ `
     vec3 colour = vColour * broadWash * topLight;
     colour *= mix(vec3(1.0), surfaceBreakup, stoneWeight * 0.72);
     vec3 paintedStone =
-      surface * mix(0.72, 1.08, keyLight) +
-      vColour * 0.16;
-    colour = mix(colour, paintedStone, stoneWeight * 0.66);
+      vColour * surfaceBreakup * mix(0.78, 1.1, keyLight);
+    colour = mix(colour, paintedStone, stoneWeight * 0.34);
     colour *= 1.0 - joint * 0.20 * stoneWeight;
     colour *= mix(1.0, 0.84 + porousBreakup * 0.14, livingWeight);
     colour *= mix(1.0, 0.52, groundContact);
     colour += vec3(0.025, 0.065, 0.085) * stoneWeight;
+    colour += vec3(0.08, 0.32, 0.44) * moonRim *
+      mix(0.16, 0.34, stoneWeight);
     colour += awakened * wake * mix(0.18, 0.58, uMomentum);
 
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
@@ -267,6 +273,11 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     vec3 normalW = normalize(vNormalW);
     vec3 keyDirection = normalize(vec3(-0.35, 0.82, 0.45));
     float keyLight = dot(normalW, keyDirection) * 0.5 + 0.5;
+    vec3 viewDirection = normalize(cameraPosition - vWorldPos);
+    float moonRim = pow(
+      1.0 - clamp(abs(dot(normalW, viewDirection)), 0.0, 1.0),
+      2.2
+    );
     float facing = clamp(normalW.y * 0.24 + 0.78, 0.0, 1.0);
     float wash = 0.88 + 0.12 * sin(
       vWorldPos.y * 0.76 + vWorldPos.x * 0.18 + vWorldPos.z * 0.09
@@ -296,13 +307,13 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     vec3 colour = vColour * wash * stoneMottle * mix(0.54, 1.02, keyLight);
     colour *= surfaceBreakup;
     vec3 paintedStone =
-      surface * mix(0.68, 1.06, keyLight) +
-      vColour * 0.14;
-    colour = mix(colour, paintedStone, 0.68);
+      vColour * surfaceBreakup * mix(0.74, 1.08, keyLight);
+    colour = mix(colour, paintedStone, 0.38);
     colour *= 1.0 - joint * 0.18;
     colour *= mix(1.0, 0.5, groundContact);
     float stoneWeight = 1.0 - smoothstep(0.28, 0.66, vGlowWeight);
     colour += vec3(0.035, 0.085, 0.11) * stoneWeight;
+    colour += vec3(0.08, 0.34, 0.46) * moonRim * 0.22;
     colour += uCausticColor * pattern * uIntensity * facing;
     colour += vColour * vGlowWeight * 0.035;
 

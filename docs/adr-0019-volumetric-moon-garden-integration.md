@@ -97,3 +97,24 @@ recessed wall after variant scaling. The cyan core now has 0.16 world units of
 camera-depth separation while remaining behind the raised masonry. Its x plane,
 projected width, gap and collider authority are unchanged. No contrast
 threshold or percentile changed.
+
+That correction cleared the browser matrix, but the resulting beauty frame was
+still rejected as a grey procedural blockout. Passing contrast did not make the
+square gate slabs, stretched polygon arches or capsule-like coral production
+art. The current art-led refinement therefore:
+
+- lowers and breaks each wall's outer crown so the obstacle reads as a carved
+  inner pier with a weathered buttress rather than a rectangular slab;
+- replaces pebble-like facade decoration with interrupted concentric stone ribs
+  and uneven projecting courses;
+- assembles collapsed arches from separate pier courses and wedge-like
+  voussoirs, preserving irregular negative space without oversized polyhedra;
+- rebuilds coral branches along curved tube paths with living terminal bulbs,
+  wider rock skirts and overlapping side-bank placement;
+- preserves authored blue, teal and violet vertex colour under the shared
+  weathering map instead of blending every material toward pale grey; and
+- adds a restrained view-dependent moon rim to describe thickness on both
+  ruins and reef without introducing another material or draw call.
+
+All revised LODs remain inside their existing family budgets, and reef placement
+continues to derive from measured bounds outside the unchanged lane.

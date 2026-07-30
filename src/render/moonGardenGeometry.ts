@@ -83,27 +83,27 @@ function extrudedWallShape(
   const crowns = [
     [
       [0.5, 0.5],
-      [0.34, 0.48],
-      [0.18, 0.37],
-      [-0.02, 0.42],
-      [-0.21, 0.25],
-      [-0.5, 0.16]
+      [0.34, 0.44],
+      [0.18, 0.29],
+      [-0.02, 0.34],
+      [-0.21, 0.08],
+      [-0.5, -0.12]
     ],
     [
       [0.5, 0.5],
-      [0.39, 0.43],
-      [0.22, 0.49],
-      [0.04, 0.31],
-      [-0.18, 0.36],
-      [-0.5, 0.22]
+      [0.39, 0.39],
+      [0.22, 0.46],
+      [0.04, 0.22],
+      [-0.18, 0.27],
+      [-0.5, -0.08]
     ],
     [
       [0.5, 0.5],
-      [0.31, 0.46],
-      [0.13, 0.29],
-      [-0.04, 0.35],
-      [-0.27, 0.19],
-      [-0.5, 0.12]
+      [0.31, 0.42],
+      [0.13, 0.20],
+      [-0.04, 0.27],
+      [-0.27, 0.02],
+      [-0.5, -0.16]
     ]
   ] as const;
   const crown = crowns[variant];
@@ -186,29 +186,43 @@ export function createWallFragmentGeometry(
     }
   ));
 
-  const inlayCount = lod === 0 ? 8 : lod === 1 ? 6 : 3;
-  for (let index = 0; index < inlayCount; index++) {
-    const t = index / Math.max(1, inlayCount - 1);
-    const angle = THREE.MathUtils.lerp(-0.76, 0.76, t);
-    const detail = lod === 0 || (lod === 1 && index < 3)
-      ? 1
-      : 0;
+  // Broken concentric stone ribs give the facade a carved Moon-Garden
+  // identity. They are geometry, not a front-facing decal, and each family
+  // interrupts/rotates the arcs differently so adjacent gates do not repeat.
+  const arcCount = lod === 2 ? 1 : 2;
+  for (let index = 0; index < arcCount; index++) {
+    const radialSegments = lod === 0 ? 5 : lod === 1 ? 4 : 3;
+    const tubularSegments = lod === 0 ? 18 : lod === 1 ? 13 : 6;
+    const radius = 0.18 + index * 0.085;
+    const arc = Math.PI * (variant === 1 ? 1.18 : 1.34) -
+      index * 0.12;
     parts.push(decorate(
-      new THREE.IcosahedronGeometry(0.035 + (index % 2) * 0.006, detail),
+      new THREE.TorusGeometry(
+        radius,
+        index === 0 ? 0.028 : 0.024,
+        radialSegments,
+        tubularSegments,
+        arc
+      ),
       {
         position: new THREE.Vector3(
-          -gapDirection * (0.08 + Math.cos(angle) * 0.19),
-          -0.08 + Math.sin(angle) * 0.24 + (index === 3 ? -0.035 : 0),
-          0.518 + Math.sin(index * 1.9) * 0.006
+          -gapDirection * (0.1 + variant * 0.018),
+          -0.075 + index * 0.012,
+          0.545 + index * 0.012
         ),
-        scale: new THREE.Vector3(1.3, 0.72, 0.82),
-        colour: index % 3 === 0 ? MOONSTONE : SHELL_GOLD,
-        glowWeight: index % 3 === 0 ? 0.02 : 0.12
+        rotation: new THREE.Euler(
+          0,
+          0,
+          gapDirection * (-0.72 + variant * 0.19 + index * 0.08)
+        ),
+        scale: new THREE.Vector3(0.86, 1.12, 1),
+        colour: index === 0 ? SHELL_GOLD : MOONSTONE,
+        glowWeight: index === 0 ? 0.13 : 0.035
       }
     ));
   }
 
-  const frontStoneCount = lod === 0 ? 5 : lod === 1 ? 4 : 0;
+  const frontStoneCount = lod === 0 ? 5 : lod === 1 ? 3 : 0;
   for (let index = 0; index < frontStoneCount; index++) {
     const radius = 0.045 + (index % 3) * 0.008;
     parts.push(decorate(
@@ -227,7 +241,7 @@ export function createWallFragmentGeometry(
     ));
   }
 
-  const courseCount = lod === 0 ? 12 : lod === 1 ? 10 : 3;
+  const courseCount = lod === 0 ? 10 : lod === 1 ? 7 : 2;
   const columns = lod === 2 ? 2 : 3;
   for (let index = 0; index < courseCount; index++) {
     const column = index % columns;
@@ -239,21 +253,25 @@ export function createWallFragmentGeometry(
     );
     const y = -0.37 + row * (lod === 2 ? 0.24 : 0.155);
     parts.push(decorate(
-      new THREE.BoxGeometry(
+      new THREE.DodecahedronGeometry(
         (lod === 2 ? 0.22 : 0.19) * (index % 4 === 0 ? 1.12 : 1),
-        lod === 2 ? 0.14 : 0.115,
-        0.12
+        0
       ),
       {
         position: new THREE.Vector3(
           gapDirection * (x + (row % 2) * 0.018),
           y + Math.sin(index * 1.8) * 0.008,
-          0.59 + Math.sin(index * 2.2) * 0.018
+          0.58 + Math.sin(index * 2.2) * 0.018
         ),
         rotation: new THREE.Euler(
           Math.sin(index) * 0.018,
           Math.sin(index * 0.7) * 0.045,
           gapDirection * Math.sin(index * 1.3) * 0.035
+        ),
+        scale: new THREE.Vector3(
+          0.72,
+          lod === 2 ? 0.38 : 0.31,
+          0.34 + (index % 2) * 0.035
         ),
         colour: index % 3 === variant
           ? OBSTACLE_MOONSTONE
@@ -272,26 +290,35 @@ export function createWallFragmentGeometry(
  * negative space without borrowing the collider wall's bright material.
  */
 export function createCollapsedArchGeometry(lod: ArtLod): THREE.BufferGeometry {
-  const blockCount = lod === 0 ? 9 : lod === 1 ? 7 : 5;
+  const blockCount = lod === 0 ? 11 : lod === 1 ? 9 : 6;
   const parts: THREE.BufferGeometry[] = [];
 
   for (const side of [-1, 1]) {
-    parts.push(decorate(
-      new THREE.BoxGeometry(
-        lod === 2 ? 0.32 : 0.38,
-        0.62,
-        0.48,
-        1,
-        lod === 0 ? 4 : 2,
-        1
-      ),
-      {
-        position: new THREE.Vector3(side * 0.52, 0.31, 0),
-        rotation: new THREE.Euler(0, side * 0.05, -side * 0.035),
-        colour: side < 0 ? MOONSTONE_DARK : MOONSTONE,
-        glowWeight: 0.015
-      }
-    ));
+    const pierCourses = lod === 2 ? 2 : 3;
+    for (let course = 0; course < pierCourses; course++) {
+      const height = 0.2 + (course % 2) * 0.018;
+      parts.push(decorate(
+        new THREE.BoxGeometry(
+          (lod === 2 ? 0.32 : 0.4) * (course === 0 ? 1.12 : 1),
+          height,
+          0.5
+        ),
+        {
+          position: new THREE.Vector3(
+            side * (0.52 + (course % 2) * 0.025),
+            height * 0.5 + course * 0.195,
+            Math.sin(course * 1.8 + side) * 0.025
+          ),
+          rotation: new THREE.Euler(
+            0,
+            side * (0.035 + course * 0.012),
+            -side * (0.02 + course * 0.012)
+          ),
+          colour: (course + side) % 2 === 0 ? MOONSTONE : MOONSTONE_DARK,
+          glowWeight: 0.015
+        }
+      ));
+    }
   }
 
   for (let index = 0; index < blockCount; index++) {
@@ -304,22 +331,21 @@ export function createCollapsedArchGeometry(lod: ArtLod): THREE.BufferGeometry {
       continue;
     }
     const t = index / Math.max(1, blockCount - 1);
-    const angle = THREE.MathUtils.lerp(0.16 * Math.PI, 0.84 * Math.PI, t);
-    const x = Math.cos(angle) * 0.58;
-    const y = 0.5 + Math.sin(angle) * 0.52;
+    const angle = THREE.MathUtils.lerp(0.12 * Math.PI, 0.88 * Math.PI, t);
+    const x = Math.cos(angle) * 0.6;
+    const y = 0.48 + Math.sin(angle) * 0.54;
     parts.push(decorate(
-      new THREE.IcosahedronGeometry(0.17, 0),
+      new THREE.BoxGeometry(
+        0.22 + (index % 2) * 0.025,
+        0.16 + ((index + 1) % 2) * 0.018,
+        0.48
+      ),
       {
         position: new THREE.Vector3(x, y, Math.sin(index * 1.7) * 0.025),
         rotation: new THREE.Euler(
           Math.sin(index * 0.9) * 0.035,
           Math.sin(index * 1.3) * 0.05,
           angle - Math.PI / 2
-        ),
-        scale: new THREE.Vector3(
-          1.12 + (index % 2) * 0.13,
-          0.72 + ((index + 1) % 2) * 0.08,
-          1.48
         ),
         colour: index % 3 === 0 ? MOONSTONE : MOONSTONE_DARK,
         glowWeight: 0.02
@@ -481,7 +507,7 @@ export function createSpireGeometry(lod: ArtLod): THREE.BufferGeometry {
 
 export function createMediumCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
   const radial = lod === 0 ? 5 : lod === 1 ? 4 : 3;
-  const capSegments = lod === 0 ? 2 : 1;
+  const tubular = lod === 0 ? 8 : lod === 1 ? 5 : 3;
   const branches = lod === 0 ? 5 : lod === 1 ? 4 : 3;
   const parts: THREE.BufferGeometry[] = [];
   const offsets = [-0.44, -0.22, 0, 0.23, 0.45];
@@ -495,50 +521,43 @@ export function createMediumCoralGeometry(lod: ArtLod): THREE.BufferGeometry {
         : index % 3 === 1
           ? MOON_VIOLET
           : HEART_ROSE;
+    const lean = x * -0.42 + Math.sin(index * 1.7) * 0.08;
+    const path = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(x * 0.42, 0, 0),
+      new THREE.Vector3(x * 0.72, height * 0.32, 0.035 * Math.sin(index)),
+      new THREE.Vector3(x + lean * 0.22, height * 0.7, 0.08 * Math.cos(index)),
+      new THREE.Vector3(x + lean, height, 0.05 * Math.sin(index * 1.3))
+    ]);
     parts.push(decorate(
-      new THREE.CapsuleGeometry(
-        0.12,
-        Math.max(0.12, height - 0.24),
-        capSegments,
-        radial
+      new THREE.TubeGeometry(
+        path,
+        tubular,
+        0.105 + (index % 2) * 0.012,
+        radial,
+        false
       ),
       {
-        position: new THREE.Vector3(x, height * 0.5, 0.06 * Math.sin(index * 1.7)),
-        rotation: new THREE.Euler(
-          index % 2 === 0 ? 0.08 : -0.06,
-          index * 0.5,
-          x * -0.72
-        ),
         colour,
         glowWeight: 0.42
       }
     ));
-    if (lod < 2 && index < 3) {
-      const forkSide = index % 2 === 0 ? -1 : 1;
-      const forkLength = height * 0.38;
-      parts.push(decorate(
-        new THREE.CapsuleGeometry(
-          0.075,
-          Math.max(0.08, forkLength - 0.15),
-          Math.max(2, capSegments - 1),
-          radial
+    parts.push(decorate(
+      new THREE.SphereGeometry(
+        0.12 + (index % 2) * 0.012,
+        radial * 2,
+        Math.max(2, radial - 1)
+      ),
+      {
+        position: new THREE.Vector3(
+          x + lean,
+          height,
+          0.05 * Math.sin(index * 1.3)
         ),
-        {
-          position: new THREE.Vector3(
-            x + forkSide * height * 0.11,
-            height * 0.69,
-            0.07 + index * 0.018
-          ),
-          rotation: new THREE.Euler(
-            forkSide * 0.08,
-            index * 0.35,
-            -forkSide * 0.72
-          ),
-          colour,
-          glowWeight: 0.5
-        }
-      ));
-    }
+        scale: new THREE.Vector3(1.06, 0.72, 1.02),
+        colour,
+        glowWeight: 0.52
+      }
+    ));
   }
   parts.push(decorate(
     new THREE.SphereGeometry(0.42, radial * 2, Math.max(4, radial)),

@@ -15,7 +15,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1264,
+          "triangles": 1200,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -50,7 +50,7 @@
         },
         {
           "level": 1,
-          "triangles": 768,
+          "triangles": 772,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -85,7 +85,7 @@
         },
         {
           "level": 2,
-          "triangles": 204,
+          "triangles": 216,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -133,7 +133,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1264,
+          "triangles": 1200,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -168,7 +168,7 @@
         },
         {
           "level": 1,
-          "triangles": 768,
+          "triangles": 772,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -203,7 +203,7 @@
         },
         {
           "level": 2,
-          "triangles": 204,
+          "triangles": 216,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -322,15 +322,15 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 428
+          "triangles": 396
         },
         {
           "level": 1,
-          "triangles": 304
+          "triangles": 312
         },
         {
           "level": 2,
-          "triangles": 248
+          "triangles": 228
         }
       ]
     },
@@ -366,11 +366,11 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 2068
+          "triangles": 2048
         },
         {
           "level": 1,
-          "triangles": 1108
+          "triangles": 1020
         },
         {
           "level": 2,
@@ -388,11 +388,11 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 800
+          "triangles": 780
         },
         {
           "level": 1,
-          "triangles": 424
+          "triangles": 336
         },
         {
           "level": 2,

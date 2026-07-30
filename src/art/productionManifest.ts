@@ -10,9 +10,9 @@ export const PRODUCTION_ART = {
     bones: 10
   },
   wallFragment: {
-    lod0: 1264,
-    lod1: 768,
-    lod2: 204,
+    lod0: 1200,
+    lod1: 772,
+    lod2: 216,
     materials: 1,
     maxReliefDepth: 0.07,
     textureMemoryMB: 1.4,
@@ -25,9 +25,9 @@ export const PRODUCTION_ART = {
     materials: 1
   },
   collapsedArch: {
-    lod0: 428,
-    lod1: 304,
-    lod2: 248,
+    lod0: 396,
+    lod1: 312,
+    lod2: 228,
     materials: 1
   },
   spire: {
@@ -37,14 +37,14 @@ export const PRODUCTION_ART = {
     materials: 1
   },
   mediumCoral: {
-    lod0: 800,
-    lod1: 424,
+    lod0: 780,
+    lod1: 336,
     lod2: 126,
     materials: 1
   },
   heroCoral: {
-    lod0: 2068,
-    lod1: 1108,
+    lod0: 2048,
+    lod1: 1020,
     lod2: 270,
     materials: 1
   },
