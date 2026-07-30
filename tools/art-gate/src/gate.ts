@@ -181,7 +181,7 @@ const LABEL: Record<Finding["severity"], string> = {
 
 export function formatReport(result: GateResult, cfg: GateConfig): string {
   const lines = [
-    "Glowfin Phase 3A art gate",
+    "Glowfin production art gate",
     `tier ${result.tier} · config ${cfg.configVersion}`,
     "",
     "Reaction window at maximum momentum",

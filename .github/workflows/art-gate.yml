@@ -57,6 +57,7 @@ jobs:
       - run: npm run art-gate:capture:fast
       - name: Validate reduced PR matrix
         run: |
+          set -o pipefail
           npm run art-gate:run:fast | tee build/art-gate-fast-report.txt
       - uses: actions/upload-artifact@v4
         if: always()
@@ -98,6 +99,7 @@ jobs:
       - run: npm run art-gate:capture:full
       - name: Validate full emulated matrix
         run: |
+          set -o pipefail
           npm run art-gate:run:full | tee build/art-gate-full-report.txt
       - uses: actions/upload-artifact@v4
         if: always()

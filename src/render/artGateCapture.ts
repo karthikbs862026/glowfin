@@ -136,5 +136,28 @@ export function runArtGateCapture(
     });
   }
 
+  // Leave the framebuffer on a representative beauty render for the uploaded
+  // PNG. The mask render above is evidence data, not a useful visual review.
+  const previewState: EffectState = {
+    momentum: "max",
+    bloom: true,
+    caustics: true,
+    quality: "high"
+  };
+  const previewSim = simulateToMomentum(cfg, previewState.momentum);
+  view.resetTrail();
+  view.setCaptureEffects(
+    previewState.quality,
+    previewState.bloom,
+    previewState.caustics
+  );
+  view.render(
+    previewSim,
+    [captureGate(previewSim)],
+    1,
+    previewSim.elapsedSec,
+    FIXED_DT_SEC
+  );
+
   return { tier, captures };
 }

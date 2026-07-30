@@ -3,7 +3,7 @@
  *
  * Collider values come from src/sim/gateGeometry.ts, the exact module used by
  * collision and rendering. Art manifests are then built independently from
- * the primitive mesh dimensions and compared by the gate.
+ * the generated production mesh dimensions and compared by the gate.
  */
 
 import {

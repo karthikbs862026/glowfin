@@ -66,7 +66,11 @@ export class GameView {
     vertexShader: `
       varying float vDepth;
       void main() {
-        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vec4 localPosition = vec4(position, 1.0);
+        #ifdef USE_INSTANCING
+          localPosition = instanceMatrix * localPosition;
+        #endif
+        vec4 mv = modelViewMatrix * localPosition;
         vDepth = -mv.z;
         gl_Position = projectionMatrix * mv;
       }
