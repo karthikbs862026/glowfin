@@ -12,7 +12,9 @@ import {
 import { createMoonstoneObstacleMaterial } from "./moonGardenMaterial";
 
 const MAX_GATE_PARTS = 32;
-const CONTOUR_WIDTH = 0.075;
+// Roughly seven screen pixels at the fairness-critical decision point. The
+// strip retreats into the wall, so widening it never steals safe clearance.
+const CONTOUR_WIDTH = 0.22;
 
 interface LodMeshes {
   left: THREE.InstancedMesh;
@@ -61,7 +63,9 @@ export class MoonGardenGates {
       mesh.count = 0;
       mesh.frustumCulled = false;
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      mesh.userData["isObstacle"] = true;
+      // The stone gives the contour visual context, but the contour is the
+      // authoritative playable edge that the contrast gate must measure.
+      mesh.userData["isObstacleContext"] = true;
       this.objects.push(mesh);
       this.disposables.push(geometry);
       return mesh;

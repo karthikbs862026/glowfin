@@ -94,6 +94,8 @@ export class GameView {
       }
     `
   });
+  /** Obstacle art outside the authoritative playable contour: ignore, not background. */
+  private readonly maskObstacleContext = new THREE.MeshBasicMaterial({ color: 0x808080 });
   private readonly maskOther = new THREE.MeshBasicMaterial({ color: 0x000000 });
   private readonly savedMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
   private maskMode = false;
@@ -247,7 +249,11 @@ export class GameView {
       this.scene.traverse((object) => {
         if (!(object instanceof THREE.Mesh)) return;
         this.savedMaterials.set(object, object.material);
-        object.material = object.userData["isObstacle"] ? this.maskObstacle : this.maskOther;
+        object.material = object.userData["isObstacle"]
+          ? this.maskObstacle
+          : object.userData["isObstacleContext"]
+            ? this.maskObstacleContext
+            : this.maskOther;
       });
     } else {
       for (const [mesh, material] of this.savedMaterials) mesh.material = material;
@@ -497,6 +503,7 @@ export class GameView {
     this.environment.dispose();
     this.gates.dispose();
     this.maskObstacle.dispose();
+    this.maskObstacleContext.dispose();
     this.maskOther.dispose();
     this.composer.dispose();
     this.renderer.dispose();

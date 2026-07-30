@@ -10,6 +10,7 @@ import {
   geometryTriangles
 } from "../src/render/moonGardenGeometry";
 import { createGlowfinRigGeometry } from "../src/render/glowfinGeometry";
+import { MoonGardenGates } from "../src/render/gateArt";
 
 describe("Phase 3B production art manifest", () => {
   it("matches every generated Moon-Garden LOD exactly", () => {
@@ -54,6 +55,15 @@ describe("Phase 3B production art manifest", () => {
       left.dispose();
       right.dispose();
     }
+  });
+
+  it("measures the straight collision contour instead of decorative wall mass", () => {
+    const gates = new MoonGardenGates(tuning);
+    const contours = gates.objects.filter((object) => object.userData["isObstacle"]);
+    const context = gates.objects.filter((object) => object.userData["isObstacleContext"]);
+    expect(contours).toHaveLength(1);
+    expect(context).toHaveLength(6);
+    gates.dispose();
   });
 
   it("matches the two-draw skinned Glowfin LOD evidence", () => {
