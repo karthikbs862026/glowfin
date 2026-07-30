@@ -2,15 +2,15 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { ArtLod } from "./moonGardenGeometry";
 
-const STONE = new THREE.Color(0x1b435b);
-const STONE_LIGHT = new THREE.Color(0x376d7d);
-const STONE_DARK = new THREE.Color(0x071c30);
+const STONE = new THREE.Color(0x0d3850);
+const STONE_LIGHT = new THREE.Color(0x286278);
+const STONE_DARK = new THREE.Color(0x041522);
 const JOINT = new THREE.Color(0x071b2b);
-const SHELL = new THREE.Color(0x8ea99d);
-const CYAN = new THREE.Color(0x0d708b);
-const CYAN_LIGHT = new THREE.Color(0x2aafc0);
-const VIOLET = new THREE.Color(0x493a78);
-const ROSE = new THREE.Color(0x873c66);
+const SHELL = new THREE.Color(0x668b82);
+const CYAN = new THREE.Color(0x08758a);
+const CYAN_LIGHT = new THREE.Color(0x20aeb9);
+const VIOLET = new THREE.Color(0x512b70);
+const ROSE = new THREE.Color(0x8b335d);
 
 interface PartStyle {
   colour: THREE.Color;
@@ -190,11 +190,13 @@ export function createProductionWallGeometry(
   // create the visible silhouette and readable joints in front of it.
   const backing = new THREE.Shape([
     new THREE.Vector2(innerX, -0.5),
-    new THREE.Vector2(innerX, 0.5),
-    new THREE.Vector2(gapDirection * 0.29, 0.44 - variant * 0.025),
-    new THREE.Vector2(gapDirection * 0.08, 0.25 + variant * 0.035),
-    new THREE.Vector2(-gapDirection * 0.16, 0.31 - variant * 0.03),
-    new THREE.Vector2(outerX, -0.06 - variant * 0.04),
+    new THREE.Vector2(innerX, 0.34 + variant * 0.018),
+    new THREE.Vector2(gapDirection * 0.42, 0.44 - variant * 0.012),
+    new THREE.Vector2(gapDirection * 0.27, 0.49 - variant * 0.018),
+    new THREE.Vector2(gapDirection * 0.1, 0.42 + variant * 0.012),
+    new THREE.Vector2(-gapDirection * 0.08, 0.27 + variant * 0.02),
+    new THREE.Vector2(-gapDirection * 0.28, 0.19 - variant * 0.018),
+    new THREE.Vector2(outerX, -0.02 - variant * 0.035),
     new THREE.Vector2(outerX, -0.5)
   ]);
   const backingGeometry = new THREE.ExtrudeGeometry(backing, {
@@ -280,17 +282,17 @@ export function createProductionWallGeometry(
 
   // Broken voussoirs turn the pair into an unmistakable ancient arch while
   // all decorative mass retreats away from the safe opening.
-  const archStones = lod === 0 ? 7 : lod === 1 ? 5 : 2;
+  const archStones = lod === 0 ? 8 : lod === 1 ? 6 : 2;
   for (let index = 0; index < archStones; index++) {
     if (index === archStones - 2 && variant === 2) continue;
     const t = index / Math.max(1, archStones - 1);
-    const angle = THREE.MathUtils.lerp(0.04, 1.12, t);
-    const x = innerX - gapDirection * (0.07 + Math.sin(angle) * 0.38);
-    const y = 0.31 + Math.cos(angle) * 0.22;
+    const angle = THREE.MathUtils.lerp(0.04, 1.2, t);
+    const x = innerX - gapDirection * (0.065 + Math.sin(angle) * 0.4);
+    const y = 0.3 + Math.cos(angle) * 0.25;
     parts.push(styled(
       stoneBlock(
-        0.13 + (index % 2) * 0.016,
-        0.12,
+        0.17 + (index % 2) * 0.012,
+        0.095 + (index % 3) * 0.008,
         0.24,
         0.014
       ),
@@ -394,14 +396,14 @@ export function createProductionTower(lod: ArtLod): THREE.BufferGeometry {
   const heightSegments = lod === 0 ? 24 : lod === 1 ? 12 : 3;
   const parts: THREE.BufferGeometry[] = [
     styled(new THREE.CylinderGeometry(
-      0.39,
-      0.56,
-      1.55,
+      0.44,
+      0.51,
+      1.42,
       radial,
       heightSegments,
       false
     ), {
-      position: new THREE.Vector3(0, 0.78, 0),
+      position: new THREE.Vector3(0, 0.71, 0),
       scale: new THREE.Vector3(1, 1, 0.82),
       colour: STONE_DARK,
       glow: 0.012
@@ -429,7 +431,7 @@ export function createProductionTower(lod: ArtLod): THREE.BufferGeometry {
     parts.push(styled(stoneBlock(0.2, 0.22, 0.21, 0.02), {
       position: new THREE.Vector3(
         Math.cos(angle) * 0.34,
-        1.57 + Math.sin(index * 1.6) * 0.055,
+        1.44 + Math.sin(index * 1.6) * 0.055,
         Math.sin(angle) * 0.28
       ),
       rotation: new THREE.Euler(0, -angle, Math.sin(index) * 0.08),

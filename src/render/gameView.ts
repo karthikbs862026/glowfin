@@ -211,11 +211,11 @@ export class GameView {
       0,
       backgroundCanvas.height
     );
-    backgroundGradient.addColorStop(0, "#040f22");
-    backgroundGradient.addColorStop(0.34, "#092944");
-    backgroundGradient.addColorStop(0.66, "#164a62");
-    backgroundGradient.addColorStop(0.86, "#1a566d");
-    backgroundGradient.addColorStop(1, "#0d3045");
+    backgroundGradient.addColorStop(0, "#05091d");
+    backgroundGradient.addColorStop(0.3, "#101b3b");
+    backgroundGradient.addColorStop(0.62, "#103e59");
+    backgroundGradient.addColorStop(0.84, "#145268");
+    backgroundGradient.addColorStop(1, "#092d43");
     backgroundContext.fillStyle = backgroundGradient;
     backgroundContext.fillRect(
       0,
@@ -267,11 +267,14 @@ export class GameView {
       cfg.readability.visibleAheadUnits * (cfg.visual.fogFarMultiplier + 0.4)
     );
 
-    this.scene.add(new THREE.HemisphereLight(0x6fb8db, 0x06111f, 1.35));
-    this.scene.add(new THREE.AmbientLight(0x356d91, 0.7));
-    const key = new THREE.DirectionalLight(0xb9edff, 1.25);
-    key.position.set(0.4, 1, 0.6);
+    this.scene.add(new THREE.HemisphereLight(0x78c5e8, 0x050d1b, 1.08));
+    this.scene.add(new THREE.AmbientLight(0x285877, 0.38));
+    const key = new THREE.DirectionalLight(0xb9edff, 1.65);
+    key.position.set(-0.5, 1, 0.55);
     this.scene.add(key);
+    const coralBounce = new THREE.DirectionalLight(0xff6bba, 0.28);
+    coralBounce.position.set(0.65, -0.15, -0.8);
+    this.scene.add(coralBounce);
 
     const fogNear = cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier;
     const fogFar = cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier;

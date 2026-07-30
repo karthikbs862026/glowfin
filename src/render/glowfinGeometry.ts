@@ -80,13 +80,12 @@ function prepareEye(
 }
 
 function createGillLeaf(radius: number, high: boolean): THREE.BufferGeometry {
-  const geometry = new THREE.CapsuleGeometry(
-    radius * 0.3,
-    radius * 0.86,
-    high ? 5 : 3,
+  const geometry = new THREE.SphereGeometry(
+    radius,
+    high ? 12 : 8,
     high ? 8 : 6
   );
-  geometry.scale(0.82, 1, 0.22);
+  geometry.scale(0.5, 1.18, 0.26);
   return geometry;
 }
 
@@ -96,9 +95,9 @@ export function createGlowfinRigGeometry(
 ): GlowfinRigGeometry {
   const r = cfg.lane.creatureRadius;
   const high = lod === 0;
-  const cyan = new THREE.Color(0x1598c3);
-  const finCyan = new THREE.Color(0x2eb3d2);
-  const gillViolet = new THREE.Color(0x8d5fd0);
+  const cyan = new THREE.Color(0x168eaf);
+  const finCyan = new THREE.Color(0x29a9c3);
+  const gillViolet = new THREE.Color(0x794799);
   const pivots = {
     finLeft: new THREE.Vector3(-r * 0.78, -r * 0.12, r * 0.18),
     finRight: new THREE.Vector3(r * 0.78, -r * 0.12, r * 0.18),
@@ -109,8 +108,8 @@ export function createGlowfinRigGeometry(
   const bodyParts: RigPart[] = [{
     geometry: new THREE.SphereGeometry(
       r,
-      high ? 48 : 36,
-      high ? 32 : 24
+      high ? 40 : 32,
+      high ? 28 : 22
     ),
     bone: 0,
     colour: cyan,
@@ -122,7 +121,21 @@ export function createGlowfinRigGeometry(
     )
   }];
 
-  const finSegments = high ? [24, 16] : [16, 10];
+  // A raised rear mantle keeps the chase-camera view from collapsing into a
+  // featureless sphere. It is true volume, not a camera-facing badge.
+  bodyParts.push({
+    geometry: new THREE.SphereGeometry(
+      r * 0.42,
+      high ? 18 : 12,
+      high ? 12 : 8
+    ),
+    bone: 0,
+    colour: finCyan,
+    position: new THREE.Vector3(0, r * 0.02, r * 0.98),
+    scale: new THREE.Vector3(0.92, 0.76, 0.2)
+  });
+
+  const finSegments = high ? [20, 14] : [14, 9];
   for (const side of [-1, 1]) {
     const pivot = side < 0 ? pivots.finLeft : pivots.finRight;
     bodyParts.push({
@@ -135,44 +148,53 @@ export function createGlowfinRigGeometry(
       colour: finCyan,
       position: pivot.clone(),
       rotation: new THREE.Euler(0, side * 0.16, side * 0.12),
-      scale: new THREE.Vector3(1.82, 0.12, 1.06)
+      scale: new THREE.Vector3(1.76, 0.14, 1.1)
     });
   }
 
-  bodyParts.push({
-    geometry: new THREE.SphereGeometry(
-      r * 0.62,
-      high ? 22 : 14,
-      high ? 15 : 9
-    ),
-    bone: 3,
-    colour: finCyan,
-    position: pivots.tail.clone().add(new THREE.Vector3(0, 0, r * 0.12)),
-    scale: new THREE.Vector3(0.92, 0.72, 0.18)
-  });
+  // Two soft lobes form a readable caudal fan from behind. A single flattened
+  // sphere previously appeared as a dark circular patch on the body.
+  for (const side of [-1, 1]) {
+    bodyParts.push({
+      geometry: new THREE.SphereGeometry(
+        r * 0.48,
+        high ? 16 : 11,
+        high ? 11 : 7
+      ),
+      bone: 3,
+      colour: finCyan,
+      position: pivots.tail.clone().add(new THREE.Vector3(
+        side * r * 0.2,
+        side * r * 0.16,
+        r * 0.28
+      )),
+      rotation: new THREE.Euler(0, 0, -side * 0.48),
+      scale: new THREE.Vector3(0.54, 1.08, 0.16)
+    });
+  }
 
   let bone = 4;
   for (const side of [-1, 1]) {
     for (let index = 0; index < 3; index++) {
       const pivot = new THREE.Vector3(
-        side * r * (0.84 + index * 0.11),
-        r * (0.46 - index * 0.29),
-        r * (0.7 + index * 0.035)
+        side * r * (0.82 + index * 0.055),
+        r * (0.42 - index * 0.31),
+        r * (0.5 + index * 0.035)
       );
       pivots.gills.push(pivot);
       bodyParts.push({
-        geometry: createGillLeaf(r * 0.36, high),
+        geometry: createGillLeaf(r * 0.49, high),
         bone,
         colour: gillViolet,
         position: pivot,
         rotation: new THREE.Euler(
-          0,
-          side * 0.08,
-          side * (0.82 - index * 0.45)
+          side * 0.06,
+          side * 0.12,
+          side * (0.95 - index * 0.56)
         ),
         scale: new THREE.Vector3(
-          0.76 + index * 0.06,
-          1.05 - index * 0.08,
+          0.9 + index * 0.04,
+          1.04 - index * 0.06,
           1
         )
       });
@@ -187,7 +209,7 @@ export function createGlowfinRigGeometry(
   body.computeBoundingBox();
   body.computeBoundingSphere();
 
-  const eyeRadius = r * cfg.creature.eyeRadius * 0.86;
+  const eyeRadius = r * cfg.creature.eyeRadius;
   const eyeParts: THREE.BufferGeometry[] = [];
   for (const side of [-1, 1]) {
     eyeParts.push(prepareEye(

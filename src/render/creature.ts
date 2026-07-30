@@ -79,15 +79,15 @@ const BODY_FRAGMENT = /* glsl */ `
     float gillMask = smoothstep(0.03, 0.14, vColour.r - vColour.g);
     float finMask = smoothstep(0.34, 0.46, vColour.g) *
       (1.0 - gillMask);
-    vec3 authoredPigment = vec3(0.012, 0.17, 0.31);
+    vec3 authoredPigment = vec3(0.018, 0.225, 0.34);
     authoredPigment = mix(
       authoredPigment,
-      vec3(0.015, 0.22, 0.34),
+      vec3(0.025, 0.285, 0.39),
       finMask
     );
     authoredPigment = mix(
       authoredPigment,
-      vec3(0.23, 0.075, 0.4),
+      vec3(0.265, 0.07, 0.37),
       gillMask
     );
     vec3 skinSurface = texture2D(
@@ -102,8 +102,8 @@ const BODY_FRAGMENT = /* glsl */ `
     vec3 seaGlass = mix(authoredPigment, vColour, 0.14);
     seaGlass *= mix(vec3(1.0), skinTint, (1.0 - gillMask) * 0.34);
     vec3 base = mix(seaGlass, momentumColour, 0.05 + uMomentum * 0.2);
-    base *= handPainted * mix(0.68, 0.94, internal) *
-      mix(0.68, 1.0, softVolume);
+    base *= handPainted * mix(0.74, 1.0, internal) *
+      mix(0.76, 1.08, softVolume);
     base = mix(base, vec3(0.23, 0.29, 0.36), uCollision * 0.72);
     vec3 rim = mix(vec3(0.85, 0.965, 1.0), gold, uMomentum * 0.45);
     float core = smoothstep(-0.8, 0.55, vObjectPosition.y) *
@@ -114,8 +114,8 @@ const BODY_FRAGMENT = /* glsl */ `
       rim * fresnel * uRimStrength * uGlow * 0.22 +
       vec3(0.42, 0.78, 0.94) * seaGlassSpecular;
     colour = min(
-      colour * 0.44,
-      vec3(0.19, 0.36, 0.48)
+      colour * 0.66,
+      vec3(0.27, 0.52, 0.62)
     );
     gl_FragColor = vec4(colour, 1.0);
     #include <tonemapping_fragment>
@@ -148,7 +148,7 @@ const EYE_FRAGMENT = /* glsl */ `
     );
     float lens = smoothstep(0.18, 0.86, facing);
     vec3 socket = vec3(0.012, 0.026, 0.055);
-    vec3 iris = uColor * uGlow * mix(0.58, 1.08, facing);
+    vec3 iris = uColor * uGlow * mix(0.42, 0.86, facing);
     float pupil = smoothstep(0.9, 0.985, facing);
     vec3 eye = mix(socket, iris, lens);
     eye = mix(eye, socket * 0.32, pupil);
@@ -320,13 +320,13 @@ export class Creature {
     if (eyeColour) {
       (eyeColour.value as THREE.Color).setHSL(
         lerp(cfg.eyeHueCalm, cfg.eyeHueMax, momentumFraction),
-        0.9,
-        0.6
+        0.72,
+        0.42
       );
     }
     const eyeGlow = this.eyeMaterial.uniforms["uGlow"];
     if (eyeGlow) {
-      eyeGlow.value = lerp(0.9, 1.5, Math.max(0, lightFraction));
+      eyeGlow.value = lerp(0.78, 1.18, Math.max(0, lightFraction));
     }
   }
 

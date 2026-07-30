@@ -167,8 +167,8 @@ export class MoonGardenGates {
             (1.0 - smoothstep(0.42, 0.5, vLocalPosition.y));
           float waterFlow = 0.94 + 0.06 *
             sin(vLocalPosition.y * 31.0 + vLocalPosition.z * 4.0);
-          vec3 deepCyan = vec3(0.18, 0.88, 1.0);
-          vec3 moonCyan = vec3(0.44, 0.98, 1.0);
+          vec3 deepCyan = vec3(0.08, 0.58, 0.72);
+          vec3 moonCyan = vec3(0.24, 0.86, 0.94);
           gl_FragColor = vec4(mix(deepCyan, moonCyan, endFade) * waterFlow, 1.0);
         }
       `,
@@ -224,7 +224,10 @@ export class MoonGardenGates {
     };
     let foundationCount = 0;
     let contourCount = 0;
-    const near = forwardDistance - 25;
+    // Passed gates used to remain visible between the chase camera and
+    // Glowfin, turning their outer wall mass into giant foreground cones and
+    // slabs. Retire each gate as the creature clears it.
+    const near = forwardDistance + 0.75;
     const far = forwardDistance + this.cfg.readability.visibleAheadUnits * 1.6;
 
     for (const gate of gates) {
@@ -242,7 +245,7 @@ export class MoonGardenGates {
         if (index >= MAX_GATE_PARTS) continue;
 
         const wallHeight = PROCEDURAL_GATE_VISUAL.wallHeight *
-          ([1.28, 1.16, 1.36][artVariant] ?? 1.24);
+          ([1.08, 1.12, 1.16][artVariant] ?? 1.12);
         const wallDepth = PROCEDURAL_GATE_VISUAL.wallDepth *
           ([1.12, 1.02, 1.08][artVariant] ?? 1.08);
         this.position.set(
@@ -291,8 +294,8 @@ export class MoonGardenGates {
         // still carry the wall to the floor, while the measured cyan cue starts
         // at Glowfin's body height where lateral clearance is actually judged.
         const contourTop =
-          PROCEDURAL_GATE_VISUAL.wallFloorY + wallHeight * 0.9 + 0.12;
-        const contourBottom = PROCEDURAL_GATE_VISUAL.wallFloorY + 1.15;
+          PROCEDURAL_GATE_VISUAL.wallFloorY + wallHeight * 0.84 + 0.08;
+        const contourBottom = PROCEDURAL_GATE_VISUAL.wallFloorY + 1.42;
         const contourHeight = Math.max(0.5, contourTop - contourBottom);
         this.position.set(
           wall.colliderPlane - wall.gapDirection * contourWidth * 0.5,

@@ -73,7 +73,7 @@ const FRAGMENT = /* glsl */ `
     );
     vec3 keyDirection = normalize(vec3(-0.35, 0.82, 0.45));
     float keyLight = dot(normalize(vNormalW), keyDirection) * 0.5 + 0.5;
-    float topLight = mix(0.3, 1.16, smoothstep(0.08, 0.94, keyLight));
+    float topLight = mix(0.2, 1.16, smoothstep(0.08, 0.94, keyLight));
     vec3 viewDirection = normalize(cameraPosition - vWorldPos);
     float moonRim = pow(
       1.0 - clamp(abs(dot(normalize(vNormalW), viewDirection)), 0.0, 1.0),
@@ -138,6 +138,13 @@ const FRAGMENT = /* glsl */ `
     colour += vec3(0.018, 0.05, 0.07) * stoneWeight;
     colour += vec3(0.07, 0.29, 0.4) * moonRim *
       mix(0.15, 0.38, stoneWeight);
+    vec3 coralDirection = normalize(vec3(0.58, -0.18, -0.8));
+    float coralBounce = pow(
+      max(dot(normalize(vNormalW), coralDirection), 0.0),
+      1.4
+    );
+    colour += vec3(0.2, 0.035, 0.15) * coralBounce *
+      mix(0.05, 0.2, livingWeight);
     float wetSpecular = pow(
       max(
         dot(reflect(-keyDirection, normalize(vNormalW)), viewDirection),
@@ -149,7 +156,7 @@ const FRAGMENT = /* glsl */ `
       mix(0.025, 0.075, stoneWeight);
     // Living species keep their own cyan/violet/rose albedo and receive a
     // restrained translucent lift. They no longer read as unlit plastic rods.
-    colour += vColour * livingWeight * (0.06 + moonRim * 0.12);
+    colour += vColour * livingWeight * (0.16 + moonRim * 0.16);
     float livingVein = smoothstep(
       0.08,
       0.24,
@@ -359,6 +366,12 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     float stoneWeight = 1.0 - smoothstep(0.28, 0.66, vGlowWeight);
     colour += vec3(0.035, 0.085, 0.11) * stoneWeight;
     colour += vec3(0.08, 0.34, 0.46) * moonRim * 0.28;
+    vec3 coralDirection = normalize(vec3(0.6, -0.2, -0.77));
+    float coralBounce = pow(
+      max(dot(normalW, coralDirection), 0.0),
+      1.5
+    );
+    colour += vec3(0.19, 0.035, 0.14) * coralBounce * 0.12;
     float wetSpecular = pow(
       max(dot(reflect(-keyDirection, normalW), viewDirection), 0.0),
       22.0

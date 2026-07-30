@@ -18,7 +18,6 @@ import {
   createProductionMinnow,
   createProductionRay,
   createProductionSkyline,
-  createProductionSpire,
   createProductionSpirit,
   createProductionTower
 } from "./productionGeometry";
@@ -141,7 +140,6 @@ export class Environment {
     // ambient-life atlas cards are retired rather than hidden at distance.
     const architectureGeometry = [
       createProductionTower(1),
-      createProductionSpire(1),
       createProductionCollapsedArch(1)
     ] as const;
     this.architecture = architectureGeometry.map((geometry) =>
@@ -255,7 +253,7 @@ export class Environment {
     const colours = new Float32Array(POINT_COUNT * 3);
     for (let index = 0; index < POINT_COUNT; index++) {
       const isMoon = index === 0;
-      sizes[index] = isMoon ? 22 : lerp(0.42, 0.95, hash01(index, 601));
+      sizes[index] = isMoon ? 22 : lerp(0.68, 1.45, hash01(index, 601));
       colours[index * 3] = isMoon ? 0.32 : lerp(0.35, 0.75, hash01(index, 602));
       colours[index * 3 + 1] = isMoon ? 0.78 : lerp(0.62, 0.9, hash01(index, 603));
       colours[index * 3 + 2] = 1;
@@ -327,10 +325,13 @@ export class Environment {
 
   private updateArchitecture(forwardDistance: number): void {
     const env = this.cfg.environment;
-    const count = Math.max(6, Math.floor(env.buildingCount * this.density));
+    const count = Math.min(
+      8,
+      Math.max(4, Math.floor(env.buildingCount * this.density))
+    );
     const perSide = Math.floor(count / 2);
     const firstBand = Math.ceil(
-      (forwardDistance + 105) / env.buildingBandSpacing
+      (forwardDistance + 124) / env.buildingBandSpacing
     );
     for (const family of this.architecture) family.begin();
 
@@ -338,17 +339,17 @@ export class Environment {
       for (let index = 0; index < perSide; index++) {
         const band = firstBand + index;
         const salt = side > 0 ? 7717 : 3313;
-        const variant = positiveMod(band + (side > 0 ? 1 : 0), 3);
+        const variant = positiveMod(band + (side > 0 ? 1 : 0), 2);
         const zDistance = band * env.buildingBandSpacing +
           (hash01(band, salt + 4) - 0.5) * env.buildingBandSpacing * 0.45;
         const lateral = lerp(
-          Math.max(12, env.buildingLateralMin),
-          env.buildingLateralMax,
+          Math.max(14, env.buildingLateralMin),
+          Math.max(17, env.buildingLateralMax),
           hash01(band, salt + 3)
         );
         const height = lerp(
-          env.buildingMinHeight * 0.58,
-          Math.min(5.4, env.buildingMaxHeight),
+          Math.max(2.6, env.buildingMinHeight * 0.48),
+          Math.min(4.4, env.buildingMaxHeight),
           Math.pow(hash01(band, salt), 1.5)
         );
         const family = this.architecture[variant];
@@ -366,10 +367,10 @@ export class Environment {
           -side * lerp(0, 0.035, hash01(band, salt + 8))
         ));
         const mirror = hash01(band, salt + 10) < 0.5 ? -1 : 1;
-        const silhouetteScale = [1, 0.86, 0.62][variant] ?? 0.8;
+        const silhouetteScale = [0.86, 0.72][variant] ?? 0.8;
         const unitScale = height * silhouetteScale / family.height;
-        const widthStretch = [0.76, 0.62, 0.92][variant] ?? 0.8;
-        const depthStretch = [0.74, 0.66, 0.86][variant] ?? 0.75;
+        const widthStretch = [0.72, 0.84][variant] ?? 0.8;
+        const depthStretch = [0.7, 0.8][variant] ?? 0.75;
         this.scale.set(
           mirror * unitScale * widthStretch,
           unitScale,
@@ -433,7 +434,7 @@ export class Environment {
   ): void {
     const env = this.cfg.environment;
     const halfWidth = this.cfg.lane.halfWidth;
-    const count = Math.max(16, Math.floor(env.coralCount * this.density));
+    const count = Math.max(24, Math.floor(env.coralCount * this.density));
     const perSide = Math.floor(count / 2);
     const firstBand = Math.floor(
       (forwardDistance - env.coralBandSpacing * 4) / env.coralBandSpacing
@@ -456,16 +457,16 @@ export class Environment {
         const localOffset = [0, 0.88, 2.05][clusterMember] ?? 0;
         const zDistance = clusterStart + localOffset +
           (hash01(band, salt + 2) - 0.5) * 0.58;
-        const isHero = variant === 0 && positiveMod(band, 9) === 0;
+        const isHero = variant === 0 && positiveMod(band, 6) === 0;
         const desiredHeight = lerp(
-          variant === 2 ? 0.68 : 0.9,
-          variant === 3 ? 2.1 : 1.95,
+          variant === 2 ? 0.82 : 1.05,
+          variant === 3 ? 2.45 : 2.25,
           hash01(band, salt + 1)
         ) * (isHero ? 1.18 : 1);
         const unitScale = desiredHeight / family.height;
         const widthStretch = lerp(
-          variant === 3 ? 0.92 : 1.08,
-          variant === 3 ? 1.22 : 1.48,
+          variant === 3 ? 1.0 : 1.16,
+          variant === 3 ? 1.32 : 1.58,
           hash01(band, salt + 5)
         );
         const depthStretch = [1.05, 0.92, 0.96, 0.72][variant] ?? 0.9;
@@ -535,7 +536,7 @@ export class Environment {
         -(band * 25 + hash01(band, 813) * 6)
       );
       this.quaternion.identity();
-      const size = lerp(1.15, 2.1, hash01(band, 814));
+      const size = lerp(0.68, 1.15, hash01(band, 814));
       this.scale.set(direction * size * 1.3, size, 1);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.72, 0.86, 1);
@@ -556,7 +557,7 @@ export class Environment {
       );
       this.quaternion.identity();
       const pulse = 1 + Math.sin(time * 2 + band) * 0.06;
-      const size = lerp(1.3, 2.5, hash01(band, 824)) * pulse;
+      const size = lerp(0.76, 1.32, hash01(band, 824)) * pulse;
       this.scale.set(size, size, 1);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.72, 0.82, 1);
@@ -574,7 +575,7 @@ export class Environment {
         -(band * 58 + 24)
       );
       this.quaternion.setFromEuler(new THREE.Euler(0, 0, Math.cos(phase) * 0.08));
-      const size = lerp(2.4, 3.8, hash01(band, 833));
+      const size = lerp(1.35, 2.15, hash01(band, 833));
       this.scale.set(Math.cos(phase) >= 0 ? size : -size, size, 1);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.58, 0.72, 0.92);
