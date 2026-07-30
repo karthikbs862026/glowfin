@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted on the draft Phase 3B branch. Not approved for merge.
+Superseded for asset-production strategy by ADR-0017. Its visual rejection,
+capture metrics and no-merge decision remain in force.
 
 ## Context
 
@@ -47,6 +48,6 @@ architecture, but reset the rendered treatment before any merge:
 - The no-caustics/no-bloom frame remains a stress artifact; it is not presented
   as the beauty target.
 - A green contrast badge cannot override a failed owner visual review.
-- This corrective pass improves the code-native slice, but the broader Phase 3
-  asset library still requires authored GLB and texture production rather than
-  treating generated primitives as final art.
+- Luminance correction exposed that the code-native slice itself remained the
+  wrong visual-production strategy. ADR-0017 replaces its active tower, reef
+  and paving treatment with authored review sources and requires final GLBs.

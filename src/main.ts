@@ -141,6 +141,8 @@ function isProbeRequested(): boolean {
 }
 
 async function start(): Promise<void> {
+  await view.ready;
+
   if (isProbeRequested()) {
     const {
       runContrastProbe,

@@ -118,6 +118,7 @@ export class Creature {
 
   private readonly body: THREE.SkinnedMesh;
   private readonly eyes: THREE.Mesh;
+  private readonly reviewBillboard: THREE.Mesh;
   private readonly rootBone = new THREE.Bone();
   private readonly finLeftBone = new THREE.Bone();
   private readonly finRightBone = new THREE.Bone();
@@ -131,7 +132,10 @@ export class Creature {
   private breathPhase = 0;
   private bank = 0;
 
-  constructor(private readonly cfg: TuningConfig) {
+  constructor(
+    private readonly cfg: TuningConfig,
+    reviewTexture: THREE.Texture
+  ) {
     const rig = createGlowfinRigGeometry(cfg, 0);
     this.bodyMaterial = new THREE.ShaderMaterial({
       vertexColors: true,
@@ -187,12 +191,30 @@ export class Creature {
     this.body.frustumCulled = false;
 
     this.eyes = new THREE.Mesh(rig.eyes, this.eyeMaterial);
-    this.group.add(this.body, this.eyes);
+    // The first generated rig remains the deterministic animation prototype,
+    // but owner review rejected its visible form. Until the approved GLB is
+    // modeled, an authored rear-view source carries the review silhouette.
+    // It is deliberately labelled and budgeted as an impostor, not final art.
+    this.body.visible = false;
+    this.eyes.visible = false;
+    const reviewGeometry = new THREE.PlaneGeometry(2.28, 2.28 * (453 / 706));
+    const reviewMaterial = new THREE.MeshBasicMaterial({
+      map: reviewTexture,
+      color: 0xffffff,
+      alphaTest: 0.08,
+      side: THREE.DoubleSide,
+      depthWrite: true
+    });
+    this.reviewBillboard = new THREE.Mesh(reviewGeometry, reviewMaterial);
+    this.reviewBillboard.position.y = 0.08;
+    this.group.add(this.body, this.eyes, this.reviewBillboard);
     this.disposables.push(
       rig.body,
       rig.eyes,
       this.bodyMaterial,
-      this.eyeMaterial
+      this.eyeMaterial,
+      reviewGeometry,
+      reviewMaterial
     );
   }
 
@@ -250,6 +272,11 @@ export class Creature {
     this.eyes.scale.setScalar(
       lerp(1, 0.86, collisionFraction) *
       lerp(1, 1.06, recoveryFraction)
+    );
+    this.reviewBillboard.scale.set(
+      1 + Math.abs(flutter) * 0.035,
+      breath * collisionSquash * recoveryExpand,
+      1
     );
 
     const glow = lerp(

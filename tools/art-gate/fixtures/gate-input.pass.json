@@ -274,24 +274,32 @@
       ]
     },
     {
-      "name": "moon-garden-broken-tower",
-      "family": "brokenTower",
+      "name": "glowfin-authored-rear-review-impostor",
+      "family": "artReviewImpostor",
       "collidable": false,
       "materials": 1,
-      "textureMemoryMB": 0,
+      "textureMemoryMB": 1.7,
+      "maxTextureSizePx": 706,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 2
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-authored-broken-tower-review-impostor",
+      "family": "artReviewImpostor",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 3.6,
+      "maxTextureSizePx": 1024,
       "contour": "decorative",
       "lods": [
         {
           "level": 0,
-          "triangles": 4384
-        },
-        {
-          "level": 1,
-          "triangles": 1592
-        },
-        {
-          "level": 2,
-          "triangles": 508
+          "triangles": 2
         }
       ]
     },
@@ -318,24 +326,17 @@
       ]
     },
     {
-      "name": "moon-garden-medium-coral",
-      "family": "mediumCoral",
+      "name": "moon-garden-authored-coral-review-impostor",
+      "family": "artReviewImpostor",
       "collidable": false,
       "materials": 1,
-      "textureMemoryMB": 0,
+      "textureMemoryMB": 3.8,
+      "maxTextureSizePx": 1024,
       "contour": "decorative",
       "lods": [
         {
           "level": 0,
-          "triangles": 920
-        },
-        {
-          "level": 1,
-          "triangles": 432
-        },
-        {
-          "level": 2,
-          "triangles": 96
+          "triangles": 2
         }
       ]
     },
@@ -711,5 +712,5 @@
       "laneWidthFractionAtMaxMomentum": 0.12083333333333333
     }
   },
-  "compressedArtPayloadMB": 0
+  "compressedArtPayloadMB": 0.26
 }

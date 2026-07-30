@@ -87,16 +87,33 @@ function decorativeManifests(): AssetManifest[] {
       ]
     },
     {
-      name: "moon-garden-broken-tower",
-      family: "brokenTower",
+      name: "glowfin-authored-rear-review-impostor",
+      family: "artReviewImpostor",
       collidable: false,
-      materials: PRODUCTION_ART.brokenTower.materials,
-      textureMemoryMB: 0,
+      materials: PRODUCTION_ART.glowfinReviewImpostor.materials,
+      textureMemoryMB: PRODUCTION_ART.glowfinReviewImpostor.textureMemoryMB,
+      maxTextureSizePx: PRODUCTION_ART.glowfinReviewImpostor.maxTextureSizePx,
+      contour: "none",
+      lods: [{
+        level: 0,
+        triangles: PRODUCTION_ART.glowfinReviewImpostor.lod0
+      }]
+    },
+    {
+      name: "moon-garden-authored-broken-tower-review-impostor",
+      family: "artReviewImpostor",
+      collidable: false,
+      materials: PRODUCTION_ART.brokenTowerReviewImpostor.materials,
+      textureMemoryMB:
+        PRODUCTION_ART.brokenTowerReviewImpostor.textureMemoryMB,
+      maxTextureSizePx:
+        PRODUCTION_ART.brokenTowerReviewImpostor.maxTextureSizePx,
       contour: "decorative",
       lods: [
-        { level: 0, triangles: PRODUCTION_ART.brokenTower.lod0 },
-        { level: 1, triangles: PRODUCTION_ART.brokenTower.lod1 },
-        { level: 2, triangles: PRODUCTION_ART.brokenTower.lod2 }
+        {
+          level: 0,
+          triangles: PRODUCTION_ART.brokenTowerReviewImpostor.lod0
+        }
       ]
     },
     {
@@ -113,16 +130,18 @@ function decorativeManifests(): AssetManifest[] {
       ]
     },
     {
-      name: "moon-garden-medium-coral",
-      family: "mediumCoral",
+      name: "moon-garden-authored-coral-review-impostor",
+      family: "artReviewImpostor",
       collidable: false,
-      materials: PRODUCTION_ART.mediumCoral.materials,
-      textureMemoryMB: 0,
+      materials: PRODUCTION_ART.coralReviewImpostor.materials,
+      textureMemoryMB: PRODUCTION_ART.coralReviewImpostor.textureMemoryMB,
+      maxTextureSizePx: PRODUCTION_ART.coralReviewImpostor.maxTextureSizePx,
       contour: "decorative",
       lods: [
-        { level: 0, triangles: PRODUCTION_ART.mediumCoral.lod0 },
-        { level: 1, triangles: PRODUCTION_ART.mediumCoral.lod1 },
-        { level: 2, triangles: PRODUCTION_ART.mediumCoral.lod2 }
+        {
+          level: 0,
+          triangles: PRODUCTION_ART.coralReviewImpostor.lod0
+        }
       ]
     },
     {
@@ -202,6 +221,6 @@ export function buildVerticalSliceEvidence(
         laneWidthFractionAtMaxMomentum: 1.45 / (LANE_HALF_WIDTH * 2)
       }
     },
-    compressedArtPayloadMB: 0
+    compressedArtPayloadMB: 0.26
   };
 }

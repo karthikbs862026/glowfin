@@ -1,17 +1,14 @@
 /**
  * Moon-Garden Ruins vertical slice.
  *
- * The environment is a compact production art kit, not a scatter of unrelated
- * primitives: broken lunar towers, fork-crowned spires, medium coral clusters,
- * broad ribbon kelp, and three sparse god rays. Every repeated family is
- * instanced and LOD-bucketed. Background geometry remains outside the lane and
- * shares one responsive material so local bioluminescence adds no draw calls.
+ * The visual-reset branch uses authored tower and reef impostors while final
+ * GLB models are produced. They replace the rejected box/cone silhouettes in
+ * the actual build, remain instanced, and are deliberately documented as
+ * review assets rather than being misrepresented as final 3D production art.
  */
 import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
 import {
-  createBrokenTowerGeometry,
-  createMediumCoralGeometry,
   createRibbonKelpGeometry,
   createSpireGeometry,
   type ArtLod
@@ -86,13 +83,64 @@ class InstancedLodFamily {
   }
 }
 
+class InstancedBillboardFamily {
+  readonly object: THREE.InstancedMesh;
+  private count = 0;
+
+  constructor(
+    texture: THREE.Texture,
+    aspect: number,
+    maxCount: number,
+    disposables: Array<{ dispose(): void }>
+  ) {
+    const geometry = new THREE.PlaneGeometry(aspect, 1);
+    // Placement matrices refer to the grounded base, not the image centre.
+    geometry.translate(0, 0.5, 0);
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      color: 0xffffff,
+      vertexColors: true,
+      alphaTest: 0.08,
+      side: THREE.DoubleSide,
+      depthWrite: true
+    });
+    this.object = new THREE.InstancedMesh(geometry, material, maxCount);
+    this.object.count = 0;
+    this.object.frustumCulled = false;
+    this.object.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    disposables.push(geometry, material);
+  }
+
+  begin(): void {
+    this.count = 0;
+  }
+
+  add(matrix: THREE.Matrix4, colour: THREE.Color): void {
+    if (this.count >= this.object.instanceMatrix.count) return;
+    this.object.setMatrixAt(this.count, matrix);
+    this.object.setColorAt(this.count, colour);
+    this.count += 1;
+  }
+
+  finish(): void {
+    this.object.count = this.count;
+    this.object.instanceMatrix.needsUpdate = true;
+    if (this.object.instanceColor) this.object.instanceColor.needsUpdate = true;
+  }
+}
+
+export interface MoonGardenTextures {
+  brokenTower: THREE.Texture;
+  coralCluster: THREE.Texture;
+}
+
 export class Environment {
   readonly objects: THREE.Object3D[] = [];
 
   private readonly material: THREE.ShaderMaterial;
-  private readonly towers: InstancedLodFamily;
+  private readonly towers: InstancedBillboardFamily;
   private readonly spires: InstancedLodFamily;
-  private readonly coral: InstancedLodFamily;
+  private readonly coral: InstancedBillboardFamily;
   private readonly kelp: InstancedLodFamily;
   private readonly godRays: THREE.InstancedMesh;
 
@@ -104,7 +152,10 @@ export class Environment {
   private readonly glowCentre = new THREE.Vector3();
   private readonly disposables: Array<{ dispose(): void }> = [];
 
-  constructor(private readonly cfg: TuningConfig) {
+  constructor(
+    private readonly cfg: TuningConfig,
+    textures: MoonGardenTextures
+  ) {
     const env = cfg.environment;
     const fogNear = cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier;
     const fogFar = cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier;
@@ -116,9 +167,9 @@ export class Environment {
     });
     this.disposables.push(this.material);
 
-    this.towers = new InstancedLodFamily(
-      [0, 1, 2].map((lod) => createBrokenTowerGeometry(lod as ArtLod)),
-      this.material,
+    this.towers = new InstancedBillboardFamily(
+      textures.brokenTower,
+      683 / 1024,
       env.buildingCount,
       this.disposables
     );
@@ -128,9 +179,9 @@ export class Environment {
       env.buildingCount,
       this.disposables
     );
-    this.coral = new InstancedLodFamily(
-      [0, 1, 2].map((lod) => createMediumCoralGeometry(lod as ArtLod)),
-      this.material,
+    this.coral = new InstancedBillboardFamily(
+      textures.coralCluster,
+      1024 / 723,
       env.coralCount,
       this.disposables
     );
@@ -144,9 +195,12 @@ export class Environment {
       Math.max(12, Math.floor(env.coralCount / 3)),
       this.disposables
     );
-    for (const family of [this.towers, this.spires, this.coral, this.kelp]) {
-      this.objects.push(...family.objects);
-    }
+    this.objects.push(
+      this.towers.object,
+      ...this.spires.objects,
+      this.coral.object,
+      ...this.kelp.objects
+    );
 
     // A subdivided tapered plane gives the shaft a stable twelve-triangle
     // silhouette without resorting to an expensive volumetric effect.
@@ -287,10 +341,14 @@ export class Environment {
         // Tiny outward lean only; silhouettes never fall across the corridor.
         this.quaternion.setFromEuler(new THREE.Euler(
           0,
-          lerp(-0.35, 0.35, hash01(band, salt + 9)),
-          -side * lerp(0, 0.045, hash01(band, salt + 8))
+          isTower ? 0 : lerp(-0.35, 0.35, hash01(band, salt + 9)),
+          -side * lerp(0, 0.035, hash01(band, salt + 8))
         ));
-        this.scale.set(width, height, depth);
+        this.scale.set(
+          isTower ? width / (683 / 1024) : width,
+          height,
+          isTower ? 1 : depth
+        );
         this.matrix.compose(this.position, this.quaternion, this.scale);
 
         const distanceFade = 1 - 0.55 * (
@@ -305,7 +363,7 @@ export class Environment {
           brightness * 0.94,
           brightness * 1.08
         );
-        if (isTower) this.towers.add(lod, this.matrix, this.colour);
+        if (isTower) this.towers.add(this.matrix, this.colour);
         else this.spires.add(lod, this.matrix, this.colour);
       }
     }
@@ -339,20 +397,20 @@ export class Environment {
         const heroScale = index % 7 === 0 ? 1.32 : 1;
         const height = lerp(0.82, 2.35, hash01(band, salt + 1)) * heroScale;
         this.position.set(lateral, -1, -zDistance);
-        this.quaternion.setFromEuler(new THREE.Euler(
-          0,
-          hash01(band, salt + 3) * Math.PI * 2,
-          side * 0.08
-        ));
+        this.quaternion.setFromEuler(new THREE.Euler(0, 0, side * 0.035));
         this.scale.set(
-          lerp(0.82, 1.38, hash01(band, salt + 5)) * heroScale,
+          height * lerp(0.72, 1.05, hash01(band, salt + 5)),
           height,
-          lerp(0.8, 1.28, hash01(band, salt + 6)) * heroScale
+          1
         );
         this.matrix.compose(this.position, this.quaternion, this.scale);
-        const hue = lerp(0.48, 0.88, hash01(band, salt + 4));
-        this.colour.setHSL(hue, 0.78, 0.34);
-        this.coral.add(lod, this.matrix, this.colour);
+        const brightness = lerp(0.56, 0.82, hash01(band, salt + 4));
+        this.colour.setRGB(
+          brightness * 0.78,
+          brightness * 0.9,
+          brightness
+        );
+        this.coral.add(this.matrix, this.colour);
 
         if (index % 3 === 0) {
           const kelpLod: ArtLod = lod === 0 ? 0 : 1;

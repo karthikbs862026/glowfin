@@ -12,8 +12,8 @@ import {
 import { createGlowfinRigGeometry } from "../src/render/glowfinGeometry";
 import { contourWorldWidth, MoonGardenGates } from "../src/render/gateArt";
 
-describe("Phase 3B production art manifest", () => {
-  it("matches every generated Moon-Garden LOD exactly", () => {
+describe("Phase 3B art geometry inventory", () => {
+  it("records every generated prototype and production LOD exactly", () => {
     const families = [
       [
         "wallFragment",

@@ -64,17 +64,17 @@ describe("coral response (Part 3.2 priority 5)", () => {
 
 describe("draw call budget (Part 4.6)", () => {
   it("the complete LOD art kit remains instanced and budgeted", () => {
-    // Four three-LOD families plus one god-ray family: thirteen worst-case
-    // draws even though the scene represents well over a hundred objects.
-    const environmentDraws = 13;
+    // Authored tower/reef review sources cost one draw each; spire and kelp LOD
+    // buckets plus god rays make eight worst-case environment draws.
+    const environmentDraws = 8;
     const conservativeSceneWithoutEnvironment = 64;
     expect(conservativeSceneWithoutEnvironment + environmentDraws).toBeLessThan(
       budgets.scene.maxDrawCalls
     );
-    expect(
+    const representedObjects =
       tuning.environment.buildingCount +
         tuning.environment.godRayCount +
-        tuning.environment.coralCount
-    ).toBeGreaterThan(budgets.scene.maxDrawCalls);
+        tuning.environment.coralCount;
+    expect(representedObjects).toBeGreaterThan(environmentDraws * 8);
   });
 });

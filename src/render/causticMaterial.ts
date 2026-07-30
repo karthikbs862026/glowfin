@@ -2,8 +2,9 @@
  * Caustics — Part 3.2's first and highest-ROI shader.
  *
  * Animated light-through-water bands projected onto environment geometry.
- * Procedural rather than a scrolling texture: no texture memory, no atlasing,
- * no seams, and the pattern never visibly repeats across a run.
+ * Caustics remain procedural, but the base surface may now come from authored
+ * albedo. The rejected Phase 3B frame proved that a generated paving formula
+ * reads as a modern tiled road even when its lighting is technically correct.
  *
  * TWO BUGS FIXED FROM THE FIRST VERSION, both only visible on a device:
  *
@@ -40,6 +41,12 @@ export interface CausticParams {
   fogNear: number;
   fogFar: number;
   octaves: number;
+  /** Optional authored base-colour surface. Caustics remain procedural. */
+  surfaceMap?: THREE.Texture;
+  /** Texture repetitions per world unit. */
+  surfaceScale?: number;
+  /** Blend from the flat base colour to the authored albedo. */
+  surfaceWeight?: number;
   /** Lit border along face edges. Zero disables it (used for the floor). */
   edgeStrength?: number;
   /** Border thickness in screen pixels. */
@@ -77,6 +84,11 @@ const FRAGMENT = /* glsl */ `
   uniform vec3 uFogColor;
   uniform float uFogNear;
   uniform float uFogFar;
+  #ifdef USE_SURFACE_MAP
+    uniform sampler2D uSurfaceMap;
+    uniform float uSurfaceScale;
+    uniform float uSurfaceWeight;
+  #endif
 
   uniform float uEdgeStrength;
   uniform float uEdgeWidthPixels;
@@ -133,20 +145,14 @@ const FRAGMENT = /* glsl */ `
     // stops floor and walls reading as the same flat material.
     float facing = clamp(vNormalW.y * 0.35 + 0.72, 0.0, 1.0);
 
-    // Broad staggered moonstone paving keeps the route readable even when a
-    // low quality tier disables caustics. This is deliberately low-frequency:
-    // at runner speed it reads as grounded stone mass, not noisy wallpaper.
-    vec2 tileUv = vWorldPos.xz * vec2(0.24, 0.105);
-    tileUv.x += floor(tileUv.y) * 0.5;
-    vec2 tileCell = abs(fract(tileUv) - 0.5);
-    float jointDistance = min(0.5 - tileCell.x, 0.5 - tileCell.y);
-    float mortar = 1.0 - smoothstep(0.018, 0.052, jointDistance);
-    float stoneVariation = 0.92 + 0.08 * sin(
-      floor(tileUv.x) * 2.73 + floor(tileUv.y) * 5.19
-    );
-
-    vec3 colour = uBaseColor * stoneVariation;
-    colour *= 1.0 - mortar * 0.38;
+    vec3 colour = uBaseColor;
+    #ifdef USE_SURFACE_MAP
+      vec3 authoredAlbedo = texture2D(
+        uSurfaceMap,
+        vWorldPos.xz * uSurfaceScale
+      ).rgb;
+      colour = mix(colour, authoredAlbedo, uSurfaceWeight);
+    #endif
     colour += uCausticColor * pattern * uIntensity * facing;
 
     // Lit border along the face edges.
@@ -184,8 +190,13 @@ const FRAGMENT = /* glsl */ `
 `;
 
 export function createCausticMaterial(params: CausticParams): THREE.ShaderMaterial {
+  const defines: Record<string, number> = {
+    CAUSTIC_OCTAVES: Math.max(1, Math.round(params.octaves))
+  };
+  if (params.surfaceMap) defines["USE_SURFACE_MAP"] = 1;
+
   return new THREE.ShaderMaterial({
-    defines: { CAUSTIC_OCTAVES: Math.max(1, Math.round(params.octaves)) },
+    defines,
     uniforms: {
       uTime: { value: 0 },
       uBaseColor: { value: new THREE.Color(params.baseColor) },
@@ -196,6 +207,9 @@ export function createCausticMaterial(params: CausticParams): THREE.ShaderMateri
       uFogColor: { value: new THREE.Color(params.fogColor) },
       uFogNear: { value: params.fogNear },
       uFogFar: { value: params.fogFar },
+      uSurfaceMap: { value: params.surfaceMap ?? null },
+      uSurfaceScale: { value: params.surfaceScale ?? 0.08 },
+      uSurfaceWeight: { value: params.surfaceWeight ?? 0.86 },
       uEdgeStrength: { value: params.edgeStrength ?? 0 },
       uEdgeWidthPixels: { value: params.edgeWidthPixels ?? 7 },
       uEdgeColor: { value: new THREE.Color(params.edgeColor ?? 0xbdf4ff) }

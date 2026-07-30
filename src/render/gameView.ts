@@ -38,6 +38,8 @@ function lerp(a: number, b: number, t: number): number {
 export class GameView {
   readonly scene = new THREE.Scene();
   readonly camera: THREE.PerspectiveCamera;
+  /** Resolves only after authored visual-reset textures are GPU-ready. */
+  readonly ready: Promise<void>;
   private readonly renderer: THREE.WebGLRenderer;
 
   private readonly creature: Creature;
@@ -125,6 +127,50 @@ export class GameView {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
 
+    const loadingManager = new THREE.LoadingManager();
+    this.ready = new Promise<void>((resolve, reject) => {
+      loadingManager.onLoad = resolve;
+      loadingManager.onError = (url) => {
+        reject(new Error(`Moon-Garden art asset failed to load: ${url}`));
+      };
+    });
+    const textureLoader = new THREE.TextureLoader(loadingManager);
+    const maxAnisotropy = Math.min(
+      8,
+      this.renderer.capabilities.getMaxAnisotropy()
+    );
+    const moonstoneSurface = textureLoader.load(
+      "/art/moon-garden/moonstone-seabed.webp"
+    );
+    moonstoneSurface.colorSpace = THREE.SRGBColorSpace;
+    moonstoneSurface.wrapS = THREE.RepeatWrapping;
+    moonstoneSurface.wrapT = THREE.RepeatWrapping;
+    moonstoneSurface.repeat.set(72 / 25, 4000 / 25);
+    moonstoneSurface.anisotropy = maxAnisotropy;
+
+    const coralCluster = textureLoader.load(
+      "/art/moon-garden/coral-cluster.webp"
+    );
+    coralCluster.colorSpace = THREE.SRGBColorSpace;
+    coralCluster.anisotropy = maxAnisotropy;
+
+    const brokenTower = textureLoader.load(
+      "/art/moon-garden/broken-tower.webp"
+    );
+    brokenTower.colorSpace = THREE.SRGBColorSpace;
+    brokenTower.anisotropy = maxAnisotropy;
+    const glowfinRear = textureLoader.load(
+      "/art/moon-garden/glowfin-rear.webp"
+    );
+    glowfinRear.colorSpace = THREE.SRGBColorSpace;
+    glowfinRear.anisotropy = maxAnisotropy;
+    this.disposables.push(
+      moonstoneSurface,
+      coralCluster,
+      brokenTower,
+      glowfinRear
+    );
+
     const backgroundCanvas = document.createElement("canvas");
     backgroundCanvas.width = 4;
     backgroundCanvas.height = 256;
@@ -193,7 +239,8 @@ export class GameView {
     // while the narrower route keeps the playable corridor legible.
     const seabedGeo = new THREE.PlaneGeometry(72, 4000);
     const seabedMaterial = new THREE.MeshStandardMaterial({
-      color: 0x1c4658,
+      color: 0x7693a1,
+      map: moonstoneSurface,
       roughness: 1,
       metalness: 0
     });
@@ -205,7 +252,7 @@ export class GameView {
 
     const floorGeo = new THREE.PlaneGeometry(halfWidth * 2.05, 4000);
     this.floorMaterial = createCausticMaterial({
-      baseColor: 0x3d7185,
+      baseColor: 0x20364a,
       causticColor: 0x2ea8d8,
       scale: cfg.visual.causticScaleFloor,
       intensity: cfg.visual.causticIntensityFloor,
@@ -214,7 +261,10 @@ export class GameView {
       fogColor: 0x12364c,
       fogNear,
       fogFar,
-      octaves: 3
+      octaves: 3,
+      surfaceMap: moonstoneSurface,
+      surfaceScale: 0.04,
+      surfaceWeight: 0.92
     });
     const floor = new THREE.Mesh(floorGeo, this.floorMaterial);
     floor.rotation.x = -Math.PI / 2;
@@ -272,11 +322,14 @@ export class GameView {
     for (const object of this.gates.objects) this.scene.add(object);
 
     // --- creature (Part 3.1) ---
-    this.creature = new Creature(cfg);
+    this.creature = new Creature(cfg, glowfinRear);
     this.scene.add(this.creature.group);
 
     // --- drowned city, god-rays, responsive coral (Part 3.2 #3 and #5) ---
-    this.environment = new Environment(cfg);
+    this.environment = new Environment(cfg, {
+      brokenTower,
+      coralCluster
+    });
     for (const object of this.environment.objects) this.scene.add(object);
 
     // --- trail ribbon (Part 3.2 priority 2) ---
@@ -451,8 +504,8 @@ export class GameView {
     return {
       activeMaterials: materials.size,
       godRayMeshes: this.cfg.environment.godRayCount,
-      // This code-native slice uses vertex colour and shaders, not textures.
-      textureMemoryMB: 0
+      // Four authored 1024px-or-smaller RGBA assets including mip overhead.
+      textureMemoryMB: 15
     };
   }
 

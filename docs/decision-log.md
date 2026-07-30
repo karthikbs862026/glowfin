@@ -144,3 +144,12 @@ green technical gates. Keep the collider/LOD/instancing foundation, but rebuild
 the visual treatment, separate beauty evidence from stress evidence, and add
 composition-level luminance/colour/clipping checks. PR #7 remains draft and
 must not be merged on performance/contrast evidence alone.
+
+## ADR-0017: Authored visual sources before production GLBs
+
+**Decision:** Stop treating code-generated towers, coral and paving as final
+art. Use the owner-rejected frame and the approved Art Bible to define one
+in-camera acceptance target, then place authored seabed, broken-tower and reef
+sources into the real renderer as clearly labelled review impostors. They may
+guide and validate composition, but Phase 3B still requires optimized GLB
+replacements. PR #7 stays draft and unmergeable until owner visual approval.
