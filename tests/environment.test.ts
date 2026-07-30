@@ -26,9 +26,9 @@ describe("environment must not compete with obstacles (Part 3.4)", () => {
   });
 
   it("coral sits outside the lane too", () => {
-    // Placement runs from halfWidth + 0.35 outward, so the nearest coral is
+    // Placement runs from halfWidth + 0.65 outward, so the nearest coral is
     // clear of the playable lane.
-    expect(tuning.lane.halfWidth + 0.35).toBeGreaterThan(tuning.lane.halfWidth);
+    expect(tuning.lane.halfWidth + 0.65).toBeGreaterThan(tuning.lane.halfWidth);
   });
 
   it("god-rays are sparse, as Part 3.2 asks", () => {
@@ -37,7 +37,7 @@ describe("environment must not compete with obstacles (Part 3.4)", () => {
     expect(tuning.environment.godRayBandSpacing).toBeGreaterThan(
       tuning.readability.visibleAheadUnits * 0.5
     );
-    expect(tuning.environment.godRayCount).toBeLessThan(15);
+    expect(tuning.environment.godRayCount).toBeLessThanOrEqual(3);
   });
 });
 
@@ -45,7 +45,7 @@ describe("coral response (Part 3.2 priority 5)", () => {
   it("has a trigger radius that a passing creature actually reaches", () => {
     // Coral sits just outside the lane; the creature can reach the lane edge.
     // If the radius were smaller than that gap, nothing would ever pulse.
-    const nearestApproach = 0.35;
+    const nearestApproach = 0.65;
     expect(tuning.environment.coralPulseRadiusUnits).toBeGreaterThan(nearestApproach);
   });
 
@@ -58,12 +58,14 @@ describe("coral response (Part 3.2 priority 5)", () => {
 });
 
 describe("draw call budget (Part 4.6)", () => {
-  it("the whole environment costs three draws, not dozens", () => {
-    // Instanced: buildings, god-rays and coral are one draw each regardless of
-    // count. Individually they would be 127 objects and blow the budget alone.
-    const environmentDraws = 3;
-    const measuredSceneDraws = 62;
-    expect(measuredSceneDraws + environmentDraws).toBeLessThan(budgets.scene.maxDrawCalls);
+  it("the complete LOD art kit remains instanced and budgeted", () => {
+    // Four three-LOD families plus one god-ray family: thirteen worst-case
+    // draws even though the scene represents well over a hundred objects.
+    const environmentDraws = 13;
+    const conservativeSceneWithoutEnvironment = 64;
+    expect(conservativeSceneWithoutEnvironment + environmentDraws).toBeLessThan(
+      budgets.scene.maxDrawCalls
+    );
     expect(
       tuning.environment.buildingCount +
         tuning.environment.godRayCount +

@@ -7,10 +7,21 @@ this README covers local setup only.
 
 ## Status
 
-**Phase 0 — Foundation** (see Part 9 of the master build prompt).
-This is scaffolding, not gameplay: a render loop, a cube, single-finger
-touch steering, and the repo/CI plumbing. No momentum system, no collision,
-no procedural generation yet — that's Phase 1.
+**Phase 3B — Moon-Garden vertical slice.**
+
+The deterministic endless-runner core, momentum/light systems, procedural
+course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
+trail, contrast probe and hardened art gate are in place. The first production
+art slice now replaces the placeholder creature and environment with:
+
+- a two-draw, ten-bone simulation-driven Glowfin
+- truthful LOD wall fragments with independent cyan collider contours
+- instanced broken towers and fork-crowned spires
+- locally responsive coral and shader-sway ribbon kelp
+- three hard-capped god-ray meshes
+
+The slice follows the approved **Moon-Garden Ruins** Concept-First Art Bible.
+Real-device Android and iOS sign-off remains separate from CI emulation.
 
 ## Local setup
 
@@ -36,16 +47,16 @@ git lfs install   # once, locally, before committing any binary asset
 ```
 src/            game source (grows into mechanics/, render/, input/ etc. — Part 5.1)
 tests/          test suites (Part 6)
-config/         tunable data — not created yet, added with the momentum/scoring systems (Part 2)
+config/         versioned gameplay, visual and performance tuning data
 docs/           decision log (ADRs), will grow to include tuning guide, QA runbook (Part 5.4)
-scripts/        repo/CI tooling, asset pipeline scripts (Part 4.4)
+tools/art-gate/ production art manifests, captures and release checks
+scripts/        repo/CI and production bundle checks
 .github/        CI workflows, PR template, CODEOWNERS
 ```
 
-## Open items from Phase 0 (tracked honestly, not swept under the rug)
+## Open release items
 
-
-- [ ] Bundle size budget in CI is a placeholder — see ADR-0003
 - [ ] `CODEOWNERS` currently points everything at one owner — update if/when the team grows
-- [ ] Branch protection script has not been run against the live repo yet
-- [ ] No environments (local/staging/prod) or deploy pipeline yet — that's Part 7, later phase
+- [ ] Full 36-state emulated art matrix
+- [ ] Android and iOS Safari performance, contrast and 30-minute soak sign-off
+- [ ] Final sound/music, production deployment and store-wrapper pipeline

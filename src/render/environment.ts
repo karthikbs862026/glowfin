@@ -1,23 +1,25 @@
 /**
- * The drowned city — background silhouettes, god-rays, and coral that responds
- * to the creature passing (Part 3.2 priorities 3 and 5, plus Part 1.2's setting).
+ * Moon-Garden Ruins vertical slice.
  *
- * ALL THREE ARE INSTANCED, one draw call each. The scene already sits at 62 of a
- * 90 draw budget, and dozens of individual buildings would blow it on their own.
- *
- * EVERYTHING HERE IS BACKGROUND and must never compete with obstacle silhouettes
- * (Part 3.4). Concretely: ruins sit well outside the lane, god-rays are additive
- * so they can only brighten and never darken an obstacle, and coral rests dim
- * until the creature is near enough to wake it.
- *
- * PLACEMENT IS DERIVED, NOT STORED. Each object belongs to a numbered "band"
- * along the course, and its size and offset come from hashing that band index.
- * So a given band always looks identical regardless of when it is computed,
- * which keeps the world stable as slots recycle and makes it reproducible in a
- * replay without carrying any generator state.
+ * The environment is a compact production art kit, not a scatter of unrelated
+ * primitives: broken lunar towers, fork-crowned spires, medium coral clusters,
+ * broad ribbon kelp, and three sparse god rays. Every repeated family is
+ * instanced and LOD-bucketed. Background geometry remains outside the lane and
+ * shares one responsive material so local bioluminescence adds no draw calls.
  */
 import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
+import {
+  createBrokenTowerGeometry,
+  createMediumCoralGeometry,
+  createRibbonKelpGeometry,
+  createSpireGeometry,
+  type ArtLod
+} from "./moonGardenGeometry";
+import {
+  createMoonGardenMaterial,
+  updateMoonGardenMaterial
+} from "./moonGardenMaterial";
 
 /** Deterministic hash -> [0,1). Stable for a band index, no state required. */
 function hash01(a: number, salt: number): number {
@@ -32,250 +34,359 @@ function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
+function lodForDistance(distanceAhead: number): ArtLod {
+  if (distanceAhead < 30) return 0;
+  if (distanceAhead < 70) return 1;
+  return 2;
+}
+
+class InstancedLodFamily {
+  readonly objects: THREE.InstancedMesh[] = [];
+  private readonly counts = [0, 0, 0];
+
+  constructor(
+    geometries: Array<THREE.BufferGeometry | null>,
+    material: THREE.Material,
+    maxCount: number,
+    disposables: Array<{ dispose(): void }>
+  ) {
+    for (const geometry of geometries) {
+      if (!geometry) continue;
+      const mesh = new THREE.InstancedMesh(geometry, material, maxCount);
+      mesh.count = 0;
+      mesh.frustumCulled = false;
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      this.objects.push(mesh);
+      disposables.push(geometry);
+    }
+  }
+
+  begin(): void {
+    this.counts.fill(0);
+  }
+
+  add(lod: ArtLod, matrix: THREE.Matrix4, colour: THREE.Color): void {
+    const mesh = this.objects[lod] ?? this.objects[this.objects.length - 1];
+    if (!mesh) return;
+    const index = this.counts[lod] ?? 0;
+    if (index >= mesh.instanceMatrix.count) return;
+    mesh.setMatrixAt(index, matrix);
+    mesh.setColorAt(index, colour);
+    this.counts[lod] = index + 1;
+  }
+
+  finish(): void {
+    for (let lod = 0; lod < this.objects.length; lod++) {
+      const mesh = this.objects[lod];
+      if (!mesh) continue;
+      mesh.count = this.counts[lod] ?? 0;
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    }
+  }
+}
+
 export class Environment {
   readonly objects: THREE.Object3D[] = [];
 
-  private readonly buildings: THREE.InstancedMesh;
+  private readonly material: THREE.ShaderMaterial;
+  private readonly towers: InstancedLodFamily;
+  private readonly spires: InstancedLodFamily;
+  private readonly coral: InstancedLodFamily;
+  private readonly kelp: InstancedLodFamily;
   private readonly godRays: THREE.InstancedMesh;
-  private readonly coral: THREE.InstancedMesh;
-
-  /** Which band each coral slot currently holds, so a recycled slot resets. */
-  private readonly coralBand: Int32Array;
-  /** Live pulse level per coral slot, 0..1. */
-  private readonly coralPulse: Float32Array;
 
   private readonly matrix = new THREE.Matrix4();
   private readonly position = new THREE.Vector3();
   private readonly quaternion = new THREE.Quaternion();
   private readonly scale = new THREE.Vector3();
   private readonly colour = new THREE.Color();
+  private readonly glowCentre = new THREE.Vector3();
   private readonly disposables: Array<{ dispose(): void }> = [];
 
   constructor(private readonly cfg: TuningConfig) {
     const env = cfg.environment;
+    const fogNear = cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier;
+    const fogFar = cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier;
+    this.material = createMoonGardenMaterial({
+      fogColor: 0x04060f,
+      fogNear,
+      fogFar,
+      glowRadius: env.coralPulseRadiusUnits
+    });
+    this.disposables.push(this.material);
 
-    // --- ruins ---
-    const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
-    const buildingMat = new THREE.MeshBasicMaterial({ fog: true });
-    this.buildings = new THREE.InstancedMesh(buildingGeo, buildingMat, env.buildingCount);
-    this.buildings.frustumCulled = false;
-    this.buildings.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.objects.push(this.buildings);
-    this.disposables.push(buildingGeo, buildingMat);
+    this.towers = new InstancedLodFamily(
+      [0, 1, 2].map((lod) => createBrokenTowerGeometry(lod as ArtLod)),
+      this.material,
+      env.buildingCount,
+      this.disposables
+    );
+    this.spires = new InstancedLodFamily(
+      [0, 1, 2].map((lod) => createSpireGeometry(lod as ArtLod)),
+      this.material,
+      env.buildingCount,
+      this.disposables
+    );
+    this.coral = new InstancedLodFamily(
+      [0, 1, 2].map((lod) => createMediumCoralGeometry(lod as ArtLod)),
+      this.material,
+      env.coralCount,
+      this.disposables
+    );
+    this.kelp = new InstancedLodFamily(
+      [
+        createRibbonKelpGeometry(0),
+        createRibbonKelpGeometry(1),
+        createRibbonKelpGeometry(1)
+      ],
+      this.material,
+      Math.max(12, Math.floor(env.coralCount / 3)),
+      this.disposables
+    );
+    for (const family of [this.towers, this.spires, this.coral, this.kelp]) {
+      this.objects.push(...family.objects);
+    }
 
-    // --- god-rays ---
-    // A quad with the gradient baked into vertex colours: bright at the top,
-    // black at the bottom. Under additive blending black contributes nothing,
-    // so the shaft fades out downward without needing a texture or alpha.
-    const rayGeo = new THREE.PlaneGeometry(1, 1, 1, 1);
-    const rayColours = new Float32Array([
-      1, 1, 1, 1, 1, 1, // top two vertices
-      0, 0, 0, 0, 0, 0 // bottom two
-    ]);
-    rayGeo.setAttribute("color", new THREE.BufferAttribute(rayColours, 3));
-    const rayMat = new THREE.MeshBasicMaterial({
+    // A subdivided tapered plane gives the shaft a stable twelve-triangle
+    // silhouette without resorting to an expensive volumetric effect.
+    const rayGeometry = new THREE.PlaneGeometry(1, 1, 3, 2);
+    const rayPositions = rayGeometry.getAttribute("position");
+    const rayColours = new Float32Array(rayPositions.count * 3);
+    for (let index = 0; index < rayPositions.count; index++) {
+      const y = rayPositions.getY(index);
+      const width = lerp(0.2, 1, y + 0.5);
+      rayPositions.setX(index, rayPositions.getX(index) * width);
+      const strength = THREE.MathUtils.clamp(y + 0.5, 0, 1);
+      rayColours[index * 3] = strength;
+      rayColours[index * 3 + 1] = strength;
+      rayColours[index * 3 + 2] = strength;
+    }
+    rayPositions.needsUpdate = true;
+    rayGeometry.setAttribute(
+      "color",
+      new THREE.BufferAttribute(rayColours, 3)
+    );
+    const rayMaterial = new THREE.MeshBasicMaterial({
       vertexColors: true,
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       side: THREE.DoubleSide,
-      fog: true
+      fog: true,
+      toneMapped: false
     });
-    this.godRays = new THREE.InstancedMesh(rayGeo, rayMat, env.godRayCount);
+    this.godRays = new THREE.InstancedMesh(
+      rayGeometry,
+      rayMaterial,
+      env.godRayCount
+    );
     this.godRays.frustumCulled = false;
     this.godRays.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.objects.push(this.godRays);
-    this.disposables.push(rayGeo, rayMat);
-
-    // --- coral ---
-    const coralGeo = new THREE.ConeGeometry(0.28, 1, 6);
-    const coralMat = new THREE.MeshBasicMaterial({ fog: true });
-    this.coral = new THREE.InstancedMesh(coralGeo, coralMat, env.coralCount);
-    this.coral.frustumCulled = false;
-    this.coral.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.objects.push(this.coral);
-    this.disposables.push(coralGeo, coralMat);
-
-    this.coralBand = new Int32Array(env.coralCount).fill(-1);
-    this.coralPulse = new Float32Array(env.coralCount);
+    this.disposables.push(rayGeometry, rayMaterial);
   }
 
-  /** Drop all live pulses, so a new run does not start mid-glow. */
   reset(): void {
-    this.coralPulse.fill(0);
-    this.coralBand.fill(-1);
+    // Placement and response are derived directly from current simulation state.
   }
 
   update(
     forwardDistance: number,
     lateralPosition: number,
-    momentumFraction: number,
-    dtSec: number
+    momentumFraction: number
   ): void {
-    this.updateBuildings(forwardDistance);
+    this.glowCentre.set(lateralPosition, 0, -forwardDistance);
+    updateMoonGardenMaterial(
+      this.material,
+      forwardDistance / Math.max(1, this.cfg.speed.forwardAtZeroMomentum),
+      this.glowCentre,
+      momentumFraction
+    );
+    this.updateArchitecture(forwardDistance);
+    this.updateReef(forwardDistance);
     this.updateGodRays(forwardDistance, momentumFraction);
-    this.updateCoral(forwardDistance, lateralPosition, dtSec);
   }
 
-  private updateBuildings(forwardDistance: number): void {
+  private updateArchitecture(forwardDistance: number): void {
     const env = this.cfg.environment;
     const perSide = Math.floor(env.buildingCount / 2);
-    // Start a little behind so ruins do not pop in at the edge of vision.
-    const firstBand = Math.floor((forwardDistance - env.buildingBandSpacing * 2) / env.buildingBandSpacing);
+    const firstBand = Math.floor(
+      (forwardDistance - env.buildingBandSpacing * 2) /
+      env.buildingBandSpacing
+    );
+    this.towers.begin();
+    this.spires.begin();
 
-    let index = 0;
     for (let side = -1; side <= 1; side += 2) {
-      for (let i = 0; i < perSide && index < env.buildingCount; i++, index++) {
-        const band = firstBand + i;
-        const saltBase = side > 0 ? 7717 : 3313;
-
-        const height = lerp(
-          env.buildingMinHeight,
-          env.buildingMaxHeight,
-          Math.pow(hash01(band, saltBase), 1.7)
-        );
-
-        // Proportion varies hard rather than gently: a city reads as a city
-        // because of the contrast between slender towers and squat blocks. A
-        // uniform range of box sizes just reads as boxes.
-        const slender = hash01(band, saltBase + 6) < 0.4;
-        const width = slender
-          ? lerp(1.2, 3.0, hash01(band, saltBase + 1))
-          : lerp(5, 13, hash01(band, saltBase + 1));
-        const depth = slender
-          ? lerp(1.2, 3.4, hash01(band, saltBase + 2))
-          : lerp(5, 15, hash01(band, saltBase + 2));
-
+      for (let index = 0; index < perSide; index++) {
+        const band = firstBand + index;
+        const salt = side > 0 ? 7717 : 3313;
+        const zDistance = band * env.buildingBandSpacing +
+          (hash01(band, salt + 4) - 0.5) * env.buildingBandSpacing * 0.65;
+        const distanceAhead = zDistance - forwardDistance;
+        const lod = lodForDistance(distanceAhead);
+        const isTower = hash01(band, salt + 6) < 0.38;
+        const height = isTower
+          ? lerp(env.buildingMinHeight * 1.25, env.buildingMaxHeight, Math.pow(hash01(band, salt), 1.45))
+          : lerp(env.buildingMinHeight, env.buildingMaxHeight * 0.72, Math.pow(hash01(band, salt), 1.8));
+        const width = isTower
+          ? lerp(3.8, 8.5, hash01(band, salt + 1))
+          : lerp(1.8, 4.2, hash01(band, salt + 1));
+        const depth = isTower
+          ? lerp(3.2, 7.4, hash01(band, salt + 2))
+          : lerp(1.6, 3.8, hash01(band, salt + 2));
         const lateral = lerp(
           env.buildingLateralMin,
           env.buildingLateralMax,
-          hash01(band, saltBase + 3)
+          hash01(band, salt + 3)
         );
-        const jitter = (hash01(band, saltBase + 4) - 0.5) * env.buildingBandSpacing * 0.8;
-
-        // A drowned city is a collapsed one. A few ruins lean, which does more
-        // for the read than any amount of colour work on upright boxes.
-        const leaning = hash01(band, saltBase + 7) < 0.22;
-        const lean = leaning ? lerp(-0.20, 0.20, hash01(band, saltBase + 8)) : 0;
-
-        // Sunk deeper the further out they sit, so the skyline recedes into the
-        // water rather than standing on a flat plane.
-        const sink = lerp(0, 5, (lateral - env.buildingLateralMin) / Math.max(1, env.buildingLateralMax - env.buildingLateralMin));
+        const sink = lerp(
+          0,
+          5,
+          (lateral - env.buildingLateralMin) /
+            Math.max(1, env.buildingLateralMax - env.buildingLateralMin)
+        );
 
         this.position.set(
           side * lateral,
           height * 0.5 - 1 - sink,
-          -(band * env.buildingBandSpacing + jitter)
+          -zDistance
         );
-        this.quaternion.setFromEuler(new THREE.Euler(0, lerp(-0.5, 0.5, hash01(band, saltBase + 9)), lean));
+        // Tiny outward lean only; silhouettes never fall across the corridor.
+        this.quaternion.setFromEuler(new THREE.Euler(
+          0,
+          lerp(-0.35, 0.35, hash01(band, salt + 9)),
+          -side * lerp(0, 0.045, hash01(band, salt + 8))
+        ));
         this.scale.set(width, height, depth);
         this.matrix.compose(this.position, this.quaternion, this.scale);
-        this.buildings.setMatrixAt(index, this.matrix);
 
-        // Taller ruins read very slightly brighter, which gives the skyline
-        // depth without any of them approaching obstacle brightness.
-        const distanceFade =
-          1 - 0.55 * ((lateral - env.buildingLateralMin) / Math.max(1, env.buildingLateralMax - env.buildingLateralMin));
-        const brightness =
-          env.buildingBrightness * lerp(0.6, 1.25, hash01(band, saltBase + 5)) * distanceFade;
-        this.colour.setRGB(brightness * 0.5, brightness * 0.8, brightness);
-        this.buildings.setColorAt(index, this.colour);
+        const distanceFade = 1 - 0.55 * (
+          (lateral - env.buildingLateralMin) /
+          Math.max(1, env.buildingLateralMax - env.buildingLateralMin)
+        );
+        const brightness = env.buildingBrightness *
+          lerp(2.2, 3.4, hash01(band, salt + 5)) *
+          distanceFade;
+        this.colour.setRGB(
+          brightness * 0.52,
+          brightness * 0.82,
+          brightness
+        );
+        if (isTower) this.towers.add(lod, this.matrix, this.colour);
+        else this.spires.add(lod, this.matrix, this.colour);
       }
     }
-
-    this.buildings.instanceMatrix.needsUpdate = true;
-    if (this.buildings.instanceColor) this.buildings.instanceColor.needsUpdate = true;
+    this.towers.finish();
+    this.spires.finish();
   }
 
-  private updateGodRays(forwardDistance: number, momentumFraction: number): void {
+  private updateReef(forwardDistance: number): void {
     const env = this.cfg.environment;
-    const firstBand = Math.floor((forwardDistance - env.godRayBandSpacing) / env.godRayBandSpacing);
+    const halfWidth = this.cfg.lane.halfWidth;
+    const perSide = Math.floor(env.coralCount / 2);
+    const firstBand = Math.floor(
+      (forwardDistance - env.coralBandSpacing * 3) / env.coralBandSpacing
+    );
+    this.coral.begin();
+    this.kelp.begin();
 
-    for (let i = 0; i < env.godRayCount; i++) {
-      const band = firstBand + i;
-      // Kept out to the sides. A shaft crossing the lane sits directly between
-      // the player and the obstacles they are reading, and additive brightness
-      // over a dark scene turns into a grey wash rather than a beam.
+    for (let side = -1; side <= 1; side += 2) {
+      for (let index = 0; index < perSide; index++) {
+        const band = firstBand + index;
+        const salt = side > 0 ? 9091 : 1213;
+        const zDistance = band * env.coralBandSpacing +
+          (hash01(band, salt + 2) - 0.5) * 5;
+        const distanceAhead = zDistance - forwardDistance;
+        const lod = lodForDistance(distanceAhead);
+        const lateral = side * lerp(
+          halfWidth + 0.65,
+          halfWidth + 3.2,
+          hash01(band, salt)
+        );
+        const height = lerp(0.72, 2.15, hash01(band, salt + 1));
+        this.position.set(lateral, -1, -zDistance);
+        this.quaternion.setFromEuler(new THREE.Euler(
+          0,
+          hash01(band, salt + 3) * Math.PI * 2,
+          side * 0.08
+        ));
+        this.scale.set(
+          lerp(0.7, 1.25, hash01(band, salt + 5)),
+          height,
+          lerp(0.7, 1.18, hash01(band, salt + 6))
+        );
+        this.matrix.compose(this.position, this.quaternion, this.scale);
+        const hue = lerp(0.48, 0.88, hash01(band, salt + 4));
+        this.colour.setHSL(hue, 0.78, 0.34);
+        this.coral.add(lod, this.matrix, this.colour);
+
+        if (index % 3 === 0) {
+          const kelpLod: ArtLod = lod === 0 ? 0 : 1;
+          this.position.x += side * 0.58;
+          this.scale.set(
+            lerp(0.72, 1.1, hash01(band, salt + 7)),
+            lerp(0.72, 1.45, hash01(band, salt + 8)),
+            1
+          );
+          this.matrix.compose(this.position, this.quaternion, this.scale);
+          this.colour.setHSL(
+            lerp(0.46, 0.69, hash01(band, salt + 9)),
+            0.74,
+            0.3
+          );
+          this.kelp.add(kelpLod, this.matrix, this.colour);
+        }
+      }
+    }
+    this.coral.finish();
+    this.kelp.finish();
+  }
+
+  private updateGodRays(
+    forwardDistance: number,
+    momentumFraction: number
+  ): void {
+    const env = this.cfg.environment;
+    const firstBand = Math.floor(
+      (forwardDistance - env.godRayBandSpacing) / env.godRayBandSpacing
+    );
+    for (let index = 0; index < env.godRayCount; index++) {
+      const band = firstBand + index;
       const side = hash01(band, 5055) < 0.5 ? -1 : 1;
-      const lateral = side * lerp(7, 17, hash01(band, 5051));
-      const tilt = lerp(-0.34, 0.34, hash01(band, 5052));
-
-      this.position.set(lateral, env.godRayHeight * 0.42, -(band * env.godRayBandSpacing));
-      this.quaternion.setFromEuler(new THREE.Euler(0, 0, tilt));
+      const lateral = side * lerp(8.5, 17, hash01(band, 5051));
+      this.position.set(
+        lateral,
+        env.godRayHeight * 0.42,
+        -(band * env.godRayBandSpacing)
+      );
+      this.quaternion.setFromEuler(new THREE.Euler(
+        0,
+        0,
+        lerp(-0.22, 0.22, hash01(band, 5052))
+      ));
       this.scale.set(
-        env.godRayWidth * lerp(0.7, 1.5, hash01(band, 5053)),
+        env.godRayWidth * lerp(0.7, 1.45, hash01(band, 5053)),
         env.godRayHeight,
         1
       );
       this.matrix.compose(this.position, this.quaternion, this.scale);
-      this.godRays.setMatrixAt(i, this.matrix);
-
-      // Shafts strengthen slightly with momentum, so the world brightens as the
-      // player does — the same promise the trail and creature glow make.
-      const strength =
-        env.godRayIntensity * lerp(0.5, 1.2, hash01(band, 5054)) * lerp(0.8, 1.25, momentumFraction);
-      this.colour.setRGB(strength * 0.55, strength * 0.85, strength);
-      this.godRays.setColorAt(i, this.colour);
+      this.godRays.setMatrixAt(index, this.matrix);
+      const strength = env.godRayIntensity *
+        lerp(0.5, 1.15, hash01(band, 5054)) *
+        lerp(0.78, 1.2, momentumFraction);
+      this.colour.setRGB(
+        strength * 0.55,
+        strength * 0.85,
+        strength
+      );
+      this.godRays.setColorAt(index, this.colour);
     }
-
     this.godRays.instanceMatrix.needsUpdate = true;
-    if (this.godRays.instanceColor) this.godRays.instanceColor.needsUpdate = true;
-  }
-
-  private updateCoral(forwardDistance: number, lateralPosition: number, dtSec: number): void {
-    const env = this.cfg.environment;
-    const halfWidth = this.cfg.lane.halfWidth;
-    const perSide = Math.floor(env.coralCount / 2);
-    const firstBand = Math.floor((forwardDistance - env.coralBandSpacing * 3) / env.coralBandSpacing);
-    const decay = Math.exp(-env.coralPulseDecayPerSec * dtSec);
-
-    let index = 0;
-    for (let side = -1; side <= 1; side += 2) {
-      for (let i = 0; i < perSide && index < env.coralCount; i++, index++) {
-        const band = firstBand + i;
-        const salt = side > 0 ? 9091 : 1213;
-
-        // A recycled slot must not inherit the previous band's glow.
-        if (this.coralBand[index] !== band) {
-          this.coralBand[index] = band;
-          this.coralPulse[index] = 0;
-        }
-
-        const lateral = side * lerp(halfWidth + 0.35, halfWidth + 2.6, hash01(band, salt));
-        const height = lerp(0.5, 1.9, hash01(band, salt + 1));
-        const z = -(band * env.coralBandSpacing + (hash01(band, salt + 2) - 0.5) * 5);
-
-        this.position.set(lateral, height * 0.5 - 1, z);
-        this.quaternion.setFromEuler(
-          new THREE.Euler(lerp(-0.25, 0.25, hash01(band, salt + 3)), 0, side * 0.12)
-        );
-        this.scale.set(1, height, 1);
-        this.matrix.compose(this.position, this.quaternion, this.scale);
-        this.coral.setMatrixAt(index, this.matrix);
-
-        // --- the response (Part 3.2 priority 5) ---
-        const dz = -forwardDistance - z;
-        const dx = lateralPosition - lateral;
-        const distance = Math.hypot(dx, dz);
-
-        let pulse = (this.coralPulse[index] ?? 0) * decay;
-        if (distance < env.coralPulseRadiusUnits) {
-          // Nearer passes wake it more strongly, so hugging the lane edge —
-          // which is also where near-misses live — lights the world up.
-          const proximity = 1 - distance / env.coralPulseRadiusUnits;
-          pulse = Math.max(pulse, proximity * proximity);
-        }
-        this.coralPulse[index] = pulse;
-
-        const glow = env.coralBaseGlow + env.coralPulseGlow * pulse;
-        const hue = lerp(0.45, 0.86, hash01(band, salt + 4));
-        this.colour.setHSL(hue, 0.85, 0.5).multiplyScalar(glow);
-        this.coral.setColorAt(index, this.colour);
-      }
+    if (this.godRays.instanceColor) {
+      this.godRays.instanceColor.needsUpdate = true;
     }
-
-    this.coral.instanceMatrix.needsUpdate = true;
-    if (this.coral.instanceColor) this.coral.instanceColor.needsUpdate = true;
   }
 
   dispose(): void {

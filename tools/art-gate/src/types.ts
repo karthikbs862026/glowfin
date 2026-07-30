@@ -64,7 +64,7 @@ export interface AssetManifest {
   family: AssetFamily;
   /** Pipeline declaration; enforced against family config, never trusted. */
   collidable: boolean;
-  /** True only for the current primitive renderer during Phase 3A integration. */
+  /** Legacy marker used only by rejection fixtures and unfinished migrations. */
   baselineProcedural?: boolean;
   /** Required for every family configured as collidable. */
   runtimeObstacleId?: string;

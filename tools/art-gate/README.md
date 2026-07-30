@@ -1,12 +1,13 @@
 # Glowfin Phase 3A art gate
 
-This gate lands before production art. It enforces the Concept-First Art Bible
-without allowing an asset manifest to redefine gameplay truth.
+This gate was established before production art and now validates the Phase 3B
+Moon-Garden vertical slice. It enforces the Concept-First Art Bible without
+allowing an asset manifest to redefine gameplay truth.
 
 ## Evidence boundaries
 
-- `src/sim/gateGeometry.ts` is the authoritative procedural collision/visual
-  geometry seam. Collision, primitive rendering and gate evidence all call it.
+- `src/sim/gateGeometry.ts` is the authoritative collision/visual geometry
+  seam. Collision, production wall rendering and gate evidence all call it.
 - Asset manifests contain visual edge samples but **never collider planes**.
 - Runtime collider evidence contains planes, envelopes and source revision.
 - A family configured as collidable remains collidable even if a manifest says
@@ -27,11 +28,11 @@ npm run art-gate:capture:fast
 npm run art-gate:run:fast
 ```
 
-`structural` validates the current procedural build and is expected to pass
-before production assets exist. `fast` renders the reduced four-state matrix.
+`structural` validates the generated production meshes, manifests, collider
+samples and budgets. `fast` renders the reduced four-state matrix.
 `full` renders all 36 state combinations in emulated Chromium. `signoff`
-rejects `baselineProcedural` manifests and additionally requires two
-real-device matrices and performance evidence.
+rejects any remaining `baselineProcedural` manifest and additionally requires
+two real-device matrices and performance evidence.
 
 ## What is enforced
 

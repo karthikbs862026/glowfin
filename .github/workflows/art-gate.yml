@@ -23,7 +23,7 @@ jobs:
           cache: npm
       - name: Gate self-tests
         run: npm run art-gate:test
-      - name: Current procedural baseline
+      - name: Current production-art structure
         run: npm run art-gate:structural
 
   fast:

@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { chromium } from "playwright";
-import { buildProceduralEvidence } from "./proceduralEvidence.ts";
+import { buildVerticalSliceEvidence } from "./verticalSliceEvidence.ts";
 
 function option(name) {
   const index = process.argv.indexOf(`--${name}`);
@@ -49,7 +49,7 @@ try {
   }
 
   mkdirSync(dirname(output), { recursive: true });
-  const evidence = buildProceduralEvidence(revision, bundle.captures);
+  const evidence = buildVerticalSliceEvidence(revision, bundle.captures);
   writeFileSync(output, `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
   await page.screenshot({ path: screenshot, fullPage: true });
   console.log(`wrote ${output}`);

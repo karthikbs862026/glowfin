@@ -119,3 +119,20 @@ per Part 6.8 ("budgets that are advisory get ignored").
 triangles, texture memory, particle pool caps, input-latency budget) must be
 set with reference-device numbers before Phase 2 content production, and
 this ADR should be superseded once that happens.
+
+---
+
+## ADR-0015: Phase 3B Moon-Garden vertical slice
+
+**Context:** The hardened art gate was green, but the playable build still used
+primitive creature, gate, skyline and coral geometry.
+
+**Decision:** Implement the first approved Concept-First Art Bible slice as
+generated, budgeted and regression-tested Three.js geometry: two-draw skinned
+Glowfin; independently truthful LOD wall fragments; instanced broken towers,
+forked spires, coral and kelp; sparse god rays; shared local bioluminescence.
+
+**Consequences:** The direction can be judged in the real game before scaling
+content breadth. The slice has no binary texture payload and stays deterministic,
+but Android and iOS Safari evidence are still required. Full rationale and exact
+budgets are in `adr-0015-phase3b-moon-garden-vertical-slice.md`.

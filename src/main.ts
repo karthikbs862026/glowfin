@@ -1,7 +1,7 @@
 /**
  * Phase 1.5 — the core loop, playable.
  *
- * Wires the deterministic simulation (Run) to the primitive renderer and touch
+ * Wires the deterministic simulation (Run) to the production renderer and touch
  * input. Everything gameplay-relevant lives in src/sim; this file only owns the
  * frame loop, the time scale, and restart.
  */

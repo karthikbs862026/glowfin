@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildProceduralEvidence } from "../integration/proceduralEvidence.ts";
+import { buildVerticalSliceEvidence } from "../integration/verticalSliceEvidence.ts";
 import type {
   EffectState,
   SceneCapture
@@ -44,8 +44,8 @@ function captures(lowContrast = false): SceneCapture[] {
   }));
 }
 
-const pass = buildProceduralEvidence(revision, captures());
-const reject = buildProceduralEvidence(revision, captures(true));
+const pass = buildVerticalSliceEvidence(revision, captures());
+const reject = buildVerticalSliceEvidence(revision, captures(true));
 const rejectedLeft = reject.assets[0]!;
 rejectedLeft.collidable = false;
 for (const sample of rejectedLeft.lods[0]!.playableEdge!.samples.slice(1, 4)) {

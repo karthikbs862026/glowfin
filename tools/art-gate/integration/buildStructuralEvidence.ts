@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { buildProceduralEvidence } from "./proceduralEvidence.ts";
+import { buildVerticalSliceEvidence } from "./verticalSliceEvidence.ts";
 
 function option(name: string): string | undefined {
   const index = process.argv.indexOf(`--${name}`);
@@ -18,7 +18,7 @@ const revision = option("revision") ?? execFileSync(
 mkdirSync(dirname(output), { recursive: true });
 writeFileSync(
   output,
-  `${JSON.stringify(buildProceduralEvidence(revision), null, 2)}\n`,
+  `${JSON.stringify(buildVerticalSliceEvidence(revision), null, 2)}\n`,
   "utf8"
 );
 console.log(`wrote ${output}`);

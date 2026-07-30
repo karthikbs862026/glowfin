@@ -3,19 +3,18 @@
   "runtimeRevision": "fixture-runtime-revision",
   "assets": [
     {
-      "name": "procedural-left-wall",
+      "name": "moon-garden-left-wall-fragment",
       "family": "wallFragment",
       "collidable": false,
-      "baselineProcedural": true,
       "runtimeObstacleId": "procedural-gate-left",
       "materials": 1,
       "textureMemoryMB": 0,
       "contour": "collision-cyan",
-      "maxReliefDepth": 0,
+      "maxReliefDepth": 0.07,
       "lods": [
         {
           "level": 0,
-          "triangles": 12,
+          "triangles": 1436,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -47,23 +46,92 @@
               }
             ]
           }
+        },
+        {
+          "level": 1,
+          "triangles": 596,
+          "playableEdge": {
+            "axis": "x",
+            "gapDirection": 1,
+            "samples": [
+              {
+                "height": -0.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 0.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 1.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 2.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 3,
+                "depth": 0,
+                "visualPlane": -2
+              }
+            ]
+          }
+        },
+        {
+          "level": 2,
+          "triangles": 146,
+          "playableEdge": {
+            "axis": "x",
+            "gapDirection": 1,
+            "samples": [
+              {
+                "height": -0.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 0.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 1.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 2.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 3,
+                "depth": 0,
+                "visualPlane": -2
+              }
+            ]
+          }
         }
       ]
     },
     {
-      "name": "procedural-right-wall",
+      "name": "moon-garden-right-wall-fragment",
       "family": "wallFragment",
       "collidable": true,
-      "baselineProcedural": true,
       "runtimeObstacleId": "procedural-gate-right",
       "materials": 1,
       "textureMemoryMB": 0,
       "contour": "collision-cyan",
-      "maxReliefDepth": 0,
+      "maxReliefDepth": 0.07,
       "lods": [
         {
           "level": 0,
-          "triangles": 12,
+          "triangles": 1436,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -95,6 +163,211 @@
               }
             ]
           }
+        },
+        {
+          "level": 1,
+          "triangles": 596,
+          "playableEdge": {
+            "axis": "x",
+            "gapDirection": -1,
+            "samples": [
+              {
+                "height": -0.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 0.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 1.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 2.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 3,
+                "depth": 0,
+                "visualPlane": 2
+              }
+            ]
+          }
+        },
+        {
+          "level": 2,
+          "triangles": 146,
+          "playableEdge": {
+            "axis": "x",
+            "gapDirection": -1,
+            "samples": [
+              {
+                "height": -0.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 0.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 1.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 2.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 3,
+                "depth": 0,
+                "visualPlane": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "glowfin-vertical-slice",
+      "family": "glowfin",
+      "collidable": false,
+      "materials": 2,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "bones": 10,
+      "maxTextureSizePx": 0,
+      "clips": [
+        "breathe",
+        "propulsion",
+        "bank",
+        "collisionSquash",
+        "recovery"
+      ],
+      "animationDriver": "simulation",
+      "observedStates": [
+        "calm",
+        "mid",
+        "max",
+        "collision",
+        "recovery"
+      ],
+      "viewportWidthFraction": 0.09,
+      "eyeGlowPixels": 5,
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 7240
+        },
+        {
+          "level": 1,
+          "triangles": 3104
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-broken-tower",
+      "family": "brokenTower",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 4384
+        },
+        {
+          "level": 1,
+          "triangles": 1592
+        },
+        {
+          "level": 2,
+          "triangles": 508
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-forked-spire",
+      "family": "spire",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 1960
+        },
+        {
+          "level": 1,
+          "triangles": 868
+        },
+        {
+          "level": 2,
+          "triangles": 240
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-medium-coral",
+      "family": "mediumCoral",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 920
+        },
+        {
+          "level": 1,
+          "triangles": 432
+        },
+        {
+          "level": 2,
+          "triangles": 96
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-ribbon-kelp",
+      "family": "ribbonKelp",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 416
+        },
+        {
+          "level": 1,
+          "triangles": 120
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-god-ray",
+      "family": "godRayMesh",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 12
         }
       ]
     }

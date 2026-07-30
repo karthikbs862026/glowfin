@@ -1,5 +1,5 @@
 /**
- * Deterministic browser capture harness for the Phase 3A fast/full tiers.
+ * Deterministic browser capture harness for the production-art fast/full tiers.
  *
  * It renders one known gate pair so every capture necessarily has a local
  * obstacle sample. The harness is CI-emulated evidence only; real Android/iOS

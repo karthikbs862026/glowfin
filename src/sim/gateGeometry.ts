@@ -25,7 +25,7 @@ export interface GateWallGeometry {
   gapDirection: 1 | -1;
   /** Wall width from the lane boundary to the playable edge. */
   width: number;
-  /** World-space centre used by the primitive renderer. */
+  /** World-space centre used by every runtime visual LOD. */
   centreX: number;
 }
 

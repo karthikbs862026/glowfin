@@ -50,10 +50,11 @@ describe("creature configuration (Part 3.1)", () => {
   });
 
   it("the creature's draw calls fit the budget alongside the scene", () => {
-    // body + 2 eyes + 2 fins + tail + 6 gills = 12 meshes, and the scene was
-    // measured at 48 draws with the old single-sphere creature.
-    const creatureMeshes = 12;
-    const measuredSceneDraws = 48;
-    expect(measuredSceneDraws - 1 + creatureMeshes).toBeLessThan(budgets.scene.maxDrawCalls);
+    // One skinned body mesh plus one combined emissive-eye mesh.
+    const creatureDraws = 2;
+    const conservativeSceneWithoutCreature = 72;
+    expect(conservativeSceneWithoutCreature + creatureDraws).toBeLessThan(
+      budgets.scene.maxDrawCalls
+    );
   });
 });

@@ -1,7 +1,7 @@
 {
   "$schema": "./art-budgets.schema.json",
   "configVersion": "1.1.0",
-  "sourceOfTruth": "Glowfin Phase 3 Concept-First Art Bible v1; runtime baseline 75c661b",
+  "sourceOfTruth": "Glowfin Phase 3 Concept-First Art Bible v1; Phase 3B vertical-slice production manifest",
   "scene": {
     "drawCalls": { "hard": 90, "minSpikeHeadroom": 12 },
     "triangles": { "warning": 120000, "hard": 150000 },
@@ -69,7 +69,7 @@
   },
   "assetFamilies": {
     "glowfin": { "lod0": [6000, 8000], "lod1": [3000, 4000], "lod2": null, "maxMaterials": 2, "strategy": "single-skinned-mesh", "collidable": false },
-    "brokenTower": { "lod0": [3500, 4500], "lod1": [1500, 2200], "lod2": [400, 700], "maxMaterials": 1, "strategy": "instanced-archetype", "collidable": true },
+    "brokenTower": { "lod0": [3500, 4500], "lod1": [1500, 2200], "lod2": [400, 700], "maxMaterials": 1, "strategy": "outside-lane-instanced-archetype", "collidable": false },
     "collapsedArchPair": { "lod0": [4000, 5000], "lod1": [1800, 2500], "lod2": [500, 800], "maxMaterials": 1, "strategy": "mirrored-modules", "collidable": true },
     "spire": { "lod0": [1500, 2000], "lod1": [600, 900], "lod2": [150, 300], "maxMaterials": 1, "strategy": "background-instancing", "collidable": false },
     "wallFragment": { "lod0": [1000, 1600], "lod1": [450, 800], "lod2": [120, 250], "maxMaterials": 1, "strategy": "core-gate-archetype", "collidable": true },

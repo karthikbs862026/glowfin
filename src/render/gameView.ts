@@ -1,21 +1,13 @@
 /**
- * Primitive-shape renderer for Phase 1 (Part 9: "primitives only").
+ * Production renderer for the Phase 3B Moon-Garden vertical slice.
  *
- * No shaders, no art — the point is to make the simulation playable and
- * readable so the tuning can be judged by hand instead of only by synthetic
- * pilots. Caustics, trail ribbon and the rest arrive in Phase 2.
- *
- * Everything repeated is pooled and hard-capped (Part 3.3, 4.3). Nothing here
- * allocates per frame.
+ * Gameplay remains bound to deterministic simulation data. Repeated art is
+ * instanced, LOD-bucketed and hard-capped; no art collection grows per frame.
  */
 import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
 import type { Gate } from "../sim/course";
 import type { SimState } from "../sim/state";
-import {
-  gateWallGeometry,
-  PROCEDURAL_GATE_VISUAL
-} from "../sim/gateGeometry";
 import {
   createCausticMaterial,
   setCausticOctaves,
@@ -30,22 +22,17 @@ import { readGpuName } from "../perf/metrics";
 import { TrailRibbon } from "./trail";
 import { Creature } from "./creature";
 import { Environment } from "./environment";
+import { MoonGardenGates } from "./gateArt";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 
 /** Hard caps. Part 4.6 requires pool sizes be part of the performance budget. */
-const MAX_POOLED_GATES = 16;
 const MAX_POOLED_STRIPES = 40;
 const STRIPE_SPACING_UNITS = 14;
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
-}
-
-interface GateVisual {
-  left: THREE.Mesh;
-  right: THREE.Mesh;
 }
 
 export class GameView {
@@ -55,6 +42,7 @@ export class GameView {
 
   private readonly creature: Creature;
   private readonly environment: Environment;
+  private readonly gates: MoonGardenGates;
   private readonly floorMaterial: THREE.ShaderMaterial;
   private readonly wallMaterial: THREE.ShaderMaterial;
   private readonly trail: TrailRibbon;
@@ -106,7 +94,6 @@ export class GameView {
   private readonly savedMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
   private maskMode = false;
   readonly gpuName: string;
-  private readonly gatePool: GateVisual[] = [];
   private readonly stripePool: THREE.Mesh[] = [];
   private readonly disposables: Array<{ dispose(): void }> = [];
 
@@ -180,69 +167,32 @@ export class GameView {
 
     // --- lane edges: the player needs a fixed reference to read lateral position ---
     const edgeGeo = new THREE.BoxGeometry(0.25, 0.5, 4000);
-    const edgeMat = new THREE.MeshStandardMaterial({
+    const navigationMaterial = new THREE.MeshStandardMaterial({
       color: 0x0d2a3a,
       emissive: 0x18506b,
       emissiveIntensity: 0.8
     });
     for (const sign of [-1, 1]) {
-      const edge = new THREE.Mesh(edgeGeo, edgeMat);
+      const edge = new THREE.Mesh(edgeGeo, navigationMaterial);
       edge.position.set(sign * halfWidth, -0.8, 0);
       this.scene.add(edge);
     }
-    this.disposables.push(edgeGeo, edgeMat);
+    this.disposables.push(edgeGeo, navigationMaterial);
 
     // --- speed stripes: without moving reference objects, speed is invisible ---
     const stripeGeo = new THREE.BoxGeometry(halfWidth * 2 * 0.9, 0.06, 0.7);
-    const stripeMat = new THREE.MeshStandardMaterial({
-      color: 0x102a3d,
-      emissive: 0x1d4f70,
-      emissiveIntensity: 0.6
-    });
     for (let i = 0; i < MAX_POOLED_STRIPES; i++) {
-      const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+      const stripe = new THREE.Mesh(stripeGeo, navigationMaterial);
       stripe.position.y = -0.95;
       this.scene.add(stripe);
       this.stripePool.push(stripe);
     }
-    this.disposables.push(stripeGeo, stripeMat);
+    this.disposables.push(stripeGeo);
 
-    // --- gate walls: one shared unit box, scaled per gate ---
-    const wallGeo = new THREE.BoxGeometry(1, 1, 1);
-    // Caustics contribute *additively* on top of a base colour chosen to sit
-    // well clear of the background. That is deliberate: an additive term can
-    // only brighten an obstacle, never darken it, so no lighting state can push
-    // a silhouette below the Part 3.4 contrast floor. A multiplicative or
-    // shadowing term could, which is why this is not one.
-    this.wallMaterial = createCausticMaterial({
-      baseColor: 0x1b4668,
-      causticColor: 0x63e0ff,
-      scale: cfg.visual.causticScaleWall,
-      intensity: cfg.visual.causticIntensityWall,
-      sharpness: cfg.visual.causticSharpness,
-      speed: cfg.visual.causticSpeed,
-      fogColor: 0x04060f,
-      fogNear,
-      fogFar,
-      octaves: 3,
-      edgeStrength: cfg.visual.obstacleEdgeStrength,
-      edgeWidthPixels: cfg.visual.obstacleEdgeWidthPixels,
-      edgeColor: 0xbdf4ff
-    });
-    const wallMat = this.wallMaterial;
-    for (let i = 0; i < MAX_POOLED_GATES; i++) {
-      const left = new THREE.Mesh(wallGeo, wallMat);
-      const right = new THREE.Mesh(wallGeo, wallMat);
-      // Tagged so the contrast probe can identify obstacle silhouettes without
-      // the renderer keeping a parallel list in sync.
-      left.userData["isObstacle"] = true;
-      right.userData["isObstacle"] = true;
-      left.visible = false;
-      right.visible = false;
-      this.scene.add(left, right);
-      this.gatePool.push({ left, right });
-    }
-    this.disposables.push(wallGeo, this.wallMaterial);
+    // --- game-ready wall-fragment kit with independently truthful contours ---
+    this.gates = new MoonGardenGates(cfg);
+    this.wallMaterial = this.gates.material;
+    for (const object of this.gates.objects) this.scene.add(object);
 
     // --- creature (Part 3.1) ---
     this.creature = new Creature(cfg);
@@ -415,7 +365,7 @@ export class GameView {
     return {
       activeMaterials: materials.size,
       godRayMeshes: this.cfg.environment.godRayCount,
-      // Current Phase 3A procedural build has no resident art textures.
+      // This code-native slice uses vertex colour and shaders, not textures.
       textureMemoryMB: 0
     };
   }
@@ -459,7 +409,26 @@ export class GameView {
 
     // --- creature (Part 3.1) ---
     this.creature.group.position.set(sim.lateralPosition, 0, worldZ);
-    this.creature.update(momentumFraction, lightFraction, sim.smoothedSteering, frameSec);
+    const collisionFraction = cfg.momentum.stunDurationSec <= 0
+      ? 0
+      : Math.min(1, sim.stunRemainingSec / cfg.momentum.stunDurationSec);
+    const recoveryFraction =
+      sim.stunRemainingSec <= 0 &&
+      cfg.momentum.invulnerabilityDurationSec > 0
+        ? Math.min(
+          1,
+          sim.invulnerableRemainingSec /
+            cfg.momentum.invulnerabilityDurationSec
+        )
+        : 0;
+    this.creature.update(
+      momentumFraction,
+      lightFraction,
+      sim.smoothedSteering,
+      frameSec,
+      collisionFraction,
+      recoveryFraction
+    );
 
     // --- camera (Part 4.5: readability at speed) ---
     const behind = lerp(
@@ -496,12 +465,11 @@ export class GameView {
     this.environment.update(
       sim.forwardDistance,
       sim.lateralPosition,
-      momentumFraction,
-      frameSec
+      momentumFraction
     );
 
     this.updateStripes(sim.forwardDistance);
-    this.updateGates(sim.forwardDistance, gates);
+    this.gates.update(sim.forwardDistance, gates);
 
     if (this.bloomEnabled) this.composer.render();
     else this.renderer.render(this.scene, this.camera);
@@ -516,66 +484,6 @@ export class GameView {
     }
   }
 
-  private updateGates(distance: number, gates: readonly Gate[]): void {
-    const cfg = this.cfg;
-    const halfWidth = cfg.lane.halfWidth;
-    const near = distance - 25;
-    const far = distance + cfg.readability.visibleAheadUnits * 1.6;
-
-    let slot = 0;
-    for (const gate of gates) {
-      if (gate.distance < near) continue;
-      if (gate.distance > far) break;
-      const visual = this.gatePool[slot];
-      if (!visual) break; // pool exhausted: hard cap, never grow at runtime
-      slot++;
-
-      const z = -gate.distance;
-      const [leftWall, rightWall] = gateWallGeometry(gate, halfWidth);
-
-      if (leftWall.width > 0.01) {
-        visual.left.visible = true;
-        visual.left.scale.set(
-          leftWall.width,
-          PROCEDURAL_GATE_VISUAL.wallHeight,
-          PROCEDURAL_GATE_VISUAL.wallDepth
-        );
-        visual.left.position.set(
-          leftWall.centreX,
-          PROCEDURAL_GATE_VISUAL.wallHeight / 2 +
-            PROCEDURAL_GATE_VISUAL.wallFloorY,
-          z
-        );
-      } else {
-        visual.left.visible = false;
-      }
-
-      if (rightWall.width > 0.01) {
-        visual.right.visible = true;
-        visual.right.scale.set(
-          rightWall.width,
-          PROCEDURAL_GATE_VISUAL.wallHeight,
-          PROCEDURAL_GATE_VISUAL.wallDepth
-        );
-        visual.right.position.set(
-          rightWall.centreX,
-          PROCEDURAL_GATE_VISUAL.wallHeight / 2 +
-            PROCEDURAL_GATE_VISUAL.wallFloorY,
-          z
-        );
-      } else {
-        visual.right.visible = false;
-      }
-    }
-
-    for (let i = slot; i < this.gatePool.length; i++) {
-      const visual = this.gatePool[i];
-      if (!visual) continue;
-      visual.left.visible = false;
-      visual.right.visible = false;
-    }
-  }
-
   /** Release GPU resources. Full context-loss rebuild is Phase 5 (Part 4.3). */
   dispose(): void {
     window.removeEventListener("resize", this.handleResize);
@@ -583,6 +491,7 @@ export class GameView {
     this.trail.dispose();
     this.creature.dispose();
     this.environment.dispose();
+    this.gates.dispose();
     this.maskObstacle.dispose();
     this.maskOther.dispose();
     this.composer.dispose();

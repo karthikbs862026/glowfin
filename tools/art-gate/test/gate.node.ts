@@ -36,7 +36,7 @@ const codes = (items: { code: string }[]) => items.map((item) => item.code);
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 describe("integrated gate fixtures", () => {
-  test("current procedural baseline passes the structural tier", () => {
+  test("current production vertical slice passes the structural tier", () => {
     const result = runGate(load("gate-input.pass.json"), config, "structural");
     assert.equal(result.passed, true);
     assert.equal(result.counts.blocker, 0);
@@ -60,7 +60,9 @@ describe("integrated gate fixtures", () => {
   });
 
   test("procedural baseline cannot masquerade as release art", () => {
-    const result = runGate(load("gate-input.pass.json"), config, "signoff");
+    const input = load("gate-input.pass.json");
+    input.assets[0]!.baselineProcedural = true;
+    const result = runGate(input, config, "signoff");
     assert.ok(codes(result.findings).includes("PROCEDURAL_BASELINE_NOT_RELEASEABLE"));
   });
 });
@@ -211,7 +213,9 @@ describe("manifest completeness", () => {
 
   test("production family must include every budgeted LOD", () => {
     const input = load("gate-input.pass.json");
-    input.assets[0]!.baselineProcedural = false;
+    input.assets[0]!.lods = input.assets[0]!.lods.filter(
+      (lod) => lod.level !== 2
+    );
     const result = runGate(input, config, "structural");
     assert.ok(codes(result.findings).includes("LOD_REQUIRED_MISSING"));
   });
