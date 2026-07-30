@@ -141,6 +141,17 @@ export interface SceneCapture {
   godRayMeshes: number;
   frameContrastRatios: number[];
   obstacles: ObstacleContrast[];
+  /** Bounded attribution evidence for failed browser samples. */
+  contrastDiagnostics?: {
+    failureCount: number;
+    lowest: Array<{
+      ratio: number;
+      x: number;
+      y: number;
+      insideLuminance: number;
+      outsideLuminance: number;
+    }>;
+  };
 }
 
 export interface RenderEvidence {

@@ -185,7 +185,13 @@ export function runArtGateCapture(
       obstacles: [{
         obstacleId: "moon-garden-wall-fragments",
         ratios: report.ratios
-      }]
+      }],
+      contrastDiagnostics: {
+        failureCount: report.failures.length,
+        lowest: [...report.failures]
+          .sort((left, right) => left.ratio - right.ratio)
+          .slice(0, 24)
+      }
     });
   }
 
