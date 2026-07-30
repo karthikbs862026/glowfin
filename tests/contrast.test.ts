@@ -142,6 +142,13 @@ describe("silhouette analysis", () => {
     // With the seam skipped this should still read as near-maximum contrast.
     expect(report.minRatio).toBeGreaterThan(15);
   });
+
+  it("uses the farthest valid inset on a low-resolution contour", () => {
+    const buffers = makeBuffers(40, 8, [255, 255, 255], [0, 0, 0], 18, 21);
+    const report = analyseContrast(buffers, 3, { rowStride: 1, offsetPx: 3 });
+    expect(report.samplesTaken).toBe(16);
+    expect(report.minRatio).toBeGreaterThan(15);
+  });
 });
 
 describe("three-state mask (distant obstacles)", () => {
