@@ -96,8 +96,9 @@ function luminanceAt(beauty: Uint8Array, index: number): number {
  *
  * `offsetPx` is the preferred maximum distance from the exact edge. The probe
  * searches inward from that distance so a lower-resolution but still-visible
- * contour is measured at its farthest solid pixel rather than discarded. It
- * never samples the antialiased boundary pixel itself.
+ * contour is measured at its farthest solid pixel rather than discarded. The
+ * final fallback uses the two firmly classified pixels across the transition;
+ * mid-value antialias pixels are excluded by the mask thresholds.
  */
 /**
  * Fraction of boundary samples allowed to fall below the floor.
@@ -143,7 +144,7 @@ export function analyseContrast(
 
       let insideIndex = -1;
       let outsideIndex = -1;
-      for (let distance = offset; distance >= 1; distance--) {
+      for (let distance = offset; distance >= 0; distance--) {
         const candidateInside =
           rowStart + (hereObstacle ? x - distance : x + 1 + distance) * 4;
         const candidateOutside =

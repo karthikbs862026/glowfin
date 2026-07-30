@@ -149,6 +149,13 @@ describe("silhouette analysis", () => {
     expect(report.samplesTaken).toBe(16);
     expect(report.minRatio).toBeGreaterThan(15);
   });
+
+  it("measures a one-pixel contour from firmly classified transition pixels", () => {
+    const buffers = makeBuffers(40, 8, [255, 255, 255], [0, 0, 0], 20, 21);
+    const report = analyseContrast(buffers, 3, { rowStride: 1, offsetPx: 3 });
+    expect(report.samplesTaken).toBe(16);
+    expect(report.passed).toBe(true);
+  });
 });
 
 describe("three-state mask (distant obstacles)", () => {
