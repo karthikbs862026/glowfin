@@ -109,7 +109,7 @@ export class Environment {
     const fogNear = cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier;
     const fogFar = cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier;
     this.material = createMoonGardenMaterial({
-      fogColor: 0x0a263b,
+      fogColor: 0x12364c,
       fogNear,
       fogFar,
       glowRadius: env.coralPulseRadiusUnits

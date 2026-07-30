@@ -192,7 +192,7 @@ export function runArtGateCapture(
   // Leave the framebuffer on a representative beauty render for the uploaded
   // PNG. The mask render above is evidence data, not a useful visual review.
   const previewState: EffectState = {
-    momentum: "max",
+    momentum: "mid",
     bloom: true,
     caustics: true,
     quality: "high"

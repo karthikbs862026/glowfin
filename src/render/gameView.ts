@@ -139,9 +139,9 @@ export class GameView {
       backgroundCanvas.height
     );
     backgroundGradient.addColorStop(0, "#020817");
-    backgroundGradient.addColorStop(0.48, "#071b31");
-    backgroundGradient.addColorStop(0.76, "#0b2940");
-    backgroundGradient.addColorStop(1, "#071725");
+    backgroundGradient.addColorStop(0.48, "#0b2942");
+    backgroundGradient.addColorStop(0.76, "#17425a");
+    backgroundGradient.addColorStop(1, "#0e2a3d");
     backgroundContext.fillStyle = backgroundGradient;
     backgroundContext.fillRect(
       0,
@@ -163,7 +163,7 @@ export class GameView {
     // out at exactly the distance Part 4.5 requires them to stay readable, and
     // the probe caught it as near-black obstacles on a near-black background.
     this.scene.fog = new THREE.Fog(
-      0x0a263b,
+      0x12364c,
       cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier,
       cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier
     );
@@ -193,7 +193,7 @@ export class GameView {
     // while the narrower route keeps the playable corridor legible.
     const seabedGeo = new THREE.PlaneGeometry(72, 4000);
     const seabedMaterial = new THREE.MeshStandardMaterial({
-      color: 0x123346,
+      color: 0x1c4658,
       roughness: 1,
       metalness: 0
     });
@@ -205,13 +205,13 @@ export class GameView {
 
     const floorGeo = new THREE.PlaneGeometry(halfWidth * 2.05, 4000);
     this.floorMaterial = createCausticMaterial({
-      baseColor: 0x285a72,
+      baseColor: 0x3d7185,
       causticColor: 0x2ea8d8,
       scale: cfg.visual.causticScaleFloor,
       intensity: cfg.visual.causticIntensityFloor,
       sharpness: cfg.visual.causticSharpness,
       speed: cfg.visual.causticSpeed,
-      fogColor: 0x0a263b,
+      fogColor: 0x12364c,
       fogNear,
       fogFar,
       octaves: 3
@@ -247,11 +247,11 @@ export class GameView {
     );
     inlayGeo.rotateX(-Math.PI / 2);
     inlayGeo.rotateZ(-Math.PI * 0.59);
-    inlayGeo.scale(2.15, 1, 0.74);
+    inlayGeo.scale(0.95, 1, 0.35);
     const inlayMaterial = new THREE.MeshBasicMaterial({
       color: 0x55bdd7,
       transparent: true,
-      opacity: 0.09,
+      opacity: 0.045,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       toneMapped: false

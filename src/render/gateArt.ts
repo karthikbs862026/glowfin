@@ -56,7 +56,7 @@ export class MoonGardenGates {
       scale: cfg.visual.causticScaleWall,
       intensity: cfg.visual.causticIntensityWall,
       sharpness: cfg.visual.causticSharpness,
-      fogColor: 0x0a263b,
+      fogColor: 0x12364c,
       fogNear,
       fogFar,
       octaves: 3

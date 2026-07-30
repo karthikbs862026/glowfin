@@ -90,7 +90,7 @@ const FRAGMENT = /* glsl */ `
 
     vec3 colour = vColour * broadWash * topLight;
     colour *= 1.0 - joint * 0.20 * stoneWeight;
-    colour += vec3(0.035, 0.075, 0.105) * stoneWeight;
+    colour += vec3(0.055, 0.12, 0.15) * stoneWeight;
     colour += awakened * wake * mix(0.32, 0.84, uMomentum);
 
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
@@ -250,7 +250,8 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
 
     vec3 colour = vColour * wash * mix(0.72, 1.16, keyLight);
     colour *= 1.0 - joint * 0.18;
-    colour += vec3(0.025, 0.065, 0.085);
+    float stoneWeight = 1.0 - smoothstep(0.28, 0.66, vGlowWeight);
+    colour += vec3(0.09, 0.18, 0.23) * stoneWeight;
     colour += uCausticColor * pattern * uIntensity * facing;
     colour += vColour * vGlowWeight * 0.08;
 
