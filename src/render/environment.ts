@@ -119,7 +119,7 @@ const LIFE_RECTS: readonly UvRect[] = [
   { uMin: 0.75, vMin: 0, uMax: 1, vMax: 0.25 }
 ];
 
-const POINT_COUNT = 81;
+const POINT_COUNT = 129;
 
 export class Environment {
   readonly objects: THREE.Object3D[] = [];
@@ -182,7 +182,7 @@ export class Environment {
         this.disposables
       )
     );
-    const lifeCaps = [8, 6, 4, 8];
+    const lifeCaps = [10, 8, 5, 10];
     this.life = LIFE_RECTS.map((rect, index) =>
       new InstancedBillboardFamily(
         this.worldMaterial,
@@ -259,7 +259,7 @@ export class Environment {
     const colours = new Float32Array(POINT_COUNT * 3);
     for (let index = 0; index < POINT_COUNT; index++) {
       const isMoon = index === 0;
-      sizes[index] = isMoon ? 22 : lerp(0.32, 0.72, hash01(index, 601));
+      sizes[index] = isMoon ? 22 : lerp(0.42, 0.95, hash01(index, 601));
       colours[index * 3] = isMoon ? 0.32 : lerp(0.35, 0.75, hash01(index, 602));
       colours[index * 3 + 1] = isMoon ? 0.78 : lerp(0.62, 0.9, hash01(index, 603));
       colours[index * 3 + 2] = 1;
@@ -436,16 +436,21 @@ export class Environment {
         const zDistance = band * env.coralBandSpacing +
           (hash01(band, salt + 2) - 0.5) * env.coralBandSpacing * 0.55;
         const heroScale = positiveMod(band, 9) === 0 ? 1.28 : 1;
-        const height = lerp(1.35, 4.1, hash01(band, salt + 1)) * heroScale;
+        const height = lerp(1.2, 4, hash01(band, salt + 1)) * heroScale;
         const widthScale = lerp(0.9, 1.34, hash01(band, salt + 5));
         // Place from the atlas silhouette's inner edge, not its centre. This
         // lets large foreground reef form a continuous bank without ever
         // teaching the player that decoration inside the lane is collidable.
         const halfVisualWidth = height * widthScale * 0.5;
+        // Most clusters hug the safe edge to form the continuous garden banks
+        // promised by the acceptance target. A squared distribution still
+        // scatters occasional clusters deeper into the world, avoiding a
+        // hedge-like line while retaining the exact same safety calculation.
+        const depthIntoBank = Math.pow(hash01(band, salt), 2.25);
         const lateral = side * lerp(
           halfWidth + halfVisualWidth + 0.28,
-          halfWidth + halfVisualWidth + 4.9,
-          hash01(band, salt)
+          halfWidth + halfVisualWidth + 3.6,
+          depthIntoBank
         );
         this.position.set(lateral, -1.02, -zDistance);
         this.quaternion.setFromEuler(new THREE.Euler(
@@ -483,7 +488,7 @@ export class Environment {
   private updateLife(forwardDistance: number, time: number): void {
     for (const family of this.life) family.begin();
 
-    const fishCount = Math.max(2, Math.round(7 * this.density));
+    const fishCount = Math.max(2, Math.round(10 * this.density));
     const fishFirst = Math.floor((forwardDistance - 12) / 25);
     for (let index = 0; index < fishCount; index++) {
       const band = fishFirst + index;
@@ -491,7 +496,7 @@ export class Environment {
       const direction = hash01(band, 811) < 0.5 ? -1 : 1;
       this.position.set(
         Math.sin(phase) * 10.5,
-        lerp(4.2, 9.8, hash01(band, 812)) + Math.sin(phase * 0.7) * 0.5,
+        lerp(4.2, 12.8, hash01(band, 812)) + Math.sin(phase * 0.7) * 0.5,
         -(band * 25 + hash01(band, 813) * 6)
       );
       this.quaternion.identity();
@@ -502,7 +507,7 @@ export class Environment {
       this.life[0]?.add(this.matrix, this.colour);
     }
 
-    const jellyCount = Math.max(2, Math.round(5 * this.density));
+    const jellyCount = Math.max(2, Math.round(8 * this.density));
     const jellyFirst = Math.floor((forwardDistance - 20) / 38);
     for (let index = 0; index < jellyCount; index++) {
       const band = jellyFirst + index;
@@ -523,7 +528,7 @@ export class Environment {
       this.life[1]?.add(this.matrix, this.colour);
     }
 
-    const rayCount = Math.max(1, Math.round(3 * this.density));
+    const rayCount = Math.max(1, Math.round(5 * this.density));
     const rayFirst = Math.floor((forwardDistance - 15) / 58);
     for (let index = 0; index < rayCount; index++) {
       const band = rayFirst + index;
@@ -541,7 +546,7 @@ export class Environment {
       this.life[2]?.add(this.matrix, this.colour);
     }
 
-    const spiritCount = Math.max(2, Math.round(6 * this.density));
+    const spiritCount = Math.max(2, Math.round(10 * this.density));
     const spiritFirst = Math.floor((forwardDistance - 10) / 22);
     for (let index = 0; index < spiritCount; index++) {
       const band = spiritFirst + index;
@@ -567,7 +572,7 @@ export class Environment {
     // A quiet moon-disc/bioluminescent source sits high above the open
     // corridor, rather than merging with the gate at the horizon.
     this.pointPositions.setXYZ(0, 0, 17.5, -forwardDistance - 124);
-    const activeMotes = Math.max(20, Math.floor((POINT_COUNT - 1) * this.density));
+    const activeMotes = Math.max(28, Math.floor((POINT_COUNT - 1) * this.density));
     const firstBand = Math.floor((forwardDistance - 18) / 5);
     for (let index = 1; index < POINT_COUNT; index++) {
       if (index > activeMotes) {
