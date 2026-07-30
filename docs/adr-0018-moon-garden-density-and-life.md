@@ -38,6 +38,9 @@ had large empty gaps, and nothing except Glowfin moved.
 - Give the caustic floor its own isotropic texture transform. Reusing the
   seabed mesh's 72×4000 UV repeat in a world-space shader stretched authored
   gravel into horizontal racetrack bands.
+- Darken only beyond the authoritative lane half-width and add a faint,
+  irregular moon-track at the centre. This creates route hierarchy without a
+  raised road, rails or false collision boundary.
 - Scale all non-gameplay density to 1.0 / 0.68 / 0.38 on high / medium / low
   quality tiers.
 - Treat browser page errors and shader/WebGL console errors as capture
