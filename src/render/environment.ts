@@ -93,6 +93,7 @@ class InstancedVolumeFamily {
 
 export interface MoonGardenTextures {
   surfaceMap: THREE.Texture;
+  livingMap: THREE.Texture;
 }
 
 const POINT_COUNT = 129;
@@ -131,7 +132,8 @@ export class Environment {
       fogNear,
       fogFar,
       glowRadius: cfg.environment.coralPulseRadiusUnits,
-      surfaceMap: textures.surfaceMap
+      surfaceMap: textures.surfaceMap,
+      livingMap: textures.livingMap
     });
     this.disposables.push(this.volumeMaterial);
 
@@ -328,7 +330,7 @@ export class Environment {
     const count = Math.max(6, Math.floor(env.buildingCount * this.density));
     const perSide = Math.floor(count / 2);
     const firstBand = Math.ceil(
-      (forwardDistance + 38) / env.buildingBandSpacing
+      (forwardDistance + 68) / env.buildingBandSpacing
     );
     for (const family of this.architecture) family.begin();
 
@@ -340,13 +342,13 @@ export class Environment {
         const zDistance = band * env.buildingBandSpacing +
           (hash01(band, salt + 4) - 0.5) * env.buildingBandSpacing * 0.45;
         const lateral = lerp(
-          Math.max(10.5, env.buildingLateralMin),
+          Math.max(12, env.buildingLateralMin),
           env.buildingLateralMax,
           hash01(band, salt + 3)
         );
         const height = lerp(
-          env.buildingMinHeight * 0.72,
-          Math.min(9.2, env.buildingMaxHeight),
+          env.buildingMinHeight * 0.66,
+          Math.min(6.8, env.buildingMaxHeight),
           Math.pow(hash01(band, salt), 1.5)
         );
         const family = this.architecture[variant];
@@ -528,7 +530,7 @@ export class Environment {
       const phase = time * 0.72 + band * 1.91;
       const direction = hash01(band, 811) < 0.5 ? -1 : 1;
       this.position.set(
-        Math.sin(phase) * 10.5,
+        Math.sin(phase) * 8.2,
         lerp(4.2, 12.8, hash01(band, 812)) + Math.sin(phase * 0.7) * 0.5,
         -(band * 25 + hash01(band, 813) * 6)
       );
@@ -547,7 +549,7 @@ export class Environment {
       const side = hash01(band, 821) < 0.5 ? -1 : 1;
       const rise = positiveMod(time * 0.48 + hash01(band, 822) * 9, 9);
       this.position.set(
-        side * lerp(7.8, 15, hash01(band, 823)) +
+        side * lerp(6.2, 10.8, hash01(band, 823)) +
           Math.sin(time * 0.45 + band) * 0.65,
         1.2 + rise,
         -(band * 38 + 8)
@@ -567,7 +569,7 @@ export class Environment {
       const band = rayFirst + index;
       const phase = time * 0.28 + band * 2.4;
       this.position.set(
-        Math.sin(phase) * 13,
+        Math.sin(phase) * 9.4,
         9.5 + Math.sin(phase * 1.4) * 1.8,
         -(band * 58 + 24)
       );

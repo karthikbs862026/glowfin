@@ -302,6 +302,6 @@ export function buildVerticalSliceEvidence(
         laneWidthFractionAtMaxMomentum: 1.45 / (LANE_HALF_WIDTH * 2)
       }
     },
-    compressedArtPayloadMB: 0.09
+    compressedArtPayloadMB: 0.16
   };
 }

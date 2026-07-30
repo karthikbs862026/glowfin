@@ -203,3 +203,20 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   planes, contour width and solvability remain unchanged.
 - Release status: Draft PR #7 remains unmergeable until the GLB/PBR replacement,
   browser matrix and Android/iOS sign-off meet the Concept-First Art Bible.
+
+## 2026-07-31 — Separate production materials by physical family
+
+- Browser evidence showed that one moonstone surface and one broad procedural
+  shader still made Glowfin, living reef and ruins feel assembled from the
+  same pale material.
+- Decision: retain moonstone only for masonry; add independent 512px
+  hand-painted sea-glass skin and living-reef tissue sources, each sampled on
+  real 3D volume. Geometry-authored species pigments and Glowfin state colour
+  remain authoritative; textures supply only pores, mottling and restrained
+  emissive-vein breakup.
+- Composition correction: background ruins begin at least 68 units ahead,
+  stay below the hero gate, and ambient swimmers retreat from cropped portrait
+  margins. The collider-derived cyan seam renders above contextual depth so
+  decorative masonry cannot erase fairness evidence in one bloom state.
+- Cost: the two sources add about 0.10 MB compressed and 2 MB decoded while the
+  production bundle remains under 0.8 MB.

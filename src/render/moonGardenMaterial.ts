@@ -59,6 +59,7 @@ const FRAGMENT = /* glsl */ `
   uniform float uFogNear;
   uniform float uFogFar;
   uniform sampler2D uSurfaceMap;
+  uniform sampler2D uLivingMap;
   uniform float uSurfaceScale;
   varying vec3 vWorldPos;
   varying vec3 vNormalW;
@@ -107,6 +108,10 @@ const FRAGMENT = /* glsl */ `
       texture2D(uSurfaceMap, vWorldPos.zy * uSurfaceScale).rgb * blend.x +
       texture2D(uSurfaceMap, vWorldPos.xz * uSurfaceScale).rgb * blend.y +
       texture2D(uSurfaceMap, vWorldPos.xy * uSurfaceScale).rgb * blend.z;
+    vec3 livingSurface =
+      texture2D(uLivingMap, vWorldPos.zy * uSurfaceScale * 0.82).rgb * blend.x +
+      texture2D(uLivingMap, vWorldPos.xz * uSurfaceScale * 0.82).rgb * blend.y +
+      texture2D(uLivingMap, vWorldPos.xy * uSurfaceScale * 0.82).rgb * blend.z;
     vec3 surfaceBreakup = clamp(
       surface / vec3(0.24, 0.31, 0.36),
       vec3(0.52),
@@ -122,6 +127,12 @@ const FRAGMENT = /* glsl */ `
     colour = mix(colour, paintedStone, stoneWeight * 0.34);
     colour *= 1.0 - joint * 0.28 * stoneWeight;
     colour *= mix(1.0, 0.84 + porousBreakup * 0.14, livingWeight);
+    vec3 livingBreakup = clamp(
+      livingSurface / vec3(0.12, 0.18, 0.24),
+      vec3(0.46),
+      vec3(1.42)
+    );
+    colour *= mix(vec3(1.0), livingBreakup, livingWeight * 0.52);
     colour *= mix(1.0, 0.46, groundContact);
     colour *= mix(0.82, 1.0, cavity * stoneWeight + livingWeight);
     colour += vec3(0.018, 0.05, 0.07) * stoneWeight;
@@ -139,6 +150,13 @@ const FRAGMENT = /* glsl */ `
     // Living species keep their own cyan/violet/rose albedo and receive a
     // restrained translucent lift. They no longer read as unlit plastic rods.
     colour += vColour * livingWeight * (0.06 + moonRim * 0.12);
+    float livingVein = smoothstep(
+      0.08,
+      0.24,
+      livingSurface.b - livingSurface.r
+    );
+    colour += vec3(0.035, 0.31, 0.4) * livingVein *
+      livingWeight * 0.08;
     colour += awakened * wake * livingWeight * mix(0.16, 0.52, uMomentum);
 
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
@@ -155,6 +173,7 @@ export interface MoonGardenMaterialOptions {
   fogFar: number;
   glowRadius: number;
   surfaceMap: THREE.Texture;
+  livingMap: THREE.Texture;
 }
 
 /**
@@ -167,7 +186,8 @@ export function createMoonGardenMaterial({
   fogNear,
   fogFar,
   glowRadius,
-  surfaceMap
+  surfaceMap,
+  livingMap
 }: MoonGardenMaterialOptions): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     vertexColors: true,
@@ -183,6 +203,7 @@ export function createMoonGardenMaterial({
       uFogNear: { value: fogNear },
       uFogFar: { value: fogFar },
       uSurfaceMap: { value: surfaceMap },
+      uLivingMap: { value: livingMap },
       uSurfaceScale: { value: 0.42 }
     },
     vertexShader: VERTEX,

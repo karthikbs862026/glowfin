@@ -175,11 +175,27 @@ export class GameView {
     moonstoneVolumeSurface.wrapS = THREE.MirroredRepeatWrapping;
     moonstoneVolumeSurface.wrapT = THREE.MirroredRepeatWrapping;
     moonstoneVolumeSurface.anisotropy = maxAnisotropy;
+    const livingReefSurface = textureLoader.load(
+      "/art/moon-garden/living-reef-surface.webp"
+    );
+    livingReefSurface.colorSpace = THREE.SRGBColorSpace;
+    livingReefSurface.wrapS = THREE.MirroredRepeatWrapping;
+    livingReefSurface.wrapT = THREE.MirroredRepeatWrapping;
+    livingReefSurface.anisotropy = maxAnisotropy;
+    const glowfinSurface = textureLoader.load(
+      "/art/moon-garden/glowfin-surface.webp"
+    );
+    glowfinSurface.colorSpace = THREE.SRGBColorSpace;
+    glowfinSurface.wrapS = THREE.MirroredRepeatWrapping;
+    glowfinSurface.wrapT = THREE.MirroredRepeatWrapping;
+    glowfinSurface.anisotropy = maxAnisotropy;
 
     this.disposables.push(
       moonstoneSurface,
       moonstoneFloorSurface,
-      moonstoneVolumeSurface
+      moonstoneVolumeSurface,
+      livingReefSurface,
+      glowfinSurface
     );
 
     const backgroundCanvas = document.createElement("canvas");
@@ -339,12 +355,13 @@ export class GameView {
     for (const object of this.gates.objects) this.scene.add(object);
 
     // --- creature (Part 3.1) ---
-    this.creature = new Creature(cfg);
+    this.creature = new Creature(cfg, glowfinSurface);
     this.scene.add(this.creature.group);
 
     // --- drowned city, god-rays, responsive coral (Part 3.2 #3 and #5) ---
     this.environment = new Environment(cfg, {
-      surfaceMap: moonstoneVolumeSurface
+      surfaceMap: moonstoneVolumeSurface,
+      livingMap: livingReefSurface
     });
     for (const object of this.environment.objects) this.scene.add(object);
 
@@ -533,7 +550,7 @@ export class GameView {
       // Two authored moonstone sources plus the independently sampled floor
       // clone and tiny generated water gradient. Review-character and
       // skyline/life atlas textures are no longer loaded.
-      textureMemoryMB: 8.3
+      textureMemoryMB: 10.3
     };
   }
 

@@ -10,9 +10,11 @@ authored.
 | --- | --- | --- |
 | `moonstone-seabed.webp` | Organic gravel/silt Moon-Garden floor albedo | Retain as atlas candidate after seam/material review |
 | `moonstone-surface.webp` | Triplanar hand-painted weathering on real ruin and reef volumes | Retain after final authored GLB/material bake |
+| `living-reef-surface.webp` | Triplanar porous tissue and restrained emissive-vein breakup on living reef vertices | Retain as living-material atlas source |
+| `glowfin-surface.webp` | Seamless sea-glass skin pigment, fine pores and violet freckles on the skinned Glowfin mesh | Retain as final character-material source |
 
-Both runtime images have a maximum dimension of 512px, contain no text or
-third-party marks, and together add about 0.07 MB compressed. Retired concept
+All four runtime images have a maximum dimension of 512px, contain no text or
+third-party marks, and together add about 0.16 MB compressed. Retired concept
 plates remain in `docs/art/` as art-direction evidence but are no longer copied
 or loaded as game objects.
 

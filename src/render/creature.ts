@@ -17,6 +17,7 @@ const BODY_VERTEX = /* glsl */ `
   varying vec3 vViewPosition;
   varying vec3 vColour;
   varying vec3 vObjectPosition;
+  varying vec2 vUv;
 
   void main() {
     #include <beginnormal_vertex>
@@ -31,6 +32,7 @@ const BODY_VERTEX = /* glsl */ `
     vViewPosition = -mvPosition.xyz;
     vColour = color;
     vObjectPosition = transformed;
+    vUv = uv;
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -42,10 +44,12 @@ const BODY_FRAGMENT = /* glsl */ `
   uniform float uRimPower;
   uniform float uMomentum;
   uniform float uCollision;
+  uniform sampler2D uSkinMap;
   varying vec3 vNormalV;
   varying vec3 vViewPosition;
   varying vec3 vColour;
   varying vec3 vObjectPosition;
+  varying vec2 vUv;
 
   void main() {
     vec3 viewDir = normalize(vViewPosition);
@@ -86,7 +90,17 @@ const BODY_FRAGMENT = /* glsl */ `
       vec3(0.23, 0.075, 0.4),
       gillMask
     );
-    vec3 seaGlass = mix(authoredPigment, vColour, 0.18);
+    vec3 skinSurface = texture2D(
+      uSkinMap,
+      vUv * vec2(1.7, 1.45)
+    ).rgb;
+    vec3 skinTint = clamp(
+      skinSurface / vec3(0.08, 0.18, 0.34),
+      vec3(0.48),
+      vec3(1.26)
+    );
+    vec3 seaGlass = mix(authoredPigment, vColour, 0.14);
+    seaGlass *= mix(vec3(1.0), skinTint, (1.0 - gillMask) * 0.34);
     vec3 base = mix(seaGlass, momentumColour, 0.05 + uMomentum * 0.2);
     base *= handPainted * mix(0.68, 0.94, internal) *
       mix(0.68, 1.0, softVolume);
@@ -99,7 +113,10 @@ const BODY_FRAGMENT = /* glsl */ `
       momentumColour * core * 0.045 * uGlow +
       rim * fresnel * uRimStrength * uGlow * 0.22 +
       vec3(0.42, 0.78, 0.94) * seaGlassSpecular;
-    colour = min(colour, vec3(0.54, 0.68, 0.76));
+    colour = min(
+      colour * 0.52,
+      vec3(0.22, 0.43, 0.55)
+    );
     gl_FragColor = vec4(colour, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -163,7 +180,10 @@ export class Creature {
   private breathPhase = 0;
   private bank = 0;
 
-  constructor(private readonly cfg: TuningConfig) {
+  constructor(
+    private readonly cfg: TuningConfig,
+    skinMap: THREE.Texture
+  ) {
     const rig = createGlowfinRigGeometry(cfg, 0);
     this.bodyMaterial = new THREE.ShaderMaterial({
       vertexColors: true,
@@ -172,7 +192,8 @@ export class Creature {
         uRimStrength: { value: cfg.creature.rimStrength },
         uRimPower: { value: cfg.creature.rimPower },
         uMomentum: { value: 0 },
-        uCollision: { value: 0 }
+        uCollision: { value: 0 },
+        uSkinMap: { value: skinMap }
       },
       vertexShader: BODY_VERTEX,
       fragmentShader: BODY_FRAGMENT
