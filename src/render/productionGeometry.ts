@@ -195,8 +195,8 @@ export function createProductionWallGeometry(
     new THREE.Vector2(gapDirection * 0.27, 0.49 - variant * 0.018),
     new THREE.Vector2(gapDirection * 0.1, 0.42 + variant * 0.012),
     new THREE.Vector2(-gapDirection * 0.08, 0.27 + variant * 0.02),
-    new THREE.Vector2(-gapDirection * 0.28, 0.19 - variant * 0.018),
-    new THREE.Vector2(outerX, -0.02 - variant * 0.035),
+    new THREE.Vector2(-gapDirection * 0.28, 0.25 - variant * 0.018),
+    new THREE.Vector2(outerX, 0.16 - variant * 0.025),
     new THREE.Vector2(outerX, -0.5)
   ]);
   const backingGeometry = new THREE.ExtrudeGeometry(backing, {
@@ -320,6 +320,33 @@ export function createProductionWallGeometry(
         glow: 0.01
       }
     ));
+  }
+
+  // Living growth originates inside the collidable stone mass and bends away
+  // from the opening. It joins the gate to the reef without suggesting false
+  // playable clearance.
+  const growthCount = lod === 0 ? 3 : lod === 1 ? 1 : 0;
+  for (let index = 0; index < growthCount; index++) {
+    const start = new THREE.Vector3(
+      outerX + gapDirection * (0.13 + index * 0.08),
+      -0.45,
+      0.55 + index * 0.018
+    );
+    const end = new THREE.Vector3(
+      start.x + gapDirection * (0.06 + index * 0.035),
+      -0.22 + index * 0.11,
+      0.57 + Math.sin(index * 1.8) * 0.035
+    );
+    parts.push(styled(branchBetween(
+      start,
+      end,
+      0.026,
+      0.013,
+      lod === 0 ? 5 : 3
+    ), {
+      colour: index % 2 === 0 ? CYAN_LIGHT : ROSE,
+      glow: 0.38
+    }));
   }
 
   parts.push(...rubble(
@@ -739,8 +766,8 @@ export function createProductionSkyline(): THREE.BufferGeometry {
     const x = THREE.MathUtils.lerp(-1.55, 1.55, index / (heights.length - 1));
     const radial = index % 2 === 0 ? 6 : 8;
     parts.push(styled(new THREE.CylinderGeometry(
-      0.13 + (index % 3) * 0.025,
-      0.25 + (index % 2) * 0.055,
+      0.21 + (index % 3) * 0.018,
+      0.25 + (index % 2) * 0.035,
       heights[index] ?? 1,
       radial,
       1,

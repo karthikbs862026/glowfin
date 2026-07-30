@@ -85,7 +85,7 @@ function createGillLeaf(radius: number, high: boolean): THREE.BufferGeometry {
     high ? 12 : 8,
     high ? 8 : 6
   );
-  geometry.scale(0.5, 1.18, 0.26);
+  geometry.scale(0.38, 1.28, 0.22);
   return geometry;
 }
 
@@ -126,8 +126,8 @@ export function createGlowfinRigGeometry(
   bodyParts.push({
     geometry: new THREE.SphereGeometry(
       r * 0.42,
-      high ? 18 : 12,
-      high ? 12 : 8
+      high ? 20 : 14,
+      high ? 13 : 9
     ),
     bone: 0,
     colour: finCyan,
@@ -152,34 +152,31 @@ export function createGlowfinRigGeometry(
     });
   }
 
-  // Two soft lobes form a readable caudal fan from behind. A single flattened
-  // sphere previously appeared as a dark circular patch on the body.
-  for (const side of [-1, 1]) {
-    bodyParts.push({
-      geometry: new THREE.SphereGeometry(
-        r * 0.48,
-        high ? 16 : 11,
-        high ? 11 : 7
-      ),
-      bone: 3,
-      colour: finCyan,
-      position: pivots.tail.clone().add(new THREE.Vector3(
-        side * r * 0.2,
-        side * r * 0.16,
-        r * 0.28
-      )),
-      rotation: new THREE.Euler(0, 0, -side * 0.48),
-      scale: new THREE.Vector3(0.54, 1.08, 0.16)
-    });
-  }
+  // A vertical, softly faceted caudal fan reads as a tail from the chase
+  // camera. The earlier paired lobes merged with the belly into a flower.
+  bodyParts.push({
+    geometry: new THREE.SphereGeometry(
+      r * 0.5,
+      high ? 19 : 12,
+      high ? 13 : 8
+    ),
+    bone: 3,
+    colour: finCyan,
+    position: pivots.tail.clone().add(new THREE.Vector3(
+      0,
+      -r * 0.08,
+      r * 0.38
+    )),
+    scale: new THREE.Vector3(0.44, 1.08, 0.14)
+  });
 
   let bone = 4;
   for (const side of [-1, 1]) {
     for (let index = 0; index < 3; index++) {
       const pivot = new THREE.Vector3(
-        side * r * (0.82 + index * 0.055),
-        r * (0.42 - index * 0.31),
-        r * (0.5 + index * 0.035)
+        side * r * (1.04 + index * 0.045),
+        r * (0.48 - index * 0.34),
+        r * (0.34 + index * 0.025)
       );
       pivots.gills.push(pivot);
       bodyParts.push({
@@ -190,7 +187,7 @@ export function createGlowfinRigGeometry(
         rotation: new THREE.Euler(
           side * 0.06,
           side * 0.12,
-          side * (0.95 - index * 0.56)
+          side * (0.9 - index * 0.55)
         ),
         scale: new THREE.Vector3(
           0.9 + index * 0.04,

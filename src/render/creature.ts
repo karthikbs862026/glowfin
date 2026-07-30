@@ -320,13 +320,13 @@ export class Creature {
     if (eyeColour) {
       (eyeColour.value as THREE.Color).setHSL(
         lerp(cfg.eyeHueCalm, cfg.eyeHueMax, momentumFraction),
-        0.72,
-        0.42
+        0.56,
+        0.34
       );
     }
     const eyeGlow = this.eyeMaterial.uniforms["uGlow"];
     if (eyeGlow) {
-      eyeGlow.value = lerp(0.78, 1.18, Math.max(0, lightFraction));
+      eyeGlow.value = lerp(0.64, 0.94, Math.max(0, lightFraction));
     }
   }
 

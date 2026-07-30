@@ -393,16 +393,16 @@ export class Environment {
     // Broad, offset city shelves create three readable depth bands without
     // placing a single giant silhouette behind the playable opening.
     const spacing = 86;
-    const count = this.density > 0.8 ? 4 : 3;
+    const count = this.density > 0.8 ? 3 : 2;
     const firstBand = Math.floor(forwardDistance / spacing) + 1;
     this.skyline.begin();
     for (let index = 0; index < count; index++) {
       const band = firstBand + index;
       const side = index % 2 === 0 ? -1 : 1;
       this.position.set(
-        side * lerp(8, 15, hash01(band, 712)),
-        -1.5 - index * 0.18,
-        -(band * spacing + 12 + index * 9)
+        side * lerp(12, 18, hash01(band, 712)),
+        -1.28 - index * 0.16,
+        -(band * spacing + 20 + index * 12)
       );
       this.quaternion.setFromEuler(new THREE.Euler(
         0,
@@ -410,9 +410,9 @@ export class Environment {
         side * lerp(-0.012, 0.018, hash01(band, 718))
       ));
       this.scale.set(
-        lerp(5.4, 7.6, hash01(band, 713)),
-        lerp(5.8, 8.6, hash01(band, 714)),
-        lerp(4.2, 6.8, hash01(band, 716))
+        lerp(3.1, 4.4, hash01(band, 713)),
+        lerp(2.7, 4.0, hash01(band, 714)),
+        lerp(2.5, 3.6, hash01(band, 716))
       );
       this.matrix.compose(this.position, this.quaternion, this.scale);
       const brightness =
@@ -524,7 +524,7 @@ export class Environment {
   private updateLife(forwardDistance: number, time: number): void {
     for (const family of this.life) family.begin();
 
-    const fishCount = Math.max(2, Math.round(10 * this.density));
+    const fishCount = Math.max(4, Math.round(14 * this.density));
     const fishFirst = Math.floor((forwardDistance - 12) / 25);
     for (let index = 0; index < fishCount; index++) {
       const band = fishFirst + index;
@@ -536,7 +536,7 @@ export class Environment {
         -(band * 25 + hash01(band, 813) * 6)
       );
       this.quaternion.identity();
-      const size = lerp(0.68, 1.15, hash01(band, 814));
+      const size = lerp(0.3, 0.56, hash01(band, 814));
       this.scale.set(direction * size * 1.3, size, 1);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.72, 0.86, 1);
@@ -557,7 +557,7 @@ export class Environment {
       );
       this.quaternion.identity();
       const pulse = 1 + Math.sin(time * 2 + band) * 0.06;
-      const size = lerp(0.76, 1.32, hash01(band, 824)) * pulse;
+      const size = lerp(0.48, 0.88, hash01(band, 824)) * pulse;
       this.scale.set(size, size, 1);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.72, 0.82, 1);
@@ -575,7 +575,7 @@ export class Environment {
         -(band * 58 + 24)
       );
       this.quaternion.setFromEuler(new THREE.Euler(0, 0, Math.cos(phase) * 0.08));
-      const size = lerp(1.35, 2.15, hash01(band, 833));
+      const size = lerp(0.72, 1.24, hash01(band, 833));
       this.scale.set(Math.cos(phase) >= 0 ? size : -size, size, 1);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.58, 0.72, 0.92);

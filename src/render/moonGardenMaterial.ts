@@ -121,10 +121,10 @@ const FRAGMENT = /* glsl */ `
     float cavity = smoothstep(0.12, 0.78, keyLight) *
       mix(0.7, 1.0, broadWash);
     vec3 colour = vColour * broadWash * topLight;
-    colour *= mix(vec3(1.0), surfaceBreakup, stoneWeight * 0.72);
+    colour *= mix(vec3(1.0), surfaceBreakup, stoneWeight * 0.52);
     vec3 paintedStone =
       vColour * surfaceBreakup * mix(0.78, 1.1, keyLight);
-    colour = mix(colour, paintedStone, stoneWeight * 0.34);
+    colour = mix(colour, paintedStone, stoneWeight * 0.24);
     colour *= 1.0 - joint * 0.28 * stoneWeight;
     colour *= mix(1.0, 0.84 + porousBreakup * 0.14, livingWeight);
     vec3 livingBreakup = clamp(
@@ -352,15 +352,15 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     );
 
     float sculptLight = mix(
-      0.28,
-      1.18,
+      0.18,
+      1.1,
       smoothstep(0.08, 0.94, keyLight)
     );
     vec3 colour = vColour * wash * stoneMottle * sculptLight;
-    colour *= surfaceBreakup;
+    colour *= mix(vec3(1.0), surfaceBreakup, 0.58);
     vec3 paintedStone =
       vColour * surfaceBreakup * mix(0.74, 1.08, keyLight);
-    colour = mix(colour, paintedStone, 0.38);
+    colour = mix(colour, paintedStone, 0.24);
     colour *= 1.0 - joint * 0.43;
     colour *= mix(1.0, 0.43, groundContact);
     float stoneWeight = 1.0 - smoothstep(0.28, 0.66, vGlowWeight);
