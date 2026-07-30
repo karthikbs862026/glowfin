@@ -80,25 +80,13 @@ function prepareEye(
 }
 
 function createGillLeaf(radius: number, high: boolean): THREE.BufferGeometry {
-  const shape = new THREE.Shape([
-    new THREE.Vector2(0, -radius),
-    new THREE.Vector2(radius * 0.72, -radius * 0.35),
-    new THREE.Vector2(radius * 0.56, radius * 0.42),
-    new THREE.Vector2(0, radius),
-    new THREE.Vector2(-radius * 0.56, radius * 0.42),
-    new THREE.Vector2(-radius * 0.72, -radius * 0.35)
-  ]);
-  const depth = radius * 0.22;
-  const geometry = new THREE.ExtrudeGeometry(shape, {
-    depth,
-    steps: 1,
-    curveSegments: high ? 2 : 1,
-    bevelEnabled: true,
-    bevelSegments: 1,
-    bevelSize: radius * 0.08,
-    bevelThickness: radius * 0.08
-  });
-  geometry.translate(0, 0, -depth * 0.5);
+  const geometry = new THREE.CapsuleGeometry(
+    radius * 0.3,
+    radius * 0.86,
+    high ? 5 : 3,
+    high ? 8 : 6
+  );
+  geometry.scale(0.82, 1, 0.22);
   return geometry;
 }
 
@@ -153,14 +141,14 @@ export function createGlowfinRigGeometry(
 
   bodyParts.push({
     geometry: new THREE.SphereGeometry(
-      r * 0.70,
+      r * 0.62,
       high ? 22 : 14,
       high ? 15 : 9
     ),
     bone: 3,
     colour: finCyan,
-    position: pivots.tail.clone(),
-    scale: new THREE.Vector3(0.30, 0.88, 1.22)
+    position: pivots.tail.clone().add(new THREE.Vector3(0, 0, r * 0.12)),
+    scale: new THREE.Vector3(0.92, 0.72, 0.18)
   });
 
   let bone = 4;
@@ -199,7 +187,7 @@ export function createGlowfinRigGeometry(
   body.computeBoundingBox();
   body.computeBoundingSphere();
 
-  const eyeRadius = r * cfg.creature.eyeRadius * 0.8;
+  const eyeRadius = r * cfg.creature.eyeRadius * 0.86;
   const eyeParts: THREE.BufferGeometry[] = [];
   for (const side of [-1, 1]) {
     eyeParts.push(prepareEye(

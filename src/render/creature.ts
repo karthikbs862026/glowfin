@@ -82,7 +82,7 @@ const BODY_FRAGMENT = /* glsl */ `
     vec3 authoredPigment = vec3(0.012, 0.17, 0.31);
     authoredPigment = mix(
       authoredPigment,
-      vec3(0.018, 0.34, 0.48),
+      vec3(0.015, 0.22, 0.34),
       finMask
     );
     authoredPigment = mix(
@@ -92,7 +92,7 @@ const BODY_FRAGMENT = /* glsl */ `
     );
     vec3 skinSurface = texture2D(
       uSkinMap,
-      vUv * vec2(1.7, 1.45)
+      vUv * vec2(0.88, 0.76)
     ).rgb;
     vec3 skinTint = clamp(
       skinSurface / vec3(0.08, 0.18, 0.34),
@@ -114,8 +114,8 @@ const BODY_FRAGMENT = /* glsl */ `
       rim * fresnel * uRimStrength * uGlow * 0.22 +
       vec3(0.42, 0.78, 0.94) * seaGlassSpecular;
     colour = min(
-      colour * 0.52,
-      vec3(0.22, 0.43, 0.55)
+      colour * 0.44,
+      vec3(0.19, 0.36, 0.48)
     );
     gl_FragColor = vec4(colour, 1.0);
     #include <tonemapping_fragment>

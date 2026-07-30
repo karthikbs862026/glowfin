@@ -330,7 +330,7 @@ export class Environment {
     const count = Math.max(6, Math.floor(env.buildingCount * this.density));
     const perSide = Math.floor(count / 2);
     const firstBand = Math.ceil(
-      (forwardDistance + 68) / env.buildingBandSpacing
+      (forwardDistance + 105) / env.buildingBandSpacing
     );
     for (const family of this.architecture) family.begin();
 
@@ -347,8 +347,8 @@ export class Environment {
           hash01(band, salt + 3)
         );
         const height = lerp(
-          env.buildingMinHeight * 0.66,
-          Math.min(6.8, env.buildingMaxHeight),
+          env.buildingMinHeight * 0.58,
+          Math.min(5.4, env.buildingMaxHeight),
           Math.pow(hash01(band, salt), 1.5)
         );
         const family = this.architecture[variant];
