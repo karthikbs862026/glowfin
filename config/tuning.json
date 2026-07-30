@@ -61,12 +61,12 @@
     "causticSpeed": 0.85,
     "causticMagentaShiftAtMaxMomentum": 0.55,
     "obstacleEdgeStrength": 1.25,
-    "obstacleEdgeWidthPixels": 5.5,
+    "obstacleEdgeWidthPixels": 7.0,
     "fogNearMultiplier": 1.75,
     "fogFarMultiplier": 3.0,
-    "bloomStrength": 0.44,
+    "bloomStrength": 0.34,
     "bloomRadius": 0.28,
-    "bloomThreshold": 0.78
+    "bloomThreshold": 0.84
   },
 
   "environment": {

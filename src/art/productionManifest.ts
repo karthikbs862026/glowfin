@@ -25,9 +25,9 @@ export const PRODUCTION_ART = {
     materials: 1
   },
   collapsedArch: {
-    lod0: 372,
-    lod1: 256,
-    lod2: 208,
+    lod0: 428,
+    lod1: 304,
+    lod2: 248,
     materials: 1
   },
   spire: {

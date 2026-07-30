@@ -242,13 +242,13 @@ export function createWallFragmentGeometry(
       new THREE.BoxGeometry(
         (lod === 2 ? 0.22 : 0.19) * (index % 4 === 0 ? 1.12 : 1),
         lod === 2 ? 0.14 : 0.115,
-        0.075
+        0.12
       ),
       {
         position: new THREE.Vector3(
           gapDirection * (x + (row % 2) * 0.018),
           y + Math.sin(index * 1.8) * 0.008,
-          0.548 + Math.sin(index * 2.2) * 0.012
+          0.59 + Math.sin(index * 2.2) * 0.018
         ),
         rotation: new THREE.Euler(
           Math.sin(index) * 0.018,
@@ -308,7 +308,7 @@ export function createCollapsedArchGeometry(lod: ArtLod): THREE.BufferGeometry {
     const x = Math.cos(angle) * 0.58;
     const y = 0.5 + Math.sin(angle) * 0.52;
     parts.push(decorate(
-      new THREE.BoxGeometry(0.24, 0.19, 0.5),
+      new THREE.IcosahedronGeometry(0.17, 0),
       {
         position: new THREE.Vector3(x, y, Math.sin(index * 1.7) * 0.025),
         rotation: new THREE.Euler(
@@ -317,9 +317,9 @@ export function createCollapsedArchGeometry(lod: ArtLod): THREE.BufferGeometry {
           angle - Math.PI / 2
         ),
         scale: new THREE.Vector3(
-          0.9 + (index % 2) * 0.12,
-          0.9 + ((index + 1) % 2) * 0.08,
-          1
+          1.12 + (index % 2) * 0.13,
+          0.72 + ((index + 1) % 2) * 0.08,
+          1.48
         ),
         colour: index % 3 === 0 ? MOONSTONE : MOONSTONE_DARK,
         glowWeight: 0.02

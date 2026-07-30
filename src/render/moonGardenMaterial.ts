@@ -108,6 +108,10 @@ const FRAGMENT = /* glsl */ `
 
     vec3 colour = vColour * broadWash * topLight;
     colour *= mix(vec3(1.0), surfaceBreakup, stoneWeight * 0.72);
+    vec3 paintedStone =
+      surface * mix(0.72, 1.08, keyLight) +
+      vColour * 0.16;
+    colour = mix(colour, paintedStone, stoneWeight * 0.66);
     colour *= 1.0 - joint * 0.20 * stoneWeight;
     colour *= mix(1.0, 0.84 + porousBreakup * 0.14, livingWeight);
     colour *= mix(1.0, 0.52, groundContact);
@@ -291,6 +295,10 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
 
     vec3 colour = vColour * wash * stoneMottle * mix(0.54, 1.02, keyLight);
     colour *= surfaceBreakup;
+    vec3 paintedStone =
+      surface * mix(0.68, 1.06, keyLight) +
+      vColour * 0.14;
+    colour = mix(colour, paintedStone, 0.68);
     colour *= 1.0 - joint * 0.18;
     colour *= mix(1.0, 0.5, groundContact);
     float stoneWeight = 1.0 - smoothstep(0.28, 0.66, vGlowWeight);
