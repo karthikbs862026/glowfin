@@ -314,7 +314,7 @@ export class GameView {
       octaves: 3,
       surfaceMap: moonstoneFloorSurface,
       surfaceScale: 0.11,
-      surfaceWeight: 0.48,
+      surfaceWeight: 0.34,
       routeHalfWidth: cfg.lane.halfWidth
     });
     const floor = new THREE.Mesh(floorGeo, this.floorMaterial);

@@ -63,6 +63,7 @@ const BODY_FRAGMENT = /* glsl */ `
       1.0
     );
     float softVolume = mix(0.46, 1.14, smoothstep(0.08, 0.95, moonKey));
+    float crownLight = smoothstep(-0.42, 0.72, normalV.y);
 
     vec3 cyan = vec3(0.388, 0.878, 1.0);
     vec3 violet = vec3(0.545, 0.420, 0.910);
@@ -103,7 +104,8 @@ const BODY_FRAGMENT = /* glsl */ `
     seaGlass *= mix(vec3(1.0), skinTint, (1.0 - gillMask) * 0.34);
     vec3 base = mix(seaGlass, momentumColour, 0.05 + uMomentum * 0.2);
     base *= handPainted * mix(0.74, 1.0, internal) *
-      mix(0.76, 1.08, softVolume);
+      mix(0.76, 1.08, softVolume) *
+      mix(0.62, 1.12, crownLight);
     base = mix(base, vec3(0.23, 0.29, 0.36), uCollision * 0.72);
     vec3 rim = mix(vec3(0.85, 0.965, 1.0), gold, uMomentum * 0.45);
     float core = smoothstep(-0.8, 0.55, vObjectPosition.y) *
@@ -121,6 +123,12 @@ const BODY_FRAGMENT = /* glsl */ `
       vec3(0.92, 0.72, 1.04),
       gillMask
     );
+    float reefBounce = pow(
+      max(dot(normalV, normalize(vec3(0.62, -0.18, 0.76))), 0.0),
+      1.5
+    );
+    colour += vec3(0.16, 0.025, 0.13) * reefBounce *
+      mix(0.035, 0.11, gillMask);
     colour = min(
       colour * 0.66,
       vec3(0.24, 0.54, 0.68)
