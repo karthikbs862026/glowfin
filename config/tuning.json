@@ -129,11 +129,11 @@
   "camera": {
     "distanceBehindAtZeroMomentum": 9.0,
     "distanceBehindAtMaxMomentum": 13.5,
-    "height": 4.2,
-    "lookHeight": 1.2,
-    "lookAheadUnits": 26.0,
-    "fovAtZeroMomentum": 62.0,
-    "fovAtMaxMomentum": 74.0,
+    "height": 4.0,
+    "lookHeight": 2.05,
+    "lookAheadUnits": 23.0,
+    "fovAtZeroMomentum": 59.0,
+    "fovAtMaxMomentum": 70.0,
     "lateralFollowFraction": 0.45
   },
 

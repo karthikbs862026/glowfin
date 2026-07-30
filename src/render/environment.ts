@@ -253,7 +253,7 @@ export class Environment {
     const colours = new Float32Array(POINT_COUNT * 3);
     for (let index = 0; index < POINT_COUNT; index++) {
       const isMoon = index === 0;
-      sizes[index] = isMoon ? 22 : lerp(0.68, 1.45, hash01(index, 601));
+      sizes[index] = isMoon ? 20 : lerp(0.42, 0.92, hash01(index, 601));
       colours[index * 3] = isMoon ? 0.32 : lerp(0.35, 0.75, hash01(index, 602));
       colours[index * 3 + 1] = isMoon ? 0.78 : lerp(0.62, 0.9, hash01(index, 603));
       colours[index * 3 + 2] = 1;
@@ -284,7 +284,7 @@ export class Environment {
         void main() {
           float radius = length(gl_PointCoord - vec2(0.5));
           float alpha = 1.0 - smoothstep(0.1, 0.5, radius);
-          gl_FragColor = vec4(vColour * alpha * 1.45, alpha);
+          gl_FragColor = vec4(vColour * alpha * 1.18, alpha * 0.82);
         }
       `
     });
@@ -330,8 +330,12 @@ export class Environment {
       Math.max(4, Math.floor(env.buildingCount * this.density))
     );
     const perSide = Math.floor(count / 2);
+    // The previous 124-unit offset reduced the entire drowned city to horizon
+    // pixels. Start the first readable band behind the hero gate, still well
+    // outside the lane, so architecture supplies midground parallax instead of
+    // leaving a flat blue void.
     const firstBand = Math.ceil(
-      (forwardDistance + 124) / env.buildingBandSpacing
+      (forwardDistance + 52) / env.buildingBandSpacing
     );
     for (const family of this.architecture) family.begin();
 
@@ -343,13 +347,13 @@ export class Environment {
         const zDistance = band * env.buildingBandSpacing +
           (hash01(band, salt + 4) - 0.5) * env.buildingBandSpacing * 0.45;
         const lateral = lerp(
-          Math.max(14, env.buildingLateralMin),
-          Math.max(17, env.buildingLateralMax),
+          Math.max(10.4, env.buildingLateralMin),
+          Math.max(15.5, env.buildingLateralMax),
           hash01(band, salt + 3)
         );
         const height = lerp(
-          Math.max(2.6, env.buildingMinHeight * 0.48),
-          Math.min(4.4, env.buildingMaxHeight),
+          Math.max(3.4, env.buildingMinHeight * 0.68),
+          Math.min(6.6, env.buildingMaxHeight),
           Math.pow(hash01(band, salt), 1.5)
         );
         const family = this.architecture[variant];
@@ -367,7 +371,7 @@ export class Environment {
           -side * lerp(0, 0.035, hash01(band, salt + 8))
         ));
         const mirror = hash01(band, salt + 10) < 0.5 ? -1 : 1;
-        const silhouetteScale = [0.86, 0.72][variant] ?? 0.8;
+        const silhouetteScale = [0.92, 0.78][variant] ?? 0.84;
         const unitScale = height * silhouetteScale / family.height;
         const widthStretch = [0.72, 0.84][variant] ?? 0.8;
         const depthStretch = [0.7, 0.8][variant] ?? 0.75;
@@ -394,7 +398,7 @@ export class Environment {
     // placing a single giant silhouette behind the playable opening.
     const spacing = 86;
     const count = this.density > 0.8 ? 3 : 2;
-    const firstBand = Math.floor(forwardDistance / spacing) + 1;
+    const firstBand = Math.floor((forwardDistance + 34) / spacing) + 1;
     this.skyline.begin();
     for (let index = 0; index < count; index++) {
       const band = firstBand + index;
@@ -436,8 +440,8 @@ export class Environment {
     const halfWidth = this.cfg.lane.halfWidth;
     const count = Math.max(24, Math.floor(env.coralCount * this.density));
     const perSide = Math.floor(count / 2);
-    const firstBand = Math.floor(
-      (forwardDistance - env.coralBandSpacing * 4) / env.coralBandSpacing
+    const firstBand = Math.ceil(
+      (forwardDistance + 1.5) / env.coralBandSpacing
     );
     for (const family of this.reef) family.begin();
 
@@ -526,7 +530,7 @@ export class Environment {
 
     const fishCount = Math.max(8, Math.round(22 * this.density));
     const fishSpacing = 9;
-    const fishFirst = Math.floor((forwardDistance - 8) / fishSpacing);
+    const fishFirst = Math.ceil((forwardDistance + 18) / fishSpacing);
     for (let index = 0; index < fishCount; index++) {
       const band = fishFirst + index;
       const phase = time * 0.72 + band * 1.91;
@@ -537,7 +541,7 @@ export class Environment {
         -(band * fishSpacing + hash01(band, 813) * 3.2)
       );
       this.quaternion.identity();
-      const size = lerp(0.22, 0.44, hash01(band, 814));
+      const size = lerp(0.3, 0.56, hash01(band, 814));
       this.scale.set(direction * size * 1.3, size, 1);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.72, 0.86, 1);
@@ -545,7 +549,7 @@ export class Environment {
     }
 
     const jellyCount = Math.max(2, Math.round(8 * this.density));
-    const jellyFirst = Math.floor((forwardDistance - 20) / 38);
+    const jellyFirst = Math.ceil((forwardDistance + 24) / 38);
     for (let index = 0; index < jellyCount; index++) {
       const band = jellyFirst + index;
       const side = hash01(band, 821) < 0.5 ? -1 : 1;
@@ -566,7 +570,7 @@ export class Environment {
     }
 
     const rayCount = Math.max(1, Math.round(5 * this.density));
-    const rayFirst = Math.floor((forwardDistance - 15) / 58);
+    const rayFirst = Math.ceil((forwardDistance + 34) / 58);
     for (let index = 0; index < rayCount; index++) {
       const band = rayFirst + index;
       const phase = time * 0.28 + band * 2.4;
@@ -584,7 +588,7 @@ export class Environment {
     }
 
     const spiritCount = Math.max(2, Math.round(10 * this.density));
-    const spiritFirst = Math.floor((forwardDistance - 10) / 22);
+    const spiritFirst = Math.ceil((forwardDistance + 12) / 22);
     for (let index = 0; index < spiritCount; index++) {
       const band = spiritFirst + index;
       const side = hash01(band, 841) < 0.5 ? -1 : 1;
@@ -610,7 +614,9 @@ export class Environment {
     // corridor, rather than merging with the gate at the horizon.
     this.pointPositions.setXYZ(0, 0, 17.5, -forwardDistance - 124);
     const activeMotes = Math.max(28, Math.floor((POINT_COUNT - 1) * this.density));
-    const firstBand = Math.floor((forwardDistance - 18) / 5);
+    // Forward-only particulate placement prevents one random mote from
+    // crossing the near plane and becoming a second fake moon.
+    const firstBand = Math.ceil((forwardDistance + 14) / 5);
     for (let index = 1; index < POINT_COUNT; index++) {
       if (index > activeMotes) {
         this.pointPositions.setXYZ(index, 0, -1000, 0);

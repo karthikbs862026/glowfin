@@ -51,7 +51,7 @@ const VERTEX = /* glsl */ `
 `;
 
 const FRAGMENT = /* glsl */ `
-  precision mediump float;
+  precision highp float;
   uniform vec3 uGlowCentre;
   uniform float uGlowRadius;
   uniform float uMomentum;
@@ -67,17 +67,29 @@ const FRAGMENT = /* glsl */ `
   varying float vGlowWeight;
   varying float vViewDepth;
 
+  vec3 perturbSurfaceNormal(
+    vec3 surfacePosition,
+    vec3 surfaceNormal,
+    float height,
+    float strength
+  ) {
+    vec3 sigmaX = dFdx(surfacePosition);
+    vec3 sigmaY = dFdy(surfacePosition);
+    vec3 r1 = cross(sigmaY, surfaceNormal);
+    vec3 r2 = cross(surfaceNormal, sigmaX);
+    float determinant = dot(sigmaX, r1);
+    vec2 gradient = vec2(dFdx(height), dFdy(height));
+    vec3 surfaceGradient = sign(determinant) *
+      (gradient.x * r1 + gradient.y * r2);
+    return normalize(
+      abs(determinant) * surfaceNormal -
+      surfaceGradient * strength
+    );
+  }
+
   void main() {
     float broadWash = 0.88 + 0.12 * sin(
       vWorldPos.y * 0.82 + vWorldPos.x * 0.19 + vWorldPos.z * 0.07
-    );
-    vec3 keyDirection = normalize(vec3(-0.35, 0.82, 0.45));
-    float keyLight = dot(normalize(vNormalW), keyDirection) * 0.5 + 0.5;
-    float topLight = mix(0.2, 1.16, smoothstep(0.08, 0.94, keyLight));
-    vec3 viewDirection = normalize(cameraPosition - vWorldPos);
-    float moonRim = pow(
-      1.0 - clamp(abs(dot(normalize(vNormalW), viewDirection)), 0.0, 1.0),
-      2.2
     );
     float groundContact = 1.0 - smoothstep(-0.96, -0.18, vWorldPos.y);
     float distanceToGlow = distance(vWorldPos.xz, uGlowCentre.xz);
@@ -112,6 +124,24 @@ const FRAGMENT = /* glsl */ `
       texture2D(uLivingMap, vWorldPos.zy * uSurfaceScale * 0.82).rgb * blend.x +
       texture2D(uLivingMap, vWorldPos.xz * uSurfaceScale * 0.82).rgb * blend.y +
       texture2D(uLivingMap, vWorldPos.xy * uSurfaceScale * 0.82).rgb * blend.z;
+    float surfaceHeight = dot(
+      mix(surface, livingSurface, livingWeight),
+      vec3(0.2126, 0.7152, 0.0722)
+    );
+    vec3 normalW = perturbSurfaceNormal(
+      vWorldPos,
+      normalize(vNormalW),
+      surfaceHeight,
+      mix(0.28, 0.42, livingWeight)
+    );
+    vec3 keyDirection = normalize(vec3(-0.35, 0.82, 0.45));
+    float keyLight = dot(normalW, keyDirection) * 0.5 + 0.5;
+    float topLight = mix(0.2, 1.16, smoothstep(0.08, 0.94, keyLight));
+    vec3 viewDirection = normalize(cameraPosition - vWorldPos);
+    float moonRim = pow(
+      1.0 - clamp(abs(dot(normalW, viewDirection)), 0.0, 1.0),
+      2.2
+    );
     vec3 surfaceBreakup = clamp(
       surface / vec3(0.24, 0.31, 0.36),
       vec3(0.52),
@@ -140,14 +170,14 @@ const FRAGMENT = /* glsl */ `
       mix(0.15, 0.38, stoneWeight);
     vec3 coralDirection = normalize(vec3(0.58, -0.18, -0.8));
     float coralBounce = pow(
-      max(dot(normalize(vNormalW), coralDirection), 0.0),
+      max(dot(normalW, coralDirection), 0.0),
       1.4
     );
     colour += vec3(0.2, 0.035, 0.15) * coralBounce *
       mix(0.05, 0.2, livingWeight);
     float wetSpecular = pow(
       max(
-        dot(reflect(-keyDirection, normalize(vNormalW)), viewDirection),
+        dot(reflect(-keyDirection, normalW), viewDirection),
         0.0
       ),
       mix(18.0, 34.0, stoneWeight)
@@ -286,6 +316,26 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
   varying float vGlowWeight;
   varying float vViewDepth;
 
+  vec3 perturbSurfaceNormal(
+    vec3 surfacePosition,
+    vec3 surfaceNormal,
+    float height,
+    float strength
+  ) {
+    vec3 sigmaX = dFdx(surfacePosition);
+    vec3 sigmaY = dFdy(surfacePosition);
+    vec3 r1 = cross(sigmaY, surfaceNormal);
+    vec3 r2 = cross(surfaceNormal, sigmaX);
+    float determinant = dot(sigmaX, r1);
+    vec2 gradient = vec2(dFdx(height), dFdy(height));
+    vec3 surfaceGradient = sign(determinant) *
+      (gradient.x * r1 + gradient.y * r2);
+    return normalize(
+      abs(determinant) * surfaceNormal -
+      surfaceGradient * strength
+    );
+  }
+
   float caustics(vec2 p, float t) {
     float value = 0.0;
     float amplitude = 1.0;
@@ -317,15 +367,6 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     }
 
     float pattern = caustics(projected * uScale, uTime);
-    vec3 normalW = normalize(vNormalW);
-    vec3 keyDirection = normalize(vec3(-0.35, 0.82, 0.45));
-    float keyLight = dot(normalW, keyDirection) * 0.5 + 0.5;
-    vec3 viewDirection = normalize(cameraPosition - vWorldPos);
-    float moonRim = pow(
-      1.0 - clamp(abs(dot(normalW, viewDirection)), 0.0, 1.0),
-      2.2
-    );
-    float facing = clamp(normalW.y * 0.24 + 0.78, 0.0, 1.0);
     float wash = 0.88 + 0.12 * sin(
       vWorldPos.y * 0.76 + vWorldPos.x * 0.18 + vWorldPos.z * 0.09
     );
@@ -350,6 +391,21 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
       vec3(0.5),
       vec3(1.58)
     );
+    float surfaceHeight = dot(surface, vec3(0.2126, 0.7152, 0.0722));
+    vec3 normalW = perturbSurfaceNormal(
+      vWorldPos,
+      normalize(vNormalW),
+      surfaceHeight,
+      0.34
+    );
+    vec3 keyDirection = normalize(vec3(-0.35, 0.82, 0.45));
+    float keyLight = dot(normalW, keyDirection) * 0.5 + 0.5;
+    vec3 viewDirection = normalize(cameraPosition - vWorldPos);
+    float moonRim = pow(
+      1.0 - clamp(abs(dot(normalW, viewDirection)), 0.0, 1.0),
+      2.2
+    );
+    float facing = clamp(normalW.y * 0.24 + 0.78, 0.0, 1.0);
 
     float sculptLight = mix(
       0.18,

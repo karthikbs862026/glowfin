@@ -265,7 +265,7 @@ export function createProductionWallGeometry(
   }
 
   // A stacked gap-facing pier is the primary readable gate silhouette.
-  const pierBlocks = lod === 0 ? 5 : lod === 1 ? 4 : 1;
+  const pierBlocks = lod === 0 ? 6 : lod === 1 ? 4 : 1;
   for (let index = 0; index < pierBlocks; index++) {
     const height = 0.17 + (index % 2) * 0.012;
     parts.push(styled(
@@ -287,28 +287,67 @@ export function createProductionWallGeometry(
     ));
   }
 
-  // Broken voussoirs turn the pair into an unmistakable ancient arch while
-  // all decorative mass retreats away from the safe opening.
-  const archStones = lod === 0 ? 8 : lod === 1 ? 6 : 2;
-  for (let index = 0; index < archStones; index++) {
-    if (index === archStones - 2 && variant === 2) continue;
-    const t = index / Math.max(1, archStones - 1);
-    const angle = THREE.MathUtils.lerp(0.04, 1.2, t);
-    const x = innerX - gapDirection * (0.065 + Math.sin(angle) * 0.4);
-    const y = 0.3 + Math.cos(angle) * 0.25;
+  // A recessed arch channel gives the irregular voussoirs one continuous
+  // architectural gesture. It remains behind the stone and entirely inside
+  // collidable mass, so it cannot suggest false playable clearance.
+  if (lod < 2) {
+    const archRadius = 0.48;
+    const archCentre = new THREE.Vector3(
+      innerX - gapDirection * archRadius,
+      0.08,
+      0.43
+    );
     parts.push(styled(
-      stoneBlock(
-        0.17 + (index % 2) * 0.012,
-        0.095 + (index % 3) * 0.008,
-        0.24,
-        0.014
+      new THREE.TorusGeometry(
+        archRadius,
+        lod === 0 ? 0.052 : 0.045,
+        lod === 0 ? 5 : 3,
+        lod === 0 ? 18 : 8,
+        1.34
       ),
       {
-        position: new THREE.Vector3(x, y, 0.53),
+        position: archCentre,
+        scale: new THREE.Vector3(gapDirection, 1, 0.82),
+        colour: JOINT,
+        glow: 0.006
+      }
+    ));
+  }
+
+  // Broken voussoirs turn the pair into an unmistakable ancient arch while
+  // all decorative mass retreats away from the safe opening.
+  const archStones = lod === 0 ? 10 : lod === 1 ? 6 : 2;
+  for (let index = 0; index < archStones; index++) {
+    if (
+      (index === archStones - 2 && variant === 2) ||
+      (index === archStones - 4 && variant === 1)
+    ) {
+      continue;
+    }
+    const t = index / Math.max(1, archStones - 1);
+    const angle = THREE.MathUtils.lerp(0.04, 1.32, t);
+    const radius = 0.48;
+    const x =
+      innerX - gapDirection * radius +
+      gapDirection * Math.cos(angle) * radius;
+    const y = 0.08 + Math.sin(angle) * radius;
+    parts.push(styled(
+      stoneBlock(
+        0.18 + (index % 2) * 0.014,
+        0.11 + (index % 3) * 0.009,
+        0.27,
+        0.016
+      ),
+      {
+        position: new THREE.Vector3(
+          x,
+          y,
+          0.56 + Math.sin(index * 1.9) * 0.018
+        ),
         rotation: new THREE.Euler(
-          0,
-          gapDirection * Math.sin(index) * 0.04,
-          -gapDirection * angle
+          Math.sin(index * 1.4) * 0.026,
+          gapDirection * Math.sin(index) * 0.045,
+          gapDirection * (angle - Math.PI * 0.5)
         ),
         colour: index % 3 === 0 ? SHELL : STONE_LIGHT,
         glow: index % 3 === 0 ? 0.09 : 0.02

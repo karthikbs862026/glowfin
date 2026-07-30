@@ -4,14 +4,14 @@
  */
 export const PRODUCTION_ART = {
   glowfin: {
-    lod0: 6008,
-    lod1: 3000,
+    lod0: 7088,
+    lod1: 3600,
     materials: 2,
     bones: 10
   },
   wallFragment: {
-    lod0: 1082,
-    lod1: 742,
+    lod0: 1346,
+    lod1: 790,
     lod2: 216,
     materials: 1,
     maxReliefDepth: 0.07,

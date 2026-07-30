@@ -80,12 +80,49 @@ function prepareEye(
 }
 
 function createGillLeaf(radius: number, high: boolean): THREE.BufferGeometry {
-  const geometry = new THREE.SphereGeometry(
-    radius,
-    high ? 12 : 8,
-    high ? 8 : 6
+  const radial = high ? 6 : 5;
+  const parts: THREE.BufferGeometry[] = [];
+  const stem = new THREE.CapsuleGeometry(
+    radius * 0.13,
+    radius * 1.42,
+    high ? 3 : 2,
+    radial
   );
-  geometry.scale(0.38, 1.28, 0.22);
+  stem.scale(0.82, 1, 0.58);
+  parts.push(stem);
+
+  // Alternating soft leaflets turn each of the six rigged gill bones into a
+  // feathery frond. The previous single ellipsoid read as a plastic ear from
+  // the chase camera even though it was correctly skinned.
+  const leafletCount = high ? 3 : 2;
+  for (let index = 0; index < leafletCount; index++) {
+    const side = index % 2 === 0 ? -1 : 1;
+    const leaflet = new THREE.SphereGeometry(
+      radius * (0.28 - index * 0.018),
+      radial,
+      high ? 5 : 4
+    );
+    leaflet.scale(0.72, 1.18, 0.42);
+    leaflet.rotateZ(side * (0.72 - index * 0.08));
+    leaflet.translate(
+      side * radius * (0.21 + index * 0.025),
+      -radius * 0.48 + index * radius * 0.34,
+      (index % 3 - 1) * radius * 0.055
+    );
+    parts.push(leaflet);
+  }
+  const tip = new THREE.SphereGeometry(
+    radius * 0.2,
+    radial,
+    high ? 5 : 4
+  );
+  tip.scale(0.7, 1.05, 0.45);
+  tip.translate(0, radius * 0.82, 0);
+  parts.push(tip);
+
+  const geometry = mergeGeometries(parts, false);
+  for (const part of parts) part.dispose();
+  if (!geometry) throw new Error("Glowfin gill frond geometry did not merge.");
   return geometry;
 }
 
@@ -152,11 +189,12 @@ export function createGlowfinRigGeometry(
     });
   }
 
-  // A vertical, softly faceted caudal fan reads as a tail from the chase
-  // camera. The earlier paired lobes merged with the belly into a flower.
+  // A raised vertical caudal fan reads above the body from the chase camera.
+  // Keeping it off the lower silhouette prevents the projected tail from
+  // resembling a long nose beneath the eyes.
   bodyParts.push({
     geometry: new THREE.SphereGeometry(
-      r * 0.5,
+      r * 0.46,
       high ? 19 : 12,
       high ? 13 : 8
     ),
@@ -164,10 +202,10 @@ export function createGlowfinRigGeometry(
     colour: finCyan,
     position: pivots.tail.clone().add(new THREE.Vector3(
       0,
-      -r * 0.08,
+      r * 0.18,
       r * 0.38
     )),
-    scale: new THREE.Vector3(0.44, 1.08, 0.14)
+    scale: new THREE.Vector3(0.42, 0.88, 0.13)
   });
 
   let bone = 4;

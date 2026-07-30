@@ -30,7 +30,10 @@ export interface GateWallGeometry {
 }
 
 export const PROCEDURAL_GATE_VISUAL = {
-  wallHeight: 6.2,
+  // Architectural height is visual only. The collider remains the exact
+  // lateral gap plane below; a taller silhouette lets the broken arch carry
+  // the portrait composition instead of reading as two waist-high slabs.
+  wallHeight: 7.35,
   wallDepth: 1.9,
   wallFloorY: -1
 } as const;
