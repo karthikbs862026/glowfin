@@ -12,9 +12,18 @@ import {
 import { createMoonstoneObstacleMaterial } from "./moonGardenMaterial";
 
 const MAX_GATE_PARTS = 32;
-// Roughly seven screen pixels at the fairness-critical decision point. The
-// strip retreats into the wall, so widening it never steals safe clearance.
-const CONTOUR_WIDTH = 0.22;
+
+export function contourWorldWidth(
+  screenPixels: number,
+  viewDepth: number,
+  verticalFovDegrees: number,
+  viewportHeightCss: number
+): number {
+  const safeHeight = Math.max(1, viewportHeightCss);
+  const verticalSpan =
+    2 * Math.max(1, viewDepth) * Math.tan(THREE.MathUtils.degToRad(verticalFovDegrees * 0.5));
+  return screenPixels * verticalSpan / safeHeight;
+}
 
 interface LodMeshes {
   left: THREE.InstancedMesh;
@@ -108,7 +117,12 @@ export class MoonGardenGates {
     );
   }
 
-  update(forwardDistance: number, gates: readonly Gate[]): void {
+  update(
+    forwardDistance: number,
+    gates: readonly Gate[],
+    camera: THREE.PerspectiveCamera,
+    viewportHeightCss: number
+  ): void {
     const counts: Record<ArtLod, { left: number; right: number }> = {
       0: { left: 0, right: 0 },
       1: { left: 0, right: 0 },
@@ -149,14 +163,20 @@ export class MoonGardenGates {
 
         // The luminous strip retreats into the collidable wall instead of
         // protruding into the safe gap. Its outer plane is exactly colliderPlane.
+        const contourWidth = contourWorldWidth(
+          this.cfg.visual.obstacleEdgeWidthPixels,
+          camera.position.z + gate.distance,
+          camera.fov,
+          viewportHeightCss
+        );
         this.position.set(
-          wall.colliderPlane - wall.gapDirection * CONTOUR_WIDTH * 0.5,
+          wall.colliderPlane - wall.gapDirection * contourWidth * 0.5,
           PROCEDURAL_GATE_VISUAL.wallFloorY +
             PROCEDURAL_GATE_VISUAL.wallHeight / 2,
           -gate.distance
         );
         this.scale.set(
-          CONTOUR_WIDTH,
+          contourWidth,
           PROCEDURAL_GATE_VISUAL.wallHeight,
           PROCEDURAL_GATE_VISUAL.wallDepth * 1.018
         );

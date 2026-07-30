@@ -110,7 +110,10 @@ export function runArtGateCapture(
         height: beauty.height
       },
       cfg.readability.minObstacleContrastRatio,
-      { rowStride: 4 }
+      {
+        offsetPx: Math.max(1, Math.round(3 * view.capturePixelRatio())),
+        rowStride: Math.max(1, Math.round(4 * view.capturePixelRatio()))
+      }
     );
 
     captures.push({

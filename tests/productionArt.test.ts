@@ -10,7 +10,7 @@ import {
   geometryTriangles
 } from "../src/render/moonGardenGeometry";
 import { createGlowfinRigGeometry } from "../src/render/glowfinGeometry";
-import { MoonGardenGates } from "../src/render/gateArt";
+import { contourWorldWidth, MoonGardenGates } from "../src/render/gateArt";
 
 describe("Phase 3B production art manifest", () => {
   it("matches every generated Moon-Garden LOD exactly", () => {
@@ -64,6 +64,23 @@ describe("Phase 3B production art manifest", () => {
     expect(contours).toHaveLength(1);
     expect(context).toHaveLength(6);
     gates.dispose();
+  });
+
+  it("keeps the collision contour seven display pixels through camera changes", () => {
+    const depth = 51.5;
+    const fov = tuning.camera.fovAtMaxMomentum;
+    const viewportHeight = 1680;
+    const width = contourWorldWidth(
+      tuning.visual.obstacleEdgeWidthPixels,
+      depth,
+      fov,
+      viewportHeight
+    );
+    const verticalSpan = 2 * depth * Math.tan(fov * Math.PI / 360);
+    expect(width / (verticalSpan / viewportHeight)).toBeCloseTo(
+      tuning.visual.obstacleEdgeWidthPixels,
+      6
+    );
   });
 
   it("matches the two-draw skinned Glowfin LOD evidence", () => {

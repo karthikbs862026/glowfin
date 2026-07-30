@@ -275,6 +275,11 @@ export class GameView {
     return { pixels, width, height };
   }
 
+  /** Current internal-to-CSS pixel scale, used to keep probe offsets resolution-aware. */
+  capturePixelRatio(): number {
+    return this.renderer.getPixelRatio();
+  }
+
   /** Limit which obstacles count as silhouettes, by view depth. */
   setMaskMaxDepth(depth: number): void {
     const uniform = this.maskObstacle.uniforms["uMaxDepth"];
@@ -479,7 +484,12 @@ export class GameView {
     );
 
     this.updateStripes(sim.forwardDistance);
-    this.gates.update(sim.forwardDistance, gates);
+    this.gates.update(
+      sim.forwardDistance,
+      gates,
+      this.camera,
+      this.renderer.domElement.clientHeight || window.innerHeight
+    );
 
     if (this.bloomEnabled) this.composer.render();
     else this.renderer.render(this.scene, this.camera);
