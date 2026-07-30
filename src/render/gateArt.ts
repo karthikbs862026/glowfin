@@ -72,11 +72,10 @@ export class MoonGardenGates {
       mesh.count = 0;
       mesh.frustumCulled = false;
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      // Every wall fragment is backed by the runtime collider and therefore
-      // belongs in the fairness mask. The cyan contour remains the clearest
-      // player cue, but treating collidable stone as mere context lets a dark
-      // or occluded wall escape the contrast gate.
-      mesh.userData["isObstacle"] = true;
+      // The stone gives the contour visual context. The continuous cyan face
+      // below is the deliberate player-facing clearance cue; broken outer
+      // silhouettes may sit against other ruins and are not lane boundaries.
+      mesh.userData["isObstacleContext"] = true;
       this.objects.push(mesh);
       this.disposables.push(geometry);
       return mesh;
@@ -100,7 +99,13 @@ export class MoonGardenGates {
     const contourGeometry = new THREE.BoxGeometry(1, 1, 1);
     const contourMaterial = new THREE.MeshBasicMaterial({
       color: 0xbdf4ff,
-      toneMapped: false
+      toneMapped: false,
+      // The contour shares the wall's front plane so its projected gap edge
+      // remains collider-true. Polygon offset resolves the coplanar surface
+      // without moving that edge toward the camera.
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2
     });
     this.contours = new THREE.InstancedMesh(
       contourGeometry,
@@ -184,9 +189,7 @@ export class MoonGardenGates {
         this.scale.set(
           contourWidth,
           PROCEDURAL_GATE_VISUAL.wallHeight,
-          // Sit in front of the crescent relief for one uninterrupted evidence
-          // silhouette. This changes depth only; the x-plane remains collider truth.
-          PROCEDURAL_GATE_VISUAL.wallDepth * 1.14
+          PROCEDURAL_GATE_VISUAL.wallDepth
         );
         this.matrix.compose(this.position, this.quaternion, this.scale);
         this.contours.setMatrixAt(contourCount, this.matrix);

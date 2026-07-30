@@ -57,12 +57,12 @@ describe("Phase 3B production art manifest", () => {
     }
   });
 
-  it("measures every collider-backed wall mesh and its straight contour", () => {
+  it("measures the straight lane contour and classifies broken wall art as context", () => {
     const gates = new MoonGardenGates(tuning);
-    const obstacles = gates.objects.filter((object) => object.userData["isObstacle"]);
+    const contours = gates.objects.filter((object) => object.userData["isObstacle"]);
     const context = gates.objects.filter((object) => object.userData["isObstacleContext"]);
-    expect(obstacles).toHaveLength(7);
-    expect(context).toHaveLength(0);
+    expect(contours).toHaveLength(1);
+    expect(context).toHaveLength(6);
     gates.dispose();
   });
 

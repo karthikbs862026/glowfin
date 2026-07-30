@@ -116,7 +116,10 @@ export function createWallFragmentGeometry(
     })
   ];
 
-  const innerX = gapDirection * 0.435;
+  // Keep the decorative inner rib safely behind the collision-facing cyan
+  // contour. At 0.435 it covered most of the 12px gameplay seam at distance,
+  // leaving only isolated readable pixels in the fairness capture.
+  const innerX = gapDirection * 0.35;
   parts.push(decorate(
     new THREE.BoxGeometry(0.09, 0.9, 1.025, 1, ribSegments, 1),
     {
