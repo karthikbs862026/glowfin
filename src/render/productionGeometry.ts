@@ -107,6 +107,45 @@ function stoneBlock(
   return geometry;
 }
 
+function archRibbonSegment(
+  startAngle: number,
+  endAngle: number,
+  samples: number,
+  outerRadius: number,
+  innerRadius: number,
+  centreY: number,
+  depth: number
+): THREE.BufferGeometry {
+  const outer: THREE.Vector2[] = [];
+  const inner: THREE.Vector2[] = [];
+  for (let index = 0; index <= samples; index++) {
+    const t = index / samples;
+    const angle = THREE.MathUtils.lerp(startAngle, endAngle, t);
+    outer.push(new THREE.Vector2(
+      Math.cos(angle) * outerRadius,
+      centreY + Math.sin(angle) * outerRadius
+    ));
+    inner.push(new THREE.Vector2(
+      Math.cos(angle) * innerRadius,
+      centreY + Math.sin(angle) * innerRadius
+    ));
+  }
+  const shape = new THREE.Shape();
+  const first = outer[0];
+  if (!first) throw new Error("Masonry arch segment requires samples.");
+  shape.moveTo(first.x, first.y);
+  for (const point of outer.slice(1)) shape.lineTo(point.x, point.y);
+  for (const point of inner.reverse()) shape.lineTo(point.x, point.y);
+  shape.closePath();
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    steps: 1,
+    bevelEnabled: false
+  });
+  geometry.translate(0, 0, -depth * 0.5);
+  return geometry;
+}
+
 function branchBetween(
   start: THREE.Vector3,
   end: THREE.Vector3,
@@ -439,7 +478,6 @@ export function createProductionWallGeometry(
 
 export function createProductionCollapsedArch(lod: ArtLod): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
-  const blocks = lod === 0 ? 8 : lod === 1 ? 7 : 4;
   for (const side of [-1, 1]) {
     const courses = lod === 0 ? 3 : lod === 1 ? 2 : 1;
     for (let course = 0; course < courses; course++) {
@@ -459,26 +497,34 @@ export function createProductionCollapsedArch(lod: ArtLod): THREE.BufferGeometry
       }));
     }
   }
-  for (let index = 0; index < blocks; index++) {
-    if (index === Math.floor(blocks * 0.56) || index === blocks - 2) continue;
-    const t = index / Math.max(1, blocks - 1);
-    const angle = THREE.MathUtils.lerp(0.13 * Math.PI, 0.87 * Math.PI, t);
-    parts.push(styled(stoneBlock(0.23, 0.18, 0.44, 0.022), {
-      position: new THREE.Vector3(
-        Math.cos(angle) * 0.66,
-        0.64 + Math.sin(angle) * 0.59,
-        Math.sin(index * 1.8) * 0.04
-      ),
-      rotation: new THREE.Euler(
-        Math.sin(index) * 0.025,
-        Math.sin(index * 0.7) * 0.045,
-        angle - Math.PI / 2
-      ),
-      colour: index % 3 === 0 ? STONE_LIGHT : STONE,
-      glow: 0.014
-    }));
-  }
-  parts.push(...rubble(lod === 0 ? 4 : lod === 1 ? 2 : 2, 0.9, 0.28, 0.11));
+  const samples = lod === 0 ? 7 : lod === 1 ? 5 : 3;
+  parts.push(styled(archRibbonSegment(
+    0.1 * Math.PI,
+    0.46 * Math.PI,
+    samples,
+    0.7,
+    0.47,
+    0.48,
+    0.44
+  ), {
+    rotation: new THREE.Euler(0.012, -0.035, -0.018),
+    colour: STONE,
+    glow: 0.014
+  }));
+  parts.push(styled(archRibbonSegment(
+    0.55 * Math.PI,
+    0.9 * Math.PI,
+    samples,
+    0.7,
+    0.47,
+    0.48,
+    0.44
+  ), {
+    rotation: new THREE.Euler(-0.016, 0.028, 0.014),
+    colour: STONE_LIGHT,
+    glow: 0.018
+  }));
+  parts.push(...rubble(lod === 0 ? 2 : lod === 1 ? 2 : 2, 0.9, 0.28, 0.11));
   return merged(parts);
 }
 

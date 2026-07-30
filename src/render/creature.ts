@@ -168,8 +168,16 @@ const EYE_FRAGMENT = /* glsl */ `
     float pupil = smoothstep(0.9, 0.985, facing);
     vec3 eye = mix(socket, iris, lens);
     eye = mix(eye, socket * 0.32, pupil);
+    float catchlight = smoothstep(
+      0.94,
+      0.995,
+      dot(
+        normalize(vNormalV),
+        normalize(vec3(-0.34, 0.48, 0.81))
+      )
+    );
     eye += vec3(0.55, 0.9, 1.0) *
-      smoothstep(0.965, 0.998, facing) * 0.18;
+      catchlight * 0.38;
     gl_FragColor = vec4(eye, 1.0);
   }
 `;

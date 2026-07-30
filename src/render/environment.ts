@@ -575,12 +575,12 @@ export class Environment {
       const band = rayFirst + index;
       const phase = time * 0.28 + band * 2.4;
       this.position.set(
-        Math.sin(phase) * 9.4,
-        9.5 + Math.sin(phase * 1.4) * 1.8,
+        Math.sin(phase) * 6.8,
+        7.8 + Math.sin(phase * 1.4) * 1.35,
         -(band * 58 + 24)
       );
       this.quaternion.setFromEuler(new THREE.Euler(0, 0, Math.cos(phase) * 0.08));
-      const size = lerp(0.72, 1.24, hash01(band, 833));
+      const size = lerp(1.05, 1.62, hash01(band, 833));
       this.scale.set(Math.cos(phase) >= 0 ? size : -size, size, 1);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.58, 0.72, 0.92);
