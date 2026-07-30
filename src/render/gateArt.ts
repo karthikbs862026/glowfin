@@ -225,7 +225,10 @@ export class MoonGardenGates {
         this.position.set(
           wall.colliderPlane - wall.gapDirection * facadeWidth * 0.5,
           PROCEDURAL_GATE_VISUAL.wallFloorY,
-          -gate.distance + PROCEDURAL_GATE_VISUAL.wallDepth * 0.5
+          // Sit safely in front of the generated wall skin. The inner x edge
+          // remains collider-aligned; this z-only offset retreats the
+          // projected facade outward from the safe opening.
+          -gate.distance + PROCEDURAL_GATE_VISUAL.wallDepth * 0.5 + 0.15
         );
         this.scale.set(
           wall.gapDirection > 0 ? facadeWidth : -facadeWidth,

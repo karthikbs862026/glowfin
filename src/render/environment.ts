@@ -174,9 +174,11 @@ export class Environment {
       // These are authored colour plates, not dark albedo waiting for scene
       // lights. The previous tone-mapped/instance-tinted path crushed both
       // tower and coral cards to black silhouettes in the actual capture.
-      // One shared atlas material stays inside the active-material budget;
-      // restrained instance colours preserve tower/reef hierarchy.
-      vertexColors: true,
+      // One shared atlas material stays inside the active-material budget.
+      // InstancedMesh colour requires a geometry colour attribute in this
+      // built-in shader path; enabling it without one multiplies the authored
+      // atlas through black, so the plate carries its own approved colour.
+      vertexColors: false,
       alphaTest: 0.08,
       side: THREE.DoubleSide,
       depthWrite: true,
