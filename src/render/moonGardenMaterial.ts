@@ -380,7 +380,7 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     stoneUv *= vec2(0.72, 0.5);
     vec2 cell = abs(fract(stoneUv + vec2(floor(stoneUv.y) * 0.35, 0.0)) - 0.5);
     float joint = 1.0 - smoothstep(0.028, 0.07, min(0.5 - cell.x, 0.5 - cell.y));
-    vec3 blend = pow(abs(normalW), vec3(4.0));
+    vec3 blend = pow(abs(normalize(vNormalW)), vec3(4.0));
     blend /= max(0.0001, blend.x + blend.y + blend.z);
     vec3 surface =
       texture2D(uSurfaceMap, vWorldPos.zy * uSurfaceScale).rgb * blend.x +
