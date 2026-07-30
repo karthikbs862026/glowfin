@@ -21,10 +21,17 @@ jobs:
         with:
           node-version: "22"
           cache: npm
+      - run: npm ci
       - name: Gate self-tests
         run: npm run art-gate:test
       - name: Current production-art structure
         run: npm run art-gate:structural
+      - name: Export production GLB handoff
+        run: npm run art:export-glbs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: moon-garden-production-glb-handoff
+          path: build/production-glbs
 
   fast:
     name: fast-render

@@ -19,6 +19,7 @@
     "art-gate:capture:full": "node --experimental-strip-types tools/art-gate/integration/capture.mjs --tier full --output build/art-gate-full.json --screenshot build/art-gate-full.png",
     "art-gate:run:fast": "node --experimental-strip-types tools/art-gate/src/cli.ts --config tools/art-gate/config/art-budgets.json --input build/art-gate-fast.json --tier fast",
     "art-gate:run:full": "node --experimental-strip-types tools/art-gate/src/cli.ts --config tools/art-gate/config/art-budgets.json --input build/art-gate-full.json --tier full",
+    "art:export-glbs": "node --experimental-strip-types tools/art/exportProductionGlbs.mjs",
     "check:bundle-size": "node scripts/check-bundle-size.mjs",
     "check:no-debug": "node scripts/check-no-debug.mjs"
   },

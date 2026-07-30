@@ -30,6 +30,19 @@ viewer must identify the following by silhouette and value grouping alone:
 | `moon-life-v1.glb` | Minnow, lantern jelly, ribbon ray and garden spirit | Deterministic, non-collidable animation |
 | `drowned-skyline-v1.glb` | Centre-open far-field cluster with seven varied silhouettes | Far-field instancing; never a camera-facing plate |
 
+## Deterministic handoff export
+
+Run `npm run art:export-glbs` to write the current validated mesh, skeleton,
+animation, LOD and naming baseline to `build/production-glbs/`. PR art-gate
+runs upload that directory as the `moon-garden-production-glb-handoff`
+artifact, including a SHA-256 manifest.
+
+These files are the production handoff baseline, not final sculpt approval.
+They preserve the tested hierarchy, budgets, node names and collider metadata
+so a DCC author can replace the source forms without reconstructing gameplay
+constraints. Final LFS-tracked GLBs still require authored sculpting, UVs,
+normal/roughness/emissive maps, optimization and the full device render matrix.
+
 Binary GLBs remain Git LFS assets. Production source files must include scale,
 orientation, pivot and export presets so a later revision is reproducible.
 
