@@ -130,7 +130,7 @@ export function runArtGateCapture(
       godRayMeshes: artStats.godRayMeshes,
       frameContrastRatios: report.ratios,
       obstacles: [{
-        obstacleId: "procedural-gate-pair",
+        obstacleId: "moon-garden-wall-fragments",
         ratios: report.ratios
       }]
     });

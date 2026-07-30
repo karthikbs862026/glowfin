@@ -5,6 +5,11 @@ export type ArtLod = 0 | 1 | 2;
 
 const MOONSTONE = new THREE.Color(0x315c71);
 const MOONSTONE_DARK = new THREE.Color(0x20384a);
+// Collision-critical stone gets its own brighter values. The surrounding
+// ruins deliberately stay subdued, but every surface that can end a run must
+// retain a 3:1 silhouette against the midnight lane even with caustics off.
+const OBSTACLE_MOONSTONE = new THREE.Color(0x5f96ae);
+const OBSTACLE_RECESS = new THREE.Color(0x508198);
 const SHELL_GOLD = new THREE.Color(0xf4d58b);
 const LIVING_CYAN = new THREE.Color(0x63e0ff);
 const MOON_VIOLET = new THREE.Color(0x8b6be8);
@@ -106,7 +111,7 @@ export function createWallFragmentGeometry(
   const ribSegments = lod === 0 ? 14 : lod === 1 ? 8 : 2;
   const parts: THREE.BufferGeometry[] = [
     decorate(extrudedWallShape(gapDirection), {
-      colour: MOONSTONE,
+      colour: OBSTACLE_MOONSTONE,
       glowWeight: 0.08
     })
   ];
@@ -116,7 +121,7 @@ export function createWallFragmentGeometry(
     new THREE.BoxGeometry(0.09, 0.9, 1.025, 1, ribSegments, 1),
     {
       position: new THREE.Vector3(innerX, -0.02, 0),
-      colour: MOONSTONE_DARK,
+      colour: OBSTACLE_RECESS,
       glowWeight: 0.1
     }
   ));
@@ -147,7 +152,7 @@ export function createWallFragmentGeometry(
       {
         position: new THREE.Vector3(gapDirection * 0.02, -0.11, 0.51),
         rotation: new THREE.Euler(0, 0, gapDirection > 0 ? 1.25 : -1.89),
-        colour: MOONSTONE_DARK,
+        colour: OBSTACLE_RECESS,
         glowWeight: 0.18
       }
     ));
