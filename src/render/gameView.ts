@@ -220,8 +220,6 @@ export class GameView {
     key.position.set(0.4, 1, 0.6);
     this.scene.add(key);
 
-    const halfWidth = cfg.lane.halfWidth;
-
     const fogNear = cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier;
     const fogFar = cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier;
 
@@ -243,7 +241,10 @@ export class GameView {
     this.scene.add(seabed);
     this.disposables.push(seabedGeo, seabedMaterial);
 
-    const floorGeo = new THREE.PlaneGeometry(halfWidth * 2.05, 4000);
+    // One continuous garden floor replaces the bright rectangular "road"
+    // bounded by raised rails. Gates and reef placement communicate the safe
+    // corridor; the seabed should remain a world surface, not a racetrack.
+    const floorGeo = new THREE.PlaneGeometry(72, 4000);
     this.floorMaterial = createCausticMaterial({
       baseColor: 0x20364a,
       causticColor: 0x2ea8d8,
@@ -264,21 +265,6 @@ export class GameView {
     floor.position.y = -1;
     this.scene.add(floor);
     this.disposables.push(floorGeo, this.floorMaterial);
-
-    // --- lane edges: the player needs a fixed reference to read lateral position ---
-    const edgeGeo = new THREE.BoxGeometry(0.25, 0.5, 4000);
-    const navigationMaterial = new THREE.MeshStandardMaterial({
-      color: 0x143748,
-      emissive: 0x17465d,
-      emissiveIntensity: 0.42,
-      roughness: 0.82
-    });
-    for (const sign of [-1, 1]) {
-      const edge = new THREE.Mesh(edgeGeo, navigationMaterial);
-      edge.position.set(sign * halfWidth, -0.8, 0);
-      this.scene.add(edge);
-    }
-    this.disposables.push(edgeGeo, navigationMaterial);
 
     // --- submerged crescent inlays: one instanced draw, not forty debug bars ---
     const inlayGeo = new THREE.TorusGeometry(
@@ -497,7 +483,7 @@ export class GameView {
       activeMaterials: materials.size,
       godRayMeshes: this.cfg.environment.godRayCount,
       // Three authored 1024px-or-smaller RGBA assets including mip overhead.
-      textureMemoryMB: 13
+      textureMemoryMB: 9
     };
   }
 

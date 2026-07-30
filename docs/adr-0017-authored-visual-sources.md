@@ -26,7 +26,8 @@ the frame closer to the Concept-First Art Bible.
    `art/phase3b-moon-garden-acceptance-target.webp` as the in-camera visual
    acceptance target.
 3. Remove generated road paving from the active shader and use an authored
-   hand-painted Moon-Garden seabed surface.
+   organic gravel/silt Moon-Garden seabed surface at
+   `public/art/moon-garden/moonstone-seabed.webp`.
 4. Replace the active generated broken-tower and coral silhouettes with
    authored, instanced review impostors packed into one runtime material:
    - `public/art/moon-garden/review-atlas.webp`
@@ -56,7 +57,7 @@ painted false clearance.
 
 - The live draft can be reviewed against recognizable authored art instead of
   abstract primitive stand-ins.
-- The branch incurs about 13 MB of decoded texture memory and 0.21 MB of
+- The branch incurs about 9 MB of decoded texture memory and 0.13 MB of
   compressed runtime art payload, both below the Phase 3 budgets.
 - Review impostors are camera-dependent and cannot ship as final 3D assets.
 - The next production order is Glowfin, gate/wall fragment, broken tower,

@@ -240,7 +240,6 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     float wash = 0.88 + 0.12 * sin(
       vWorldPos.y * 0.76 + vWorldPos.x * 0.18 + vWorldPos.z * 0.09
     );
-    vec3 n = abs(normalW);
     vec2 stoneUv = n.y > n.z
       ? vWorldPos.xz
       : vWorldPos.xy;

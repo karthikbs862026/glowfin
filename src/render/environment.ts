@@ -171,11 +171,15 @@ export class Environment {
     const reviewMaterial = new THREE.MeshBasicMaterial({
       map: textures.reviewAtlas,
       color: 0xffffff,
-      vertexColors: true,
+      // These are authored colour plates, not dark albedo waiting for scene
+      // lights. The previous tone-mapped/instance-tinted path crushed both
+      // tower and coral cards to black silhouettes in the actual capture.
+      vertexColors: false,
       alphaTest: 0.08,
       side: THREE.DoubleSide,
       depthWrite: true,
-      fog: true
+      fog: true,
+      toneMapped: false
     });
     this.disposables.push(reviewMaterial);
 
@@ -323,18 +327,17 @@ export class Environment {
         const salt = side > 0 ? 7717 : 3313;
         const zDistance = band * env.buildingBandSpacing +
           (hash01(band, salt + 4) - 0.5) * env.buildingBandSpacing * 0.65;
-        const distanceAhead = zDistance - forwardDistance;
-        const lod = lodForDistance(distanceAhead);
-        const isTower = hash01(band, salt + 6) < 0.38;
-        const height = isTower
-          ? lerp(env.buildingMinHeight * 1.25, env.buildingMaxHeight, Math.pow(hash01(band, salt), 1.45))
-          : lerp(env.buildingMinHeight, env.buildingMaxHeight * 0.72, Math.pow(hash01(band, salt), 1.8));
-        const width = isTower
-          ? lerp(3.8, 8.5, hash01(band, salt + 1))
-          : lerp(1.8, 4.2, hash01(band, salt + 1));
-        const depth = isTower
-          ? lerp(3.2, 7.4, hash01(band, salt + 2))
-          : lerp(1.6, 3.8, hash01(band, salt + 2));
+        // The first pass mixed authored towers with dark procedural spires,
+        // which recreated the rejected black skyline. Until the spire receives
+        // its own approved authored source, build this review skyline entirely
+        // from the broken-tower family with deterministic mirroring and scale.
+        const isTower = true;
+        const height = lerp(
+          env.buildingMinHeight * 1.25,
+          env.buildingMaxHeight,
+          Math.pow(hash01(band, salt), 1.45)
+        );
+        const width = lerp(3.8, 8.5, hash01(band, salt + 1));
         const lateral = lerp(
           env.buildingLateralMin,
           env.buildingLateralMax,
@@ -359,9 +362,10 @@ export class Environment {
           -side * lerp(0, 0.035, hash01(band, salt + 8))
         ));
         this.scale.set(
-          isTower ? width / (683 / 1024) : width,
+          (hash01(band, salt + 10) < 0.5 ? -1 : 1) *
+            width / (683 / 1024),
           height,
-          isTower ? 1 : depth
+          1
         );
         this.matrix.compose(this.position, this.quaternion, this.scale);
 
@@ -369,19 +373,14 @@ export class Environment {
           (lateral - env.buildingLateralMin) /
           Math.max(1, env.buildingLateralMax - env.buildingLateralMin)
         );
-        const brightness = isTower
-          ? lerp(0.74, 0.98, hash01(band, salt + 5)) *
-            lerp(0.72, 1, distanceFade)
-          : env.buildingBrightness *
-            lerp(0.82, 1.28, hash01(band, salt + 5)) *
-            distanceFade;
+        const brightness = lerp(0.74, 0.98, hash01(band, salt + 5)) *
+          lerp(0.72, 1, distanceFade);
         this.colour.setRGB(
-          brightness * (isTower ? 0.92 : 0.72),
-          brightness * (isTower ? 0.97 : 0.94),
-          brightness * (isTower ? 1 : 1.08)
+          brightness * 0.92,
+          brightness * 0.97,
+          brightness
         );
-        if (isTower) this.towers.add(this.matrix, this.colour);
-        else this.spires.add(lod, this.matrix, this.colour);
+        this.towers.add(this.matrix, this.colour);
       }
     }
     this.towers.finish();

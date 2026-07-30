@@ -7,16 +7,17 @@ and are budgeted by the art gate, but they are **review impostors**, not final
 
 | Asset | Runtime role | Production replacement |
 | --- | --- | --- |
-| `moonstone-seabed.webp` | Repeating hand-painted path/seabed albedo | Retain as atlas candidate after seam/material review |
+| `moonstone-seabed.webp` | Organic gravel/silt Moon-Garden floor albedo | Retain as atlas candidate after seam/material review |
 | `review-atlas.webp` | Shared instanced tower + reef review material | UV-authored, optimized GLBs and production atlas |
 | `glowfin-rear.webp` | Rear-camera character review silhouette | Final skinned Glowfin GLB and approved animation set |
 
 All runtime images are WebP, have a maximum dimension of 1024px, contain no
-text or third-party marks, and together add about 0.21 MB compressed / 13 MB
+text or third-party marks, and together add about 0.13 MB compressed / 9 MB
 decoded with mip overhead.
 
 The source prompts required Moon-Garden blue-grey stone, restrained shell-gold,
 living cyan/violet/rose reef accents, rounded manta/nautilus forms, and the
 approved rear-view axolotl-puffer Glowfin. They explicitly prohibited generic
-Atlantis architecture, road paving, cone coral, detached neon bars, white
+Atlantis architecture, paved roads, repeated mandalas, cone coral, detached
+neon bars, white
 plastic character materials, text, logos and watermarks.
