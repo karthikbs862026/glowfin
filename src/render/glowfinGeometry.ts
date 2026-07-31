@@ -211,7 +211,9 @@ export function createGlowfinRigGeometry(
   });
 
   // Two asymmetric lobes create a recognisable fish tail above and below the
-  // rear body silhouette instead of a single forehead-shaped oval.
+  // rear body silhouette. They sit just behind the mantle surface so the body
+  // occludes their roots in the chase camera instead of projecting two ovals
+  // over Glowfin's face.
   for (const side of [-1, 1]) {
     bodyParts.push({
       geometry: new THREE.SphereGeometry(
@@ -222,16 +224,16 @@ export function createGlowfinRigGeometry(
       bone: 3,
       colour: finCyan,
       position: pivots.tail.clone().add(new THREE.Vector3(
-        side * r * 0.08,
-        side * r * 0.56,
-        r * 0.68
+        side * r * 0.06,
+        side * r * 1.05,
+        -r * 0.14
       )),
       rotation: new THREE.Euler(
         side * 0.08,
         0,
         -side * 0.22
       ),
-      scale: new THREE.Vector3(0.46, 0.86, 0.12)
+      scale: new THREE.Vector3(0.54, 0.52, 0.1)
     });
   }
 
