@@ -100,6 +100,8 @@ function frame(nowMs: number): void {
     lightFraction,
     momentumFraction,
     tuning.creature.eyeHueCalm,
+    tuning.creature.eyeHueCruise,
+    tuning.creature.eyeHueFast,
     tuning.creature.eyeHueMax
   );
 

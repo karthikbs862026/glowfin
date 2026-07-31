@@ -7,7 +7,7 @@
 import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
 import type { Gate } from "../sim/course";
-import type { SimState } from "../sim/state";
+import { forwardSpeed, type SimState } from "../sim/state";
 import {
   createCausticMaterial,
   setCausticOctaves,
@@ -595,6 +595,11 @@ export class GameView {
     advanceCausticTime(this.wallMaterial, elapsedSec, cfg.visual.causticSpeed);
     const momentumFraction =
       cfg.momentum.ceiling === 0 ? 0 : sim.momentum / cfg.momentum.ceiling;
+    const speedRange =
+      cfg.speed.forwardAtMaxMomentum - cfg.speed.forwardAtZeroMomentum;
+    const speedFraction = speedRange <= 0
+      ? 0
+      : (forwardSpeed(sim, cfg) - cfg.speed.forwardAtZeroMomentum) / speedRange;
     const worldZ = -sim.forwardDistance;
 
     // --- creature (Part 3.1) ---
@@ -613,6 +618,7 @@ export class GameView {
         : 0;
     this.creature.update(
       momentumFraction,
+      speedFraction,
       lightFraction,
       sim.smoothedSteering,
       frameSec,

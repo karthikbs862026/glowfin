@@ -174,6 +174,7 @@ const EYE_FRAGMENT = /* glsl */ `
   precision mediump float;
   uniform vec3 uColor;
   uniform float uGlow;
+  uniform float uEnergy;
   varying vec3 vNormalV;
   varying vec3 vViewPosition;
   void main() {
@@ -184,17 +185,81 @@ const EYE_FRAGMENT = /* glsl */ `
     );
     float lens = smoothstep(0.18, 0.86, facing);
     vec3 socket = vec3(0.003, 0.012, 0.035);
-    vec3 iris = mix(vec3(0.02, 0.18, 0.28), uColor, 0.3) *
-      uGlow * mix(0.5, 0.78, facing);
-    vec3 eye = mix(socket, iris, lens * 0.78);
+    vec3 iris = mix(
+      vec3(0.018, 0.14, 0.24),
+      uColor,
+      mix(0.68, 0.9, uEnergy)
+    ) * mix(0.86, 1.12, uEnergy) * uGlow;
+    vec3 eye = mix(socket, iris, lens * mix(0.84, 0.94, uEnergy));
     float edge = pow(1.0 - facing, 2.4);
-    eye += vec3(0.04, 0.18, 0.3) * edge * 0.14;
+    vec3 edgeColour = mix(
+      vec3(0.04, 0.22, 0.34),
+      vec3(0.34, 0.12, 0.42),
+      uEnergy
+    );
+    eye += edgeColour * edge * mix(0.12, 0.2, uEnergy);
     gl_FragColor = vec4(eye, 1.0);
   }
 `;
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+/**
+ * Both systems deliberately contribute to the eye signal. Momentum describes
+ * the run's stored intensity; normalized forward speed describes what the
+ * player is experiencing now. Keeping the weight tunable prevents either
+ * channel from silently taking over the diegetic readout.
+ */
+export function eyeEnergyTarget(
+  momentumFraction: number,
+  speedFraction: number,
+  speedInfluence: number
+): number {
+  const speedWeight = clamp01(speedInfluence);
+  return clamp01(
+    clamp01(momentumFraction) * (1 - speedWeight) +
+    clamp01(speedFraction) * speedWeight
+  );
+}
+
+/** Frame-rate-independent smoothing avoids rapid colour chatter. */
+export function smoothEyeEnergy(
+  current: number,
+  target: number,
+  dtSec: number,
+  halfLifeSec: number
+): number {
+  const alpha = halfLifeSec <= 0
+    ? 1
+    : 1 - Math.pow(2, -Math.max(0, dtSec) / halfLifeSec);
+  return current + (clamp01(target) - current) * alpha;
+}
+
+/**
+ * Piecewise colour stops keep the gameplay states visibly distinct. A direct
+ * calm-to-max hue lerp made the middle and maximum states both read as pink.
+ */
+export function eyeHueForEnergy(
+  energy: number,
+  calmHue: number,
+  cruiseHue: number,
+  fastHue: number,
+  maxHue: number
+): number {
+  const value = clamp01(energy);
+  if (value <= 0.42) {
+    return lerp(calmHue, cruiseHue, value / 0.42);
+  }
+  if (value <= 0.78) {
+    return lerp(cruiseHue, fastHue, (value - 0.42) / 0.36);
+  }
+  return lerp(fastHue, maxHue, (value - 0.78) / 0.22);
 }
 
 export class Creature {
@@ -214,6 +279,7 @@ export class Creature {
   private flutterPhase = 0;
   private breathPhase = 0;
   private bank = 0;
+  private eyeEnergy = 0;
 
   constructor(
     private readonly cfg: TuningConfig,
@@ -236,7 +302,8 @@ export class Creature {
     this.eyeMaterial = new THREE.ShaderMaterial({
       uniforms: {
         uColor: { value: new THREE.Color(0x3aa6ff) },
-        uGlow: { value: 1 }
+        uGlow: { value: 1 },
+        uEnergy: { value: 0 }
       },
       vertexShader: EYE_VERTEX,
       fragmentShader: EYE_FRAGMENT,
@@ -286,6 +353,7 @@ export class Creature {
 
   update(
     momentumFraction: number,
+    speedFraction: number,
     lightFraction: number,
     smoothedSteering: number,
     dtSec: number,
@@ -293,6 +361,17 @@ export class Creature {
     recoveryFraction = 0
   ): void {
     const cfg = this.cfg.creature;
+    const eyeTarget = eyeEnergyTarget(
+      momentumFraction,
+      speedFraction,
+      cfg.eyeSpeedInfluence
+    );
+    this.eyeEnergy = smoothEyeEnergy(
+      this.eyeEnergy,
+      eyeTarget,
+      Math.min(dtSec, 0.25),
+      cfg.eyeResponseHalfLifeSec
+    );
     const flutterHz = lerp(
       cfg.finFlutterHzAtZeroMomentum,
       cfg.finFlutterHzAtMaxMomentum,
@@ -358,15 +437,25 @@ export class Creature {
     const eyeColour = this.eyeMaterial.uniforms["uColor"];
     if (eyeColour) {
       (eyeColour.value as THREE.Color).setHSL(
-        lerp(cfg.eyeHueCalm, cfg.eyeHueMax, momentumFraction),
-        0.72,
-        0.3
+        eyeHueForEnergy(
+          this.eyeEnergy,
+          cfg.eyeHueCalm,
+          cfg.eyeHueCruise,
+          cfg.eyeHueFast,
+          cfg.eyeHueMax
+        ),
+        lerp(0.84, 0.94, this.eyeEnergy),
+        lerp(0.4, 0.58, this.eyeEnergy)
       );
     }
     const eyeGlow = this.eyeMaterial.uniforms["uGlow"];
     if (eyeGlow) {
-      eyeGlow.value = lerp(0.64, 0.94, Math.max(0, lightFraction));
+      eyeGlow.value =
+        lerp(0.88, 1.04, clamp01(lightFraction)) *
+        lerp(0.92, 1.08, this.eyeEnergy);
     }
+    const eyeEnergy = this.eyeMaterial.uniforms["uEnergy"];
+    if (eyeEnergy) eyeEnergy.value = this.eyeEnergy;
   }
 
   dispose(): void {

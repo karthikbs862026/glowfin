@@ -6,6 +6,11 @@ import {
   GLOWFIN_FORWARD_AXIS,
   GLOWFIN_REAR_AXIS
 } from "../src/render/glowfinGeometry";
+import {
+  eyeEnergyTarget,
+  eyeHueForEnergy,
+  smoothEyeEnergy
+} from "../src/render/creature";
 
 /**
  * The creature needs a WebGL context, so its rendering is judged on device.
@@ -24,6 +29,51 @@ describe("creature configuration (Part 3.1)", () => {
     // Part 3.1 makes eye hue the diegetic momentum indicator. If these ever
     // converge, the only momentum readout in the game silently disappears.
     expect(Math.abs(tuning.creature.eyeHueMax - tuning.creature.eyeHueCalm)).toBeGreaterThan(0.2);
+  });
+
+  it("uses both momentum and actual speed for the eye colour signal", () => {
+    const speedOnly = eyeEnergyTarget(0, 1, tuning.creature.eyeSpeedInfluence);
+    const momentumOnly = eyeEnergyTarget(1, 0, tuning.creature.eyeSpeedInfluence);
+    expect(speedOnly).toBeGreaterThan(0);
+    expect(momentumOnly).toBeGreaterThan(0);
+    expect(eyeEnergyTarget(1, 1, tuning.creature.eyeSpeedInfluence)).toBe(1);
+    expect(eyeEnergyTarget(-1, 2, tuning.creature.eyeSpeedInfluence)).toBe(
+      tuning.creature.eyeSpeedInfluence
+    );
+  });
+
+  it("keeps calm, cruise, fast and maximum eye colours distinct", () => {
+    const hue = (energy: number) => eyeHueForEnergy(
+      energy,
+      tuning.creature.eyeHueCalm,
+      tuning.creature.eyeHueCruise,
+      tuning.creature.eyeHueFast,
+      tuning.creature.eyeHueMax
+    );
+    expect(hue(0)).toBeCloseTo(tuning.creature.eyeHueCalm);
+    expect(hue(0.42)).toBeCloseTo(tuning.creature.eyeHueCruise);
+    expect(hue(0.78)).toBeCloseTo(tuning.creature.eyeHueFast);
+    expect(hue(1)).toBeCloseTo(tuning.creature.eyeHueMax);
+    expect(Math.abs(hue(0.5) - hue(1))).toBeGreaterThan(0.3);
+  });
+
+  it("smooths eye colour without making the result frame-rate dependent", () => {
+    const oneFrame = smoothEyeEnergy(
+      0,
+      1,
+      1 / 30,
+      tuning.creature.eyeResponseHalfLifeSec
+    );
+    let twoFrames = 0;
+    for (let frame = 0; frame < 2; frame++) {
+      twoFrames = smoothEyeEnergy(
+        twoFrames,
+        1,
+        1 / 60,
+        tuning.creature.eyeResponseHalfLifeSec
+      );
+    }
+    expect(twoFrames).toBeCloseTo(oneFrame, 8);
   });
 
   it("body dims as light depletes, because dimming is the danger signal", () => {
@@ -60,7 +110,7 @@ describe("creature configuration (Part 3.1)", () => {
     expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.51);
     expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.65);
     expect(tuning.creature.eyeOffsetZ).toBeCloseTo(-0.52);
-    expect(tuning.creature.eyeRadius).toBeCloseTo(0.1);
+    expect(tuning.creature.eyeRadius).toBeGreaterThanOrEqual(0.18);
 
     const rig = createGlowfinRigGeometry(tuning, 1);
     rig.eyes.computeBoundingBox();
@@ -71,8 +121,8 @@ describe("creature configuration (Part 3.1)", () => {
     expect(eyeBounds?.max.x).toBeGreaterThan(
       tuning.lane.creatureRadius * 0.53
     );
-    expect(eyeBounds?.min.y).toBeGreaterThan(
-      tuning.lane.creatureRadius * 0.54
+    expect(eyeBounds?.max.y).toBeGreaterThan(
+      tuning.lane.creatureRadius * 0.75
     );
     expect(eyeBounds?.max.z).toBeLessThan(
       -tuning.lane.creatureRadius * 0.45
@@ -85,6 +135,9 @@ describe("creature configuration (Part 3.1)", () => {
     expect(rig.pivots.gills.every((pivot) =>
       pivot.z > (eyeBounds?.max.z ?? Infinity)
     )).toBe(true);
+    expect((eyeBounds?.max.x ?? 0) - (eyeBounds?.min.x ?? 0)).toBeGreaterThan(
+      tuning.lane.creatureRadius * 1.25
+    );
     rig.body.dispose();
     rig.eyes.dispose();
   });

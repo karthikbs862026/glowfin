@@ -346,3 +346,20 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   non-reference gill spacing and appendage layout drift.
 - The restored reference mesh measures 7,508/3,564 triangles across its two
   LODs, with the same ten bones, two materials and two draw calls.
+
+## 2026-07-31 — Make forward-facing eyes readable during gameplay
+
+- Owner review accepted Glowfin's body, gills, fins, tail, glow and obstacle-
+  facing eye direction, but rejected the `0.10`-radius eyes because they were
+  nearly invisible without zooming.
+- Enlarge only the existing eye lenses to `0.18` radius and flatten their Z
+  depth so the complete geometry remains ahead of the gill roots on the
+  negative-Z front crown. The chase camera may see a crown-side cap, never a
+  rear-facing facial mask.
+- Replace direct raw-momentum hue updates with one smoothed eye-energy signal:
+  60% momentum, 40% normalized forward speed and a 0.12-second half-life.
+- Use distinct ocean-blue, cyan, violet and rose-violet colour stops so low,
+  cruise, fast and maximum states remain visibly different at portrait scale.
+- Raise the art-gate eye-readability evidence from five pixels to a required
+  8–12 pixels. Body, gills, fins, tail, rig, camera, collision and world values
+  remain unchanged.

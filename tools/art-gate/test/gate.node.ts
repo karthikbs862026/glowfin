@@ -176,7 +176,7 @@ describe("manifest completeness", () => {
     observedStates: ["calm", "mid", "max", "collision", "recovery"],
     animationDriver: "simulation",
     viewportWidthFraction: 0.09,
-    eyeGlowPixels: 5,
+    eyeGlowPixels: 10,
     lods: [
       { level: 0, triangles: 7000 },
       { level: 1, triangles: 3500 }

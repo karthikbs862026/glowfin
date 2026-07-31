@@ -104,7 +104,11 @@ export interface TuningConfig {
     eyeOffsetZ: number;
     eyeRadius: number;
     eyeHueCalm: number;
+    eyeHueCruise: number;
+    eyeHueFast: number;
     eyeHueMax: number;
+    eyeSpeedInfluence: number;
+    eyeResponseHalfLifeSec: number;
     rimStrength: number;
     rimPower: number;
     bodyGlowAtZeroLight: number;
@@ -233,7 +237,11 @@ const RULES: Record<string, Rule> = {
   "creature.eyeOffsetZ": { min: -2, max: 2, note: "eye depth offset; negative values place the eyes on the obstacle-facing front hemisphere" },
   "creature.eyeRadius": { min: 0.05, max: 1, note: "eye size as a multiple of creatureRadius" },
   "creature.eyeHueCalm": { min: 0, max: 1, note: "eye hue at rest (Part 3.1: calm blue)" },
-  "creature.eyeHueMax": { min: 0, max: 1, note: "eye hue at ceiling (Part 3.1: warm pink/gold)" },
+  "creature.eyeHueCruise": { min: 0, max: 1, note: "eye hue at cruise speed (luminous cyan)" },
+  "creature.eyeHueFast": { min: 0, max: 1, note: "eye hue at high speed (violet)" },
+  "creature.eyeHueMax": { min: 0, max: 1, note: "eye hue at ceiling (Part 3.1: rose-violet)" },
+  "creature.eyeSpeedInfluence": { min: 0, max: 1, note: "share of the eye-colour response driven by normalized forward speed" },
+  "creature.eyeResponseHalfLifeSec": { min: 0, max: 1, note: "eye-colour smoothing half-life; prevents hue flicker without hiding acceleration" },
   "creature.rimStrength": { min: 0, max: 5, note: "fresnel rim; sells glowing from within (Part 3.2 priority 4)" },
   "creature.rimPower": { min: 0.5, max: 8, note: "rim tightness" },
   "creature.bodyGlowAtZeroLight": { min: 0, max: 3, note: "body brightness when light is depleted — dimming IS the danger signal (ADR-0006)" },

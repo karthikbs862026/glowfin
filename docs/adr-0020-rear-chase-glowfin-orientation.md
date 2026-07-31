@@ -24,6 +24,11 @@ tail and glow while returning the eyes to the obstacle-facing front crown.
 - Both eyes sit high and slightly wide on the negative-Z front hemisphere,
   facing the obstacle corridor. They are inset laterally inside the gill fans
   and positioned farther forward than every gill attachment.
+- Each eye uses a broad but shallow `0.18`-radius lens. Its complete depth stays
+  on the negative-Z side while an 8–12-pixel crown-side cap remains readable at
+  the normal portrait chase distance, including the maximum-speed camera
+  pullback. Enlarging the eye must never move its centre or surface normal
+  rearward.
 - The eye/gill spacing is judged from the obstacle-facing front-quarter view:
   each eye must remain clear before its three-leaf fan, with no overlap or
   occlusion. Rear-chase visibility is not a reason to move an eye backwards.
@@ -36,6 +41,10 @@ tail and glow while returning the eyes to the obstacle-facing front crown.
   through the fin membranes and lavender at the gills, with restrained pale
   cyan/lilac internal-luminous edges. The silhouette must still read without
   bloom.
+- Eye colour is simulation-driven: 60% momentum and 40% normalized forward
+  speed feed one clamped energy signal. A 0.12-second frame-rate-independent
+  half-life smooths the response through dark ocean-blue, luminous cyan,
+  violet and rose-violet states without flicker.
 - Steering may add a small yaw toward lateral intent, but the forward vector
   must continue to have a negative-Z component.
 
@@ -43,7 +52,9 @@ tail and glow while returning the eyes to the obstacle-facing front crown.
 
 The geometry regression suite locks the negative-Z swim axis, negative-Z eye
 bounds, high front-crown placement, three gill leaves per side, forward eye-to-
-gill ordering, buried fin/tail pivots and positive-Z rear appendage layout.
+gill ordering, enlarged lens span, independent momentum/speed contributions,
+frame-rate-independent colour smoothing, buried fin/tail pivots and positive-Z
+rear appendage layout.
 Phone-size browser review must include both the normal rear chase frame and an
 obstacle-facing front-quarter proof. Reject rear-facing eyes, merged gills,
 non-scalloped fins, an off-centre tail or any camera-facing facial mask.

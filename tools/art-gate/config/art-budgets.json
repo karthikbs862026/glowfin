@@ -48,8 +48,8 @@
   "creature": {
     "viewportWidthFractionMin": 0.08,
     "viewportWidthFractionMax": 0.1,
-    "eyeGlowPixelsMin": 4,
-    "eyeGlowPixelsMax": 6,
+    "eyeGlowPixelsMin": 8,
+    "eyeGlowPixelsMax": 12,
     "maxBones": 18,
     "maxMaterials": 2,
     "maxTextureSizePx": 1024,

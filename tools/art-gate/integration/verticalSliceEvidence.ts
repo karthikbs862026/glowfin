@@ -81,7 +81,7 @@ function decorativeManifests(): AssetManifest[] {
       animationDriver: GLOWFIN_ANIMATION.driver,
       observedStates: [...GLOWFIN_ANIMATION.states],
       viewportWidthFraction: 0.09,
-      eyeGlowPixels: 5,
+      eyeGlowPixels: 10,
       lods: [
         { level: 0, triangles: PRODUCTION_ART.glowfin.lod0 },
         { level: 1, triangles: PRODUCTION_ART.glowfin.lod1 }

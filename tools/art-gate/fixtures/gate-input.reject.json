@@ -263,7 +263,7 @@
         "recovery"
       ],
       "viewportWidthFraction": 0.09,
-      "eyeGlowPixels": 5,
+      "eyeGlowPixels": 10,
       "lods": [
         {
           "level": 0,

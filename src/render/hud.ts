@@ -18,6 +18,8 @@
  * the meter's hue tracks the same calm-to-hot mapping as the eyes, so the HUD
  * reinforces the diegetic read instead of competing with it.
  */
+import { eyeHueForEnergy } from "./creature";
+
 export class Hud {
   private readonly score: HTMLElement;
   private readonly multiplier: HTMLElement;
@@ -49,6 +51,8 @@ export class Hud {
     lightFraction: number,
     momentumFraction: number,
     eyeHueCalm: number,
+    eyeHueCruise: number,
+    eyeHueFast: number,
     eyeHueMax: number
   ): void {
     this.score.textContent = Math.floor(score).toLocaleString();
@@ -62,7 +66,13 @@ export class Hud {
     // Momentum meter, hue-matched to the creature's eyes so the two readouts
     // agree rather than compete.
     const momentum = Math.max(0, Math.min(1, momentumFraction));
-    const hueDegrees = (eyeHueCalm + (eyeHueMax - eyeHueCalm) * momentum) * 360;
+    const hueDegrees = eyeHueForEnergy(
+      momentum,
+      eyeHueCalm,
+      eyeHueCruise,
+      eyeHueFast,
+      eyeHueMax
+    ) * 360;
     this.momentumBar.style.width = `${(momentum * 100).toFixed(1)}%`;
     this.momentumBar.style.background = `hsl(${hueDegrees.toFixed(0)}, 90%, 62%)`;
   }

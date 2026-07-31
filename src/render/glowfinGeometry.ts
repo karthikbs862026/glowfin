@@ -441,7 +441,10 @@ export function createGlowfinRigGeometry(
       high ? 18 : 12,
       high ? 13 : 8
     );
-    eye.scale(0.88, 1, 0.5);
+    // A broad, shallow lens remains readable at the portrait gameplay scale
+    // without turning back toward the chase camera. Depth stays compressed so
+    // the visible surface still faces the negative-Z obstacle corridor.
+    eye.scale(1, 0.82, 0.36);
     eyeParts.push(prepareEye(
       eye,
       new THREE.Vector3(
