@@ -8,11 +8,12 @@ and the forked-tail decision recorded on 2026-07-31.
 ## Context
 
 The production-transition character still moved toward decreasing world Z, but
-its eyes, gill crown and several tail revisions were arranged for the positive-Z
-chase camera. In the portrait render this made Glowfin appear to face the player
-and swim backwards through the obstacle course. Successive dorsal, peduncle and
-forked-lobe additions also replaced the approved cute rear silhouette with a
-busy, ambiguous character.
+its eyes and several tail revisions were arranged for the positive-Z chase
+camera. In the portrait render this made Glowfin appear to face the player and
+swim backwards through the obstacle course. A later correction moved the gill
+crown onto the hidden front surface and rotated the fins and tail edge-on to the
+camera. That fixed heading but reduced the approved cute rear silhouette to a
+pale ball with thin sticks.
 
 ## Decision
 
@@ -30,7 +31,7 @@ busy, ambiguous character.
 ## Verification
 
 The geometry regression suite asserts that the eye mesh is entirely on negative
-Z, the caudal pivot is on positive Z and every gill root remains forward of the
-body centre. Phone-size browser review must also reject a frame that reads as a
-front view even when these structural checks pass.
-
+Z, while the caudal pivot and non-facial gill crown remain on positive Z for a
+readable rear silhouette. Phone-size browser review must also reject a frame
+that reads as a front view—or as an anonymous ball—even when these structural
+checks pass.

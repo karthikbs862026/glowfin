@@ -63,7 +63,9 @@ describe("creature configuration (Part 3.1)", () => {
     rig.eyes.computeBoundingBox();
     expect(rig.eyes.boundingBox?.max.z).toBeLessThan(0);
     expect(rig.pivots.tail.z).toBeGreaterThan(0);
-    expect(rig.pivots.gills.every((pivot) => pivot.z < 0)).toBe(true);
+    // The gill crown belongs on the rear/lateral silhouette, like the approved
+    // cute reference. It is not a face: only the eyes define forward.
+    expect(rig.pivots.gills.every((pivot) => pivot.z > 0)).toBe(true);
     rig.body.dispose();
     rig.eyes.dispose();
   });

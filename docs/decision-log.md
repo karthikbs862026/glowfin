@@ -246,3 +246,17 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   render that visually reads as front-facing even if its transform is correct.
 - Full rationale and regression rules are in
   `adr-0020-rear-chase-glowfin-orientation.md`.
+
+## 2026-07-31 — Restore the approved cute silhouette after orientation fix
+
+- The first rear-facing browser frame correctly hid Glowfin's eyes, but exposed
+  a second regression: both manta fins and the central tail had been rotated
+  edge-on, while the lavender gills were hidden on the obstacle-facing surface.
+- Decision: keep the eyes and face on negative Z, but return the non-facial gill
+  crown to the rear/lateral surface and present the fins and tail broadside to
+  the chase camera.
+- Remove detached gate voussoirs from both the wall shoulders and overhead
+  canopy. Use continuous seated stone ribbons with a restrained shell-metal
+  inset so the gate reads as one ruin at reaction distance.
+- Triangle ceilings, collision planes, opening positions and contrast
+  thresholds remain unchanged.

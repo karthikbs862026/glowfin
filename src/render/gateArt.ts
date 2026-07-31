@@ -135,8 +135,7 @@ export class MoonGardenGates {
     };
     const createCanopy = (lod: ArtLod): THREE.InstancedMesh => {
       const geometry = createProductionGateCanopyGeometry(
-        lod,
-        0
+        lod
       );
       const mesh = new THREE.InstancedMesh(
         geometry,

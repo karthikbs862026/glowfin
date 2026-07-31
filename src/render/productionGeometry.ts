@@ -371,48 +371,6 @@ export function createProductionWallGeometry(
     ));
   }
 
-  // Broken voussoirs turn the pair into an unmistakable ancient arch while
-  // all decorative mass retreats away from the safe opening.
-  const archStones = lod === 0 ? 9 : lod === 1 ? 5 : 1;
-  for (let index = 0; index < archStones; index++) {
-    if (
-      (index === archStones - 2 && variant === 2) ||
-      (index === archStones - 4 && variant === 1)
-    ) {
-      continue;
-    }
-    const t = index / Math.max(1, archStones - 1);
-    const x = THREE.MathUtils.lerp(
-      outerX + gapDirection * 0.17,
-      innerX - gapDirection * 0.075,
-      t
-    );
-    const y = -0.005 + Math.pow(t, 0.78) * 0.45;
-    const tangent = THREE.MathUtils.lerp(0.66, 0.34, t);
-    parts.push(styled(
-      stoneBlock(
-        0.18 + (index % 2) * 0.014,
-        0.11 + (index % 3) * 0.009,
-        0.27,
-        0.016
-      ),
-      {
-        position: new THREE.Vector3(
-          x,
-          y,
-          0.56 + Math.sin(index * 1.9) * 0.018
-        ),
-        rotation: new THREE.Euler(
-          Math.sin(index * 1.4) * 0.026,
-          gapDirection * Math.sin(index) * 0.045,
-          gapDirection * tangent
-        ),
-        colour: index % 3 === 0 ? SHELL : STONE_LIGHT,
-        glow: index % 3 === 0 ? 0.09 : 0.02
-      }
-    ));
-  }
-
   if (lod < 2) {
     const buttressX = outerX + gapDirection * 0.12;
     parts.push(styled(
@@ -484,8 +442,7 @@ export function createProductionWallGeometry(
  * only the upper architectural silhouette.
  */
 export function createProductionGateCanopyGeometry(
-  lod: ArtLod,
-  variant: 0 | 1 | 2
+  lod: ArtLod
 ): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
   const samples = lod === 0 ? 10 : lod === 1 ? 7 : 4;
@@ -494,81 +451,41 @@ export function createProductionGateCanopyGeometry(
     [0.58 * Math.PI, 0.9 * Math.PI]
   ] as const;
 
-  // A dark continuous core makes the arch read as one heavy construction,
-  // while the deliberate crown break keeps the ancient-ruin silhouette.
+  // A continuous blue-stone ribbon makes the arch read as one heavy
+  // construction. Earlier surface blocks broke the silhouette into floating
+  // shards at gameplay distance.
   for (const [start, end] of segments) {
     parts.push(styled(archRibbonSegment(
       start,
       end,
       samples,
-      0.47,
-      0.345,
+      0.49,
+      0.325,
       -0.06,
-      0.25
+      0.3
     ), {
-      position: new THREE.Vector3(0, 0, -0.08),
-      colour: STONE_DARK,
-      glow: 0.008
-    }));
-  }
-
-  const stoneCount = lod === 0 ? 10 : lod === 1 ? 7 : 4;
-  for (let index = 0; index < stoneCount; index++) {
-    if (
-      (variant === 1 && index === Math.floor(stoneCount * 0.42)) ||
-      (variant === 2 && index === Math.floor(stoneCount * 0.68))
-    ) {
-      continue;
-    }
-    const side = index < stoneCount / 2 ? 1 : -1;
-    const localIndex = index % Math.ceil(stoneCount / 2);
-    const localCount = Math.ceil(stoneCount / 2);
-    const t = localCount <= 1 ? 0.5 : localIndex / (localCount - 1);
-    const angle = side > 0
-      ? THREE.MathUtils.lerp(0.12 * Math.PI, 0.41 * Math.PI, t)
-      : THREE.MathUtils.lerp(0.88 * Math.PI, 0.59 * Math.PI, t);
-    const x = Math.cos(angle) * 0.42;
-    const y = -0.06 + Math.sin(angle) * 0.42;
-    parts.push(styled(stoneBlock(
-      0.135 + (index % 3) * 0.012,
-      0.105 + (index % 2) * 0.012,
-      0.31,
-      0.018
-    ), {
-      position: new THREE.Vector3(
-        x,
-        y + Math.sin(index * 2.1 + variant) * 0.006,
-        0.11 + Math.sin(index * 1.7) * 0.018
-      ),
-      rotation: new THREE.Euler(
-        Math.sin(index * 1.3) * 0.022,
-        Math.sin(index * 0.9) * 0.035,
-        side * (Math.PI * 0.5 - angle) +
-          Math.sin(index * 1.9 + variant) * 0.035
-      ),
-      colour: index % 4 === 0 ? SHELL : index % 2 === 0
-        ? STONE_LIGHT
-        : STONE,
-      glow: index % 4 === 0 ? 0.08 : 0.018
+      position: new THREE.Vector3(0, 0, 0.02),
+      colour: STONE_LIGHT,
+      glow: 0.02
     }));
   }
 
   // A recessed shell-metal inner trim supplies the moon-garden motif without
-  // relying on detached spikes or fluorescent slabs.
+  // relying on detached blocks or fluorescent slabs.
   if (lod < 2) {
     for (const [start, end] of segments) {
       parts.push(styled(archRibbonSegment(
         start,
         end,
         lod === 0 ? 9 : 6,
-        0.348,
-        0.322,
+        0.337,
+        0.316,
         -0.06,
-        0.28
+        0.32
       ), {
-        position: new THREE.Vector3(0, 0, 0.1),
+        position: new THREE.Vector3(0, 0, 0.2),
         colour: SHELL,
-        glow: 0.075
+        glow: 0.045
       }));
     }
   }

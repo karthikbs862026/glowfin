@@ -82,15 +82,15 @@ const BODY_FRAGMENT = /* glsl */ `
     float gillMask = smoothstep(0.03, 0.14, vColour.r - vColour.g);
     float finMask = smoothstep(0.34, 0.46, vColour.g) *
       (1.0 - gillMask);
-    vec3 authoredPigment = vec3(0.018, 0.36, 0.5);
+    vec3 authoredPigment = vec3(0.006, 0.27, 0.58);
     authoredPigment = mix(
       authoredPigment,
-      vec3(0.045, 0.52, 0.64),
+      vec3(0.018, 0.58, 0.72),
       finMask
     );
     authoredPigment = mix(
       authoredPigment,
-      vec3(0.42, 0.085, 0.55),
+      vec3(0.53, 0.07, 0.66),
       gillMask
     );
     vec3 skinSurface = texture2D(
@@ -121,8 +121,8 @@ const BODY_FRAGMENT = /* glsl */ `
     // equal-channel lift made the body read as grey plastic in the browser
     // even though the source pigment was saturated.
     colour *= mix(
-      vec3(0.58, 1.02, 1.16),
-      vec3(0.92, 0.72, 1.04),
+      vec3(0.42, 0.98, 1.2),
+      vec3(1.0, 0.7, 1.08),
       gillMask
     );
     float reefBounce = pow(
@@ -132,8 +132,8 @@ const BODY_FRAGMENT = /* glsl */ `
     colour += vec3(0.16, 0.025, 0.13) * reefBounce *
       mix(0.035, 0.11, gillMask);
     colour = min(
-      colour * 0.86,
-      vec3(0.34, 0.7, 0.86)
+      colour * 0.9,
+      vec3(0.24, 0.72, 0.94)
     );
     gl_FragColor = vec4(colour, 1.0);
     #include <tonemapping_fragment>

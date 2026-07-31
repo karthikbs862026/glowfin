@@ -15,7 +15,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1274,
+          "triangles": 1022,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -50,7 +50,7 @@
         },
         {
           "level": 1,
-          "triangles": 774,
+          "triangles": 634,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -85,7 +85,7 @@
         },
         {
           "level": 2,
-          "triangles": 196,
+          "triangles": 168,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -133,7 +133,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1274,
+          "triangles": 1022,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -168,7 +168,7 @@
         },
         {
           "level": 1,
-          "triangles": 774,
+          "triangles": 634,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -203,7 +203,7 @@
         },
         {
           "level": 2,
-          "triangles": 196,
+          "triangles": 168,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,

@@ -270,7 +270,7 @@ function createGateAsset() {
   for (const lod of [0, 1, 2]) {
     for (const variant of [0, 1, 2]) {
       root.add(productionMesh(
-        createProductionGateCanopyGeometry(lod, variant),
+        createProductionGateCanopyGeometry(lod),
         `MoonGate_Canopy_Variant${variant}_LOD${lod}`,
         stoneMaterial,
         {

@@ -134,7 +134,6 @@ function createMantaFin(
     bevelThickness: radius * 0.025
   });
   geometry.translate(0, 0, -depth * 0.5);
-  geometry.rotateX(Math.PI * 0.5);
   return geometry;
 }
 
@@ -143,22 +142,22 @@ function createTailPaddle(
   high: boolean
 ): THREE.BufferGeometry {
   const shape = new THREE.Shape();
-  shape.moveTo(-radius * 0.13, 0);
+  shape.moveTo(-radius * 0.13, radius * 0.08);
   shape.bezierCurveTo(
-    -radius * 0.3,
-    radius * 0.3,
+    -radius * 0.32,
+    -radius * 0.18,
     -radius * 0.24,
-    radius * 0.78,
+    -radius * 0.7,
     0,
-    radius * 1.12
+    -radius * 1.02
   );
   shape.bezierCurveTo(
     radius * 0.24,
-    radius * 0.78,
+    -radius * 0.7,
     radius * 0.3,
-    radius * 0.3,
+    -radius * 0.18,
     radius * 0.13,
-    0
+    radius * 0.08
   );
   shape.closePath();
   const depth = radius * 0.16;
@@ -172,7 +171,6 @@ function createTailPaddle(
     bevelThickness: radius * 0.024
   });
   geometry.translate(0, 0, -depth * 0.5);
-  geometry.rotateX(Math.PI * 0.5);
   return geometry;
 }
 
@@ -182,13 +180,13 @@ export function createGlowfinRigGeometry(
 ): GlowfinRigGeometry {
   const r = cfg.lane.creatureRadius;
   const high = lod === 0;
-  const cyan = new THREE.Color(0x159abb);
-  const finCyan = new THREE.Color(0x43bfd4);
-  const gillViolet = new THREE.Color(0x8a4ba3);
+  const cyan = new THREE.Color(0x058fbd);
+  const finCyan = new THREE.Color(0x42c9df);
+  const gillViolet = new THREE.Color(0xa94fc3);
   const pivots = {
-    finLeft: new THREE.Vector3(-r * 0.42, -r * 0.12, -r * 0.04),
-    finRight: new THREE.Vector3(r * 0.42, -r * 0.12, -r * 0.04),
-    tail: new THREE.Vector3(0, -r * 0.08, r * 0.72),
+    finLeft: new THREE.Vector3(-r * 0.38, -r * 0.1, r * 0.08),
+    finRight: new THREE.Vector3(r * 0.38, -r * 0.1, r * 0.08),
+    tail: new THREE.Vector3(0, -r * 0.52, r * 0.72),
     gills: [] as THREE.Vector3[]
   };
 
@@ -202,7 +200,7 @@ export function createGlowfinRigGeometry(
     colour: cyan,
     position: new THREE.Vector3(),
     scale: new THREE.Vector3(
-      1,
+      0.96,
       cfg.creature.bodyHeight,
       cfg.creature.bodyLength
     )
@@ -211,12 +209,12 @@ export function createGlowfinRigGeometry(
   for (const side of [-1, 1]) {
     const pivot = side < 0 ? pivots.finLeft : pivots.finRight;
     bodyParts.push({
-      geometry: createMantaFin(r * 0.98, high, side as -1 | 1),
+      geometry: createMantaFin(r * 0.88, high, side as -1 | 1),
       bone: side < 0 ? 1 : 2,
       colour: finCyan,
       position: pivot.clone(),
-      rotation: new THREE.Euler(0, side * 0.035, side * 0.055),
-      scale: new THREE.Vector3(1, 0.72, 1)
+      rotation: new THREE.Euler(-0.1, side * 0.035, side * 0.055),
+      scale: new THREE.Vector3(1, 0.94, 1)
     });
   }
 
@@ -248,28 +246,28 @@ export function createGlowfinRigGeometry(
     bone: 3,
     colour: finCyan,
     position: pivots.tail.clone(),
-    rotation: new THREE.Euler(0.035, 0, 0),
-    scale: new THREE.Vector3(1, 0.78, 1)
+    rotation: new THREE.Euler(-0.06, 0, 0),
+    scale: new THREE.Vector3(0.9, 0.88, 1)
   });
 
   let bone = 4;
   for (const side of [-1, 1]) {
     for (let index = 0; index < 3; index++) {
       const pivot = new THREE.Vector3(
-        side * r * (0.74 + index * 0.035),
-        r * (0.46 - index * 0.22),
-        -r * (0.18 + index * 0.025)
+        side * r * (0.7 + index * 0.04),
+        r * (0.68 - index * 0.2),
+        r * (0.5 - index * 0.025)
       );
       pivots.gills.push(pivot);
       bodyParts.push({
-        geometry: createGillLeaf(r * 0.34, high),
+        geometry: createGillLeaf(r * 0.38, high),
         bone,
         colour: gillViolet,
         position: pivot,
         rotation: new THREE.Euler(
-          side * 0.06,
-          side * 0.12,
-          side * (0.98 - index * 0.42)
+          side * 0.035,
+          side * 0.08,
+          side * (1.02 - index * 0.4)
         ),
         scale: new THREE.Vector3(
           0.92 + index * 0.035,
