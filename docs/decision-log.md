@@ -291,3 +291,11 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   extrusions with closed, subdivided curved membranes; remove the keystone;
   lower the canopy into its springers; quiet projected joints; and strengthen
   upper-side schools, jellies and rays without filling the upper-centre lane.
+- The next browser frame exposed two remaining review problems: three gill
+  petals were present per side but still overlapped like a striped horn, and
+  the wall's surviving course grid remained the dominant architectural read.
+  Move the buried gill roots laterally apart, add one broad carved manta
+  buttress and nautilus inset to each collider-safe wall half, and capture the
+  fixed canvas directly so full-page viewport resizing cannot falsify the
+  character crop. Wall inventory remains inside its unchanged ceilings at
+  1,362/780/168 triangles.

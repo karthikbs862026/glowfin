@@ -79,7 +79,10 @@ try {
     `${JSON.stringify(bundle.beautyReview, null, 2)}\n`,
     "utf8"
   );
-  await page.screenshot({ path: screenshot, fullPage: true });
+  // Capture the fixed gameplay canvas directly. `fullPage` can temporarily
+  // resize a mobile viewport while calculating document bounds, producing a
+  // misleading portrait where Glowfin appears to jump toward the lower crop.
+  await page.locator("#glowfin-canvas").screenshot({ path: screenshot });
   console.log(`wrote ${output}`);
   console.log(`wrote ${beautyReviewOutput}`);
   console.log(`wrote ${screenshot}`);

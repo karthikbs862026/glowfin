@@ -254,6 +254,68 @@ export function createProductionWallGeometry(
     glow: 0.012
   }));
 
+  // A broad carved manta buttress sits in front of the masonry courses. It
+  // turns the dominant read into one hand-sculpted load-bearing sweep while
+  // letting a few irregular course edges survive around the collapsed bank.
+  // This remains wholly inside the collidable wall half.
+  if (lod < 2) {
+    const buttress = new THREE.Shape();
+    buttress.moveTo(outerX, -0.48);
+    buttress.lineTo(innerX - gapDirection * 0.12, -0.46);
+    buttress.lineTo(innerX - gapDirection * 0.12, 0.36);
+    buttress.bezierCurveTo(
+      gapDirection * 0.34,
+      0.29,
+      gapDirection * 0.18,
+      0.05,
+      -gapDirection * 0.02,
+      -0.1
+    );
+    buttress.bezierCurveTo(
+      -gapDirection * 0.17,
+      -0.22,
+      outerX + gapDirection * 0.08,
+      -0.32,
+      outerX,
+      -0.48
+    );
+    buttress.closePath();
+    parts.push(styled(new THREE.ExtrudeGeometry(buttress, {
+      depth: 0.14,
+      steps: 1,
+      curveSegments: lod === 0 ? 8 : 5,
+      bevelEnabled: true,
+      bevelSegments: 1,
+      bevelSize: 0.012,
+      bevelThickness: 0.012
+    }), {
+      position: new THREE.Vector3(0, 0, 0.45),
+      colour: STONE,
+      glow: 0.014
+    }));
+    parts.push(styled(new THREE.TorusGeometry(
+      0.21,
+      0.026,
+      lod === 0 ? 5 : 3,
+      lod === 0 ? 20 : 9,
+      Math.PI * 1.3
+    ), {
+      position: new THREE.Vector3(
+        -gapDirection * (0.13 + variant * 0.012),
+        -0.08 + variant * 0.018,
+        0.61
+      ),
+      rotation: new THREE.Euler(
+        0,
+        0,
+        gapDirection * (-0.64 + variant * 0.08)
+      ),
+      scale: new THREE.Vector3(0.82, 1.12, 1),
+      colour: SHELL,
+      glow: 0.05
+    }));
+  }
+
   const columns = lod === 0 ? 4 : lod === 1 ? 3 : 2;
   const rows = lod === 0 ? 4 : lod === 1 ? 3 : 1;
   const courseWidth = 0.84 / columns;
