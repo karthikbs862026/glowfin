@@ -20,6 +20,10 @@ const screenshot = resolve(
   option("screenshot") ?? `build/art-gate-${tier}.png`
 );
 const beautyReviewOutput = output.replace(/\.json$/i, "-beauty-review.json");
+// The fast tier renders four states, while the full tier renders the complete
+// 36-state matrix before it marks the page ready. Keep the quick failure bound
+// for PR smoke captures without applying it to the substantially larger run.
+const readyTimeoutMs = tier === "full" ? 180_000 : 60_000;
 const revision = option("revision") ?? execFileSync(
   "git",
   ["rev-parse", "HEAD"],
@@ -70,7 +74,7 @@ try {
   await page.waitForFunction(
     () => document.body.dataset.artGateReady === "true",
     undefined,
-    { timeout: 60_000 }
+    { timeout: readyTimeoutMs }
   );
   const bundle = await page.evaluate(() => window.__GLOWFIN_ART_GATE__);
   if (renderErrors.length > 0) {
