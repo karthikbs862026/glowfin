@@ -4,14 +4,14 @@
  */
 export const PRODUCTION_ART = {
   glowfin: {
-    lod0: 7524,
-    lod1: 3574,
+    lod0: 7504,
+    lod1: 3910,
     materials: 2,
     bones: 10
   },
   wallFragment: {
-    lod0: 1362,
-    lod1: 780,
+    lod0: 1290,
+    lod1: 770,
     lod2: 168,
     materials: 1,
     maxReliefDepth: 0.07,
@@ -49,8 +49,8 @@ export const PRODUCTION_ART = {
     materials: 1
   },
   shellGarden: {
-    lod0: 954,
-    lod1: 448,
+    lod0: 892,
+    lod1: 396,
     lod2: 81,
     materials: 1
   },

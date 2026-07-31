@@ -229,14 +229,14 @@ export function createProductionWallGeometry(
   // create the visible silhouette and readable joints in front of it.
   const backing = new THREE.Shape([
     new THREE.Vector2(innerX, -0.5),
-    new THREE.Vector2(innerX, 0.3 + variant * 0.012),
-    new THREE.Vector2(gapDirection * 0.44, 0.43 + variant * 0.006),
-    new THREE.Vector2(gapDirection * 0.34, 0.5 - variant * 0.014),
-    new THREE.Vector2(gapDirection * 0.21, 0.45 - variant * 0.012),
-    new THREE.Vector2(gapDirection * 0.08, 0.27 + variant * 0.01),
-    new THREE.Vector2(-gapDirection * 0.07, 0.04 + variant * 0.016),
-    new THREE.Vector2(-gapDirection * 0.27, -0.17 - variant * 0.016),
-    new THREE.Vector2(outerX, -0.25 - variant * 0.018),
+    new THREE.Vector2(innerX, 0.48 - variant * 0.012),
+    new THREE.Vector2(gapDirection * 0.42, 0.5 - variant * 0.008),
+    new THREE.Vector2(gapDirection * 0.35, 0.43 + variant * 0.008),
+    new THREE.Vector2(gapDirection * 0.28, 0.2 + variant * 0.012),
+    new THREE.Vector2(gapDirection * 0.17, 0.015 - variant * 0.008),
+    new THREE.Vector2(gapDirection * 0.03, -0.11 + variant * 0.012),
+    new THREE.Vector2(-gapDirection * 0.16, -0.16 - variant * 0.012),
+    new THREE.Vector2(outerX, -0.22 - variant * 0.014),
     new THREE.Vector2(outerX, -0.5)
   ]);
   const backingGeometry = new THREE.ExtrudeGeometry(backing, {
@@ -254,30 +254,29 @@ export function createProductionWallGeometry(
     glow: 0.012
   }));
 
-  // A broad carved manta buttress sits in front of the masonry courses. It
-  // turns the dominant read into one hand-sculpted load-bearing sweep while
-  // letting a few irregular course edges survive around the collapsed bank.
-  // This remains wholly inside the collidable wall half.
+  // A deep, curved inner buttress carries the arch load into the foundation.
+  // The outer wall stays a low collapsed bank instead of becoming the broad
+  // triangular slab seen in the rejected portrait.
   if (lod < 2) {
     const buttress = new THREE.Shape();
-    buttress.moveTo(outerX, -0.48);
-    buttress.lineTo(innerX - gapDirection * 0.12, -0.46);
-    buttress.lineTo(innerX - gapDirection * 0.12, 0.36);
+    buttress.moveTo(outerX, -0.47);
+    buttress.lineTo(innerX - gapDirection * 0.105, -0.45);
+    buttress.lineTo(innerX - gapDirection * 0.105, 0.43);
     buttress.bezierCurveTo(
       gapDirection * 0.34,
-      0.29,
-      gapDirection * 0.18,
-      0.05,
-      -gapDirection * 0.02,
-      -0.1
+      0.41,
+      gapDirection * 0.28,
+      0.17,
+      gapDirection * 0.16,
+      -0.01
     );
     buttress.bezierCurveTo(
-      -gapDirection * 0.17,
-      -0.22,
+      gapDirection * 0.02,
+      -0.18,
       outerX + gapDirection * 0.08,
-      -0.32,
+      -0.22,
       outerX,
-      -0.48
+      -0.47
     );
     buttress.closePath();
     parts.push(styled(new THREE.ExtrudeGeometry(buttress, {
@@ -293,31 +292,50 @@ export function createProductionWallGeometry(
       colour: STONE,
       glow: 0.014
     }));
-    parts.push(styled(new THREE.TorusGeometry(
-      0.21,
-      0.026,
-      lod === 0 ? 5 : 3,
-      lod === 0 ? 20 : 9,
-      Math.PI * 1.3
-    ), {
+
+    // A recessed shell-shaped niche is cut into the load-bearing face. It is
+    // deliberately broad and embedded, replacing the thin torus ornament that
+    // read as a gold wire pasted onto the wall.
+    const niche = new THREE.Shape();
+    niche.moveTo(-0.1, -0.16);
+    niche.bezierCurveTo(-0.19, -0.02, -0.17, 0.2, 0, 0.28);
+    niche.bezierCurveTo(0.17, 0.2, 0.19, -0.02, 0.1, -0.16);
+    niche.bezierCurveTo(0.04, -0.08, -0.04, -0.08, -0.1, -0.16);
+    niche.closePath();
+    parts.push(styled(new THREE.ExtrudeGeometry(niche, {
+      depth: 0.035,
+      steps: 1,
+      curveSegments: lod === 0 ? 6 : 4,
+      bevelEnabled: lod === 0,
+      bevelSegments: 1,
+      bevelSize: 0.009,
+      bevelThickness: 0.008
+    }), {
       position: new THREE.Vector3(
-        -gapDirection * (0.13 + variant * 0.012),
-        -0.08 + variant * 0.018,
-        0.61
+        gapDirection * (0.2 + variant * 0.008),
+        -0.08 + variant * 0.012,
+        0.595
       ),
-      rotation: new THREE.Euler(
-        0,
-        0,
-        gapDirection * (-0.64 + variant * 0.08)
-      ),
-      scale: new THREE.Vector3(0.82, 1.12, 1),
-      colour: SHELL,
-      glow: 0.05
+      scale: new THREE.Vector3(1.04, 0.95, 1),
+      colour: JOINT,
+      glow: 0.006
     }));
+    if (lod === 0) {
+      parts.push(styled(new THREE.SphereGeometry(0.055, 10, 6), {
+        position: new THREE.Vector3(
+          gapDirection * (0.2 + variant * 0.008),
+          -0.01 + variant * 0.012,
+          0.63
+        ),
+        scale: new THREE.Vector3(0.84, 1.12, 0.28),
+        colour: SHELL,
+        glow: 0.045
+      }));
+    }
   }
 
-  const columns = lod === 0 ? 4 : lod === 1 ? 3 : 2;
-  const rows = lod === 0 ? 4 : lod === 1 ? 3 : 1;
+  const columns = lod === 0 ? 3 : lod === 1 ? 3 : 2;
+  const rows = lod === 0 ? 3 : lod === 1 ? 3 : 1;
   const courseWidth = 0.84 / columns;
   const courseHeight = 0.88 / rows;
   for (let row = 0; row < rows; row++) {
@@ -524,9 +542,38 @@ export function createProductionGateCanopyGeometry(
     0.34
   ), {
     position: new THREE.Vector3(0, 0, 0.02),
-    colour: STONE_LIGHT,
-    glow: 0.018
+    colour: STONE_DARK,
+    glow: 0.008
   }));
+
+  // Deep overlapping voussoirs sit on the uninterrupted structural core. The
+  // overlap prevents the old floating-block read while the alternating front
+  // depth catches enough moonlight to reveal a carved stone arch.
+  const voussoirCount = lod === 0 ? 11 : lod === 1 ? 8 : 5;
+  for (let index = 0; index < voussoirCount; index++) {
+    const t = (index + 0.5) / voussoirCount;
+    const angle = THREE.MathUtils.lerp(start, end, t);
+    const radius = 0.435;
+    parts.push(styled(stoneBlock(
+      lod === 2 ? 0.16 : 0.145,
+      lod === 2 ? 0.13 : 0.115,
+      0.4,
+      0.012 + (index % 3) * 0.004
+    ), {
+      position: new THREE.Vector3(
+        Math.cos(angle) * radius,
+        -0.1 + Math.sin(angle) * radius,
+        0.11 + (index % 2) * 0.012
+      ),
+      rotation: new THREE.Euler(
+        0,
+        (index % 2 === 0 ? -1 : 1) * 0.012,
+        angle - Math.PI * 0.5
+      ),
+      colour: index % 3 === 0 ? STONE_LIGHT : STONE,
+      glow: 0.014 + (index % 3 === 0 ? 0.006 : 0)
+    }));
+  }
 
   // Wide springers and overlapping capitals sit outside the authoritative
   // x=+/-0.5 opening. They make the arch visibly load-bearing while leaving
@@ -553,8 +600,7 @@ export function createProductionGateCanopyGeometry(
     }
   }
 
-  // A recessed shell-metal inner band is carved into the same full arch. It
-  // supplies the Moon-Garden identity without detached gold blocks.
+  // A narrow shell-metal reveal sits inside the deep stone arch.
   if (lod < 2) {
     parts.push(styled(archRibbonSegment(
       start + 0.015,
@@ -837,12 +883,82 @@ export function createProductionBranchCoral(lod: ArtLod): THREE.BufferGeometry {
   return merged(parts);
 }
 
+function createFanMembrane(lod: 0 | 1): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  shape.moveTo(-0.13, 0);
+  const rimSegments = lod === 0 ? 14 : 9;
+  for (let index = 0; index <= rimSegments; index++) {
+    const t = index / rimSegments;
+    const angle = Math.PI * (1 - t);
+    const scallop = 1 + Math.sin(t * Math.PI * 5) * 0.04;
+    shape.lineTo(
+      Math.cos(angle) * 0.7 * scallop,
+      0.15 + Math.sin(angle) * 0.9 * scallop
+    );
+  }
+  shape.lineTo(0.13, 0);
+  shape.closePath();
+
+  const holes: Array<
+    readonly [number, number, number, number, number]
+  > = lod === 0
+    ? [
+        [-0.31, 0.46, 0.12, 0.23, -0.18],
+        [0, 0.62, 0.135, 0.27, 0],
+        [0.31, 0.46, 0.12, 0.23, 0.18],
+        [0, 0.25, 0.085, 0.14, 0]
+      ]
+    : [
+        [-0.28, 0.48, 0.12, 0.22, -0.16],
+        [0, 0.62, 0.14, 0.26, 0],
+        [0.28, 0.48, 0.12, 0.22, 0.16]
+      ];
+  for (const [x, y, radiusX, radiusY, rotation] of holes) {
+    const hole = new THREE.Path();
+    hole.absellipse(
+      x,
+      y,
+      radiusX,
+      radiusY,
+      0,
+      Math.PI * 2,
+      false,
+      rotation
+    );
+    shape.holes.push(hole);
+  }
+
+  const depth = lod === 0 ? 0.15 : 0.13;
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    steps: 1,
+    curveSegments: lod === 0 ? 5 : 3,
+    bevelEnabled: lod === 0,
+    bevelSegments: 1,
+    bevelSize: 0.018,
+    bevelThickness: 0.014
+  });
+  geometry.translate(0, 0, -depth * 0.5);
+  const positions = geometry.getAttribute("position");
+  for (let index = 0; index < positions.count; index++) {
+    const x = positions.getX(index);
+    const y = positions.getY(index);
+    const bow = Math.max(0, 1 - (x / 0.74) ** 2) *
+      THREE.MathUtils.smoothstep(y, 0, 1.05) * 0.105;
+    positions.setZ(index, positions.getZ(index) + bow);
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  geometry.normalizeNormals();
+  return geometry;
+}
+
 /**
- * Sea fan: an open, bowed branch lattice with a scalloped crown.
+ * Sea fan: a thick bowed tissue sheet with large organic windows.
  *
- * Near and middle LODs are real cylindrical tissue, not an opaque polygon with
- * painted ribs. Only the far LOD keeps a single silhouette because its holes
- * are already below a pixel at the validated portrait distance.
+ * The old cylindrical lattice read as a pile of disconnected sticks. This
+ * closed, bevelled membrane has real front/back depth and broad openings, so
+ * it reads as one living organism without falling back to a flat alpha card.
  */
 export function createProductionFanCoral(lod: ArtLod): THREE.BufferGeometry {
   const parts = coralRockBase(lod, 0.68, true);
@@ -879,68 +995,24 @@ export function createProductionFanCoral(lod: ArtLod): THREE.BufferGeometry {
       }));
     }
   } else {
-    const radial = lod === 0 ? 5 : 4;
-    const rimSegments = lod === 0 ? 9 : 4;
-    const crown: THREE.Vector3[] = [];
-    for (let index = 0; index <= rimSegments; index++) {
-      const t = index / rimSegments;
-      const angle = THREE.MathUtils.lerp(
-        0.12 * Math.PI,
-        0.88 * Math.PI,
-        t
-      );
-      const scallop = 1 + Math.sin(t * Math.PI * 5) * 0.045;
-      crown.push(new THREE.Vector3(
-        Math.cos(angle) * 0.7 * scallop,
-        0.3 + Math.sin(angle) * 0.86 * scallop,
-        0.055 + Math.sin(angle * 2.0) * 0.085
-      ));
-    }
-    for (let index = 1; index < crown.length; index++) {
-      const start = crown[index - 1];
-      const end = crown[index];
-      if (!start || !end) continue;
+    parts.push(styled(createFanMembrane(lod), {
+      position: new THREE.Vector3(0, 0.18, 0),
+      rotation: new THREE.Euler(-0.08, 0.18, -0.05),
+      colour: VIOLET,
+      glow: 0.29,
+      sway: (position) => THREE.MathUtils.smoothstep(position.y, 0.18, 1.2)
+    }));
+    for (const side of [-1, 1]) {
       parts.push(styled(branchBetween(
-        start,
-        end,
-        lod === 0 ? 0.032 : 0.037,
-        lod === 0 ? 0.027 : 0.031,
-        radial
+        new THREE.Vector3(side * 0.055, 0.18, -0.02),
+        new THREE.Vector3(side * 0.42, 0.76, 0.08),
+        0.043,
+        0.024,
+        lod === 0 ? 6 : 4
       ), {
-        colour: index % 3 === 0 ? ROSE : VIOLET,
-        glow: 0.34
-      }));
-    }
-
-    const ribs = lod === 0 ? 6 : 3;
-    const root = new THREE.Vector3(0, 0.19, -0.015);
-    for (let index = 0; index < ribs; index++) {
-      const crownIndex = Math.round(
-        THREE.MathUtils.lerp(1, crown.length - 2, index / Math.max(1, ribs - 1))
-      );
-      const end = crown[crownIndex];
-      if (!end) continue;
-      const fork = end.clone().lerp(root, 0.38);
-      fork.z += index % 2 === 0 ? 0.04 : -0.025;
-      parts.push(styled(branchBetween(
-        root,
-        fork,
-        0.033,
-        0.019,
-        radial
-      ), {
-        colour: index % 2 === 0 ? CYAN_LIGHT : ROSE,
-        glow: 0.43
-      }));
-      parts.push(styled(branchBetween(
-        fork,
-        end,
-        0.019,
-        0.011,
-        radial
-      ), {
-        colour: index % 2 === 0 ? CYAN_LIGHT : VIOLET,
-        glow: 0.46
+        colour: side < 0 ? CYAN_LIGHT : ROSE,
+        glow: 0.41,
+        sway: (position) => THREE.MathUtils.smoothstep(position.y, 0.18, 0.9)
       }));
     }
   }

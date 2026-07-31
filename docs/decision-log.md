@@ -299,3 +299,25 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   fixed canvas directly so full-page viewport resizing cannot falsify the
   character crop. Wall inventory remains inside its unchanged ceilings at
   1,362/780/168 triangles.
+
+## 2026-07-31 — Reject folded gills, slab banks and stick-lattice reef
+
+- The fixed-canvas Chromium portrait proved the camera crop and seated canopy,
+  but still failed production review: each three-leaf gill fan collapsed into
+  one folded pink wedge, the tail appeared pinned under the body, the gate
+  halves remained broad triangular slabs, and foreground sea fans read as
+  disconnected tubes.
+- Decision: give every external-gill stalk three large feather lobes and fan
+  the three roots vertically with visible negative space; preserve the
+  obstacle-facing face while blending each root from body cyan into lavender.
+- Replace the tail shoulder with a tapered caudal peduncle buried diagonally
+  inside the rear mantle. Blend fin and tail pigmentation from body cyan to
+  membrane cyan so their attachment reads as continuous tissue.
+- Reshape each wall half into a tall inner pier plus low collapsed outer bank,
+  embed the shell relief in a deep curved buttress, and layer irregular
+  voussoirs onto one uninterrupted structural arch core.
+- Replace the sea-fan stick lattice with a closed, bowed and bevelled tissue
+  membrane containing large real openings. The result stays within the existing
+  budgets: Glowfin 7,504/3,910, wall 1,290/770/168 and shell garden
+  892/396/81 triangles. Collider planes, opening positions, two character
+  draws and ten-bone rig remain unchanged.

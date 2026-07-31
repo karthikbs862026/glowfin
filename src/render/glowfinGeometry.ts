@@ -27,7 +27,7 @@ export interface GlowfinRigGeometry {
 interface RigPart {
   geometry: THREE.BufferGeometry;
   bone: number;
-  colour: THREE.Color;
+  colour: THREE.Color | ((position: THREE.Vector3) => THREE.Color);
   position: THREE.Vector3;
   rotation?: THREE.Euler;
   scale: THREE.Vector3;
@@ -57,12 +57,17 @@ function preparePart(part: RigPart): THREE.BufferGeometry {
   const skinIndex = new Uint16Array(vertices * 4);
   const skinWeight = new Float32Array(vertices * 4);
   const colours = new Float32Array(vertices * 3);
+  const vertex = new THREE.Vector3();
   for (let index = 0; index < vertices; index++) {
     skinIndex[index * 4] = part.bone;
     skinWeight[index * 4] = 1;
-    colours[index * 3] = part.colour.r;
-    colours[index * 3 + 1] = part.colour.g;
-    colours[index * 3 + 2] = part.colour.b;
+    vertex.fromBufferAttribute(geometry.getAttribute("position"), index);
+    const colour = typeof part.colour === "function"
+      ? part.colour(vertex)
+      : part.colour;
+    colours[index * 3] = colour.r;
+    colours[index * 3 + 1] = colour.g;
+    colours[index * 3 + 2] = colour.b;
   }
   geometry.setAttribute(
     "skinIndex",
@@ -93,44 +98,51 @@ function createGillPetal(
   high: boolean
 ): THREE.BufferGeometry {
   const shape = new THREE.Shape();
-  // The root is deliberately narrow and extends below the pivot so it can be
-  // buried in the body. A rounded, asymmetric petal reads as a stylised
-  // external axolotl gill without falling back to forbidden micro-fronds.
-  shape.moveTo(-width * 0.2, -length * 0.1);
+  // Three broad leaflet pairs give each stalk the characteristic feathered
+  // axolotl silhouette at gameplay distance. They remain large graphic forms,
+  // not noisy micro-fronds, and the buried narrow root keeps the six stalks
+  // attached to the mantle.
+  shape.moveTo(-width * 0.12, -length * 0.12);
+  shape.lineTo(-width * 0.24, length * 0.13);
+  shape.lineTo(-width * 0.58, length * 0.24);
+  shape.lineTo(-width * 0.25, length * 0.34);
+  shape.lineTo(-width * 0.62, length * 0.49);
+  shape.lineTo(-width * 0.22, length * 0.57);
+  shape.lineTo(-width * 0.48, length * 0.73);
+  shape.lineTo(-width * 0.15, length * 0.78);
   shape.bezierCurveTo(
-    -width * 0.48,
-    length * 0.08,
-    -width * 0.58,
-    length * 0.54,
-    -width * 0.16,
-    length * 0.92
+    -width * 0.08,
+    length * 0.92,
+    -width * 0.04,
+    length,
+    0,
+    length * 1.04
   );
   shape.bezierCurveTo(
-    -width * 0.05,
-    length * 1.02,
-    width * 0.12,
-    length * 1.02,
-    width * 0.22,
-    length * 0.88
+    width * 0.06,
+    length,
+    width * 0.1,
+    length * 0.92,
+    width * 0.15,
+    length * 0.8
   );
-  shape.bezierCurveTo(
-    width * 0.5,
-    length * 0.5,
-    width * 0.42,
-    length * 0.08,
-    width * 0.2,
-    -length * 0.1
-  );
+  shape.lineTo(width * 0.48, length * 0.69);
+  shape.lineTo(width * 0.2, length * 0.58);
+  shape.lineTo(width * 0.58, length * 0.43);
+  shape.lineTo(width * 0.22, length * 0.34);
+  shape.lineTo(width * 0.5, length * 0.18);
+  shape.lineTo(width * 0.2, length * 0.12);
+  shape.lineTo(width * 0.12, -length * 0.12);
   shape.closePath();
 
-  const depth = width * 0.42;
+  const depth = width * 0.5;
   const geometry = new THREE.ExtrudeGeometry(shape, {
     depth,
     steps: 1,
-    curveSegments: high ? 7 : 4,
+    curveSegments: high ? 5 : 3,
     bevelEnabled: true,
     bevelSegments: 1,
-    bevelSize: width * 0.1,
+    bevelSize: width * 0.08,
     bevelThickness: width * 0.08
   });
   geometry.translate(0, 0, -depth * 0.5);
@@ -149,6 +161,37 @@ function createGillPetal(
   positions.needsUpdate = true;
   geometry.computeVertexNormals();
   geometry.normalizeNormals();
+  return geometry;
+}
+
+function createTaperedSegment(
+  start: THREE.Vector3,
+  end: THREE.Vector3,
+  baseRadius: number,
+  tipRadius: number,
+  radialSegments: number
+): THREE.BufferGeometry {
+  const direction = end.clone().sub(start);
+  const length = direction.length();
+  const geometry = new THREE.CylinderGeometry(
+    tipRadius,
+    baseRadius,
+    length,
+    radialSegments,
+    2,
+    false
+  );
+  geometry.applyQuaternion(
+    new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      direction.normalize()
+    )
+  );
+  geometry.translate(
+    (start.x + end.x) * 0.5,
+    (start.y + end.y) * 0.5,
+    (start.z + end.z) * 0.5
+  );
   return geometry;
 }
 
@@ -318,7 +361,7 @@ export function createGlowfinRigGeometry(
   const pivots = {
     finLeft: new THREE.Vector3(-r * 0.48, -r * 0.08, r * 0.28),
     finRight: new THREE.Vector3(r * 0.48, -r * 0.08, r * 0.28),
-    tail: new THREE.Vector3(0, -r * 0.54, r * 0.52),
+    tail: new THREE.Vector3(0, -r * 0.56, r * 0.62),
     gills: [] as THREE.Vector3[]
   };
 
@@ -347,72 +390,94 @@ export function createGlowfinRigGeometry(
         high ? 10 : 7
       ),
       bone: side < 0 ? 1 : 2,
-      colour: shoulderCyan,
+      colour: cyan,
       position: pivot.clone().add(new THREE.Vector3(
-        side * r * 0.1,
+        side * r * 0.08,
         r * 0.015,
-        r * 0.17
+        r * 0.13
       )),
       rotation: new THREE.Euler(0, side * 0.08, side * 0.035),
-      scale: new THREE.Vector3(0.96, 0.58, 0.34)
+      scale: new THREE.Vector3(1.02, 0.62, 0.42)
     });
     bodyParts.push({
       geometry: createMantaFin(r * 0.88, high, side as -1 | 1),
       bone: side < 0 ? 1 : 2,
-      colour: finCyan,
+      colour: (position) => shoulderCyan.clone().lerp(
+        finCyan,
+        THREE.MathUtils.smoothstep(
+          Math.abs(position.x),
+          r * 0.48,
+          r * 1.55
+        )
+      ),
       position: pivot.clone().add(new THREE.Vector3(0, 0, r * 0.13)),
       rotation: new THREE.Euler(-0.08, side * 0.025, side * 0.045),
       scale: new THREE.Vector3(1, 0.96, 1)
     });
   }
 
-  // A low-profile shoulder disappears under the body while the paddle begins
-  // inside the same volume. This produces one continuous caudal transition
-  // without the capsule-and-paddle seam visible in the rejected screenshot.
+  // The caudal peduncle begins well inside the mantle and runs diagonally
+  // rearward into the paddle. It makes the tail a load-bearing continuation of
+  // the body instead of a teardrop pinned to the sphere's underside.
   bodyParts.push({
-    geometry: new THREE.SphereGeometry(
-      r * 0.38,
-      high ? 14 : 9,
-      high ? 9 : 6
+    geometry: createTaperedSegment(
+      new THREE.Vector3(0, -r * 0.22, r * 0.32),
+      new THREE.Vector3(0, -r * 0.44, r * 0.64),
+      r * 0.18,
+      r * 0.105,
+      high ? 10 : 7
     ),
     bone: 3,
-    colour: shoulderCyan,
-    position: pivots.tail.clone().add(new THREE.Vector3(0, r * 0.12, 0)),
-    scale: new THREE.Vector3(0.55, 0.72, 0.34)
+    colour: (position) => cyan.clone().lerp(
+      shoulderCyan,
+      THREE.MathUtils.smoothstep(-position.y, r * 0.22, r * 0.5)
+    ),
+    position: new THREE.Vector3(),
+    scale: new THREE.Vector3(1, 1, 1)
   });
 
-  // The cute approved rear read uses one small tapered central paddle.
+  // The approved rear read uses one soft tapered central paddle.
   bodyParts.push({
-    geometry: createTailPaddle(r * 0.78, high),
+    geometry: createTailPaddle(r * 0.86, high),
     bone: 3,
-    colour: finCyan,
+    colour: (position) => shoulderCyan.clone().lerp(
+      finCyan,
+      THREE.MathUtils.smoothstep(-position.y, r * 0.34, r * 1.22)
+    ),
     position: pivots.tail.clone(),
-    rotation: new THREE.Euler(-0.04, 0, 0),
-    scale: new THREE.Vector3(0.94, 1, 1)
+    rotation: new THREE.Euler(-0.12, 0, 0),
+    scale: new THREE.Vector3(0.98, 1, 1)
   });
 
   let bone = 4;
   for (const side of [-1, 1]) {
     for (let index = 0; index < 3; index++) {
       const pivot = new THREE.Vector3(
-        side * r * (0.68 + index * 0.02),
-        r * (0.24 - index * 0.2),
-        r * (0.72 - index * 0.04)
+        side * r * (0.66 + index * 0.015),
+        r * (0.27 - index * 0.235),
+        r * (0.69 - index * 0.035)
       );
       pivots.gills.push(pivot);
       bodyParts.push({
         geometry: createGillPetal(
-          r * (0.45 - index * 0.035),
-          r * (0.24 - index * 0.012),
+          r * (0.41 - index * 0.022),
+          r * (0.18 - index * 0.01),
           high
         ),
         bone,
-        colour: gillViolet,
+        colour: (position) => cyan.clone().lerp(
+          gillViolet,
+          THREE.MathUtils.smoothstep(
+            Math.abs(position.x),
+            r * 0.62,
+            r * 1.03
+          )
+        ),
         position: pivot,
         rotation: new THREE.Euler(
-          0.18,
-          side * 0.055,
-          -side * (1.18 - index * 0.44)
+          0.12,
+          side * 0.035,
+          -side * (0.72 + index * 0.38)
         ),
         scale: new THREE.Vector3(
           1 - index * 0.025,

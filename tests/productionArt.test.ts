@@ -158,6 +158,29 @@ describe("Phase 3B art geometry inventory", () => {
     expect(PRODUCTION_ART.glowfin.bones).toBeLessThanOrEqual(18);
   });
 
+  it("keeps six separated external gills and a buried rear tail root", () => {
+    const rig = createGlowfinRigGeometry(tuning, 0);
+    const radius = tuning.lane.creatureRadius;
+    expect(rig.pivots.gills).toHaveLength(6);
+    for (const side of [-1, 1]) {
+      const fan = rig.pivots.gills.filter((pivot) =>
+        Math.sign(pivot.x) === side
+      );
+      expect(fan).toHaveLength(3);
+      const heights = fan.map((pivot) => pivot.y).sort((a, b) => b - a);
+      expect((heights[0] ?? 0) - (heights[1] ?? 0)).toBeGreaterThan(
+        radius * 0.2
+      );
+      expect((heights[1] ?? 0) - (heights[2] ?? 0)).toBeGreaterThan(
+        radius * 0.2
+      );
+    }
+    expect(rig.pivots.tail.y).toBeLessThan(-radius * 0.5);
+    expect(rig.pivots.tail.z).toBeGreaterThan(radius * 0.55);
+    rig.body.dispose();
+    rig.eyes.dispose();
+  });
+
   it("keeps ribbon kelp inside its two approved budgets", () => {
     for (const lod of [0, 1] as const) {
       const geometry = createProductionKelp(lod);
