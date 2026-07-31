@@ -781,7 +781,9 @@ export function createProductionFanCoral(lod: ArtLod): THREE.BufferGeometry {
       [0, 0.59, 0.22, 0.3]
     ] as const) {
       const opening = new THREE.Path();
-      opening.absellipse(x, y, rx, ry, 0, Math.PI * 2, true);
+      // The fan outline is clockwise, so openings must use the opposite
+      // winding for ShapeUtils/Earcut to preserve them as transparent holes.
+      opening.absellipse(x, y, rx, ry, 0, Math.PI * 2, false);
       fanShape.holes.push(opening);
     }
   }
