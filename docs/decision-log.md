@@ -232,3 +232,17 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   geometry so the character, obstacle and reef occupy the decision frame.
 - Safety: no generated gate position, lateral opening, collision plane,
   contour width, movement value or contrast threshold changes.
+
+## 2026-07-31 — Restore Glowfin's rear-chase orientation and cute silhouette
+
+- Owner review rejected the camera-facing character and the accumulated dorsal
+  and forked-tail geometry.
+- Decision: lock the face and eyes to the negative-Z obstacle-facing side.
+  From the positive-Z chase camera Glowfin must read as one round body, two soft
+  manta fins, one tapered central tail and six small lavender gills.
+- Replace eye-hue visibility as a chase-camera requirement with body/fin colour,
+  rim response, trail, bank and the existing minimal HUD.
+- Pull the camera back from the over-tight portrait crop and reject any future
+  render that visually reads as front-facing even if its transform is correct.
+- Full rationale and regression rules are in
+  `adr-0020-rear-chase-glowfin-orientation.md`.

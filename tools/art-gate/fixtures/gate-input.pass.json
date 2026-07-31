@@ -15,7 +15,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1322,
+          "triangles": 1274,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -50,7 +50,7 @@
         },
         {
           "level": 1,
-          "triangles": 794,
+          "triangles": 774,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -85,7 +85,7 @@
         },
         {
           "level": 2,
-          "triangles": 216,
+          "triangles": 196,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -133,7 +133,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1322,
+          "triangles": 1274,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -168,7 +168,7 @@
         },
         {
           "level": 1,
-          "triangles": 794,
+          "triangles": 774,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -203,7 +203,7 @@
         },
         {
           "level": 2,
-          "triangles": 216,
+          "triangles": 196,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -267,11 +267,11 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 6972
+          "triangles": 6200
         },
         {
           "level": 1,
-          "triangles": 3642
+          "triangles": 3018
         }
       ]
     },
@@ -539,12 +539,12 @@
         "min": [
           -6,
           -1,
-          99.05
+          98.975
         ],
         "max": [
           -2,
-          6.35,
-          100.95
+          5.35,
+          101.025
         ]
       },
       "source": {
@@ -563,12 +563,12 @@
         "min": [
           2,
           -1,
-          99.05
+          98.975
         ],
         "max": [
           6,
-          6.35,
-          100.95
+          5.35,
+          101.025
         ]
       },
       "source": {

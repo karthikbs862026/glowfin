@@ -4,6 +4,14 @@ import type { TuningConfig } from "../core/config";
 
 export type GlowfinLod = 0 | 1;
 
+/**
+ * Runtime travel is toward decreasing world Z. Keep this explicit because
+ * camera-facing facial features can make an otherwise correctly moving mesh
+ * read as if it is swimming backwards.
+ */
+export const GLOWFIN_FORWARD_AXIS = [0, 0, -1] as const;
+export const GLOWFIN_REAR_AXIS = [0, 0, 1] as const;
+
 export interface GlowfinRigGeometry {
   body: THREE.BufferGeometry;
   eyes: THREE.BufferGeometry;
@@ -81,84 +89,90 @@ function prepareEye(
 
 function createGillLeaf(radius: number, high: boolean): THREE.BufferGeometry {
   const radial = high ? 6 : 5;
-  const parts: THREE.BufferGeometry[] = [];
   const stem = new THREE.CapsuleGeometry(
-    radius * 0.13,
-    radius * 1.42,
+    radius * 0.16,
+    radius * 1.18,
     high ? 3 : 2,
     radial
   );
-  stem.scale(0.82, 1, 0.58);
-  parts.push(stem);
+  stem.scale(0.9, 1, 0.68);
+  return stem;
+}
 
-  // Alternating soft leaflets turn each of the six rigged gill bones into a
-  // feathery frond. The previous single ellipsoid read as a plastic ear from
-  // the chase camera even though it was correctly skinned.
-  const leafletCount = high ? 3 : 2;
-  for (let index = 0; index < leafletCount; index++) {
-    const side = index % 2 === 0 ? -1 : 1;
-    const leaflet = new THREE.SphereGeometry(
-      radius * (0.28 - index * 0.018),
-      radial,
-      high ? 5 : 4
-    );
-    leaflet.scale(0.72, 1.18, 0.42);
-    leaflet.rotateZ(side * (0.72 - index * 0.08));
-    leaflet.translate(
-      side * radius * (0.21 + index * 0.025),
-      -radius * 0.48 + index * radius * 0.34,
-      (index % 3 - 1) * radius * 0.055
-    );
-    parts.push(leaflet);
-  }
-  const tip = new THREE.SphereGeometry(
-    radius * 0.2,
-    radial,
-    high ? 5 : 4
+function createMantaFin(
+  radius: number,
+  high: boolean,
+  side: -1 | 1
+): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  shape.moveTo(0, -radius * 0.16);
+  shape.bezierCurveTo(
+    side * radius * 0.48,
+    -radius * 0.28,
+    side * radius * 1.12,
+    -radius * 0.18,
+    side * radius * 1.46,
+    radius * 0.06
   );
-  tip.scale(0.7, 1.05, 0.45);
-  tip.translate(0, radius * 0.82, 0);
-  parts.push(tip);
-
-  const geometry = mergeGeometries(parts, false);
-  for (const part of parts) part.dispose();
-  if (!geometry) throw new Error("Glowfin gill frond geometry did not merge.");
+  shape.bezierCurveTo(
+    side * radius * 1.25,
+    radius * 0.28,
+    side * radius * 0.52,
+    radius * 0.38,
+    0,
+    radius * 0.16
+  );
+  shape.closePath();
+  const depth = radius * 0.12;
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    steps: 1,
+    curveSegments: high ? 8 : 5,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: radius * 0.035,
+    bevelThickness: radius * 0.025
+  });
+  geometry.translate(0, 0, -depth * 0.5);
+  geometry.rotateX(Math.PI * 0.5);
   return geometry;
 }
 
-function createTailLobe(
+function createTailPaddle(
   radius: number,
   high: boolean
 ): THREE.BufferGeometry {
   const shape = new THREE.Shape();
-  shape.moveTo(0, -radius * 0.42);
+  shape.moveTo(-radius * 0.13, 0);
   shape.bezierCurveTo(
-    -radius * 0.26,
-    -radius * 0.2,
-    -radius * 0.36,
-    radius * 0.22,
+    -radius * 0.3,
+    radius * 0.3,
+    -radius * 0.24,
+    radius * 0.78,
     0,
-    radius * 0.62
+    radius * 1.12
   );
   shape.bezierCurveTo(
-    radius * 0.36,
-    radius * 0.22,
-    radius * 0.26,
-    -radius * 0.2,
-    0,
-    -radius * 0.42
+    radius * 0.24,
+    radius * 0.78,
+    radius * 0.3,
+    radius * 0.3,
+    radius * 0.13,
+    0
   );
-  const depth = radius * 0.08;
+  shape.closePath();
+  const depth = radius * 0.16;
   const geometry = new THREE.ExtrudeGeometry(shape, {
     depth,
     steps: 1,
-    curveSegments: high ? 6 : 4,
+    curveSegments: high ? 8 : 5,
     bevelEnabled: true,
     bevelSegments: 1,
-    bevelSize: radius * 0.025,
-    bevelThickness: radius * 0.018
+    bevelSize: radius * 0.03,
+    bevelThickness: radius * 0.024
   });
   geometry.translate(0, 0, -depth * 0.5);
+  geometry.rotateX(Math.PI * 0.5);
   return geometry;
 }
 
@@ -168,21 +182,21 @@ export function createGlowfinRigGeometry(
 ): GlowfinRigGeometry {
   const r = cfg.lane.creatureRadius;
   const high = lod === 0;
-  const cyan = new THREE.Color(0x168eaf);
-  const finCyan = new THREE.Color(0x29a9c3);
-  const gillViolet = new THREE.Color(0x794799);
+  const cyan = new THREE.Color(0x159abb);
+  const finCyan = new THREE.Color(0x43bfd4);
+  const gillViolet = new THREE.Color(0x8a4ba3);
   const pivots = {
-    finLeft: new THREE.Vector3(-r * 0.78, -r * 0.12, r * 0.18),
-    finRight: new THREE.Vector3(r * 0.78, -r * 0.12, r * 0.18),
-    tail: new THREE.Vector3(0, r * 0.01, r * 0.92),
+    finLeft: new THREE.Vector3(-r * 0.42, -r * 0.12, -r * 0.04),
+    finRight: new THREE.Vector3(r * 0.42, -r * 0.12, -r * 0.04),
+    tail: new THREE.Vector3(0, -r * 0.08, r * 0.72),
     gills: [] as THREE.Vector3[]
   };
 
   const bodyParts: RigPart[] = [{
     geometry: new THREE.SphereGeometry(
       r,
-      high ? 40 : 32,
-      high ? 28 : 22
+      high ? 52 : 36,
+      high ? 38 : 26
     ),
     bone: 0,
     colour: cyan,
@@ -194,34 +208,15 @@ export function createGlowfinRigGeometry(
     )
   }];
 
-  // A raised rear mantle keeps the chase-camera view from collapsing into a
-  // featureless sphere. It is true volume, not a camera-facing badge.
-  bodyParts.push({
-    geometry: new THREE.SphereGeometry(
-      r * 0.42,
-      high ? 20 : 14,
-      high ? 13 : 9
-    ),
-    bone: 0,
-    colour: finCyan,
-    position: new THREE.Vector3(0, r * 0.02, r * 0.98),
-    scale: new THREE.Vector3(0.92, 0.76, 0.2)
-  });
-
-  const finSegments = high ? [20, 14] : [14, 9];
   for (const side of [-1, 1]) {
     const pivot = side < 0 ? pivots.finLeft : pivots.finRight;
     bodyParts.push({
-      geometry: new THREE.SphereGeometry(
-        r * 0.78,
-        finSegments[0],
-        finSegments[1]
-      ),
+      geometry: createMantaFin(r * 0.98, high, side as -1 | 1),
       bone: side < 0 ? 1 : 2,
       colour: finCyan,
       position: pivot.clone(),
-      rotation: new THREE.Euler(0, side * 0.16, side * 0.12),
-      scale: new THREE.Vector3(1.76, 0.14, 1.1)
+      rotation: new THREE.Euler(0, side * 0.035, side * 0.055),
+      scale: new THREE.Vector3(1, 0.72, 1)
     });
   }
 
@@ -230,8 +225,8 @@ export function createGlowfinRigGeometry(
   // camera even though it was technically attached.
   bodyParts.push({
     geometry: new THREE.CapsuleGeometry(
-      r * 0.105,
-      r * 0.52,
+      r * 0.095,
+      r * 0.36,
       high ? 3 : 2,
       high ? 6 : 5
     ),
@@ -239,57 +234,46 @@ export function createGlowfinRigGeometry(
     colour: finCyan,
     position: pivots.tail.clone().add(new THREE.Vector3(
       0,
-      r * 0.08,
-      -r * 0.1
+      0,
+      r * 0.08
     )),
     rotation: new THREE.Euler(Math.PI * 0.5, 0, 0),
     scale: new THREE.Vector3(0.78, 1, 0.72)
   });
 
-  // Two tapered caudal membranes peek above and below the rear body. Their
-  // roots sit behind the mantle, producing a forked tail silhouette without
-  // projecting rounded primitive beads over Glowfin's face.
-  for (const side of [-1, 1]) {
-    bodyParts.push({
-      geometry: createTailLobe(r * 0.76, high),
-      bone: 3,
-      colour: finCyan,
-      position: pivots.tail.clone().add(new THREE.Vector3(
-        side * r * 0.035,
-        side * r * 0.86,
-        -r * 0.46
-      )),
-      rotation: new THREE.Euler(
-        side * 0.045,
-        -side * 0.035,
-        side < 0 ? Math.PI + 0.16 : -0.16
-      ),
-      scale: new THREE.Vector3(1.08, 1, 1)
-    });
-  }
+  // The cute approved rear read uses one small, tapered central paddle—not a
+  // forked crown or two separate lobes.
+  bodyParts.push({
+    geometry: createTailPaddle(r * 0.92, high),
+    bone: 3,
+    colour: finCyan,
+    position: pivots.tail.clone(),
+    rotation: new THREE.Euler(0.035, 0, 0),
+    scale: new THREE.Vector3(1, 0.78, 1)
+  });
 
   let bone = 4;
   for (const side of [-1, 1]) {
     for (let index = 0; index < 3; index++) {
       const pivot = new THREE.Vector3(
-        side * r * (1.02 + index * 0.075),
-        r * (0.54 - index * 0.31),
-        r * (0.3 + index * 0.018)
+        side * r * (0.74 + index * 0.035),
+        r * (0.46 - index * 0.22),
+        -r * (0.18 + index * 0.025)
       );
       pivots.gills.push(pivot);
       bodyParts.push({
-        geometry: createGillLeaf(r * 0.49, high),
+        geometry: createGillLeaf(r * 0.34, high),
         bone,
         colour: gillViolet,
         position: pivot,
         rotation: new THREE.Euler(
           side * 0.06,
           side * 0.12,
-          side * (1.08 - index * 0.52)
+          side * (0.98 - index * 0.42)
         ),
         scale: new THREE.Vector3(
-          0.9 + index * 0.04,
-          1.04 - index * 0.06,
+          0.92 + index * 0.035,
+          1 - index * 0.045,
           1
         )
       });

@@ -4,6 +4,8 @@
  * The body, broad manta fins, tail and six grouped gill leaves are merged into
  * one skinned mesh with ten bones. Both eyes share one mesh and one emissive
  * material, so the complete character costs two draw calls instead of twelve.
+ * The authored forward axis is -Z: facial features point into the obstacle
+ * corridor, while the portrait chase camera sees the back, fins and tail.
  * Animation remains simulation-driven for deterministic replay.
  */
 import * as THREE from "three";
@@ -80,15 +82,15 @@ const BODY_FRAGMENT = /* glsl */ `
     float gillMask = smoothstep(0.03, 0.14, vColour.r - vColour.g);
     float finMask = smoothstep(0.34, 0.46, vColour.g) *
       (1.0 - gillMask);
-    vec3 authoredPigment = vec3(0.018, 0.225, 0.34);
+    vec3 authoredPigment = vec3(0.018, 0.36, 0.5);
     authoredPigment = mix(
       authoredPigment,
-      vec3(0.025, 0.285, 0.39),
+      vec3(0.045, 0.52, 0.64),
       finMask
     );
     authoredPigment = mix(
       authoredPigment,
-      vec3(0.265, 0.07, 0.37),
+      vec3(0.42, 0.085, 0.55),
       gillMask
     );
     vec3 skinSurface = texture2D(
@@ -130,8 +132,8 @@ const BODY_FRAGMENT = /* glsl */ `
     colour += vec3(0.16, 0.025, 0.13) * reefBounce *
       mix(0.035, 0.11, gillMask);
     colour = min(
-      colour * 0.66,
-      vec3(0.24, 0.54, 0.68)
+      colour * 0.86,
+      vec3(0.34, 0.7, 0.86)
     );
     gl_FragColor = vec4(colour, 1.0);
     #include <tonemapping_fragment>
@@ -314,7 +316,11 @@ export class Creature {
       : 1 - Math.pow(2, -dtSec / cfg.bankSmoothingHalfLifeSec);
     this.bank += (targetBank - this.bank) * alpha;
     this.group.rotation.z = this.bank;
-    this.group.rotation.x = momentumFraction * 0.12;
+    // Lean and yaw into the intended course while preserving the -Z forward
+    // axis. The old camera-side eyes made a correct translation read as
+    // backwards swimming; this heading now reinforces the actual travel.
+    this.group.rotation.x = -momentumFraction * 0.07;
+    this.group.rotation.y = -smoothedSteering * 0.12;
 
     const breath = 1 + Math.sin(this.breathPhase) * cfg.breathAmount;
     const collisionSquash = 1 - collisionFraction * 0.26;

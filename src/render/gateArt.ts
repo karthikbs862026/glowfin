@@ -280,7 +280,7 @@ export class MoonGardenGates {
         const gapCentre = (gate.gapLeft + gate.gapRight) * 0.5;
         this.position.set(
           gapCentre,
-          PROCEDURAL_GATE_VISUAL.wallFloorY + wallHeight * 0.5,
+          PROCEDURAL_GATE_VISUAL.wallFloorY + wallHeight * 0.4,
           -gate.distance - wallDepth * 0.08
         );
         this.quaternion.setFromEuler(new THREE.Euler(

@@ -15,8 +15,9 @@ trail, contrast probe and hardened art gate are in place. Draft PR #7 is an
 explicit visual reset after the first evidence frame failed owner Art-Bible
 review. It must not be merged in its current state. The reset now includes:
 
-- an authored rear-view Glowfin review source driven by the existing
-  deterministic ten-bone animation prototype until its final rigged GLB exists
+- a ten-bone volumetric Glowfin with an explicit negative-Z forward axis; the
+  chase camera sees its cute round back, manta fins and central tail while its
+  face remains aimed into the obstacle corridor
 - truthful LOD wall fragments with independent cyan collider contours
 - an authored Moon-Garden seabed surface in place of generated road paving
 - authored broken-tower and reef-cluster review sources, instanced in the

@@ -2,15 +2,15 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { ArtLod } from "./moonGardenGeometry";
 
-const STONE = new THREE.Color(0x0a395e);
-const STONE_LIGHT = new THREE.Color(0x1f6382);
-const STONE_DARK = new THREE.Color(0x03172a);
-const JOINT = new THREE.Color(0x071b2b);
-const SHELL = new THREE.Color(0x668b82);
-const CYAN = new THREE.Color(0x0b6375);
-const CYAN_LIGHT = new THREE.Color(0x2b9fa5);
-const VIOLET = new THREE.Color(0x4c396c);
-const ROSE = new THREE.Color(0x793d63);
+const STONE = new THREE.Color(0x0b3158);
+const STONE_LIGHT = new THREE.Color(0x1b5778);
+const STONE_DARK = new THREE.Color(0x021322);
+const JOINT = new THREE.Color(0x04111d);
+const SHELL = new THREE.Color(0x9a7747);
+const CYAN = new THREE.Color(0x075c70);
+const CYAN_LIGHT = new THREE.Color(0x20a7b5);
+const VIOLET = new THREE.Color(0x56357b);
+const ROSE = new THREE.Color(0x873c70);
 
 interface PartStyle {
   colour: THREE.Color;
@@ -229,13 +229,14 @@ export function createProductionWallGeometry(
   // create the visible silhouette and readable joints in front of it.
   const backing = new THREE.Shape([
     new THREE.Vector2(innerX, -0.5),
-    new THREE.Vector2(innerX, 0.54 + variant * 0.014),
-    new THREE.Vector2(gapDirection * 0.42, 0.59 - variant * 0.012),
-    new THREE.Vector2(gapDirection * 0.27, 0.46 - variant * 0.018),
-    new THREE.Vector2(gapDirection * 0.12, 0.28 + variant * 0.012),
-    new THREE.Vector2(-gapDirection * 0.05, 0.06 + variant * 0.02),
-    new THREE.Vector2(-gapDirection * 0.26, -0.16 - variant * 0.018),
-    new THREE.Vector2(outerX, -0.27 - variant * 0.02),
+    new THREE.Vector2(innerX, 0.3 + variant * 0.012),
+    new THREE.Vector2(gapDirection * 0.44, 0.43 + variant * 0.006),
+    new THREE.Vector2(gapDirection * 0.34, 0.5 - variant * 0.014),
+    new THREE.Vector2(gapDirection * 0.21, 0.45 - variant * 0.012),
+    new THREE.Vector2(gapDirection * 0.08, 0.27 + variant * 0.01),
+    new THREE.Vector2(-gapDirection * 0.07, 0.04 + variant * 0.016),
+    new THREE.Vector2(-gapDirection * 0.27, -0.17 - variant * 0.016),
+    new THREE.Vector2(outerX, -0.25 - variant * 0.018),
     new THREE.Vector2(outerX, -0.5)
   ]);
   const backingGeometry = new THREE.ExtrudeGeometry(backing, {
@@ -304,7 +305,7 @@ export function createProductionWallGeometry(
   }
 
   // A stacked gap-facing pier is the primary readable gate silhouette.
-  const pierBlocks = lod === 0 ? 6 : lod === 1 ? 4 : 1;
+  const pierBlocks = lod === 0 ? 5 : lod === 1 ? 4 : 1;
   for (let index = 0; index < pierBlocks; index++) {
     const height = 0.17 + (index % 2) * 0.012;
     parts.push(styled(
@@ -312,7 +313,7 @@ export function createProductionWallGeometry(
       {
         position: new THREE.Vector3(
           innerX - gapDirection * 0.082,
-          -0.4 + index * 0.18,
+          -0.4 + index * 0.175,
           0.51 + (index % 2) * 0.015
         ),
         rotation: new THREE.Euler(
@@ -340,7 +341,7 @@ export function createProductionWallGeometry(
         innerX - gapDirection * 0.055,
         t
       );
-      const centreY = 0.01 + Math.pow(t, 0.76) * 0.56 +
+      const centreY = -0.01 + Math.pow(t, 0.78) * 0.45 +
         Math.sin(t * Math.PI * 2 + variant) * 0.008;
       const thickness = THREE.MathUtils.lerp(0.14, 0.1, t);
       upper.push(new THREE.Vector2(x, centreY + thickness * 0.5));
@@ -372,7 +373,7 @@ export function createProductionWallGeometry(
 
   // Broken voussoirs turn the pair into an unmistakable ancient arch while
   // all decorative mass retreats away from the safe opening.
-  const archStones = lod === 0 ? 10 : lod === 1 ? 6 : 2;
+  const archStones = lod === 0 ? 9 : lod === 1 ? 5 : 1;
   for (let index = 0; index < archStones; index++) {
     if (
       (index === archStones - 2 && variant === 2) ||
@@ -386,8 +387,8 @@ export function createProductionWallGeometry(
       innerX - gapDirection * 0.075,
       t
     );
-    const y = 0.015 + Math.pow(t, 0.76) * 0.56;
-    const tangent = THREE.MathUtils.lerp(0.74, 0.42, t);
+    const y = -0.005 + Math.pow(t, 0.78) * 0.45;
+    const tangent = THREE.MathUtils.lerp(0.66, 0.34, t);
     parts.push(styled(
       stoneBlock(
         0.18 + (index % 2) * 0.014,
@@ -489,8 +490,8 @@ export function createProductionGateCanopyGeometry(
   const parts: THREE.BufferGeometry[] = [];
   const samples = lod === 0 ? 10 : lod === 1 ? 7 : 4;
   const segments = [
-    [0.06 * Math.PI, 0.42 * Math.PI],
-    [0.58 * Math.PI, 0.94 * Math.PI]
+    [0.1 * Math.PI, 0.42 * Math.PI],
+    [0.58 * Math.PI, 0.9 * Math.PI]
   ] as const;
 
   // A dark continuous core makes the arch read as one heavy construction,
@@ -500,9 +501,9 @@ export function createProductionGateCanopyGeometry(
       start,
       end,
       samples,
-      0.53,
-      0.405,
-      0.02,
+      0.47,
+      0.345,
+      -0.06,
       0.25
     ), {
       position: new THREE.Vector3(0, 0, -0.08),
@@ -511,7 +512,7 @@ export function createProductionGateCanopyGeometry(
     }));
   }
 
-  const stoneCount = lod === 0 ? 12 : lod === 1 ? 8 : 4;
+  const stoneCount = lod === 0 ? 10 : lod === 1 ? 7 : 4;
   for (let index = 0; index < stoneCount; index++) {
     if (
       (variant === 1 && index === Math.floor(stoneCount * 0.42)) ||
@@ -524,10 +525,10 @@ export function createProductionGateCanopyGeometry(
     const localCount = Math.ceil(stoneCount / 2);
     const t = localCount <= 1 ? 0.5 : localIndex / (localCount - 1);
     const angle = side > 0
-      ? THREE.MathUtils.lerp(0.08 * Math.PI, 0.41 * Math.PI, t)
-      : THREE.MathUtils.lerp(0.92 * Math.PI, 0.59 * Math.PI, t);
-    const x = Math.cos(angle) * 0.47;
-    const y = 0.02 + Math.sin(angle) * 0.47;
+      ? THREE.MathUtils.lerp(0.12 * Math.PI, 0.41 * Math.PI, t)
+      : THREE.MathUtils.lerp(0.88 * Math.PI, 0.59 * Math.PI, t);
+    const x = Math.cos(angle) * 0.42;
+    const y = -0.06 + Math.sin(angle) * 0.42;
     parts.push(styled(stoneBlock(
       0.135 + (index % 3) * 0.012,
       0.105 + (index % 2) * 0.012,
@@ -552,28 +553,22 @@ export function createProductionGateCanopyGeometry(
     }));
   }
 
-  // Hanging mineral teeth make the crown break unmistakably damaged rather
-  // than an accidentally incomplete perfect ring.
+  // A recessed shell-metal inner trim supplies the moon-garden motif without
+  // relying on detached spikes or fluorescent slabs.
   if (lod < 2) {
-    for (const side of [-1, 1]) {
-      parts.push(styled(new THREE.ConeGeometry(
-        0.035,
-        0.16 + variant * 0.018,
-        lod === 0 ? 6 : 5,
-        1
+    for (const [start, end] of segments) {
+      parts.push(styled(archRibbonSegment(
+        start,
+        end,
+        lod === 0 ? 9 : 6,
+        0.348,
+        0.322,
+        -0.06,
+        0.28
       ), {
-        position: new THREE.Vector3(
-          side * (0.11 + variant * 0.018),
-          0.41 - variant * 0.012,
-          0.13
-        ),
-        rotation: new THREE.Euler(
-          0,
-          side * 0.08,
-          side * (0.13 + variant * 0.025)
-        ),
+        position: new THREE.Vector3(0, 0, 0.1),
         colour: SHELL,
-        glow: 0.09
+        glow: 0.075
       }));
     }
   }

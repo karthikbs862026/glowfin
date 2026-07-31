@@ -3,7 +3,9 @@
 ## Status
 
 Superseded for asset-production strategy by ADR-0017. Its visual rejection,
-capture metrics and no-merge decision remain in force.
+capture metrics and no-merge decision remain in force. Its camera-side eye
+decision is superseded by ADR-0020 after owner review found that arrangement
+made Glowfin appear to face the camera and swim backwards.
 
 ## Context
 

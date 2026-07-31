@@ -18,6 +18,7 @@ import {
   createProductionMinnow,
   createProductionRay,
   createProductionSkyline,
+  createProductionSpire,
   createProductionSpirit,
   createProductionTower
 } from "./productionGeometry";
@@ -140,7 +141,8 @@ export class Environment {
     // ambient-life atlas cards are retired rather than hidden at distance.
     const architectureGeometry = [
       createProductionTower(1),
-      createProductionCollapsedArch(1)
+      createProductionCollapsedArch(1),
+      createProductionSpire(1)
     ] as const;
     this.architecture = architectureGeometry.map((geometry) =>
       new InstancedVolumeFamily(
@@ -326,16 +328,15 @@ export class Environment {
   private updateArchitecture(forwardDistance: number): void {
     const env = this.cfg.environment;
     const count = Math.min(
-      8,
-      Math.max(4, Math.floor(env.buildingCount * this.density))
+      12,
+      Math.max(6, Math.floor(env.buildingCount * this.density))
     );
     const perSide = Math.floor(count / 2);
-    // The previous 124-unit offset reduced the entire drowned city to horizon
-    // pixels. Start the first readable band behind the hero gate, still well
-    // outside the lane, so architecture supplies midground parallax instead of
-    // leaving a flat blue void.
+    // Architecture starts beside the readable route rather than only at the
+    // horizon. Bounds-aware lateral placement keeps every volume outside the
+    // authoritative lane while allowing real foreground/midground parallax.
     const firstBand = Math.ceil(
-      (forwardDistance + 52) / env.buildingBandSpacing
+      (forwardDistance + 20) / env.buildingBandSpacing
     );
     for (const family of this.architecture) family.begin();
 
@@ -343,21 +344,29 @@ export class Environment {
       for (let index = 0; index < perSide; index++) {
         const band = firstBand + index;
         const salt = side > 0 ? 7717 : 3313;
-        const variant = positiveMod(band + (side > 0 ? 1 : 0), 2);
+        const variant = positiveMod(band + (side > 0 ? 1 : 0), 3);
         const zDistance = band * env.buildingBandSpacing +
           (hash01(band, salt + 4) - 0.5) * env.buildingBandSpacing * 0.45;
-        const lateral = lerp(
-          Math.max(10.4, env.buildingLateralMin),
-          Math.max(15.5, env.buildingLateralMax),
-          hash01(band, salt + 3)
-        );
         const height = lerp(
-          Math.max(3.4, env.buildingMinHeight * 0.68),
-          Math.min(6.6, env.buildingMaxHeight),
+          Math.max(4.2, env.buildingMinHeight * 0.82),
+          Math.min(8.2, env.buildingMaxHeight),
           Math.pow(hash01(band, salt), 1.5)
         );
         const family = this.architecture[variant];
         if (!family) continue;
+        const silhouetteScale = [0.92, 0.8, 0.86][variant] ?? 0.84;
+        const unitScale = height * silhouetteScale / family.height;
+        const widthStretch = [0.76, 0.9, 0.82][variant] ?? 0.82;
+        const depthStretch = [0.72, 0.84, 0.76][variant] ?? 0.76;
+        const safeInnerEdge =
+          this.cfg.lane.halfWidth +
+          family.halfWidth * unitScale * widthStretch +
+          0.42;
+        const lateral = lerp(
+          safeInnerEdge,
+          Math.max(safeInnerEdge + 3.8, env.buildingLateralMax * 0.82),
+          Math.pow(hash01(band, salt + 3), 1.8)
+        );
         const sink = lerp(
           0,
           1.1,
@@ -371,10 +380,6 @@ export class Environment {
           -side * lerp(0, 0.035, hash01(band, salt + 8))
         ));
         const mirror = hash01(band, salt + 10) < 0.5 ? -1 : 1;
-        const silhouetteScale = [0.92, 0.78][variant] ?? 0.84;
-        const unitScale = height * silhouetteScale / family.height;
-        const widthStretch = [0.72, 0.84][variant] ?? 0.8;
-        const depthStretch = [0.7, 0.8][variant] ?? 0.75;
         this.scale.set(
           mirror * unitScale * widthStretch,
           unitScale,
@@ -396,7 +401,7 @@ export class Environment {
   private updateSkyline(forwardDistance: number): void {
     // Broad, offset city shelves create three readable depth bands without
     // placing a single giant silhouette behind the playable opening.
-    const spacing = 86;
+    const spacing = 72;
     const count = this.density > 0.8 ? 3 : 2;
     const firstBand = Math.floor((forwardDistance + 34) / spacing) + 1;
     this.skyline.begin();
@@ -404,9 +409,9 @@ export class Environment {
       const band = firstBand + index;
       const side = index % 2 === 0 ? -1 : 1;
       this.position.set(
-        side * lerp(12, 18, hash01(band, 712)),
+        side * lerp(10, 15.5, hash01(band, 712)),
         -1.28 - index * 0.16,
-        -(band * spacing + 20 + index * 12)
+        -(band * spacing + 12 + index * 10)
       );
       this.quaternion.setFromEuler(new THREE.Euler(
         0,
@@ -414,9 +419,9 @@ export class Environment {
         side * lerp(-0.012, 0.018, hash01(band, 718))
       ));
       this.scale.set(
-        lerp(3.1, 4.4, hash01(band, 713)),
-        lerp(2.7, 4.0, hash01(band, 714)),
-        lerp(2.5, 3.6, hash01(band, 716))
+        lerp(2.8, 4.1, hash01(band, 713)),
+        lerp(2.6, 3.8, hash01(band, 714)),
+        lerp(2.4, 3.4, hash01(band, 716))
       );
       this.matrix.compose(this.position, this.quaternion, this.scale);
       const brightness =
@@ -463,10 +468,10 @@ export class Environment {
           (hash01(band, salt + 2) - 0.5) * 0.58;
         const isHero = variant === 0 && positiveMod(band, 6) === 0;
         const desiredHeight = lerp(
-          variant === 2 ? 0.82 : 1.05,
-          variant === 3 ? 2.45 : 2.25,
+          variant === 2 ? 1.05 : 1.28,
+          variant === 3 ? 2.9 : 2.72,
           hash01(band, salt + 1)
-        ) * (isHero ? 1.18 : 1);
+        ) * (isHero ? 1.24 : 1);
         const unitScale = desiredHeight / family.height;
         const widthStretch = lerp(
           variant === 3 ? 1.0 : 1.16,
@@ -528,24 +533,35 @@ export class Environment {
   private updateLife(forwardDistance: number, time: number): void {
     for (const family of this.life) family.begin();
 
-    const fishCount = Math.max(8, Math.round(22 * this.density));
-    const fishSpacing = 9;
-    const fishFirst = Math.ceil((forwardDistance + 18) / fishSpacing);
-    for (let index = 0; index < fishCount; index++) {
-      const band = fishFirst + index;
-      const phase = time * 0.72 + band * 1.91;
+    const schoolCount = Math.max(3, Math.round(5 * this.density));
+    const fishPerSchool = 4;
+    const schoolSpacing = 27;
+    const firstSchool = Math.ceil((forwardDistance + 20) / schoolSpacing);
+    for (let school = 0; school < schoolCount; school++) {
+      const band = firstSchool + school;
+      const phase = time * 0.62 + band * 1.77;
       const direction = hash01(band, 811) < 0.5 ? -1 : 1;
-      this.position.set(
-        Math.sin(phase) * 8.2,
-        lerp(4.2, 12.8, hash01(band, 812)) + Math.sin(phase * 0.7) * 0.5,
-        -(band * fishSpacing + hash01(band, 813) * 3.2)
-      );
-      this.quaternion.identity();
-      const size = lerp(0.3, 0.56, hash01(band, 814));
-      this.scale.set(direction * size * 1.3, size, 1);
-      this.matrix.compose(this.position, this.quaternion, this.scale);
-      this.colour.setRGB(0.72, 0.86, 1);
-      this.life[0]?.add(this.matrix, this.colour);
+      const schoolX = Math.sin(phase) * 6.6;
+      const schoolY = lerp(4.8, 11.2, hash01(band, 812));
+      for (let member = 0; member < fishPerSchool; member++) {
+        const row = Math.floor(member / 2);
+        const column = member % 2;
+        this.position.set(
+          schoolX + direction * (column * 0.82 + row * 0.34),
+          schoolY + (column - 0.5) * 0.46 - row * 0.28,
+          -(band * schoolSpacing + member * 0.92)
+        );
+        this.quaternion.setFromEuler(new THREE.Euler(
+          0,
+          direction > 0 ? 0 : Math.PI,
+          Math.sin(phase + member) * 0.035
+        ));
+        const size = lerp(0.3, 0.48, hash01(band + member, 814));
+        this.scale.set(size * 1.24, size, 1);
+        this.matrix.compose(this.position, this.quaternion, this.scale);
+        this.colour.setRGB(0.72, 0.86, 1);
+        this.life[0]?.add(this.matrix, this.colour);
+      }
     }
 
     const jellyCount = Math.max(2, Math.round(8 * this.density));

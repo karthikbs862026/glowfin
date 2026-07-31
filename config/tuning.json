@@ -55,7 +55,7 @@
     "$comment": "Caustic look. Exposed as tuning data so it can be iterated on-device with hot reload rather than guessed at. scale is cycles per world unit — too low and the pattern becomes one slow blob across the whole lane, which is exactly what the first version shipped with.",
     "causticScaleFloor": 0.85,
     "causticScaleWall": 0.65,
-    "causticIntensityFloor": 0.27,
+    "causticIntensityFloor": 0.2,
     "causticIntensityWall": 0.19,
     "causticSharpness": 4.0,
     "causticSpeed": 0.85,
@@ -71,7 +71,7 @@
 
   "environment": {
     "$comment": "Drowned city, god-rays and responsive coral. All three are instanced (one draw call each) because the draw budget is 90 and the scene already sits at 62. Everything here is BACKGROUND: it must never compete with obstacle silhouettes (Part 3.4), which is why buildings sit well outside the lane and coral is dim until it reacts.",
-    "buildingCount": 24,
+    "buildingCount": 30,
     "buildingBandSpacing": 23.0,
     "buildingMinHeight": 4.8,
     "buildingMaxHeight": 15.5,
@@ -83,7 +83,7 @@
     "godRayIntensity": 0.16,
     "godRayWidth": 3.6,
     "godRayHeight": 32.0,
-    "coralCount": 96,
+    "coralCount": 120,
     "coralBandSpacing": 3.8,
     "coralPulseRadiusUnits": 9.0,
     "coralPulseDecayPerSec": 1.9,
@@ -92,7 +92,7 @@
   },
 
   "creature": {
-    "$comment": "Part 3.1. Fins are deliberately oversized for silhouette readability at speed — this is a fairness property, not a style choice. Eye hue is the diegetic momentum indicator; whether it can replace a HUD meter is explicitly to be tested, not assumed.",
+    "$comment": "Part 3.1. Glowfin faces toward decreasing world Z, into the obstacle corridor. The portrait chase camera sees the back, caudal tail and steering bank; eyes remain on the forward/obstacle-facing side. Fins are deliberately oversized for silhouette readability at speed.",
     "bodyLength": 1.15,
     "bodyHeight": 0.88,
     "finFlutterHzAtZeroMomentum": 1.6,
@@ -103,9 +103,9 @@
     "bankSmoothingHalfLifeSec": 0.09,
     "breathHz": 0.8,
     "breathAmount": 0.05,
-    "eyeOffsetX": 0.62,
-    "eyeOffsetY": 0.34,
-    "eyeOffsetZ": 0.82,
+    "eyeOffsetX": 0.58,
+    "eyeOffsetY": 0.28,
+    "eyeOffsetZ": -0.82,
     "eyeRadius": 0.17,
     "eyeHueCalm": 0.56,
     "eyeHueMax": 0.92,
@@ -127,13 +127,13 @@
   },
 
   "camera": {
-    "distanceBehindAtZeroMomentum": 7.2,
-    "distanceBehindAtMaxMomentum": 10.8,
-    "height": 3.25,
-    "lookHeight": 1.35,
-    "lookAheadUnits": 19.0,
-    "fovAtZeroMomentum": 52.0,
-    "fovAtMaxMomentum": 61.0,
+    "distanceBehindAtZeroMomentum": 9.4,
+    "distanceBehindAtMaxMomentum": 13.4,
+    "height": 3.7,
+    "lookHeight": 1.18,
+    "lookAheadUnits": 23.0,
+    "fovAtZeroMomentum": 53.0,
+    "fovAtMaxMomentum": 62.0,
     "lateralFollowFraction": 0.45
   },
 

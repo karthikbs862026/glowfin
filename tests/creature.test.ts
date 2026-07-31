@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { tuning } from "../src/core/config";
 import budgets from "../config/budgets.json";
+import {
+  createGlowfinRigGeometry,
+  GLOWFIN_FORWARD_AXIS,
+  GLOWFIN_REAR_AXIS
+} from "../src/render/glowfinGeometry";
 
 /**
  * The creature needs a WebGL context, so its rendering is judged on device.
@@ -49,10 +54,18 @@ describe("creature configuration (Part 3.1)", () => {
     expect(tuning.creature.rimStrength).toBeGreaterThan(0);
   });
 
-  it("puts both eyes on the rear-camera-visible side of the body", () => {
-    // Glowfin travels toward negative Z and the chase camera sits at positive
-    // Z. A negative eye offset hides the eyes on the far/front side.
-    expect(tuning.creature.eyeOffsetZ).toBeGreaterThan(0);
+  it("faces into the obstacle corridor instead of toward the chase camera", () => {
+    expect(GLOWFIN_FORWARD_AXIS).toEqual([0, 0, -1]);
+    expect(GLOWFIN_REAR_AXIS).toEqual([0, 0, 1]);
+    expect(tuning.creature.eyeOffsetZ).toBeLessThan(0);
+
+    const rig = createGlowfinRigGeometry(tuning, 1);
+    rig.eyes.computeBoundingBox();
+    expect(rig.eyes.boundingBox?.max.z).toBeLessThan(0);
+    expect(rig.pivots.tail.z).toBeGreaterThan(0);
+    expect(rig.pivots.gills.every((pivot) => pivot.z < 0)).toBe(true);
+    rig.body.dispose();
+    rig.eyes.dispose();
   });
 
   it("the creature's draw calls fit the budget alongside the scene", () => {
