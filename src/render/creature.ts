@@ -170,21 +170,11 @@ const EYE_FRAGMENT = /* glsl */ `
       1.0
     );
     float lens = smoothstep(0.18, 0.86, facing);
-    vec3 socket = vec3(0.012, 0.026, 0.055);
-    vec3 iris = uColor * uGlow * mix(0.42, 0.86, facing);
-    float pupil = smoothstep(0.9, 0.985, facing);
-    vec3 eye = mix(socket, iris, lens);
-    eye = mix(eye, socket * 0.32, pupil);
-    float catchlight = smoothstep(
-      0.94,
-      0.995,
-      dot(
-        normalize(vNormalV),
-        normalize(vec3(-0.34, 0.48, 0.81))
-      )
-    );
-    eye += vec3(0.55, 0.9, 1.0) *
-      catchlight * 0.38;
+    vec3 socket = vec3(0.006, 0.014, 0.042);
+    vec3 iris = uColor * uGlow * mix(0.16, 0.32, facing);
+    vec3 eye = mix(socket, iris, lens * 0.7);
+    float edge = pow(1.0 - facing, 2.4);
+    eye += vec3(0.035, 0.09, 0.17) * edge * 0.12;
     gl_FragColor = vec4(eye, 1.0);
   }
 `;
@@ -355,8 +345,8 @@ export class Creature {
     if (eyeColour) {
       (eyeColour.value as THREE.Color).setHSL(
         lerp(cfg.eyeHueCalm, cfg.eyeHueMax, momentumFraction),
-        0.56,
-        0.34
+        0.5,
+        0.2
       );
     }
     const eyeGlow = this.eyeMaterial.uniforms["uGlow"];

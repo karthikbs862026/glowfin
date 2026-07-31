@@ -58,7 +58,7 @@ describe("creature configuration (Part 3.1)", () => {
     expect(GLOWFIN_FORWARD_AXIS).toEqual([0, 0, -1]);
     expect(GLOWFIN_REAR_AXIS).toEqual([0, 0, 1]);
     expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.83);
-    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.48);
+    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.4);
     expect(tuning.creature.eyeOffsetZ).toBeCloseTo(0.5);
     expect(tuning.creature.eyeRadius).toBeCloseTo(0.085);
 

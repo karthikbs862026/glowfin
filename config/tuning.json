@@ -104,7 +104,7 @@
     "breathHz": 0.8,
     "breathAmount": 0.05,
     "eyeOffsetX": 0.83,
-    "eyeOffsetY": 0.48,
+    "eyeOffsetY": 0.40,
     "eyeOffsetZ": 0.50,
     "eyeRadius": 0.085,
     "eyeHueCalm": 0.56,
