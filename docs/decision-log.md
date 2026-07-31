@@ -344,5 +344,5 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   names, two-draw material contract and gameplay/collision values unchanged.
 - Regression tests now reject hidden eyes, inward camera-facing eye placement,
   non-reference gill spacing and appendage layout drift.
-- The restored reference mesh measures 6,200/3,018 triangles across its two
+- The restored reference mesh measures 6,428/3,168 triangles across its two
   LODs, with the same ten bones, two materials and two draw calls.

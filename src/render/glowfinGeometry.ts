@@ -112,22 +112,46 @@ function createMantaFin(
   side: -1 | 1
 ): THREE.BufferGeometry {
   const shape = new THREE.Shape();
-  shape.moveTo(0, -radius * 0.16);
+  shape.moveTo(0, -radius * 0.14);
   shape.bezierCurveTo(
-    side * radius * 0.48,
-    -radius * 0.28,
-    side * radius * 1.12,
-    -radius * 0.18,
-    side * radius * 1.46,
-    radius * 0.06
+    side * radius * 0.25,
+    -radius * 0.2,
+    side * radius * 0.46,
+    -radius * 0.31,
+    side * radius * 0.62,
+    -radius * 0.24
   );
   shape.bezierCurveTo(
+    side * radius * 0.7,
+    -radius * 0.2,
+    side * radius * 0.76,
+    -radius * 0.18,
+    side * radius * 0.82,
+    -radius * 0.19
+  );
+  shape.bezierCurveTo(
+    side * radius * 1.02,
+    -radius * 0.3,
     side * radius * 1.25,
-    radius * 0.28,
-    side * radius * 0.52,
-    radius * 0.38,
-    0,
+    -radius * 0.2,
+    side * radius * 1.38,
+    -radius * 0.04
+  );
+  shape.bezierCurveTo(
+    side * radius * 1.52,
+    -radius * 0.01,
+    side * radius * 1.5,
+    radius * 0.12,
+    side * radius * 1.34,
     radius * 0.16
+  );
+  shape.bezierCurveTo(
+    side * radius * 1.08,
+    radius * 0.4,
+    side * radius * 0.46,
+    radius * 0.42,
+    0,
+    radius * 0.18
   );
   shape.closePath();
   const depth = radius * 0.12;
@@ -216,7 +240,7 @@ export function createGlowfinRigGeometry(
   for (const side of [-1, 1]) {
     const pivot = side < 0 ? pivots.finLeft : pivots.finRight;
     bodyParts.push({
-      geometry: createMantaFin(r * 0.88, high, side as -1 | 1),
+      geometry: createMantaFin(r * 1.02, high, side as -1 | 1),
       bone: side < 0 ? 1 : 2,
       colour: finCyan,
       position: pivot.clone(),
@@ -225,27 +249,6 @@ export function createGlowfinRigGeometry(
     });
   }
 
-  // This small rear-axis connector is hidden by the body and tail paddle in
-  // the approved camera. It keeps the animated tail continuous without adding
-  // a visible peduncle or changing the reference silhouette.
-  bodyParts.push({
-    geometry: new THREE.CapsuleGeometry(
-      r * 0.095,
-      r * 0.36,
-      high ? 3 : 2,
-      high ? 6 : 5
-    ),
-    bone: 3,
-    colour: finCyan,
-    position: pivots.tail.clone().add(new THREE.Vector3(
-      0,
-      0,
-      r * 0.08
-    )),
-    rotation: new THREE.Euler(Math.PI * 0.5, 0, 0),
-    scale: new THREE.Vector3(0.78, 1, 0.72)
-  });
-
   // The supplied reference uses one small centered teardrop tail.
   bodyParts.push({
     geometry: createTailPaddle(r * 0.92, high),
@@ -253,27 +256,27 @@ export function createGlowfinRigGeometry(
     colour: finCyan,
     position: pivots.tail.clone(),
     rotation: new THREE.Euler(-0.06, 0, 0),
-    scale: new THREE.Vector3(0.9, 0.88, 1)
+    scale: new THREE.Vector3(1.05, 0.88, 1)
   });
 
   let bone = 4;
   for (const side of [-1, 1]) {
     for (let index = 0; index < 3; index++) {
       const pivot = new THREE.Vector3(
-        side * r * (0.7 + index * 0.04),
-        r * (0.68 - index * 0.2),
-        r * (0.5 - index * 0.025)
+        side * r * (0.72 + index * 0.045),
+        r * (0.65 - index * 0.22),
+        r * (0.58 - index * 0.02)
       );
       pivots.gills.push(pivot);
       bodyParts.push({
-        geometry: createGillLeaf(r * 0.38, high),
+        geometry: createGillLeaf(r * 0.44, high),
         bone,
         colour: gillViolet,
         position: pivot,
         rotation: new THREE.Euler(
           side * 0.035,
           side * 0.08,
-          side * (1.02 - index * 0.4)
+          -side * (0.7 + index * 0.28)
         ),
         scale: new THREE.Vector3(
           0.92 + index * 0.035,
