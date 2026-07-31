@@ -26,7 +26,7 @@ const FAST_STATES: EffectState[] = [
   { momentum: "max", bloom: false, caustics: false, quality: "low" }
 ];
 
-function fullStates(): EffectState[] {
+export function fullEffectStates(): EffectState[] {
   const states: EffectState[] = [];
   for (const momentum of ["low", "mid", "max"] as const) {
     for (const bloom of [true, false]) {
@@ -120,7 +120,7 @@ export function runArtGateCapture(
   device: string
 ): BrowserCaptureBundle {
   const captures: SceneCapture[] = [];
-  const states = tier === "fast" ? FAST_STATES : fullStates();
+  const states = tier === "fast" ? FAST_STATES : fullEffectStates();
 
   for (const [index, state] of states.entries()) {
     const sim = simulateToMomentum(cfg, state.momentum);
@@ -155,10 +155,12 @@ export function runArtGateCapture(
       },
       cfg.readability.minObstacleContrastRatio,
       {
-        // A two-CSS-pixel inset clears the seam's antialiased boundary while
-        // leaving a real interior sample even when the low tier renders at a
-        // fractional pixel ratio.
-        offsetPx: Math.max(1, Math.floor(2 * view.capturePixelRatio())),
+        // Two CSS pixels clear the seam's normal antialias fringe. At 1x DPR,
+        // the lowest tier needs one additional physical pixel to cross the
+        // firmly classified context band beside the still-visible seven-pixel
+        // contour. Three is the measured minimum; it remains inside the safe
+        // gap and does not bridge a real obstacle-to-obstacle boundary.
+        offsetPx: Math.max(3, Math.floor(2 * view.capturePixelRatio())),
         // Coverage is itself a release requirement. Sampling every framebuffer
         // scanline keeps a narrow but clearly visible low-tier contour from
         // collapsing to one or two measurements merely because DPR changed.

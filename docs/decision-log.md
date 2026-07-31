@@ -363,3 +363,21 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Raise the art-gate eye-readability evidence from five pixels to a required
   8–12 pixels. Body, gills, fins, tail, rig, camera, collision and world values
   remain unchanged.
+
+## 2026-07-31 — Require the full render matrix and deterministic renderer soak
+
+- Require the complete 36-state low/mid/max × bloom × caustics × quality
+  Chromium matrix on every pull request; reject both missing and unapproved
+  extra states.
+- Add a 30-minute simulated-time soak that advances the 120 Hz fixed-step
+  simulation continuously and samples the real Three.js/WebGL renderer at 10
+  rendered frames per simulated second (18,000 WebGL frames). A rejected first
+  design rendered 54,000 frames at 30 FPS and exceeded the practical PR timeout
+  without adding distinct lifecycle coverage. The course continuously spawns
+  and prunes while the trail resets at deterministic five-minute boundaries.
+- Garbage-collect after warm-up and at completion so heap growth compares two
+  steady-state measurements. Also block on context loss, GPU resource growth,
+  pool-cap overruns, draw-call overruns and triangle overruns.
+- Keep the evidence boundary explicit: desktop simulated-time soak is a CI
+  regression gate. It does not replace the required real-time Android and iOS
+  Safari 30-minute soak or device performance sign-off.

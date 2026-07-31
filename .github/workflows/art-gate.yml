@@ -77,9 +77,10 @@ jobs:
             build/art-gate-fast-report.txt
 
   full:
-    name: full-render
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    name: full-render-and-soak
+    if: github.event_name == 'pull_request' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     needs: structural
     steps:
       - uses: actions/checkout@v4
@@ -109,6 +110,8 @@ jobs:
         run: |
           set -o pipefail
           npm run art-gate:run:full | tee build/art-gate-full-report.txt
+      - name: Run deterministic 30-minute simulated-time renderer soak
+        run: npm run art-gate:soak
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -118,3 +121,5 @@ jobs:
             build/art-gate-full.png
             build/art-gate-full-beauty-review.json
             build/art-gate-full-report.txt
+            build/art-gate-soak.json
+            build/art-gate-soak-report.txt

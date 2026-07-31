@@ -568,6 +568,17 @@ export class GameView {
     };
   }
 
+  /**
+   * Stable renderer allocation counts for the deterministic CI soak.
+   * These are GPU-side Three.js resources, not JavaScript heap estimates.
+   */
+  resourceStats(): { geometries: number; textures: number } {
+    return {
+      geometries: this.renderer.info.memory.geometries,
+      textures: this.renderer.info.memory.textures
+    };
+  }
+
   private handleResize = (): void => {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();

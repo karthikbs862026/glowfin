@@ -344,6 +344,17 @@ export function checkCaptureCoverage(
   }
 
   const expected = expectedStates(tier);
+  const expectedKeys = new Set(expected.map((state) =>
+    stateKey(state.device, state)
+  ));
+  const unexpected = [...seen.keys()].filter((key) => !expectedKeys.has(key));
+  if (unexpected.length > 0) {
+    findings.push(result(
+      "UNEXPECTED_CAPTURE_STATE", "blocker",
+      `${unexpected.length} unapproved render states were supplied. First: ${unexpected[0]}`,
+      "Art Bible §12"
+    ));
+  }
   const missing = expected.filter((state) =>
     !seen.has(stateKey(state.device, state))
   );

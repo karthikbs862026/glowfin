@@ -71,6 +71,7 @@ scripts/        repo/CI and production bundle checks
 - [ ] Replace authored review impostors with optimized broken-tower and reef GLBs
 - [ ] Replace the rejected code-native Glowfin and gate treatment with approved
       authored models while preserving collider truth
-- [ ] Full 36-state emulated art matrix
-- [ ] Android and iOS Safari performance, contrast and 30-minute soak sign-off
+- [x] Full 36-state emulated art matrix required on pull requests
+- [x] Deterministic 30-minute simulated-time Chromium renderer soak
+- [ ] Android and iOS Safari performance, contrast and real-time 30-minute soak sign-off
 - [ ] Final sound/music, production deployment and store-wrapper pipeline

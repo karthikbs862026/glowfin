@@ -26,11 +26,22 @@ npm run art-gate:structural
 # With Vite running at http://127.0.0.1:4173 and Playwright Chromium installed:
 npm run art-gate:capture:fast
 npm run art-gate:run:fast
+
+# With the same host running; advances 30 simulated minutes through real WebGL.
+npm run art-gate:soak
 ```
 
 `structural` validates the generated production meshes, manifests, collider
 samples and budgets. `fast` renders the reduced four-state matrix.
-`full` renders all 36 state combinations in emulated Chromium. `signoff`
+`full` renders all 36 state combinations in emulated Chromium. Pull requests
+must pass both `full` and the deterministic 30-minute simulated-time renderer
+soak. It advances the 120 Hz fixed simulation continuously and samples the real
+WebGL renderer at 10 FPS (18,000 rendered frames), avoiding 36,000 redundant
+frames that made the first CI design exceed its practical timeout. The soak
+checks JavaScript heap growth, Three.js GPU-resource stability,
+pool caps, scene budgets and WebGL context loss while the endless course is
+spawned and pruned. It is regression evidence, not elapsed physical-device
+time. `signoff`
 rejects any remaining `baselineProcedural` manifest and additionally requires
 two real-device matrices and performance evidence.
 

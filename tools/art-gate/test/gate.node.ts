@@ -245,6 +245,21 @@ describe("capture evidence cannot pass by omission", () => {
       .includes("DUPLICATE_CAPTURE_STATE"));
   });
 
+  test("unapproved state blocks even when required coverage is present", () => {
+    const input = load("gate-input.pass.json");
+    const extra = clone(input.captures[0]!);
+    extra.state = {
+      momentum: "low",
+      bloom: true,
+      caustics: true,
+      quality: "high"
+    };
+    extra.source.evidenceId = "unexpected-extra-state";
+    input.captures.push(extra);
+    assert.ok(codes(runGate(input, config, "fast").findings)
+      .includes("UNEXPECTED_CAPTURE_STATE"));
+  });
+
   test("no obstacle samples are a blocker", () => {
     const capture = baseCapture();
     capture.obstacles = [];

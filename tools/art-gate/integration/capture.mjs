@@ -31,7 +31,18 @@ const gateConfig = JSON.parse(readFileSync(
 ));
 const beautyThresholds = gateConfig.beauty;
 
-const browser = await chromium.launch({ headless: true });
+const executablePath = process.env["PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"];
+const extraChromiumArgs = process.env["PLAYWRIGHT_CHROMIUM_ARGS_JSON"]
+  ? JSON.parse(process.env["PLAYWRIGHT_CHROMIUM_ARGS_JSON"])
+  : [];
+if (!Array.isArray(extraChromiumArgs)) {
+  throw new Error("PLAYWRIGHT_CHROMIUM_ARGS_JSON must contain a JSON array.");
+}
+const browser = await chromium.launch({
+  headless: true,
+  args: extraChromiumArgs,
+  ...(executablePath ? { executablePath } : {})
+});
 try {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
