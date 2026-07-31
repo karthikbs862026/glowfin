@@ -152,115 +152,157 @@ function createGillPetal(
   return geometry;
 }
 
+interface MembranePoint {
+  x: number;
+  y: number;
+  z: number;
+  thickness: number;
+}
+
+function createClosedMembrane(
+  uSegments: number,
+  vSegments: number,
+  parameterNormalSign: -1 | 1,
+  sample: (u: number, v: number) => MembranePoint
+): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  const columns = vSegments + 1;
+  const surfaceVertexCount = (uSegments + 1) * columns;
+  const vertexIndex = (
+    surfaceIndex: number,
+    uIndex: number,
+    vIndex: number
+  ) => surfaceIndex * surfaceVertexCount + uIndex * columns + vIndex;
+
+  for (const surfaceSign of [-1, 1] as const) {
+    for (let uIndex = 0; uIndex <= uSegments; uIndex++) {
+      const u = uIndex / uSegments;
+      for (let vIndex = 0; vIndex <= vSegments; vIndex++) {
+        const v01 = vIndex / vSegments;
+        const v = v01 * 2 - 1;
+        const point = sample(u, v);
+        positions.push(
+          point.x,
+          point.y,
+          point.z + surfaceSign * point.thickness
+        );
+        uvs.push(u, v01);
+      }
+    }
+  }
+
+  for (let surfaceIndex = 0; surfaceIndex < 2; surfaceIndex++) {
+    const surfaceSign = surfaceIndex === 0 ? -1 : 1;
+    const standardWinding = parameterNormalSign === surfaceSign;
+    for (let uIndex = 0; uIndex < uSegments; uIndex++) {
+      for (let vIndex = 0; vIndex < vSegments; vIndex++) {
+        const a = vertexIndex(surfaceIndex, uIndex, vIndex);
+        const b = vertexIndex(surfaceIndex, uIndex + 1, vIndex);
+        const c = vertexIndex(surfaceIndex, uIndex, vIndex + 1);
+        const d = vertexIndex(surfaceIndex, uIndex + 1, vIndex + 1);
+        if (standardWinding) {
+          indices.push(a, b, c, b, d, c);
+        } else {
+          indices.push(a, c, b, b, c, d);
+        }
+      }
+    }
+  }
+
+  const connectEdge = (
+    frontA: number,
+    frontB: number,
+    backA: number,
+    backB: number
+  ) => {
+    indices.push(frontA, frontB, backA, frontB, backB, backA);
+  };
+  for (let uIndex = 0; uIndex < uSegments; uIndex++) {
+    for (const vIndex of [0, vSegments]) {
+      connectEdge(
+        vertexIndex(1, uIndex, vIndex),
+        vertexIndex(1, uIndex + 1, vIndex),
+        vertexIndex(0, uIndex, vIndex),
+        vertexIndex(0, uIndex + 1, vIndex)
+      );
+    }
+  }
+  for (let vIndex = 0; vIndex < vSegments; vIndex++) {
+    for (const uIndex of [0, uSegments]) {
+      connectEdge(
+        vertexIndex(1, uIndex, vIndex),
+        vertexIndex(1, uIndex, vIndex + 1),
+        vertexIndex(0, uIndex, vIndex),
+        vertexIndex(0, uIndex, vIndex + 1)
+      );
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(positions, 3)
+  );
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.normalizeNormals();
+  return geometry;
+}
+
 function createMantaFin(
   radius: number,
   high: boolean,
   side: -1 | 1
 ): THREE.BufferGeometry {
-  const shape = new THREE.Shape();
-  shape.moveTo(0, -radius * 0.28);
-  shape.bezierCurveTo(
-    side * radius * 0.5,
-    -radius * 0.34,
-    side * radius * 1.2,
-    -radius * 0.2,
-    side * radius * 1.5,
-    radius * 0.02
+  return createClosedMembrane(
+    high ? 12 : 8,
+    high ? 6 : 4,
+    side,
+    (u, v) => {
+      const eased = 1 - (1 - u) ** 1.22;
+      const span = radius * 1.5 * eased;
+      const halfHeight = radius * (
+        0.29 * (1 - u) +
+        0.25 * Math.sin(u * Math.PI) +
+        0.025
+      );
+      return {
+        x: side * span,
+        y: v * halfHeight + Math.sin(u * Math.PI) * radius * 0.025,
+        z: Math.sin(u * Math.PI) *
+          (1 - v * v) * radius * 0.12 -
+          u * u * radius * 0.02,
+        thickness: radius * (0.045 - u * 0.018)
+      };
+    }
   );
-  shape.bezierCurveTo(
-    side * radius * 1.38,
-    radius * 0.24,
-    side * radius * 0.68,
-    radius * 0.42,
-    0,
-    radius * 0.28
-  );
-  shape.closePath();
-  const depth = radius * 0.16;
-  const geometry = new THREE.ExtrudeGeometry(shape, {
-    depth,
-    steps: 1,
-    curveSegments: high ? 8 : 5,
-    bevelEnabled: true,
-    bevelSegments: 1,
-    bevelSize: radius * 0.045,
-    bevelThickness: radius * 0.035
-  });
-  geometry.translate(0, 0, -depth * 0.5);
-  const positions = geometry.getAttribute("position");
-  for (let index = 0; index < positions.count; index++) {
-    const span = THREE.MathUtils.clamp(
-      Math.abs(positions.getX(index)) / (radius * 1.5),
-      0,
-      1
-    );
-    // A shallow cup removes the laser-cut plate read while preserving the
-    // broad rear silhouette at gameplay distance.
-    positions.setZ(
-      index,
-      positions.getZ(index) +
-        Math.sin(span * Math.PI) * radius * 0.09 -
-        span * span * radius * 0.025
-    );
-  }
-  positions.needsUpdate = true;
-  geometry.computeVertexNormals();
-  geometry.normalizeNormals();
-  return geometry;
 }
 
 function createTailPaddle(
   radius: number,
   high: boolean
 ): THREE.BufferGeometry {
-  const shape = new THREE.Shape();
-  // The wide upper root is hidden under the rear body volume. Only the soft
-  // teardrop continuation is visible, so the tail cannot look glued on.
-  shape.moveTo(-radius * 0.28, radius * 0.24);
-  shape.bezierCurveTo(
-    -radius * 0.38,
-    -radius * 0.08,
-    -radius * 0.26,
-    -radius * 0.72,
-    0,
-    -radius
+  return createClosedMembrane(
+    high ? 10 : 7,
+    high ? 5 : 4,
+    1,
+    (u, v) => {
+      const halfWidth = radius * (
+        0.28 * (1 - u) +
+        0.16 * Math.sin(u * Math.PI)
+      );
+      return {
+        x: v * halfWidth,
+        y: radius * (0.24 - u * 1.24),
+        z: Math.sin(u * Math.PI) *
+          (1 - v * v) * radius * 0.065,
+        thickness: radius * (0.055 - u * 0.025)
+      };
+    }
   );
-  shape.bezierCurveTo(
-    radius * 0.26,
-    -radius * 0.72,
-    radius * 0.38,
-    -radius * 0.08,
-    radius * 0.28,
-    radius * 0.24
-  );
-  shape.closePath();
-  const depth = radius * 0.2;
-  const geometry = new THREE.ExtrudeGeometry(shape, {
-    depth,
-    steps: 1,
-    curveSegments: high ? 8 : 5,
-    bevelEnabled: true,
-    bevelSegments: 1,
-    bevelSize: radius * 0.04,
-    bevelThickness: radius * 0.035
-  });
-  geometry.translate(0, 0, -depth * 0.5);
-  const positions = geometry.getAttribute("position");
-  for (let index = 0; index < positions.count; index++) {
-    const y = THREE.MathUtils.clamp(
-      (radius * 0.24 - positions.getY(index)) / (radius * 1.24),
-      0,
-      1
-    );
-    positions.setZ(
-      index,
-      positions.getZ(index) + Math.sin(y * Math.PI) * radius * 0.06
-    );
-  }
-  positions.needsUpdate = true;
-  geometry.computeVertexNormals();
-  geometry.normalizeNormals();
-  return geometry;
 }
 
 export function createGlowfinRigGeometry(
@@ -353,24 +395,24 @@ export function createGlowfinRigGeometry(
   for (const side of [-1, 1]) {
     for (let index = 0; index < 3; index++) {
       const pivot = new THREE.Vector3(
-        side * r * (0.64 + index * 0.025),
-        r * (0.34 - index * 0.18),
-        r * (0.5 - index * 0.015)
+        side * r * (0.6 + index * 0.035),
+        r * (0.3 - index * 0.2),
+        r * (0.7 - index * 0.015)
       );
       pivots.gills.push(pivot);
       bodyParts.push({
         geometry: createGillPetal(
-          r * (0.48 - index * 0.035),
-          r * (0.22 - index * 0.012),
+          r * (0.45 - index * 0.035),
+          r * (0.24 - index * 0.012),
           high
         ),
         bone,
         colour: gillViolet,
         position: pivot,
         rotation: new THREE.Euler(
-          -0.08,
+          0.18,
           side * 0.055,
-          -side * (0.94 - index * 0.36)
+          -side * (1.18 - index * 0.44)
         ),
         scale: new THREE.Vector3(
           1 - index * 0.025,

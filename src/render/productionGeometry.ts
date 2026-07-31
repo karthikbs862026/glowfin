@@ -507,12 +507,6 @@ export function createProductionGateCanopyGeometry(
       colour: SHELL,
       glow: 0.04
     }));
-    parts.push(styled(stoneBlock(0.15, 0.14, 0.4, 0.014), {
-      position: new THREE.Vector3(0, 0.43, 0.025),
-      rotation: new THREE.Euler(0.015, -0.02, 0.035),
-      colour: STONE,
-      glow: 0.012
-    }));
   }
 
   return merged(parts);

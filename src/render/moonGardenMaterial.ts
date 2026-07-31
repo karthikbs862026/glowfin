@@ -106,7 +106,7 @@ const FRAGMENT = /* glsl */ `
     vec2 stoneUv = n.y > n.z
       ? vWorldPos.xz
       : vWorldPos.xy;
-    stoneUv *= vec2(0.62, 0.42);
+    stoneUv *= vec2(0.42, 0.3);
     vec2 cell = abs(fract(stoneUv + vec2(floor(stoneUv.y) * 0.37, 0.0)) - 0.5);
     float joint = 1.0 - smoothstep(0.025, 0.065, min(0.5 - cell.x, 0.5 - cell.y));
     float stoneWeight = 1.0 - smoothstep(0.08, 0.30, vGlowWeight);
@@ -155,7 +155,10 @@ const FRAGMENT = /* glsl */ `
     vec3 paintedStone =
       vColour * surfaceBreakup * mix(0.78, 1.1, keyLight);
     colour = mix(colour, paintedStone, stoneWeight * 0.24);
-    colour *= 1.0 - joint * 0.28 * stoneWeight;
+    // Geometry already carries real courses, ribs and recesses. Keep only a
+    // broad, quiet joint wash; the previous high-frequency grid stamped every
+    // ruin and coral rock with the same miniature brick pattern.
+    colour *= 1.0 - joint * 0.12 * stoneWeight;
     colour *= mix(1.0, 0.84 + porousBreakup * 0.14, livingWeight);
     vec3 livingBreakup = clamp(
       livingSurface / vec3(0.12, 0.18, 0.24),
@@ -377,7 +380,7 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     vec2 stoneUv = n.y > n.z
       ? vWorldPos.xz
       : vWorldPos.xy;
-    stoneUv *= vec2(0.72, 0.5);
+    stoneUv *= vec2(0.44, 0.31);
     vec2 cell = abs(fract(stoneUv + vec2(floor(stoneUv.y) * 0.35, 0.0)) - 0.5);
     float joint = 1.0 - smoothstep(0.028, 0.07, min(0.5 - cell.x, 0.5 - cell.y));
     vec3 blend = pow(abs(normalize(vNormalW)), vec3(4.0));
@@ -417,7 +420,10 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     vec3 paintedStone =
       vColour * surfaceBreakup * mix(0.74, 1.08, keyLight);
     colour = mix(colour, paintedStone, 0.24);
-    colour *= 1.0 - joint * 0.43;
+    // Physical course geometry supplies the masonry read. This restrained
+    // joint term avoids projecting a second block grid across the carved arch
+    // and continuous buttress surfaces.
+    colour *= 1.0 - joint * 0.14;
     colour *= mix(1.0, 0.43, groundContact);
     float stoneWeight = 1.0 - smoothstep(0.28, 0.66, vGlowWeight);
     colour += vec3(0.035, 0.085, 0.11) * stoneWeight;

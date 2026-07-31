@@ -535,14 +535,17 @@ export class Environment {
 
     const schoolCount = Math.max(3, Math.round(5 * this.density));
     const fishPerSchool = 4;
-    const schoolSpacing = 27;
-    const firstSchool = Math.ceil((forwardDistance + 20) / schoolSpacing);
+    const schoolSpacing = 24;
+    const firstSchool = Math.ceil((forwardDistance + 12) / schoolSpacing);
     for (let school = 0; school < schoolCount; school++) {
       const band = firstSchool + school;
       const phase = time * 0.62 + band * 1.77;
       const direction = hash01(band, 811) < 0.5 ? -1 : 1;
-      const schoolX = Math.sin(phase) * 6.6;
-      const schoolY = lerp(4.8, 11.2, hash01(band, 812));
+      const schoolSide = hash01(band, 813) < 0.5 ? -1 : 1;
+      const schoolX = schoolSide *
+        lerp(4.8, 8.4, hash01(band, 812)) +
+        Math.sin(phase) * 0.65;
+      const schoolY = lerp(4.6, 10.6, hash01(band, 815));
       for (let member = 0; member < fishPerSchool; member++) {
         const row = Math.floor(member / 2);
         const column = member % 2;
@@ -556,7 +559,7 @@ export class Environment {
           direction > 0 ? 0 : Math.PI,
           Math.sin(phase + member) * 0.035
         ));
-        const size = lerp(0.3, 0.48, hash01(band + member, 814));
+        const size = lerp(0.42, 0.62, hash01(band + member, 814));
         this.scale.set(size * 1.24, size, 1);
         this.matrix.compose(this.position, this.quaternion, this.scale);
         this.colour.setRGB(0.72, 0.86, 1);
@@ -565,7 +568,8 @@ export class Environment {
     }
 
     const jellyCount = Math.max(2, Math.round(8 * this.density));
-    const jellyFirst = Math.ceil((forwardDistance + 24) / 38);
+    const jellySpacing = 32;
+    const jellyFirst = Math.ceil((forwardDistance + 16) / jellySpacing);
     for (let index = 0; index < jellyCount; index++) {
       const band = jellyFirst + index;
       const side = hash01(band, 821) < 0.5 ? -1 : 1;
@@ -574,11 +578,11 @@ export class Environment {
         side * lerp(6.2, 10.8, hash01(band, 823)) +
           Math.sin(time * 0.45 + band) * 0.65,
         1.2 + rise,
-        -(band * 38 + 8)
+        -(band * jellySpacing + 6)
       );
       this.quaternion.identity();
       const pulse = 1 + Math.sin(time * 2 + band) * 0.06;
-      const size = lerp(0.48, 0.88, hash01(band, 824)) * pulse;
+      const size = lerp(0.64, 1.04, hash01(band, 824)) * pulse;
       this.scale.set(size, size, 1);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.72, 0.82, 1);
@@ -586,17 +590,20 @@ export class Environment {
     }
 
     const rayCount = Math.max(1, Math.round(5 * this.density));
-    const rayFirst = Math.ceil((forwardDistance + 34) / 58);
+    const raySpacing = 48;
+    const rayFirst = Math.ceil((forwardDistance + 24) / raySpacing);
     for (let index = 0; index < rayCount; index++) {
       const band = rayFirst + index;
       const phase = time * 0.28 + band * 2.4;
+      const side = hash01(band, 832) < 0.5 ? -1 : 1;
       this.position.set(
-        Math.sin(phase) * 6.8,
-        7.8 + Math.sin(phase * 1.4) * 1.35,
-        -(band * 58 + 24)
+        side * lerp(5.2, 8.2, hash01(band, 834)) +
+          Math.sin(phase) * 0.9,
+        7.6 + Math.sin(phase * 1.4) * 1.45,
+        -(band * raySpacing + 16)
       );
       this.quaternion.setFromEuler(new THREE.Euler(0, 0, Math.cos(phase) * 0.08));
-      const size = lerp(1.05, 1.62, hash01(band, 833));
+      const size = lerp(1.3, 1.92, hash01(band, 833));
       this.scale.set(Math.cos(phase) >= 0 ? size : -size, size, 1);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.58, 0.72, 0.92);

@@ -280,7 +280,14 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Replace near/middle sea-fan cards with an open volumetric branch lattice and
   broaden each gate foundation into an eroded plinth so reef and architecture
   visibly grow from the seabed.
-- The new inventory remains inside the unchanged limits: Glowfin
-  6,940/3,318 triangles, shell garden 954/448/81 and gate foundation
+- The final curved-membrane inventory remains inside the unchanged limits:
+  Glowfin 7,524/3,574 triangles, shell garden 954/448/81 and gate foundation
   336/156/132; two character draw calls, ten bones, two materials, and
   unchanged gate colliders.
+- Browser review of the first supported-arch pass still found horn-like gill
+  tips, plate-flat membranes, a protruding chimney keystone and repeated
+  shader-projected brick grids. Expose each three-petal gill fan by tilting it
+  toward the chase view while keeping every pivot inside the body; replace flat
+  extrusions with closed, subdivided curved membranes; remove the keystone;
+  lower the canopy into its springers; quiet projected joints; and strengthen
+  upper-side schools, jellies and rays without filling the upper-centre lane.

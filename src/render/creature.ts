@@ -80,7 +80,11 @@ const BODY_FRAGMENT = /* glsl */ `
       sin(vObjectPosition.y * 6.3 - vObjectPosition.z * 2.1);
     float handPainted = 0.92 + 0.08 * broadMottle;
     float gillMask = smoothstep(0.03, 0.14, vColour.r - vColour.g);
-    float finMask = smoothstep(0.34, 0.46, vColour.g) *
+    // Red separates the intentionally brighter membrane from both the dark
+    // body and its intermediate shoulder. The former green-channel test
+    // classified all three as fin tissue, erasing the attachment gradient and
+    // making each membrane look like a pale plate pasted onto a pale sphere.
+    float finMask = smoothstep(0.14, 0.23, vColour.r) *
       (1.0 - gillMask);
     vec3 authoredPigment = vec3(0.006, 0.27, 0.58);
     authoredPigment = mix(
