@@ -3,29 +3,30 @@
 ## Status
 
 Accepted for Draft PR #7 and corrected after owner reference review on
-2026-07-31. Supersedes both the hidden-eye rule and the later frond/membrane
-experiments.
+2026-07-31. The eye-placement decision was amended after the live chase frame
+showed that camera-side eyes made Glowfin appear to look backwards.
 
 ## Context
 
 Glowfin moves toward decreasing world Z. Earlier revisions incorrectly treated
 every camera-visible eye as proof that the whole creature faced backwards, so
-they hid both eyes on the far side. Subsequent gill, fin and tail experiments
-then drifted further from the supplied reference. The owner-approved reference
-instead uses a strong rear-swimming silhouette plus two high lateral eyes that
-peek around the body crown.
+they hid both eyes on the far side. A later correction overcompensated by
+placing the eyes on the positive-Z camera side, which made Glowfin look back at
+the player. The final owner correction keeps the approved body, gills, fins,
+tail and glow while returning the eyes to the obstacle-facing front crown.
 
 ## Decision
 
 - Glowfin's authored forward axis is negative Z, matching runtime travel.
 - The positive-Z chase camera sees one smooth round sea-glass body, two
   scalloped manta fins, one centered teardrop tail, three clean lavender gill
-  leaves per side and two high lateral eyes peeking around the crown.
-- The eyes remain separated at the outer crown. They must never move inward to
-  form a camera-facing facial mask, and they must never be hidden again.
-- The eyes sit inside each gill fan's lateral boundary, with a clear projected
-  gap; the three leaves rise along the crown immediately above the manta-fin
-  shoulder and may never overlap or occlude the eye.
+  leaves per side and the back of the high crown—not a camera-facing face.
+- Both eyes sit high and slightly wide on the negative-Z front hemisphere,
+  facing the obstacle corridor. They are inset laterally inside the gill fans
+  and positioned farther forward than every gill attachment.
+- The eye/gill spacing is judged from the obstacle-facing front-quarter view:
+  each eye must remain clear before its three-leaf fan, with no overlap or
+  occlusion. Rear-chase visibility is not a reason to move an eye backwards.
 - Gill leaves remain simple, rounded and individually spaced. Branched fronds,
   micro-leaflets, folded wedges, horns and spikes are rejected.
 - Fin and tail roots stay behind the body silhouette; the membranes bow in
@@ -40,8 +41,9 @@ peek around the body crown.
 
 ## Verification
 
-The geometry regression suite locks the negative-Z swim axis, high lateral eye
-coordinates, three gill leaves per side, buried fin/tail pivots and positive-Z
-rear appendage layout. Phone-size browser review must compare the neutral crop
-directly with the supplied reference and reject missing eyes, merged gills,
-non-scalloped fins, an off-centre tail or a camera-facing facial mask.
+The geometry regression suite locks the negative-Z swim axis, negative-Z eye
+bounds, high front-crown placement, three gill leaves per side, forward eye-to-
+gill ordering, buried fin/tail pivots and positive-Z rear appendage layout.
+Phone-size browser review must include both the normal rear chase frame and an
+obstacle-facing front-quarter proof. Reject rear-facing eyes, merged gills,
+non-scalloped fins, an off-centre tail or any camera-facing facial mask.

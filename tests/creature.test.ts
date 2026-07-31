@@ -54,12 +54,12 @@ describe("creature configuration (Part 3.1)", () => {
     expect(tuning.creature.rimStrength).toBeGreaterThan(0);
   });
 
-  it("swims into the obstacle corridor while preserving the approved side-eye read", () => {
+  it("keeps both eyes high on the obstacle-facing crown ahead of the gills", () => {
     expect(GLOWFIN_FORWARD_AXIS).toEqual([0, 0, -1]);
     expect(GLOWFIN_REAR_AXIS).toEqual([0, 0, 1]);
-    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.59);
-    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.56);
-    expect(tuning.creature.eyeOffsetZ).toBeCloseTo(0.62);
+    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.51);
+    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.65);
+    expect(tuning.creature.eyeOffsetZ).toBeCloseTo(-0.52);
     expect(tuning.creature.eyeRadius).toBeCloseTo(0.1);
 
     const rig = createGlowfinRigGeometry(tuning, 1);
@@ -71,13 +71,20 @@ describe("creature configuration (Part 3.1)", () => {
     expect(eyeBounds?.max.x).toBeGreaterThan(
       tuning.lane.creatureRadius * 0.53
     );
-    expect(eyeBounds?.min.y).toBeGreaterThan(0);
-    expect(eyeBounds?.min.z).toBeGreaterThan(0);
+    expect(eyeBounds?.min.y).toBeGreaterThan(
+      tuning.lane.creatureRadius * 0.54
+    );
+    expect(eyeBounds?.max.z).toBeLessThan(
+      -tuning.lane.creatureRadius * 0.45
+    );
     expect(rig.pivots.tail.z).toBeGreaterThan(0);
-    // The eyes and gills sit high and lateral so they peek around the body
-    // crown. Travel direction still comes from the explicit negative-Z axis,
-    // centered tail and obstacle corridor—not from hiding the approved eyes.
+    // The gills remain on the side/rear silhouette while the eyes sit farther
+    // forward along the explicit negative-Z swim axis. This makes the eyes
+    // face the obstacles and prevents a camera-facing facial mask.
     expect(rig.pivots.gills.every((pivot) => pivot.z > 0)).toBe(true);
+    expect(rig.pivots.gills.every((pivot) =>
+      pivot.z > (eyeBounds?.max.z ?? Infinity)
+    )).toBe(true);
     rig.body.dispose();
     rig.eyes.dispose();
   });

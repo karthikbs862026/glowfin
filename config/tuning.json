@@ -92,7 +92,7 @@
   },
 
   "creature": {
-    "$comment": "Part 3.1. Glowfin faces toward decreasing world Z into the obstacle corridor. The portrait chase camera sees its round back, manta fins, centered tail, three gill leaves per side, and two high lateral eyes peeking around the crown exactly as in the owner-approved reference.",
+    "$comment": "Part 3.1. Glowfin faces toward decreasing world Z into the obstacle corridor. The portrait chase camera sees its round back, manta fins, centered tail and three gill leaves per side. Both eyes sit high on the negative-Z front crown, ahead of the gills, and face the obstacle corridor rather than the chase camera.",
     "bodyLength": 1.15,
     "bodyHeight": 0.88,
     "finFlutterHzAtZeroMomentum": 1.6,
@@ -103,9 +103,9 @@
     "bankSmoothingHalfLifeSec": 0.09,
     "breathHz": 0.8,
     "breathAmount": 0.05,
-    "eyeOffsetX": 0.59,
-    "eyeOffsetY": 0.56,
-    "eyeOffsetZ": 0.62,
+    "eyeOffsetX": 0.51,
+    "eyeOffsetY": 0.65,
+    "eyeOffsetZ": -0.52,
     "eyeRadius": 0.10,
     "eyeHueCalm": 0.56,
     "eyeHueMax": 0.80,

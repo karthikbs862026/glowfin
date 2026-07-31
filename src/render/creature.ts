@@ -5,8 +5,9 @@
  * one skinned mesh with ten bones. Both eyes share one mesh and one emissive
  * material, so the complete character costs two draw calls instead of twelve.
  * The authored forward axis is -Z: the portrait chase camera sees Glowfin's
- * round back, broad fins and centered tail while its approved high lateral
- * eyes and three-leaf external gills remain readable around the crown.
+ * round back, broad fins and centered tail. Its high lateral eyes sit on the
+ * negative-Z front crown, ahead of the three-leaf external gills, so the face
+ * looks into the obstacle corridor rather than back at the camera.
  * Animation remains simulation-driven for deterministic replay.
  */
 import * as THREE from "three";
