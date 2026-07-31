@@ -95,14 +95,61 @@ function prepareEye(
 function createGillLeaf(radius: number, high: boolean): THREE.BufferGeometry {
   // The supplied reference uses three clean, rounded leaves per side. Do not
   // replace these with branched fronds, leaflet spikes or folded wedges.
-  const radial = high ? 8 : 6;
-  const geometry = new THREE.CapsuleGeometry(
-    radius * 0.3,
-    radius * 0.86,
-    high ? 5 : 3,
-    radial
+  const length = radius * 1.04;
+  const width = radius * 0.58;
+  const shape = new THREE.Shape();
+  shape.moveTo(-width * 0.18, -length * 0.1);
+  shape.bezierCurveTo(
+    -width * 0.5,
+    length * 0.08,
+    -width * 0.56,
+    length * 0.56,
+    -width * 0.15,
+    length * 0.92
   );
-  geometry.scale(0.82, 1, 0.22);
+  shape.bezierCurveTo(
+    -width * 0.05,
+    length * 1.02,
+    width * 0.08,
+    length * 1.02,
+    width * 0.18,
+    length * 0.92
+  );
+  shape.bezierCurveTo(
+    width * 0.54,
+    length * 0.56,
+    width * 0.48,
+    length * 0.08,
+    width * 0.18,
+    -length * 0.1
+  );
+  shape.closePath();
+  const depth = width * 0.42;
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    steps: 1,
+    curveSegments: high ? 7 : 4,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: width * 0.08,
+    bevelThickness: width * 0.065
+  });
+  geometry.translate(0, 0, -depth * 0.5);
+  const positions = geometry.getAttribute("position");
+  for (let index = 0; index < positions.count; index++) {
+    const along = THREE.MathUtils.clamp(
+      positions.getY(index) / Math.max(length, 0.001),
+      0,
+      1
+    );
+    positions.setZ(
+      index,
+      positions.getZ(index) + Math.sin(along * Math.PI) * width * 0.12
+    );
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  geometry.normalizeNormals();
   return geometry;
 }
 
@@ -112,59 +159,88 @@ function createMantaFin(
   side: -1 | 1
 ): THREE.BufferGeometry {
   const shape = new THREE.Shape();
-  shape.moveTo(0, -radius * 0.14);
+  shape.moveTo(0, -radius * 0.2);
   shape.bezierCurveTo(
-    side * radius * 0.25,
-    -radius * 0.2,
-    side * radius * 0.46,
-    -radius * 0.31,
-    side * radius * 0.62,
-    -radius * 0.24
+    side * radius * 0.34,
+    -radius * 0.25,
+    side * radius * 0.5,
+    -radius * 0.4,
+    side * radius * 0.68,
+    -radius * 0.3
   );
   shape.bezierCurveTo(
-    side * radius * 0.7,
-    -radius * 0.2,
-    side * radius * 0.76,
-    -radius * 0.18,
-    side * radius * 0.82,
-    -radius * 0.19
+    side * radius * 0.79,
+    -radius * 0.25,
+    side * radius * 0.84,
+    -radius * 0.38,
+    side * radius * 0.96,
+    -radius * 0.28
   );
   shape.bezierCurveTo(
-    side * radius * 1.02,
-    -radius * 0.3,
-    side * radius * 1.25,
-    -radius * 0.2,
-    side * radius * 1.38,
-    -radius * 0.04
+    side * radius * 1.09,
+    -radius * 0.23,
+    side * radius * 1.16,
+    -radius * 0.34,
+    side * radius * 1.28,
+    -radius * 0.21
   );
   shape.bezierCurveTo(
-    side * radius * 1.52,
-    -radius * 0.01,
-    side * radius * 1.5,
-    radius * 0.12,
-    side * radius * 1.34,
-    radius * 0.16
+    side * radius * 1.48,
+    -radius * 0.11,
+    side * radius * 1.58,
+    radius * 0.03,
+    side * radius * 1.48,
+    radius * 0.15
   );
   shape.bezierCurveTo(
-    side * radius * 1.08,
-    radius * 0.4,
-    side * radius * 0.46,
-    radius * 0.42,
+    side * radius * 1.3,
+    radius * 0.34,
+    side * radius * 0.72,
+    radius * 0.43,
+    side * radius * 0.3,
+    radius * 0.31
+  );
+  shape.bezierCurveTo(
+    side * radius * 0.13,
+    radius * 0.26,
+    side * radius * 0.05,
+    radius * 0.2,
     0,
-    radius * 0.18
+    radius * 0.15
   );
   shape.closePath();
-  const depth = radius * 0.12;
+  const depth = radius * 0.13;
   const geometry = new THREE.ExtrudeGeometry(shape, {
     depth,
     steps: 1,
     curveSegments: high ? 8 : 5,
     bevelEnabled: true,
     bevelSegments: 1,
-    bevelSize: radius * 0.035,
-    bevelThickness: radius * 0.025
+    bevelSize: radius * 0.03,
+    bevelThickness: radius * 0.022
   });
   geometry.translate(0, 0, -depth * 0.5);
+  const positions = geometry.getAttribute("position");
+  for (let index = 0; index < positions.count; index++) {
+    const span = THREE.MathUtils.clamp(
+      Math.abs(positions.getX(index)) / (radius * 1.58),
+      0,
+      1
+    );
+    const vertical = THREE.MathUtils.clamp(
+      1 - Math.abs(positions.getY(index)) / (radius * 0.48),
+      0,
+      1
+    );
+    positions.setZ(
+      index,
+      positions.getZ(index) + Math.sin(span * Math.PI) *
+        vertical * radius * 0.12
+    );
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  geometry.normalizeNormals();
   return geometry;
 }
 
@@ -173,35 +249,66 @@ function createTailPaddle(
   high: boolean
 ): THREE.BufferGeometry {
   const shape = new THREE.Shape();
-  shape.moveTo(-radius * 0.13, radius * 0.08);
+  shape.moveTo(-radius * 0.13, radius * 0.12);
   shape.bezierCurveTo(
     -radius * 0.32,
-    -radius * 0.18,
-    -radius * 0.24,
-    -radius * 0.7,
-    0,
-    -radius * 1.02
+    -radius * 0.15,
+    -radius * 0.37,
+    -radius * 0.58,
+    -radius * 0.22,
+    -radius * 0.92
   );
   shape.bezierCurveTo(
-    radius * 0.24,
-    -radius * 0.7,
-    radius * 0.3,
-    -radius * 0.18,
+    -radius * 0.15,
+    -radius * 1.05,
+    -radius * 0.05,
+    -radius * 0.86,
+    0,
+    -radius * 0.82
+  );
+  shape.bezierCurveTo(
+    radius * 0.05,
+    -radius * 0.86,
+    radius * 0.15,
+    -radius * 1.05,
+    radius * 0.22,
+    -radius * 0.92
+  );
+  shape.bezierCurveTo(
+    radius * 0.37,
+    -radius * 0.58,
+    radius * 0.32,
+    -radius * 0.15,
     radius * 0.13,
-    radius * 0.08
+    radius * 0.12
   );
   shape.closePath();
-  const depth = radius * 0.16;
+  const depth = radius * 0.15;
   const geometry = new THREE.ExtrudeGeometry(shape, {
     depth,
     steps: 1,
     curveSegments: high ? 8 : 5,
     bevelEnabled: true,
     bevelSegments: 1,
-    bevelSize: radius * 0.03,
-    bevelThickness: radius * 0.024
+    bevelSize: radius * 0.028,
+    bevelThickness: radius * 0.022
   });
   geometry.translate(0, 0, -depth * 0.5);
+  const positions = geometry.getAttribute("position");
+  for (let index = 0; index < positions.count; index++) {
+    const length = THREE.MathUtils.clamp(
+      (radius * 0.12 - positions.getY(index)) / (radius * 1.17),
+      0,
+      1
+    );
+    positions.setZ(
+      index,
+      positions.getZ(index) + Math.sin(length * Math.PI) * radius * 0.08
+    );
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  geometry.normalizeNormals();
   return geometry;
 }
 
@@ -211,13 +318,16 @@ export function createGlowfinRigGeometry(
 ): GlowfinRigGeometry {
   const r = cfg.lane.creatureRadius;
   const high = lod === 0;
-  const cyan = new THREE.Color(0x058fbd);
-  const finCyan = new THREE.Color(0x42c9df);
-  const gillViolet = new THREE.Color(0xa94fc3);
+  const deepCyan = new THREE.Color(0x036ca4);
+  const cyan = new THREE.Color(0x08a9d2);
+  const finRootCyan = new THREE.Color(0x057ba8);
+  const finGlowCyan = new THREE.Color(0x79edf2);
+  const gillViolet = new THREE.Color(0x7659d4);
+  const gillGlow = new THREE.Color(0xc5adff);
   const pivots = {
-    finLeft: new THREE.Vector3(-r * 0.38, -r * 0.1, r * 0.08),
-    finRight: new THREE.Vector3(r * 0.38, -r * 0.1, r * 0.08),
-    tail: new THREE.Vector3(0, -r * 0.52, r * 0.72),
+    finLeft: new THREE.Vector3(-r * 0.34, -r * 0.1, r * 0.12),
+    finRight: new THREE.Vector3(r * 0.34, -r * 0.1, r * 0.12),
+    tail: new THREE.Vector3(0, -r * 0.52, r * 0.7),
     gills: [] as THREE.Vector3[]
   };
 
@@ -228,7 +338,14 @@ export function createGlowfinRigGeometry(
       high ? 38 : 26
     ),
     bone: 0,
-    colour: cyan,
+    colour: (position) => deepCyan.clone().lerp(
+      cyan,
+      THREE.MathUtils.clamp(
+        0.28 + (-position.y / Math.max(r, 0.001)) * 0.34,
+        0,
+        1
+      )
+    ),
     position: new THREE.Vector3(),
     scale: new THREE.Vector3(
       0.96,
@@ -240,12 +357,19 @@ export function createGlowfinRigGeometry(
   for (const side of [-1, 1]) {
     const pivot = side < 0 ? pivots.finLeft : pivots.finRight;
     bodyParts.push({
-      geometry: createMantaFin(r * 1.02, high, side as -1 | 1),
+      geometry: createMantaFin(r * 1.04, high, side as -1 | 1),
       bone: side < 0 ? 1 : 2,
-      colour: finCyan,
+      colour: (position) => finRootCyan.clone().lerp(
+        finGlowCyan,
+        THREE.MathUtils.clamp(
+          (Math.abs(position.x) / Math.max(r, 0.001) - 0.28) / 1.34,
+          0,
+          1
+        )
+      ),
       position: pivot.clone(),
-      rotation: new THREE.Euler(-0.1, side * 0.035, side * 0.055),
-      scale: new THREE.Vector3(1, 0.94, 1)
+      rotation: new THREE.Euler(-0.08, side * 0.02, side * 0.035),
+      scale: new THREE.Vector3(1, 0.98, 1)
     });
   }
 
@@ -253,34 +377,48 @@ export function createGlowfinRigGeometry(
   bodyParts.push({
     geometry: createTailPaddle(r * 0.92, high),
     bone: 3,
-    colour: finCyan,
+    colour: (position) => finRootCyan.clone().lerp(
+      finGlowCyan,
+      THREE.MathUtils.clamp(
+        (-position.y / Math.max(r, 0.001) - 0.42) / 1.08,
+        0,
+        1
+      )
+    ),
     position: pivots.tail.clone(),
-    rotation: new THREE.Euler(-0.06, 0, 0),
-    scale: new THREE.Vector3(1.05, 0.88, 1)
+    rotation: new THREE.Euler(-0.045, 0, 0),
+    scale: new THREE.Vector3(1.08, 0.94, 1)
   });
 
   let bone = 4;
   for (const side of [-1, 1]) {
     for (let index = 0; index < 3; index++) {
       const pivot = new THREE.Vector3(
-        side * r * (0.76 + index * 0.055),
-        r * (0.55 - index * 0.23),
-        r * (0.56 - index * 0.015)
+        side * r * (0.84 + index * 0.04),
+        r * (0.58 - index * 0.18),
+        r * (0.56 + index * 0.012)
       );
       pivots.gills.push(pivot);
       bodyParts.push({
         geometry: createGillLeaf(r * 0.4, high),
         bone,
-        colour: gillViolet,
+        colour: (position) => gillViolet.clone().lerp(
+          gillGlow,
+          THREE.MathUtils.clamp(
+            (Math.abs(position.x) / Math.max(r, 0.001) - 0.76) / 0.55,
+            0,
+            0.72
+          )
+        ),
         position: pivot,
         rotation: new THREE.Euler(
-          side * 0.035,
-          side * 0.08,
-          -side * (0.85 + index * 0.6)
+          side * 0.025,
+          side * 0.045,
+          -side * (0.82 + index * 0.42)
         ),
         scale: new THREE.Vector3(
-          0.92 + index * 0.035,
-          1 - index * 0.045,
+          1 - index * 0.02,
+          1 - index * 0.035,
           1
         )
       });
@@ -303,7 +441,7 @@ export function createGlowfinRigGeometry(
       high ? 18 : 12,
       high ? 13 : 8
     );
-    eye.scale(0.68, 1, 0.45);
+    eye.scale(0.88, 1, 0.5);
     eyeParts.push(prepareEye(
       eye,
       new THREE.Vector3(

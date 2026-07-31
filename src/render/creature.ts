@@ -95,7 +95,7 @@ const BODY_FRAGMENT = /* glsl */ `
     );
     authoredPigment = mix(
       authoredPigment,
-      vec3(0.53, 0.07, 0.66),
+      vec3(0.36, 0.18, 0.68),
       gillMask
     );
     vec3 skinSurface = texture2D(
@@ -107,9 +107,14 @@ const BODY_FRAGMENT = /* glsl */ `
       vec3(0.48),
       vec3(1.26)
     );
-    vec3 seaGlass = mix(authoredPigment, vColour, 0.14);
+    float appendageMask = max(finMask, gillMask);
+    vec3 seaGlass = mix(
+      authoredPigment,
+      vColour,
+      mix(0.2, 0.86, appendageMask)
+    );
     seaGlass *= mix(vec3(1.0), skinTint, (1.0 - gillMask) * 0.34);
-    vec3 base = mix(seaGlass, momentumColour, 0.05 + uMomentum * 0.2);
+    vec3 base = mix(seaGlass, momentumColour, 0.04 + uMomentum * 0.17);
     base *= handPainted * mix(0.74, 1.0, internal) *
       mix(0.76, 1.08, softVolume) *
       mix(0.62, 1.12, crownLight);
@@ -118,9 +123,19 @@ const BODY_FRAGMENT = /* glsl */ `
     float core = smoothstep(-0.8, 0.55, vObjectPosition.y) *
       (1.0 - smoothstep(0.15, 1.25, abs(vObjectPosition.x)));
     float seaGlassSpecular = pow(max(facing, 0.0), 18.0) * 0.11;
-    vec3 colour = base * mix(0.74, 0.94, uGlow) +
-      momentumColour * core * 0.045 * uGlow +
-      rim * fresnel * uRimStrength * uGlow * 0.22 +
+    float livingPulse = 0.5 + 0.5 * sin(
+      vObjectPosition.y * 7.2 + vObjectPosition.x * 2.8
+    );
+    float membraneGradient = smoothstep(0.28, 0.78, vColour.g);
+    float membraneLight = appendageMask *
+      (0.055 + 0.12 * livingPulse) *
+      mix(0.3, 1.0, membraneGradient) * uGlow;
+    vec3 colour = base * mix(0.76, 1.02, uGlow) +
+      momentumColour * core * 0.055 * uGlow +
+      rim * fresnel * uRimStrength * uGlow *
+        mix(0.24, 0.5, appendageMask) +
+      mix(vec3(0.25, 0.95, 1.0), vec3(0.68, 0.42, 1.0), gillMask) *
+        membraneLight +
       vec3(0.42, 0.78, 0.94) * seaGlassSpecular;
     // Preserve Glowfin's authored blue/teal identity under ACES. The previous
     // equal-channel lift made the body read as grey plastic in the browser
@@ -136,10 +151,7 @@ const BODY_FRAGMENT = /* glsl */ `
     );
     colour += vec3(0.16, 0.025, 0.13) * reefBounce *
       mix(0.035, 0.11, gillMask);
-    colour = min(
-      colour * 0.9,
-      vec3(0.24, 0.72, 0.94)
-    );
+    colour = min(colour * 0.94, vec3(0.46, 0.9, 1.0));
     gl_FragColor = vec4(colour, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -170,11 +182,12 @@ const EYE_FRAGMENT = /* glsl */ `
       1.0
     );
     float lens = smoothstep(0.18, 0.86, facing);
-    vec3 socket = vec3(0.006, 0.014, 0.042);
-    vec3 iris = uColor * uGlow * mix(0.16, 0.32, facing);
-    vec3 eye = mix(socket, iris, lens * 0.7);
+    vec3 socket = vec3(0.003, 0.012, 0.035);
+    vec3 iris = mix(vec3(0.02, 0.18, 0.28), uColor, 0.3) *
+      uGlow * mix(0.5, 0.78, facing);
+    vec3 eye = mix(socket, iris, lens * 0.78);
     float edge = pow(1.0 - facing, 2.4);
-    eye += vec3(0.035, 0.09, 0.17) * edge * 0.12;
+    eye += vec3(0.04, 0.18, 0.3) * edge * 0.14;
     gl_FragColor = vec4(eye, 1.0);
   }
 `;
@@ -345,8 +358,8 @@ export class Creature {
     if (eyeColour) {
       (eyeColour.value as THREE.Color).setHSL(
         lerp(cfg.eyeHueCalm, cfg.eyeHueMax, momentumFraction),
-        0.5,
-        0.2
+        0.72,
+        0.3
       );
     }
     const eyeGlow = this.eyeMaterial.uniforms["uGlow"];

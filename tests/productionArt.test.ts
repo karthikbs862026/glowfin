@@ -169,11 +169,12 @@ describe("Phase 3B art geometry inventory", () => {
       expect(fan).toHaveLength(3);
       const heights = fan.map((pivot) => pivot.y).sort((a, b) => b - a);
       expect((heights[0] ?? 0) - (heights[1] ?? 0)).toBeGreaterThanOrEqual(
-        radius * 0.22
+        radius * 0.18
       );
       expect((heights[1] ?? 0) - (heights[2] ?? 0)).toBeGreaterThanOrEqual(
-        radius * 0.22
+        radius * 0.18
       );
+      expect(Math.min(...heights)).toBeGreaterThan(radius * 0.2);
     }
     expect(rig.pivots.tail.y).toBeLessThan(-radius * 0.5);
     expect(rig.pivots.tail.z).toBeGreaterThan(radius * 0.55);

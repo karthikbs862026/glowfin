@@ -57,19 +57,19 @@ describe("creature configuration (Part 3.1)", () => {
   it("swims into the obstacle corridor while preserving the approved side-eye read", () => {
     expect(GLOWFIN_FORWARD_AXIS).toEqual([0, 0, -1]);
     expect(GLOWFIN_REAR_AXIS).toEqual([0, 0, 1]);
-    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.83);
-    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.4);
-    expect(tuning.creature.eyeOffsetZ).toBeCloseTo(0.5);
-    expect(tuning.creature.eyeRadius).toBeCloseTo(0.085);
+    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.59);
+    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.56);
+    expect(tuning.creature.eyeOffsetZ).toBeCloseTo(0.62);
+    expect(tuning.creature.eyeRadius).toBeCloseTo(0.1);
 
     const rig = createGlowfinRigGeometry(tuning, 1);
     rig.eyes.computeBoundingBox();
     const eyeBounds = rig.eyes.boundingBox;
     expect(eyeBounds?.min.x).toBeLessThan(
-      -tuning.lane.creatureRadius * 0.76
+      -tuning.lane.creatureRadius * 0.53
     );
     expect(eyeBounds?.max.x).toBeGreaterThan(
-      tuning.lane.creatureRadius * 0.76
+      tuning.lane.creatureRadius * 0.53
     );
     expect(eyeBounds?.min.y).toBeGreaterThan(0);
     expect(eyeBounds?.min.z).toBeGreaterThan(0);
@@ -106,8 +106,12 @@ describe("creature configuration (Part 3.1)", () => {
       );
       expect(fan).toHaveLength(3);
       expect(fan.every((pivot) =>
-        Math.abs(pivot.x) >= radius * 0.75 &&
-        Math.abs(pivot.x) <= radius * 0.88
+        Math.abs(pivot.x) >= radius * 0.79 &&
+        Math.abs(pivot.x) <= radius * 0.93
+      )).toBe(true);
+      const eyeX = radius * tuning.creature.eyeOffsetX;
+      expect(fan.every((pivot) =>
+        Math.abs(pivot.x) - eyeX >= radius * 0.1
       )).toBe(true);
     }
 
