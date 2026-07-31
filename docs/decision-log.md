@@ -370,11 +370,15 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   Chromium matrix on every pull request; reject both missing and unapproved
   extra states.
 - Add a 30-minute simulated-time soak that advances the 120 Hz fixed-step
-  simulation continuously and samples the real Three.js/WebGL renderer at 10
-  rendered frames per simulated second (18,000 WebGL frames). A rejected first
-  design rendered 54,000 frames at 30 FPS and exceeded the practical PR timeout
-  without adding distinct lifecycle coverage. The course continuously spawns
-  and prunes while the trail resets at deterministic five-minute boundaries.
+  simulation continuously and samples the real Three.js/WebGL renderer at 3
+  rendered frames per simulated second (5,400 WebGL frames). Rejected designs
+  rendered 54,000 frames at 30 FPS locally, then requested 18,000 frames at 10
+  FPS in CI; the latter reached only 10 of 30 simulated minutes before the
+  combined job's 40-minute ceiling because GitHub SwiftShader sustained about
+  3.3 FPS. Run the full matrix and soak as separate jobs, and keep the cadence
+  within the measured renderer throughput instead of relaxing the 30-minute
+  duration. The course continuously spawns and prunes while the trail resets
+  at deterministic five-minute boundaries.
 - Garbage-collect after warm-up and at completion so heap growth compares two
   steady-state measurements. Also block on context loss, GPU resource growth,
   pool-cap overruns, draw-call overruns and triangle overruns.

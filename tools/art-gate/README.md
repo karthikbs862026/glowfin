@@ -35,9 +35,12 @@ npm run art-gate:soak
 samples and budgets. `fast` renders the reduced four-state matrix.
 `full` renders all 36 state combinations in emulated Chromium. Pull requests
 must pass both `full` and the deterministic 30-minute simulated-time renderer
-soak. It advances the 120 Hz fixed simulation continuously and samples the real
-WebGL renderer at 10 FPS (18,000 rendered frames), avoiding 36,000 redundant
-frames that made the first CI design exceed its practical timeout. The soak
+soak. Separate jobs keep capture overhead out of the soak budget. The soak
+advances the 120 Hz fixed simulation continuously and samples the real WebGL
+renderer at 3 FPS (5,400 rendered frames). This cadence remains just below the
+roughly 3.3-FPS throughput that GitHub's SwiftShader runner sustained when a
+requested 10-FPS/18,000-frame run was cancelled after reaching only 10 of 30
+simulated minutes. The soak
 checks JavaScript heap growth, Three.js GPU-resource stability,
 pool caps, scene budgets and WebGL context loss while the endless course is
 spawned and pruned. It is regression evidence, not elapsed physical-device

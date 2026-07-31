@@ -21,7 +21,7 @@ function positiveNumber(name, fallback) {
 }
 
 const minutes = positiveNumber("minutes", 30);
-const renderFps = positiveNumber("render-fps", 10);
+const renderFps = positiveNumber("render-fps", 3);
 const output = resolve(option("output") ?? "build/art-gate-soak.json");
 const reportOutput = resolve(
   option("report") ?? "build/art-gate-soak-report.txt"

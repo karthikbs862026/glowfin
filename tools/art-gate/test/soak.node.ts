@@ -30,9 +30,9 @@ function cleanEvidence(): RendererSoakEvidence {
       platform: "linux"
     },
     simulatedMinutes: 30,
-    renderFps: 30,
-    renderedFrames: 54_000,
-    wallClockSeconds: 120,
+    renderFps: 3,
+    renderedFrames: 5_400,
+    wallClockSeconds: 1_800,
     simulation: {
       elapsedSeconds: 1800,
       forwardDistance: 72_000,
@@ -77,7 +77,7 @@ describe("deterministic renderer soak gate", () => {
     assert.ok(codes(short).includes("SOAK_DURATION_INSUFFICIENT"));
 
     const skipped = cleanEvidence();
-    skipped.renderedFrames = 53_999;
+    skipped.renderedFrames = 5_399;
     assert.ok(codes(skipped).includes("SOAK_RENDER_COVERAGE_INCOMPLETE"));
   });
 
