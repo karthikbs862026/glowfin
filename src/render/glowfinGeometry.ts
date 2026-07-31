@@ -263,20 +263,20 @@ export function createGlowfinRigGeometry(
   for (const side of [-1, 1]) {
     for (let index = 0; index < 3; index++) {
       const pivot = new THREE.Vector3(
-        side * r * (0.72 + index * 0.045),
-        r * (0.65 - index * 0.22),
-        r * (0.58 - index * 0.02)
+        side * r * (0.76 + index * 0.055),
+        r * (0.55 - index * 0.23),
+        r * (0.56 - index * 0.015)
       );
       pivots.gills.push(pivot);
       bodyParts.push({
-        geometry: createGillLeaf(r * 0.44, high),
+        geometry: createGillLeaf(r * 0.4, high),
         bone,
         colour: gillViolet,
         position: pivot,
         rotation: new THREE.Euler(
           side * 0.035,
           side * 0.08,
-          -side * (0.75 + index * 0.6)
+          -side * (0.65 + index * 0.6)
         ),
         scale: new THREE.Vector3(
           0.92 + index * 0.035,
@@ -298,12 +298,14 @@ export function createGlowfinRigGeometry(
   const eyeRadius = r * cfg.creature.eyeRadius;
   const eyeParts: THREE.BufferGeometry[] = [];
   for (const side of [-1, 1]) {
+    const eye = new THREE.SphereGeometry(
+      eyeRadius,
+      high ? 18 : 12,
+      high ? 13 : 8
+    );
+    eye.scale(0.68, 1, 0.45);
     eyeParts.push(prepareEye(
-      new THREE.SphereGeometry(
-        eyeRadius,
-        high ? 18 : 12,
-        high ? 13 : 8
-      ),
+      eye,
       new THREE.Vector3(
         side * r * cfg.creature.eyeOffsetX,
         r * cfg.creature.eyeOffsetY,
