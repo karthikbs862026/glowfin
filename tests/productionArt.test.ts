@@ -9,6 +9,7 @@ import {
   createProductionBranchCoral,
   createProductionCollapsedArch,
   createProductionFanCoral,
+  createProductionGateCanopyGeometry,
   createProductionKelp,
   createProductionSkyline,
   createProductionSpire,
@@ -85,6 +86,18 @@ describe("Phase 3B art geometry inventory", () => {
         right.dispose();
       }
       expect(signatures.size).toBe(3);
+    }
+  });
+
+  it("gives the hero arch a continuous supported silhouette", () => {
+    for (const lod of [0, 1, 2] as const) {
+      const canopy = createProductionGateCanopyGeometry(lod);
+      canopy.computeBoundingBox();
+      expect(canopy.boundingBox?.min.x).toBeLessThanOrEqual(-0.7);
+      expect(canopy.boundingBox?.max.x).toBeGreaterThanOrEqual(0.7);
+      expect(canopy.boundingBox?.min.y).toBeLessThan(0);
+      expect(canopy.boundingBox?.max.y).toBeGreaterThan(0.4);
+      canopy.dispose();
     }
   });
 

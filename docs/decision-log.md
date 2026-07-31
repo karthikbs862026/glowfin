@@ -264,3 +264,23 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   broad species silhouette without presenting one opaque magenta card.
 - Triangle ceilings, collision planes, opening positions and contrast
   thresholds remain unchanged.
+
+## 2026-07-31 — Replace visible assembly seams with load-bearing forms
+
+- Owner review rejected the remaining capsule gills, plate-like fins, separate
+  paddle/connector tail and visually unsupported hero arch as below the
+  production target.
+- Decision: keep the approved rear-chase proportions and negative-Z face, but
+  replace the appendages with broad bowed membranes, buried transitional
+  shoulders, one body-occluded teardrop tail root and six rounded external-gill
+  petals. Gill micro-fronds remain forbidden.
+- Rebuild the overhead gate as one continuous carved stone body with explicit
+  springers, overlapping capitals and a recessed shell band. All support
+  geometry remains outside the authoritative lateral opening.
+- Replace near/middle sea-fan cards with an open volumetric branch lattice and
+  broaden each gate foundation into an eroded plinth so reef and architecture
+  visibly grow from the seabed.
+- The new inventory remains inside the unchanged limits: Glowfin
+  6,940/3,318 triangles, shell garden 954/448/81 and gate foundation
+  336/156/132; two character draw calls, ten bones, two materials, and
+  unchanged gate colliders.

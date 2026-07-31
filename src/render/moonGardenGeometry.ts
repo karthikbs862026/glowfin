@@ -807,8 +807,25 @@ export function createShellGardenGeometry(lod: ArtLod): THREE.BufferGeometry {
 }
 
 export function createGateFoundationGeometry(lod: ArtLod): THREE.BufferGeometry {
-  const rockCount = lod === 0 ? 6 : lod === 1 ? 4 : 3;
+  const rockCount = lod === 0 ? 6 : 3;
   const parts: THREE.BufferGeometry[] = [];
+  // A broad eroded plinth carries each wall half into the seabed. The former
+  // thin box was almost invisible at reaction distance and made the entire
+  // arch assembly appear to hover above the floor.
+  parts.push(decorate(
+    new THREE.SphereGeometry(
+      0.52,
+      lod === 0 ? 12 : lod === 1 ? 8 : 6,
+      lod === 0 ? 6 : lod === 1 ? 4 : 3
+    ),
+    {
+      position: new THREE.Vector3(0, 0.065, -0.015),
+      rotation: new THREE.Euler(0.03, 0.08, -0.025),
+      scale: new THREE.Vector3(1.12, 0.25, 0.76),
+      colour: OBSTACLE_RECESS,
+      glowWeight: 0.025
+    }
+  ));
   for (let index = 0; index < rockCount; index++) {
     const t = index / (rockCount - 1);
     const radius = 0.11 + (index % 3) * 0.025;
@@ -827,15 +844,6 @@ export function createGateFoundationGeometry(lod: ArtLod): THREE.BufferGeometry 
       }
     ));
   }
-  parts.push(decorate(
-    new THREE.BoxGeometry(0.94, 0.1, 0.54),
-    {
-      position: new THREE.Vector3(0, 0.025, 0),
-      rotation: new THREE.Euler(0, 0.08, 0),
-      colour: OBSTACLE_RECESS,
-      glowWeight: 0.04
-    }
-  ));
   return merge(parts);
 }
 

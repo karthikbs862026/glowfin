@@ -70,6 +70,30 @@ describe("creature configuration (Part 3.1)", () => {
     rig.eyes.dispose();
   });
 
+  it("buries every animated appendage root inside the body volume", () => {
+    const rig = createGlowfinRigGeometry(tuning, 1);
+    const radius = tuning.lane.creatureRadius;
+    const axes = {
+      x: radius * 0.96,
+      y: radius * tuning.creature.bodyHeight,
+      z: radius * tuning.creature.bodyLength
+    };
+    const insideBody = (point: { x: number; y: number; z: number }) =>
+      point.x ** 2 / axes.x ** 2 +
+        point.y ** 2 / axes.y ** 2 +
+        point.z ** 2 / axes.z ** 2 <
+      1;
+
+    expect(insideBody(rig.pivots.finLeft)).toBe(true);
+    expect(insideBody(rig.pivots.finRight)).toBe(true);
+    expect(insideBody(rig.pivots.tail)).toBe(true);
+    expect(rig.pivots.gills).toHaveLength(6);
+    expect(rig.pivots.gills.every(insideBody)).toBe(true);
+
+    rig.body.dispose();
+    rig.eyes.dispose();
+  });
+
   it("the creature's draw calls fit the budget alongside the scene", () => {
     // One skinned body mesh plus one combined emissive-eye mesh.
     const creatureDraws = 2;

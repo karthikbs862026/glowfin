@@ -445,49 +445,74 @@ export function createProductionGateCanopyGeometry(
   lod: ArtLod
 ): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
-  const samples = lod === 0 ? 10 : lod === 1 ? 7 : 4;
-  const segments = [
-    [0.1 * Math.PI, 0.42 * Math.PI],
-    [0.58 * Math.PI, 0.9 * Math.PI]
-  ] as const;
+  const samples = lod === 0 ? 18 : lod === 1 ? 12 : 7;
+  const start = 0.08 * Math.PI;
+  const end = 0.92 * Math.PI;
 
-  // A continuous blue-stone ribbon makes the arch read as one heavy
-  // construction. Earlier surface blocks broke the silhouette into floating
-  // shards at gameplay distance.
-  for (const [start, end] of segments) {
-    parts.push(styled(archRibbonSegment(
-      start,
-      end,
-      samples,
-      0.49,
-      0.325,
-      -0.06,
-      0.3
+  // One uninterrupted carved body carries its weight into both springers.
+  // The previous two independent ribbons had no visible load path and read as
+  // two tusks suspended between the piers even when their transforms touched.
+  parts.push(styled(archRibbonSegment(
+    start,
+    end,
+    samples,
+    0.54,
+    0.32,
+    -0.1,
+    0.34
+  ), {
+    position: new THREE.Vector3(0, 0, 0.02),
+    colour: STONE_LIGHT,
+    glow: 0.018
+  }));
+
+  // Wide springers and overlapping capitals sit outside the authoritative
+  // x=+/-0.5 opening. They make the arch visibly load-bearing while leaving
+  // collider truth and the playable silhouette untouched.
+  for (const side of [-1, 1]) {
+    parts.push(styled(stoneBlock(
+      lod === 2 ? 0.18 : 0.22,
+      lod === 2 ? 0.28 : 0.34,
+      0.38,
+      0.018
     ), {
-      position: new THREE.Vector3(0, 0, 0.02),
-      colour: STONE_LIGHT,
-      glow: 0.02
+      position: new THREE.Vector3(side * 0.62, -0.08, 0.01),
+      rotation: new THREE.Euler(0, side * 0.025, -side * 0.018),
+      colour: STONE,
+      glow: 0.014
     }));
-  }
-
-  // A recessed shell-metal inner trim supplies the moon-garden motif without
-  // relying on detached blocks or fluorescent slabs.
-  if (lod < 2) {
-    for (const [start, end] of segments) {
-      parts.push(styled(archRibbonSegment(
-        start,
-        end,
-        lod === 0 ? 9 : 6,
-        0.337,
-        0.316,
-        -0.06,
-        0.32
-      ), {
-        position: new THREE.Vector3(0, 0, 0.2),
-        colour: SHELL,
-        glow: 0.045
+    if (lod < 2) {
+      parts.push(styled(stoneBlock(0.28, 0.12, 0.42, 0.016), {
+        position: new THREE.Vector3(side * 0.64, 0.1, 0.015),
+        rotation: new THREE.Euler(0, -side * 0.018, side * 0.012),
+        colour: STONE_LIGHT,
+        glow: 0.018
       }));
     }
+  }
+
+  // A recessed shell-metal inner band is carved into the same full arch. It
+  // supplies the Moon-Garden identity without detached gold blocks.
+  if (lod < 2) {
+    parts.push(styled(archRibbonSegment(
+      start + 0.015,
+      end - 0.015,
+      lod === 0 ? 16 : 10,
+      0.335,
+      0.307,
+      -0.1,
+      0.37
+    ), {
+      position: new THREE.Vector3(0, 0, 0.13),
+      colour: SHELL,
+      glow: 0.04
+    }));
+    parts.push(styled(stoneBlock(0.15, 0.14, 0.4, 0.014), {
+      position: new THREE.Vector3(0, 0.43, 0.025),
+      rotation: new THREE.Euler(0.015, -0.02, 0.035),
+      colour: STONE,
+      glow: 0.012
+    }));
   }
 
   return merged(parts);
@@ -756,89 +781,112 @@ export function createProductionBranchCoral(lod: ArtLod): THREE.BufferGeometry {
   return merged(parts);
 }
 
-/** Sea fan: broad scalloped silhouette plus a visible branching rib network. */
+/**
+ * Sea fan: an open, bowed branch lattice with a scalloped crown.
+ *
+ * Near and middle LODs are real cylindrical tissue, not an opaque polygon with
+ * painted ribs. Only the far LOD keeps a single silhouette because its holes
+ * are already below a pixel at the validated portrait distance.
+ */
 export function createProductionFanCoral(lod: ArtLod): THREE.BufferGeometry {
   const parts = coralRockBase(lod, 0.68, true);
-  const fanShape = new THREE.Shape();
-  fanShape.moveTo(-0.12, 0);
-  const segments = lod === 0 ? 18 : lod === 1 ? 12 : 8;
-  for (let index = 0; index <= segments; index++) {
-    const t = index / segments;
-    const angle = Math.PI * (1 - t);
-    const scallop = 1 + Math.sin(t * Math.PI * 6) * 0.055;
-    fanShape.lineTo(
-      Math.cos(angle) * 0.68 * scallop,
-      0.12 + Math.sin(angle) * 0.9 * scallop
-    );
-  }
-  fanShape.lineTo(0.12, 0);
-  fanShape.closePath();
-  // Cut true openings through the near sea fan so it reads as a living,
-  // netted organism rather than a magenta scenery card. Far LODs retain the
-  // solid outline for sub-pixel stability.
-  if (lod === 0) {
-    for (const [x, y, rx, ry] of [
-      [0, 0.59, 0.22, 0.3]
-    ] as const) {
-      const opening = new THREE.Path();
-      // The fan outline is clockwise, so openings must use the opposite
-      // winding for ShapeUtils/Earcut to preserve them as transparent holes.
-      opening.absellipse(x, y, rx, ry, 0, Math.PI * 2, false);
-      fanShape.holes.push(opening);
-    }
-  }
-  const fan = lod === 2
-    ? new THREE.ShapeGeometry(fanShape, 1)
-    : new THREE.ExtrudeGeometry(fanShape, {
-      depth: 0.055,
-      steps: 1,
-      bevelEnabled: true,
-      bevelSegments: 1,
-      bevelSize: 0.018,
-      bevelThickness: 0.018
-    });
-  if (lod !== 2) fan.translate(0, 0, -0.0275);
-  if (lod === 0) {
-    const positions = fan.getAttribute("position");
-    for (let index = 0; index < positions.count; index++) {
-      const x = positions.getX(index);
-      const y = positions.getY(index);
-      const bow = Math.max(0, 1 - Math.abs(x) / 0.72) * 0.1;
-      positions.setZ(
-        index,
-        positions.getZ(index) + bow +
-          Math.sin(x * 5.2 + y * 3.7) * 0.012
+  if (lod === 2) {
+    const fanShape = new THREE.Shape();
+    fanShape.moveTo(-0.12, 0);
+    for (let index = 0; index <= 8; index++) {
+      const t = index / 8;
+      const angle = Math.PI * (1 - t);
+      const scallop = 1 + Math.sin(t * Math.PI * 4) * 0.045;
+      fanShape.lineTo(
+        Math.cos(angle) * 0.68 * scallop,
+        0.12 + Math.sin(angle) * 0.9 * scallop
       );
     }
-    positions.needsUpdate = true;
-    fan.computeVertexNormals();
-    fan.normalizeNormals();
-  }
-  parts.push(styled(fan, {
-    position: new THREE.Vector3(0, 0.18, 0),
-    rotation: new THREE.Euler(-0.08, 0.18, -0.05),
-    colour: VIOLET,
-    glow: 0.24
-  }));
-  const ribs = lod === 0 ? 7 : lod === 1 ? 5 : 3;
-  for (let index = 0; index < ribs; index++) {
-    const t = ribs <= 1 ? 0.5 : index / (ribs - 1);
-    const angle = THREE.MathUtils.lerp(0.22 * Math.PI, 0.78 * Math.PI, t);
-    const end = new THREE.Vector3(
-      Math.cos(angle) * 0.57,
-      0.32 + Math.sin(angle) * 0.72,
-      0.045
-    );
-    parts.push(styled(branchBetween(
-      new THREE.Vector3(0, 0.2, 0.045),
-      end,
-      0.025,
-      0.012,
-      lod === 0 ? 5 : 4
-    ), {
-      colour: index % 2 === 0 ? CYAN_LIGHT : ROSE,
-      glow: 0.45
+    fanShape.lineTo(0.12, 0);
+    fanShape.closePath();
+    parts.push(styled(new THREE.ShapeGeometry(fanShape, 1), {
+      position: new THREE.Vector3(0, 0.18, 0),
+      rotation: new THREE.Euler(-0.08, 0.18, -0.05),
+      colour: VIOLET,
+      glow: 0.24
     }));
+    for (const side of [-1, 1]) {
+      parts.push(styled(branchBetween(
+        new THREE.Vector3(0, 0.2, 0.025),
+        new THREE.Vector3(side * 0.42, 0.82, 0.035),
+        0.028,
+        0.014,
+        3
+      ), {
+        colour: side < 0 ? CYAN_LIGHT : ROSE,
+        glow: 0.4
+      }));
+    }
+  } else {
+    const radial = lod === 0 ? 5 : 4;
+    const rimSegments = lod === 0 ? 9 : 4;
+    const crown: THREE.Vector3[] = [];
+    for (let index = 0; index <= rimSegments; index++) {
+      const t = index / rimSegments;
+      const angle = THREE.MathUtils.lerp(
+        0.12 * Math.PI,
+        0.88 * Math.PI,
+        t
+      );
+      const scallop = 1 + Math.sin(t * Math.PI * 5) * 0.045;
+      crown.push(new THREE.Vector3(
+        Math.cos(angle) * 0.7 * scallop,
+        0.3 + Math.sin(angle) * 0.86 * scallop,
+        0.055 + Math.sin(angle * 2.0) * 0.085
+      ));
+    }
+    for (let index = 1; index < crown.length; index++) {
+      const start = crown[index - 1];
+      const end = crown[index];
+      if (!start || !end) continue;
+      parts.push(styled(branchBetween(
+        start,
+        end,
+        lod === 0 ? 0.032 : 0.037,
+        lod === 0 ? 0.027 : 0.031,
+        radial
+      ), {
+        colour: index % 3 === 0 ? ROSE : VIOLET,
+        glow: 0.34
+      }));
+    }
+
+    const ribs = lod === 0 ? 6 : 3;
+    const root = new THREE.Vector3(0, 0.19, -0.015);
+    for (let index = 0; index < ribs; index++) {
+      const crownIndex = Math.round(
+        THREE.MathUtils.lerp(1, crown.length - 2, index / Math.max(1, ribs - 1))
+      );
+      const end = crown[crownIndex];
+      if (!end) continue;
+      const fork = end.clone().lerp(root, 0.38);
+      fork.z += index % 2 === 0 ? 0.04 : -0.025;
+      parts.push(styled(branchBetween(
+        root,
+        fork,
+        0.033,
+        0.019,
+        radial
+      ), {
+        colour: index % 2 === 0 ? CYAN_LIGHT : ROSE,
+        glow: 0.43
+      }));
+      parts.push(styled(branchBetween(
+        fork,
+        end,
+        0.019,
+        0.011,
+        radial
+      ), {
+        colour: index % 2 === 0 ? CYAN_LIGHT : VIOLET,
+        glow: 0.46
+      }));
+    }
   }
   return merged(parts);
 }

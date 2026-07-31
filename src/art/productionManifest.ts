@@ -4,8 +4,8 @@
  */
 export const PRODUCTION_ART = {
   glowfin: {
-    lod0: 6200,
-    lod1: 3018,
+    lod0: 6940,
+    lod1: 3318,
     materials: 2,
     bones: 10
   },
@@ -49,15 +49,15 @@ export const PRODUCTION_ART = {
     materials: 1
   },
   shellGarden: {
-    lod0: 902,
-    lod1: 444,
-    lod2: 117,
+    lod0: 954,
+    lod1: 448,
+    lod2: 81,
     materials: 1
   },
   gateFoundation: {
-    lod0: 228,
+    lod0: 336,
     lod1: 156,
-    lod2: 120,
+    lod2: 132,
     materials: 1
   },
   ribbonKelp: {
