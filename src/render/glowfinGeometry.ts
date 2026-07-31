@@ -276,7 +276,7 @@ export function createGlowfinRigGeometry(
         rotation: new THREE.Euler(
           side * 0.035,
           side * 0.08,
-          -side * (0.65 + index * 0.6)
+          -side * (0.85 + index * 0.6)
         ),
         scale: new THREE.Vector3(
           0.92 + index * 0.035,
