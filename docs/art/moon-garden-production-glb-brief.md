@@ -17,14 +17,15 @@ viewer must identify the following by silhouette and value grouping alone:
 - a soft anemone garden;
 - ribbon kelp;
 - a cute round axolotl-puffer Glowfin, facing the obstacle corridor, with broad
-  manta fins, one central tail and no camera-facing eyes;
+  scalloped manta fins, one central teardrop tail, three rounded external gill
+  leaves per side and two high lateral eyes visible around the body crown;
 - distant drowned towers, minnows, jellies and rays with real volume.
 
 ## Runtime asset set
 
 | GLB | Required contents | Runtime rule |
 | --- | --- | --- |
-| `glowfin-v1.glb` | One skinned body primitive, one forward-facing eye primitive, 10–18 bones, calm/propulsion/collision/recovery clips | Forward axis is negative Z; simulation selects and blends clips; two materials maximum |
+| `glowfin-v1.glb` | One skinned body primitive, one combined high-lateral eye primitive, 10–18 bones, calm/propulsion/collision/recovery clips | Forward axis is negative Z; side-set eyes remain crown-visible; simulation selects and blends clips; two materials maximum |
 | `moon-gate-v1.glb` | Three asymmetric wall-fragment variants, mirrored-safe inner pier, broken voussoirs, dark channel and rubble base across LOD0–2 | Inner cyan edge remains a separate collider-derived runtime mesh |
 | `ruin-kit-v1.glb` | Broken tower, collapsed arch and forked spire across LOD0–2 | Outside-lane instancing only |
 | `reef-kit-v1.glb` | Staghorn, sea fan, anemone and kelp families across approved LODs | Bounds drive lane-safe placement |
@@ -78,8 +79,10 @@ orientation, pivot and export presets so a later revision is reproducible.
    gameplay scale, even when numerical checks pass.
 7. Merge remains blocked until Chromium plus Android and iOS portrait evidence
    pass visual review and the 30-minute soak.
-8. Glowfin's neutral chase-camera silhouette must show its back, manta fins and
-   central tail; visible eyes or a face-like rear arrangement block acceptance.
+8. Glowfin's neutral chase-camera silhouette must show its back, two scalloped
+   manta fins, centered teardrop tail, six separated rounded gill leaves and two
+   high side-set eyes. Missing eyes or an inward camera-facing facial mask both
+   block acceptance.
 
 ## Production order
 

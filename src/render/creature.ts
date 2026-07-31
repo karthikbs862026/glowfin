@@ -4,8 +4,9 @@
  * The body, broad manta fins, tail and six grouped gill leaves are merged into
  * one skinned mesh with ten bones. Both eyes share one mesh and one emissive
  * material, so the complete character costs two draw calls instead of twelve.
- * The authored forward axis is -Z: facial features point into the obstacle
- * corridor, while the portrait chase camera sees the back, fins and tail.
+ * The authored forward axis is -Z: the portrait chase camera sees Glowfin's
+ * round back, broad fins and centered tail while its approved high lateral
+ * eyes and three-leaf external gills remain readable around the crown.
  * Animation remains simulation-driven for deterministic replay.
  */
 import * as THREE from "three";

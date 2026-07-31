@@ -54,23 +54,35 @@ describe("creature configuration (Part 3.1)", () => {
     expect(tuning.creature.rimStrength).toBeGreaterThan(0);
   });
 
-  it("faces into the obstacle corridor instead of toward the chase camera", () => {
+  it("swims into the obstacle corridor while preserving the approved side-eye read", () => {
     expect(GLOWFIN_FORWARD_AXIS).toEqual([0, 0, -1]);
     expect(GLOWFIN_REAR_AXIS).toEqual([0, 0, 1]);
-    expect(tuning.creature.eyeOffsetZ).toBeLessThan(0);
+    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.83);
+    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.48);
+    expect(tuning.creature.eyeOffsetZ).toBeCloseTo(0.5);
+    expect(tuning.creature.eyeRadius).toBeCloseTo(0.24);
 
     const rig = createGlowfinRigGeometry(tuning, 1);
     rig.eyes.computeBoundingBox();
-    expect(rig.eyes.boundingBox?.max.z).toBeLessThan(0);
+    const eyeBounds = rig.eyes.boundingBox;
+    expect(eyeBounds?.min.x).toBeLessThan(
+      -tuning.lane.creatureRadius * 0.7
+    );
+    expect(eyeBounds?.max.x).toBeGreaterThan(
+      tuning.lane.creatureRadius * 0.7
+    );
+    expect(eyeBounds?.min.y).toBeGreaterThan(0);
+    expect(eyeBounds?.min.z).toBeGreaterThan(0);
     expect(rig.pivots.tail.z).toBeGreaterThan(0);
-    // The gill crown belongs on the rear/lateral silhouette, like the approved
-    // cute reference. It is not a face: only the eyes define forward.
+    // The eyes and gills sit high and lateral so they peek around the body
+    // crown. Travel direction still comes from the explicit negative-Z axis,
+    // centered tail and obstacle corridor—not from hiding the approved eyes.
     expect(rig.pivots.gills.every((pivot) => pivot.z > 0)).toBe(true);
     rig.body.dispose();
     rig.eyes.dispose();
   });
 
-  it("buries every animated appendage root inside the body volume", () => {
+  it("buries fin and tail pivots while keeping three external gills per side", () => {
     const rig = createGlowfinRigGeometry(tuning, 1);
     const radius = tuning.lane.creatureRadius;
     const axes = {
@@ -88,7 +100,16 @@ describe("creature configuration (Part 3.1)", () => {
     expect(insideBody(rig.pivots.finRight)).toBe(true);
     expect(insideBody(rig.pivots.tail)).toBe(true);
     expect(rig.pivots.gills).toHaveLength(6);
-    expect(rig.pivots.gills.every(insideBody)).toBe(true);
+    for (const side of [-1, 1]) {
+      const fan = rig.pivots.gills.filter((pivot) =>
+        Math.sign(pivot.x) === side
+      );
+      expect(fan).toHaveLength(3);
+      expect(fan.every((pivot) =>
+        Math.abs(pivot.x) >= radius * 0.69 &&
+        Math.abs(pivot.x) <= radius * 0.79
+      )).toBe(true);
+    }
 
     rig.body.dispose();
     rig.eyes.dispose();

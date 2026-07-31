@@ -92,228 +92,17 @@ function prepareEye(
   return geometry;
 }
 
-function createGillPetal(
-  length: number,
-  width: number,
-  high: boolean
-): THREE.BufferGeometry {
-  const shape = new THREE.Shape();
-  // Two soft leaflet pairs give each stalk the characteristic feathered
-  // axolotl silhouette at gameplay distance. Rounded lobes replace the sharp
-  // saw-tooth version that read as a tiny Christmas tree, while the buried
-  // narrow root keeps all six stalks attached to the mantle.
-  shape.moveTo(-width * 0.12, -length * 0.12);
-  shape.lineTo(-width * 0.2, length * 0.12);
-  shape.bezierCurveTo(
-    -width * 0.58,
-    length * 0.16,
-    -width * 0.62,
-    length * 0.31,
-    -width * 0.2,
-    length * 0.35
+function createGillLeaf(radius: number, high: boolean): THREE.BufferGeometry {
+  // The supplied reference uses three clean, rounded leaves per side. Do not
+  // replace these with branched fronds, leaflet spikes or folded wedges.
+  const radial = high ? 6 : 5;
+  const geometry = new THREE.CapsuleGeometry(
+    radius * 0.16,
+    radius * 1.18,
+    high ? 3 : 2,
+    radial
   );
-  shape.lineTo(-width * 0.18, length * 0.46);
-  shape.bezierCurveTo(
-    -width * 0.54,
-    length * 0.5,
-    -width * 0.54,
-    length * 0.67,
-    -width * 0.15,
-    length * 0.7
-  );
-  shape.bezierCurveTo(
-    -width * 0.08,
-    length * 0.92,
-    -width * 0.04,
-    length,
-    0,
-    length * 1.04
-  );
-  shape.bezierCurveTo(
-    width * 0.06,
-    length,
-    width * 0.1,
-    length * 0.92,
-    width * 0.15,
-    length * 0.8
-  );
-  shape.bezierCurveTo(
-    width * 0.54,
-    length * 0.67,
-    width * 0.54,
-    length * 0.5,
-    width * 0.18,
-    length * 0.46
-  );
-  shape.lineTo(width * 0.2, length * 0.35);
-  shape.bezierCurveTo(
-    width * 0.62,
-    length * 0.31,
-    width * 0.58,
-    length * 0.16,
-    width * 0.2,
-    length * 0.12
-  );
-  shape.lineTo(width * 0.12, -length * 0.12);
-  shape.closePath();
-
-  const depth = width * 0.5;
-  const geometry = new THREE.ExtrudeGeometry(shape, {
-    depth,
-    steps: 1,
-    curveSegments: high ? 5 : 2,
-    bevelEnabled: true,
-    bevelSegments: 1,
-    bevelSize: width * 0.08,
-    bevelThickness: width * 0.08
-  });
-  geometry.translate(0, 0, -depth * 0.5);
-  const positions = geometry.getAttribute("position");
-  for (let index = 0; index < positions.count; index++) {
-    const y = THREE.MathUtils.clamp(
-      positions.getY(index) / Math.max(0.001, length),
-      0,
-      1
-    );
-    positions.setZ(
-      index,
-      positions.getZ(index) + Math.sin(y * Math.PI) * width * 0.14
-    );
-  }
-  positions.needsUpdate = true;
-  geometry.computeVertexNormals();
-  geometry.normalizeNormals();
-  return geometry;
-}
-
-function createTaperedSegment(
-  start: THREE.Vector3,
-  end: THREE.Vector3,
-  baseRadius: number,
-  tipRadius: number,
-  radialSegments: number
-): THREE.BufferGeometry {
-  const direction = end.clone().sub(start);
-  const length = direction.length();
-  const geometry = new THREE.CylinderGeometry(
-    tipRadius,
-    baseRadius,
-    length,
-    radialSegments,
-    2,
-    false
-  );
-  geometry.applyQuaternion(
-    new THREE.Quaternion().setFromUnitVectors(
-      new THREE.Vector3(0, 1, 0),
-      direction.normalize()
-    )
-  );
-  geometry.translate(
-    (start.x + end.x) * 0.5,
-    (start.y + end.y) * 0.5,
-    (start.z + end.z) * 0.5
-  );
-  return geometry;
-}
-
-interface MembranePoint {
-  x: number;
-  y: number;
-  z: number;
-  thickness: number;
-}
-
-function createClosedMembrane(
-  uSegments: number,
-  vSegments: number,
-  parameterNormalSign: -1 | 1,
-  sample: (u: number, v: number) => MembranePoint
-): THREE.BufferGeometry {
-  const positions: number[] = [];
-  const uvs: number[] = [];
-  const indices: number[] = [];
-  const columns = vSegments + 1;
-  const surfaceVertexCount = (uSegments + 1) * columns;
-  const vertexIndex = (
-    surfaceIndex: number,
-    uIndex: number,
-    vIndex: number
-  ) => surfaceIndex * surfaceVertexCount + uIndex * columns + vIndex;
-
-  for (const surfaceSign of [-1, 1] as const) {
-    for (let uIndex = 0; uIndex <= uSegments; uIndex++) {
-      const u = uIndex / uSegments;
-      for (let vIndex = 0; vIndex <= vSegments; vIndex++) {
-        const v01 = vIndex / vSegments;
-        const v = v01 * 2 - 1;
-        const point = sample(u, v);
-        positions.push(
-          point.x,
-          point.y,
-          point.z + surfaceSign * point.thickness
-        );
-        uvs.push(u, v01);
-      }
-    }
-  }
-
-  for (let surfaceIndex = 0; surfaceIndex < 2; surfaceIndex++) {
-    const surfaceSign = surfaceIndex === 0 ? -1 : 1;
-    const standardWinding = parameterNormalSign === surfaceSign;
-    for (let uIndex = 0; uIndex < uSegments; uIndex++) {
-      for (let vIndex = 0; vIndex < vSegments; vIndex++) {
-        const a = vertexIndex(surfaceIndex, uIndex, vIndex);
-        const b = vertexIndex(surfaceIndex, uIndex + 1, vIndex);
-        const c = vertexIndex(surfaceIndex, uIndex, vIndex + 1);
-        const d = vertexIndex(surfaceIndex, uIndex + 1, vIndex + 1);
-        if (standardWinding) {
-          indices.push(a, b, c, b, d, c);
-        } else {
-          indices.push(a, c, b, b, c, d);
-        }
-      }
-    }
-  }
-
-  const connectEdge = (
-    frontA: number,
-    frontB: number,
-    backA: number,
-    backB: number
-  ) => {
-    indices.push(frontA, frontB, backA, frontB, backB, backA);
-  };
-  for (let uIndex = 0; uIndex < uSegments; uIndex++) {
-    for (const vIndex of [0, vSegments]) {
-      connectEdge(
-        vertexIndex(1, uIndex, vIndex),
-        vertexIndex(1, uIndex + 1, vIndex),
-        vertexIndex(0, uIndex, vIndex),
-        vertexIndex(0, uIndex + 1, vIndex)
-      );
-    }
-  }
-  for (let vIndex = 0; vIndex < vSegments; vIndex++) {
-    for (const uIndex of [0, uSegments]) {
-      connectEdge(
-        vertexIndex(1, uIndex, vIndex),
-        vertexIndex(1, uIndex, vIndex + 1),
-        vertexIndex(0, uIndex, vIndex),
-        vertexIndex(0, uIndex, vIndex + 1)
-      );
-    }
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(positions, 3)
-  );
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  geometry.normalizeNormals();
+  geometry.scale(0.9, 1, 0.68);
   return geometry;
 }
 
@@ -322,52 +111,74 @@ function createMantaFin(
   high: boolean,
   side: -1 | 1
 ): THREE.BufferGeometry {
-  return createClosedMembrane(
-    high ? 12 : 8,
-    high ? 6 : 4,
-    side,
-    (u, v) => {
-      const eased = 1 - (1 - u) ** 1.22;
-      const span = radius * 1.5 * eased;
-      const halfHeight = radius * (
-        0.29 * (1 - u) +
-        0.25 * Math.sin(u * Math.PI) +
-        0.025
-      );
-      return {
-        x: side * span,
-        y: v * halfHeight + Math.sin(u * Math.PI) * radius * 0.025,
-        z: Math.sin(u * Math.PI) *
-          (1 - v * v) * radius * 0.12 -
-          u * u * radius * 0.02,
-        thickness: radius * (0.045 - u * 0.018)
-      };
-    }
+  const shape = new THREE.Shape();
+  shape.moveTo(0, -radius * 0.16);
+  shape.bezierCurveTo(
+    side * radius * 0.48,
+    -radius * 0.28,
+    side * radius * 1.12,
+    -radius * 0.18,
+    side * radius * 1.46,
+    radius * 0.06
   );
+  shape.bezierCurveTo(
+    side * radius * 1.25,
+    radius * 0.28,
+    side * radius * 0.52,
+    radius * 0.38,
+    0,
+    radius * 0.16
+  );
+  shape.closePath();
+  const depth = radius * 0.12;
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    steps: 1,
+    curveSegments: high ? 8 : 5,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: radius * 0.035,
+    bevelThickness: radius * 0.025
+  });
+  geometry.translate(0, 0, -depth * 0.5);
+  return geometry;
 }
 
 function createTailPaddle(
   radius: number,
   high: boolean
 ): THREE.BufferGeometry {
-  return createClosedMembrane(
-    high ? 10 : 7,
-    high ? 5 : 4,
-    1,
-    (u, v) => {
-      const halfWidth = radius * (
-        0.28 * (1 - u) +
-        0.16 * Math.sin(u * Math.PI)
-      );
-      return {
-        x: v * halfWidth,
-        y: radius * (0.24 - u * 1.24),
-        z: Math.sin(u * Math.PI) *
-          (1 - v * v) * radius * 0.065,
-        thickness: radius * (0.055 - u * 0.025)
-      };
-    }
+  const shape = new THREE.Shape();
+  shape.moveTo(-radius * 0.13, radius * 0.08);
+  shape.bezierCurveTo(
+    -radius * 0.32,
+    -radius * 0.18,
+    -radius * 0.24,
+    -radius * 0.7,
+    0,
+    -radius * 1.02
   );
+  shape.bezierCurveTo(
+    radius * 0.24,
+    -radius * 0.7,
+    radius * 0.3,
+    -radius * 0.18,
+    radius * 0.13,
+    radius * 0.08
+  );
+  shape.closePath();
+  const depth = radius * 0.16;
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    steps: 1,
+    curveSegments: high ? 8 : 5,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: radius * 0.03,
+    bevelThickness: radius * 0.024
+  });
+  geometry.translate(0, 0, -depth * 0.5);
+  return geometry;
 }
 
 export function createGlowfinRigGeometry(
@@ -377,13 +188,12 @@ export function createGlowfinRigGeometry(
   const r = cfg.lane.creatureRadius;
   const high = lod === 0;
   const cyan = new THREE.Color(0x058fbd);
-  const shoulderCyan = new THREE.Color(0x179fc6);
   const finCyan = new THREE.Color(0x42c9df);
   const gillViolet = new THREE.Color(0xa94fc3);
   const pivots = {
-    finLeft: new THREE.Vector3(-r * 0.48, -r * 0.08, r * 0.28),
-    finRight: new THREE.Vector3(r * 0.48, -r * 0.08, r * 0.28),
-    tail: new THREE.Vector3(0, -r * 0.56, r * 0.62),
+    finLeft: new THREE.Vector3(-r * 0.38, -r * 0.1, r * 0.08),
+    finRight: new THREE.Vector3(r * 0.38, -r * 0.1, r * 0.08),
+    tail: new THREE.Vector3(0, -r * 0.52, r * 0.72),
     gills: [] as THREE.Vector3[]
   };
 
@@ -406,104 +216,68 @@ export function createGlowfinRigGeometry(
   for (const side of [-1, 1]) {
     const pivot = side < 0 ? pivots.finLeft : pivots.finRight;
     bodyParts.push({
-      geometry: new THREE.SphereGeometry(
-        r * 0.42,
-        high ? 16 : 10,
-        high ? 10 : 7
-      ),
-      bone: side < 0 ? 1 : 2,
-      colour: cyan,
-      position: pivot.clone().add(new THREE.Vector3(
-        side * r * 0.08,
-        r * 0.015,
-        r * 0.13
-      )),
-      rotation: new THREE.Euler(0, side * 0.08, side * 0.035),
-      scale: new THREE.Vector3(1.02, 0.62, 0.42)
-    });
-    bodyParts.push({
       geometry: createMantaFin(r * 0.88, high, side as -1 | 1),
       bone: side < 0 ? 1 : 2,
-      colour: (position) => shoulderCyan.clone().lerp(
-        finCyan,
-        THREE.MathUtils.smoothstep(
-          Math.abs(position.x),
-          r * 0.48,
-          r * 1.55
-        )
-      ),
-      position: pivot.clone().add(new THREE.Vector3(0, 0, r * 0.13)),
-      rotation: new THREE.Euler(-0.08, side * 0.025, side * 0.045),
-      scale: new THREE.Vector3(1, 0.96, 1)
+      colour: finCyan,
+      position: pivot.clone(),
+      rotation: new THREE.Euler(-0.1, side * 0.035, side * 0.055),
+      scale: new THREE.Vector3(1, 0.94, 1)
     });
   }
 
-  // The caudal peduncle begins well inside the mantle and runs diagonally
-  // rearward into the paddle. It makes the tail a load-bearing continuation of
-  // the body instead of a teardrop pinned to the sphere's underside.
+  // This small rear-axis connector is hidden by the body and tail paddle in
+  // the approved camera. It keeps the animated tail continuous without adding
+  // a visible peduncle or changing the reference silhouette.
   bodyParts.push({
-    geometry: createTaperedSegment(
-      new THREE.Vector3(0, -r * 0.22, r * 0.32),
-      new THREE.Vector3(0, -r * 0.44, r * 0.64),
-      r * 0.18,
-      r * 0.105,
-      high ? 10 : 7
+    geometry: new THREE.CapsuleGeometry(
+      r * 0.095,
+      r * 0.36,
+      high ? 3 : 2,
+      high ? 6 : 5
     ),
     bone: 3,
-    colour: (position) => cyan.clone().lerp(
-      shoulderCyan,
-      THREE.MathUtils.smoothstep(-position.y, r * 0.22, r * 0.5)
-    ),
-    position: new THREE.Vector3(),
-    scale: new THREE.Vector3(1, 1, 1)
+    colour: finCyan,
+    position: pivots.tail.clone().add(new THREE.Vector3(
+      0,
+      0,
+      r * 0.08
+    )),
+    rotation: new THREE.Euler(Math.PI * 0.5, 0, 0),
+    scale: new THREE.Vector3(0.78, 1, 0.72)
   });
 
-  // The approved rear read uses one soft tapered central paddle.
+  // The supplied reference uses one small centered teardrop tail.
   bodyParts.push({
-    geometry: createTailPaddle(r * 0.86, high),
+    geometry: createTailPaddle(r * 0.92, high),
     bone: 3,
-    colour: (position) => shoulderCyan.clone().lerp(
-      finCyan,
-      THREE.MathUtils.smoothstep(-position.y, r * 0.34, r * 1.22)
-    ),
+    colour: finCyan,
     position: pivots.tail.clone(),
-    rotation: new THREE.Euler(-0.12, 0, 0),
-    scale: new THREE.Vector3(0.98, 1, 1)
+    rotation: new THREE.Euler(-0.06, 0, 0),
+    scale: new THREE.Vector3(0.9, 0.88, 1)
   });
 
   let bone = 4;
   for (const side of [-1, 1]) {
     for (let index = 0; index < 3; index++) {
       const pivot = new THREE.Vector3(
-        side * r * (0.66 + index * 0.015),
-        r * (0.27 - index * 0.235),
-        r * (0.69 - index * 0.035)
+        side * r * (0.7 + index * 0.04),
+        r * (0.68 - index * 0.2),
+        r * (0.5 - index * 0.025)
       );
       pivots.gills.push(pivot);
       bodyParts.push({
-        geometry: createGillPetal(
-          r * (0.41 - index * 0.022),
-          r * (0.18 - index * 0.01),
-          high
-        ),
+        geometry: createGillLeaf(r * 0.38, high),
         bone,
-        colour: (position) => cyan.clone().lerp(
-          gillViolet,
-          THREE.MathUtils.smoothstep(
-            Math.abs(position.x),
-            r * 0.62,
-            r * 1.03
-          )
-        ),
+        colour: gillViolet,
         position: pivot,
         rotation: new THREE.Euler(
-          0.12,
           side * 0.035,
-          -side * (0.72 + index * 0.38)
+          side * 0.08,
+          side * (1.02 - index * 0.4)
         ),
         scale: new THREE.Vector3(
-          1 - index * 0.025,
-          1 - index * 0.035,
+          0.92 + index * 0.035,
+          1 - index * 0.045,
           1
         )
       });

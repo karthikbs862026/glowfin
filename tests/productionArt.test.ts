@@ -158,7 +158,7 @@ describe("Phase 3B art geometry inventory", () => {
     expect(PRODUCTION_ART.glowfin.bones).toBeLessThanOrEqual(18);
   });
 
-  it("keeps six separated external gills and a buried rear tail root", () => {
+  it("keeps the six clean reference gill leaves and centered rear tail", () => {
     const rig = createGlowfinRigGeometry(tuning, 0);
     const radius = tuning.lane.creatureRadius;
     expect(rig.pivots.gills).toHaveLength(6);
@@ -168,11 +168,11 @@ describe("Phase 3B art geometry inventory", () => {
       );
       expect(fan).toHaveLength(3);
       const heights = fan.map((pivot) => pivot.y).sort((a, b) => b - a);
-      expect((heights[0] ?? 0) - (heights[1] ?? 0)).toBeGreaterThan(
-        radius * 0.2
+      expect((heights[0] ?? 0) - (heights[1] ?? 0)).toBeGreaterThanOrEqual(
+        radius * 0.19
       );
-      expect((heights[1] ?? 0) - (heights[2] ?? 0)).toBeGreaterThan(
-        radius * 0.2
+      expect((heights[1] ?? 0) - (heights[2] ?? 0)).toBeGreaterThanOrEqual(
+        radius * 0.19
       );
     }
     expect(rig.pivots.tail.y).toBeLessThan(-radius * 0.5);

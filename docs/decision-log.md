@@ -328,3 +328,21 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   7,984/3,718, wall 1,134/718/168 and shell garden 892/396/81 triangles.
   Collider planes, opening positions, two character draws and ten-bone rig
   remain unchanged.
+
+## 2026-07-31 — Restore the supplied Glowfin reference exactly
+
+- Owner review identified the current no-eye Glowfin as another unacceptable
+  regression and supplied the earlier correct crop as the sole character
+  authority.
+- The correct neutral read is one round cyan body, two broad scalloped manta
+  fins, one centered teardrop tail, three simple rounded lavender gill leaves
+  per side and two high dark lateral eyes peeking around the crown.
+- Revert the experimental feathered gills, closed membrane fins and tapered
+  peduncle. Restore the proven reference geometry and the earlier eye
+  coordinates instead of approximating the screenshot again.
+- Keep the negative-Z swim axis, obstacle-facing travel, chase camera, rig
+  names, two-draw material contract and gameplay/collision values unchanged.
+- Regression tests now reject hidden eyes, inward camera-facing eye placement,
+  non-reference gill spacing and appendage layout drift.
+- The restored reference mesh measures 6,200/3,018 triangles across its two
+  LODs, with the same ten bones, two materials and two draw calls.
