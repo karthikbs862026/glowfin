@@ -98,18 +98,29 @@ function createGillPetal(
   high: boolean
 ): THREE.BufferGeometry {
   const shape = new THREE.Shape();
-  // Three broad leaflet pairs give each stalk the characteristic feathered
-  // axolotl silhouette at gameplay distance. They remain large graphic forms,
-  // not noisy micro-fronds, and the buried narrow root keeps the six stalks
-  // attached to the mantle.
+  // Two soft leaflet pairs give each stalk the characteristic feathered
+  // axolotl silhouette at gameplay distance. Rounded lobes replace the sharp
+  // saw-tooth version that read as a tiny Christmas tree, while the buried
+  // narrow root keeps all six stalks attached to the mantle.
   shape.moveTo(-width * 0.12, -length * 0.12);
-  shape.lineTo(-width * 0.24, length * 0.13);
-  shape.lineTo(-width * 0.58, length * 0.24);
-  shape.lineTo(-width * 0.25, length * 0.34);
-  shape.lineTo(-width * 0.62, length * 0.49);
-  shape.lineTo(-width * 0.22, length * 0.57);
-  shape.lineTo(-width * 0.48, length * 0.73);
-  shape.lineTo(-width * 0.15, length * 0.78);
+  shape.lineTo(-width * 0.2, length * 0.12);
+  shape.bezierCurveTo(
+    -width * 0.58,
+    length * 0.16,
+    -width * 0.62,
+    length * 0.31,
+    -width * 0.2,
+    length * 0.35
+  );
+  shape.lineTo(-width * 0.18, length * 0.46);
+  shape.bezierCurveTo(
+    -width * 0.54,
+    length * 0.5,
+    -width * 0.54,
+    length * 0.67,
+    -width * 0.15,
+    length * 0.7
+  );
   shape.bezierCurveTo(
     -width * 0.08,
     length * 0.92,
@@ -126,12 +137,23 @@ function createGillPetal(
     width * 0.15,
     length * 0.8
   );
-  shape.lineTo(width * 0.48, length * 0.69);
-  shape.lineTo(width * 0.2, length * 0.58);
-  shape.lineTo(width * 0.58, length * 0.43);
-  shape.lineTo(width * 0.22, length * 0.34);
-  shape.lineTo(width * 0.5, length * 0.18);
-  shape.lineTo(width * 0.2, length * 0.12);
+  shape.bezierCurveTo(
+    width * 0.54,
+    length * 0.67,
+    width * 0.54,
+    length * 0.5,
+    width * 0.18,
+    length * 0.46
+  );
+  shape.lineTo(width * 0.2, length * 0.35);
+  shape.bezierCurveTo(
+    width * 0.62,
+    length * 0.31,
+    width * 0.58,
+    length * 0.16,
+    width * 0.2,
+    length * 0.12
+  );
   shape.lineTo(width * 0.12, -length * 0.12);
   shape.closePath();
 
@@ -139,7 +161,7 @@ function createGillPetal(
   const geometry = new THREE.ExtrudeGeometry(shape, {
     depth,
     steps: 1,
-    curveSegments: high ? 5 : 3,
+    curveSegments: high ? 5 : 2,
     bevelEnabled: true,
     bevelSegments: 1,
     bevelSize: width * 0.08,

@@ -317,7 +317,14 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   embed the shell relief in a deep curved buttress, and layer irregular
   voussoirs onto one uninterrupted structural arch core.
 - Replace the sea-fan stick lattice with a closed, bowed and bevelled tissue
-  membrane containing large real openings. The result stays within the existing
-  budgets: Glowfin 7,504/3,910, wall 1,290/770/168 and shell garden
-  892/396/81 triangles. Collider planes, opening positions, two character
-  draws and ten-bone rig remain unchanged.
+  membrane containing large real openings.
+- The first browser portrait confirmed six separate gill stalks and a seated
+  deep arch, but the sharp leaflet silhouette read like tiny fir trees and a
+  surviving diagonal wall shoulder still made the gate feel like a pointed
+  stage set. Round each stalk into two soft paired lobes, replace the wall
+  crown with explicit stepped pier/bank levels and remove the diagonal
+  shoulder entirely.
+- The final corrected inventories stay inside the existing budgets: Glowfin
+  7,984/3,718, wall 1,134/718/168 and shell garden 892/396/81 triangles.
+  Collider planes, opening positions, two character draws and ten-bone rig
+  remain unchanged.

@@ -230,13 +230,13 @@ export function createProductionWallGeometry(
   const backing = new THREE.Shape([
     new THREE.Vector2(innerX, -0.5),
     new THREE.Vector2(innerX, 0.48 - variant * 0.012),
-    new THREE.Vector2(gapDirection * 0.42, 0.5 - variant * 0.008),
-    new THREE.Vector2(gapDirection * 0.35, 0.43 + variant * 0.008),
-    new THREE.Vector2(gapDirection * 0.28, 0.2 + variant * 0.012),
-    new THREE.Vector2(gapDirection * 0.17, 0.015 - variant * 0.008),
-    new THREE.Vector2(gapDirection * 0.03, -0.11 + variant * 0.012),
-    new THREE.Vector2(-gapDirection * 0.16, -0.16 - variant * 0.012),
-    new THREE.Vector2(outerX, -0.22 - variant * 0.014),
+    new THREE.Vector2(gapDirection * 0.4, 0.49 - variant * 0.008),
+    new THREE.Vector2(gapDirection * 0.4, 0.2 + variant * 0.01),
+    new THREE.Vector2(gapDirection * 0.24, 0.2 + variant * 0.006),
+    new THREE.Vector2(gapDirection * 0.24, -0.035 - variant * 0.008),
+    new THREE.Vector2(gapDirection * 0.04, -0.035 + variant * 0.008),
+    new THREE.Vector2(gapDirection * 0.04, -0.14 - variant * 0.01),
+    new THREE.Vector2(outerX, -0.14 - variant * 0.012),
     new THREE.Vector2(outerX, -0.5)
   ]);
   const backingGeometry = new THREE.ExtrudeGeometry(backing, {
@@ -258,8 +258,9 @@ export function createProductionWallGeometry(
   // The outer wall stays a low collapsed bank instead of becoming the broad
   // triangular slab seen in the rejected portrait.
   if (lod < 2) {
+    const buttressStart = gapDirection * 0.015;
     const buttress = new THREE.Shape();
-    buttress.moveTo(outerX, -0.47);
+    buttress.moveTo(buttressStart, -0.45);
     buttress.lineTo(innerX - gapDirection * 0.105, -0.45);
     buttress.lineTo(innerX - gapDirection * 0.105, 0.43);
     buttress.bezierCurveTo(
@@ -271,12 +272,12 @@ export function createProductionWallGeometry(
       -0.01
     );
     buttress.bezierCurveTo(
-      gapDirection * 0.02,
+      gapDirection * 0.09,
       -0.18,
-      outerX + gapDirection * 0.08,
-      -0.22,
-      outerX,
-      -0.47
+      buttressStart + gapDirection * 0.035,
+      -0.25,
+      buttressStart,
+      -0.45
     );
     buttress.closePath();
     parts.push(styled(new THREE.ExtrudeGeometry(buttress, {
@@ -403,50 +404,6 @@ export function createProductionWallGeometry(
         ),
         colour: index % 2 === 0 ? STONE_LIGHT : STONE,
         glow: 0.025
-      }
-    ));
-  }
-
-  // A recessed curved shoulder gives the irregular voussoirs one continuous
-  // architectural gesture. Unlike a perfect torus, the rising ribbon seats
-  // directly on the collapsed bank and aims inward toward the broken opening.
-  if (lod < 2) {
-    const samples = lod === 0 ? 9 : 6;
-    const upper: THREE.Vector2[] = [];
-    const lower: THREE.Vector2[] = [];
-    for (let index = 0; index <= samples; index++) {
-      const t = index / samples;
-      const x = THREE.MathUtils.lerp(
-        outerX + gapDirection * 0.15,
-        innerX - gapDirection * 0.055,
-        t
-      );
-      const centreY = -0.01 + Math.pow(t, 0.78) * 0.45 +
-        Math.sin(t * Math.PI * 2 + variant) * 0.008;
-      const thickness = THREE.MathUtils.lerp(0.14, 0.1, t);
-      upper.push(new THREE.Vector2(x, centreY + thickness * 0.5));
-      lower.push(new THREE.Vector2(x, centreY - thickness * 0.5));
-    }
-    const shoulder = new THREE.Shape();
-    const first = upper[0];
-    if (!first) throw new Error("Moon-gate shoulder requires samples.");
-    shoulder.moveTo(first.x, first.y);
-    for (const point of upper.slice(1)) shoulder.lineTo(point.x, point.y);
-    for (const point of lower.reverse()) shoulder.lineTo(point.x, point.y);
-    shoulder.closePath();
-    parts.push(styled(
-      new THREE.ExtrudeGeometry(shoulder, {
-        depth: 0.19,
-        steps: 1,
-        bevelEnabled: lod === 0,
-        bevelSegments: 1,
-        bevelSize: 0.014,
-        bevelThickness: 0.014
-      }),
-      {
-        position: new THREE.Vector3(0, 0, 0.36),
-        colour: JOINT,
-        glow: 0.006
       }
     ));
   }
