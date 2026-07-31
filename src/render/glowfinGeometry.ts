@@ -95,14 +95,14 @@ function prepareEye(
 function createGillLeaf(radius: number, high: boolean): THREE.BufferGeometry {
   // The supplied reference uses three clean, rounded leaves per side. Do not
   // replace these with branched fronds, leaflet spikes or folded wedges.
-  const radial = high ? 6 : 5;
+  const radial = high ? 8 : 6;
   const geometry = new THREE.CapsuleGeometry(
-    radius * 0.16,
-    radius * 1.18,
-    high ? 3 : 2,
+    radius * 0.3,
+    radius * 0.86,
+    high ? 5 : 3,
     radial
   );
-  geometry.scale(0.9, 1, 0.68);
+  geometry.scale(0.82, 1, 0.22);
   return geometry;
 }
 
@@ -276,7 +276,7 @@ export function createGlowfinRigGeometry(
         rotation: new THREE.Euler(
           side * 0.035,
           side * 0.08,
-          -side * (0.7 + index * 0.28)
+          -side * (0.75 + index * 0.6)
         ),
         scale: new THREE.Vector3(
           0.92 + index * 0.035,
