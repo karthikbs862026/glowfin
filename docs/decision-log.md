@@ -258,5 +258,9 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Remove detached gate voussoirs from both the wall shoulders and overhead
   canopy. Use continuous seated stone ribbons with a restrained shell-metal
   inset so the gate reads as one ruin at reaction distance.
+- Seat the canopy origin at 0.8 wall heights so its outer arc lands on the
+  collider-true inner pier crown instead of hanging in the flight opening.
+- Bow the near sea-fan surface and cut a real opening through it; this keeps its
+  broad species silhouette without presenting one opaque magenta card.
 - Triangle ceilings, collision planes, opening positions and contrast
   thresholds remain unchanged.

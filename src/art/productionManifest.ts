@@ -49,7 +49,7 @@ export const PRODUCTION_ART = {
     materials: 1
   },
   shellGarden: {
-    lod0: 698,
+    lod0: 902,
     lod1: 444,
     lod2: 117,
     materials: 1

@@ -773,6 +773,18 @@ export function createProductionFanCoral(lod: ArtLod): THREE.BufferGeometry {
   }
   fanShape.lineTo(0.12, 0);
   fanShape.closePath();
+  // Cut true openings through the near sea fan so it reads as a living,
+  // netted organism rather than a magenta scenery card. Far LODs retain the
+  // solid outline for sub-pixel stability.
+  if (lod === 0) {
+    for (const [x, y, rx, ry] of [
+      [0, 0.59, 0.22, 0.3]
+    ] as const) {
+      const opening = new THREE.Path();
+      opening.absellipse(x, y, rx, ry, 0, Math.PI * 2, true);
+      fanShape.holes.push(opening);
+    }
+  }
   const fan = lod === 2
     ? new THREE.ShapeGeometry(fanShape, 1)
     : new THREE.ExtrudeGeometry(fanShape, {
@@ -784,11 +796,27 @@ export function createProductionFanCoral(lod: ArtLod): THREE.BufferGeometry {
       bevelThickness: 0.018
     });
   if (lod !== 2) fan.translate(0, 0, -0.0275);
+  if (lod === 0) {
+    const positions = fan.getAttribute("position");
+    for (let index = 0; index < positions.count; index++) {
+      const x = positions.getX(index);
+      const y = positions.getY(index);
+      const bow = Math.max(0, 1 - Math.abs(x) / 0.72) * 0.1;
+      positions.setZ(
+        index,
+        positions.getZ(index) + bow +
+          Math.sin(x * 5.2 + y * 3.7) * 0.012
+      );
+    }
+    positions.needsUpdate = true;
+    fan.computeVertexNormals();
+    fan.normalizeNormals();
+  }
   parts.push(styled(fan, {
     position: new THREE.Vector3(0, 0.18, 0),
     rotation: new THREE.Euler(-0.08, 0.18, -0.05),
     colour: VIOLET,
-    glow: 0.33
+    glow: 0.24
   }));
   const ribs = lod === 0 ? 7 : lod === 1 ? 5 : 3;
   for (let index = 0; index < ribs; index++) {

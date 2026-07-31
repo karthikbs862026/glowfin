@@ -279,7 +279,10 @@ export class MoonGardenGates {
         const gapCentre = (gate.gapLeft + gate.gapRight) * 0.5;
         this.position.set(
           gapCentre,
-          PROCEDURAL_GATE_VISUAL.wallFloorY + wallHeight * 0.4,
+          // The canopy's outer arc begins at local y≈0.09. Mounting its
+          // origin at 0.8 wall heights seats that endpoint on the inner pier
+          // crown; the old 0.4 mount left both arcs hanging in the opening.
+          PROCEDURAL_GATE_VISUAL.wallFloorY + wallHeight * 0.8,
           -gate.distance - wallDepth * 0.08
         );
         this.quaternion.setFromEuler(new THREE.Euler(
