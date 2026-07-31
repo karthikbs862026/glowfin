@@ -126,6 +126,42 @@ function createGillLeaf(radius: number, high: boolean): THREE.BufferGeometry {
   return geometry;
 }
 
+function createTailLobe(
+  radius: number,
+  high: boolean
+): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  shape.moveTo(0, -radius * 0.42);
+  shape.bezierCurveTo(
+    -radius * 0.26,
+    -radius * 0.2,
+    -radius * 0.36,
+    radius * 0.22,
+    0,
+    radius * 0.62
+  );
+  shape.bezierCurveTo(
+    radius * 0.36,
+    radius * 0.22,
+    radius * 0.26,
+    -radius * 0.2,
+    0,
+    -radius * 0.42
+  );
+  const depth = radius * 0.08;
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    steps: 1,
+    curveSegments: high ? 6 : 4,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: radius * 0.025,
+    bevelThickness: radius * 0.018
+  });
+  geometry.translate(0, 0, -depth * 0.5);
+  return geometry;
+}
+
 export function createGlowfinRigGeometry(
   cfg: TuningConfig,
   lod: GlowfinLod
@@ -204,36 +240,31 @@ export function createGlowfinRigGeometry(
     position: pivots.tail.clone().add(new THREE.Vector3(
       0,
       r * 0.08,
-      r * 0.34
+      -r * 0.1
     )),
     rotation: new THREE.Euler(Math.PI * 0.5, 0, 0),
     scale: new THREE.Vector3(0.78, 1, 0.72)
   });
 
-  // Two asymmetric lobes create a recognisable fish tail above and below the
-  // rear body silhouette. They sit just behind the mantle surface so the body
-  // occludes their roots in the chase camera instead of projecting two ovals
-  // over Glowfin's face.
+  // Two tapered caudal membranes peek above and below the rear body. Their
+  // roots sit behind the mantle, producing a forked tail silhouette without
+  // projecting rounded primitive beads over Glowfin's face.
   for (const side of [-1, 1]) {
     bodyParts.push({
-      geometry: new THREE.SphereGeometry(
-        r * 0.5,
-        high ? 17 : 11,
-        high ? 11 : 7
-      ),
+      geometry: createTailLobe(r * 0.76, high),
       bone: 3,
       colour: finCyan,
       position: pivots.tail.clone().add(new THREE.Vector3(
-        side * r * 0.06,
-        side * r * 1.05,
-        -r * 0.14
+        side * r * 0.035,
+        side * r * 0.86,
+        -r * 0.46
       )),
       rotation: new THREE.Euler(
-        side * 0.08,
-        0,
-        -side * 0.22
+        side * 0.045,
+        -side * 0.035,
+        side < 0 ? Math.PI + 0.16 : -0.16
       ),
-      scale: new THREE.Vector3(0.54, 0.52, 0.1)
+      scale: new THREE.Vector3(1.08, 1, 1)
     });
   }
 
