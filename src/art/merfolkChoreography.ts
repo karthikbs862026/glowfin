@@ -147,7 +147,7 @@ export function sampleMerfolkChoreography({
     // swimmer follows a smaller/slower one. Circular screen-plane paths keep
     // travel visible even when a sample begins near a sine turning point.
     const pathWidth = index === 0
-      ? 0.88 + seed * 0.08
+      ? 1.05 + seed * 0.08
       : 0.5 + seed * 0.05;
     const verticalAmplitude = index === 0
       ? pathWidth
