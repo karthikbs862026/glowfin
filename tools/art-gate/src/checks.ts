@@ -260,6 +260,73 @@ export function checkTrail(
   return findings;
 }
 
+/**
+ * Structural premium-world gate. Performance can remain green while authored
+ * districts, reef species or inhabitants disappear; this contract makes that
+ * regression a release blocker instead of a subjective review note.
+ */
+export function checkWorldQuality(
+  input: GateInput,
+  cfg: GateConfig["worldQuality"]
+): Finding[] {
+  const findings: Finding[] = [];
+  const categories = [
+    ["gate family", input.worldQuality.gateFamilies, cfg.requiredGateFamilies],
+    ["architecture", input.worldQuality.architecture, cfg.requiredArchitecture],
+    ["reef", input.worldQuality.reef, cfg.requiredReef],
+    ["ambient life", input.worldQuality.life, cfg.requiredLife],
+    ["prop", input.worldQuality.props, cfg.requiredProps],
+    ["material role", input.worldQuality.materials, cfg.requiredMaterials]
+  ] as const;
+  for (const [label, observed, required] of categories) {
+    const available = new Set(observed);
+    for (const signature of required) {
+      if (available.has(signature)) continue;
+      findings.push(result(
+        "PREMIUM_WORLD_FAMILY_MISSING",
+        "blocker",
+        `Required ${label} "${signature}" is absent from production evidence.`,
+        "Phase 3B premium world contract",
+        { observed: observed.length, limit: required.length }
+      ));
+    }
+  }
+
+  const minimums = [
+    [
+      "visible gate families",
+      new Set(input.worldQuality.gateFamilies).size,
+      cfg.minimumDistinctVisibleGateFamilies
+    ],
+    [
+      "reef families",
+      new Set(input.worldQuality.reef).size,
+      cfg.minimumDistinctReefFamilies
+    ],
+    [
+      "ambient-life families",
+      new Set(input.worldQuality.life).size,
+      cfg.minimumAmbientLifeFamilies
+    ],
+    [
+      "prop families",
+      new Set(input.worldQuality.props).size,
+      cfg.minimumPropFamilies
+    ]
+  ] as const;
+  for (const [label, observed, minimum] of minimums) {
+    if (observed >= minimum) continue;
+    findings.push(result(
+      "PREMIUM_WORLD_DIVERSITY_BELOW_FLOOR",
+      "blocker",
+      `${label} provide ${observed} distinct signatures; at least ${minimum} are required.`,
+      "Phase 3B premium world contract",
+      { observed, limit: minimum }
+    ));
+  }
+  return findings;
+}
+
 function stateKey(device: string, state: EffectState): string {
   return [
     device,

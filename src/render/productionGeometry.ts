@@ -1,16 +1,33 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import type { GateFacadeVariant } from "../art/premiumWorld";
 import type { ArtLod } from "./moonGardenGeometry";
 
-const STONE = new THREE.Color(0x0b3158);
-const STONE_LIGHT = new THREE.Color(0x1b5778);
+const STONE = new THREE.Color(0x123d5d);
+const STONE_LIGHT = new THREE.Color(0x397a8b);
 const STONE_DARK = new THREE.Color(0x021322);
 const JOINT = new THREE.Color(0x04111d);
-const SHELL = new THREE.Color(0x9a7747);
+const LIMESTONE = new THREE.Color(0x779598);
+const NACRE = new THREE.Color(0x8a91aa);
+const BRONZE = new THREE.Color(0x8a6031);
+const LAPIS = new THREE.Color(0x183f7b);
+const CRYSTAL = new THREE.Color(0x4aa8b8);
+const SHELL = BRONZE;
 const CYAN = new THREE.Color(0x075c70);
 const CYAN_LIGHT = new THREE.Color(0x20a7b5);
 const VIOLET = new THREE.Color(0x56357b);
 const ROSE = new THREE.Color(0x873c70);
+
+export const MATERIAL_ROLE = {
+  limestone: 0,
+  nacre: 1,
+  bronze: 2,
+  lapis: 3,
+  crystal: 4,
+  livingCoral: 5
+} as const;
+
+type MaterialRole = typeof MATERIAL_ROLE[keyof typeof MATERIAL_ROLE];
 
 interface PartStyle {
   colour: THREE.Color;
@@ -19,6 +36,7 @@ interface PartStyle {
   scale?: THREE.Vector3;
   glow?: number;
   sway?: number | ((position: THREE.Vector3) => number);
+  materialRole?: MaterialRole;
 }
 
 function styled(
@@ -29,7 +47,8 @@ function styled(
     rotation = new THREE.Euler(),
     scale = new THREE.Vector3(1, 1, 1),
     glow = 0,
-    sway = 0
+    sway = 0,
+    materialRole = MATERIAL_ROLE.limestone
   }: PartStyle
 ): THREE.BufferGeometry {
   let geometry = source;
@@ -49,6 +68,7 @@ function styled(
   const colours = new Float32Array(positions.count * 3);
   const glowWeights = new Float32Array(positions.count);
   const swayWeights = new Float32Array(positions.count);
+  const materialRoles = new Float32Array(positions.count);
   const vertex = new THREE.Vector3();
   for (let index = 0; index < positions.count; index++) {
     colours[index * 3] = colour.r;
@@ -57,6 +77,7 @@ function styled(
     glowWeights[index] = glow;
     vertex.fromBufferAttribute(positions, index);
     swayWeights[index] = typeof sway === "function" ? sway(vertex) : sway;
+    materialRoles[index] = materialRole;
   }
   geometry.setAttribute("color", new THREE.BufferAttribute(colours, 3));
   geometry.setAttribute(
@@ -66,6 +87,10 @@ function styled(
   geometry.setAttribute(
     "swayWeight",
     new THREE.BufferAttribute(swayWeights, 1)
+  );
+  geometry.setAttribute(
+    "materialRole",
+    new THREE.BufferAttribute(materialRoles, 1)
   );
   return geometry;
 }
@@ -219,24 +244,26 @@ function rubble(
 export function createProductionWallGeometry(
   lod: ArtLod,
   gapDirection: 1 | -1,
-  variant: 0 | 1 | 2
+  variant: GateFacadeVariant
 ): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
   const innerX = gapDirection * 0.5;
   const outerX = -gapDirection * 0.5;
+  const crownHeights = [0.48, 0.5, 0.46, 0.52, 0.58] as const;
+  const crownHeight = crownHeights[variant];
 
   // Dark backing closes every collidable opening while real stone courses
   // create the visible silhouette and readable joints in front of it.
   const backing = new THREE.Shape([
     new THREE.Vector2(innerX, -0.5),
-    new THREE.Vector2(innerX, 0.48 - variant * 0.012),
-    new THREE.Vector2(gapDirection * 0.4, 0.49 - variant * 0.008),
-    new THREE.Vector2(gapDirection * 0.4, 0.2 + variant * 0.01),
-    new THREE.Vector2(gapDirection * 0.24, 0.2 + variant * 0.006),
-    new THREE.Vector2(gapDirection * 0.24, -0.035 - variant * 0.008),
-    new THREE.Vector2(gapDirection * 0.04, -0.035 + variant * 0.008),
-    new THREE.Vector2(gapDirection * 0.04, -0.14 - variant * 0.01),
-    new THREE.Vector2(outerX, -0.14 - variant * 0.012),
+    new THREE.Vector2(innerX, crownHeight),
+    new THREE.Vector2(gapDirection * 0.4, crownHeight + 0.015),
+    new THREE.Vector2(gapDirection * 0.4, 0.2),
+    new THREE.Vector2(gapDirection * 0.24, 0.2),
+    new THREE.Vector2(gapDirection * 0.24, -0.035),
+    new THREE.Vector2(gapDirection * 0.04, -0.035),
+    new THREE.Vector2(gapDirection * 0.04, -0.14),
+    new THREE.Vector2(outerX, -0.14),
     new THREE.Vector2(outerX, -0.5)
   ]);
   const backingGeometry = new THREE.ExtrudeGeometry(backing, {
@@ -251,7 +278,8 @@ export function createProductionWallGeometry(
   parts.push(styled(backingGeometry, {
     position: new THREE.Vector3(0, 0, -0.07),
     colour: STONE_DARK,
-    glow: 0.012
+    glow: 0.012,
+    materialRole: variant === 4 ? MATERIAL_ROLE.lapis : MATERIAL_ROLE.limestone
   }));
 
   // A deep, curved inner buttress carries the arch load into the foundation.
@@ -290,8 +318,13 @@ export function createProductionWallGeometry(
       bevelThickness: 0.012
     }), {
       position: new THREE.Vector3(0, 0, 0.45),
-      colour: STONE,
-      glow: 0.014
+      colour: variant === 3 ? NACRE : variant === 4 ? LAPIS : STONE,
+      glow: 0.014,
+      materialRole: variant === 3
+        ? MATERIAL_ROLE.nacre
+        : variant === 4
+          ? MATERIAL_ROLE.lapis
+          : MATERIAL_ROLE.limestone
     }));
 
     // A recessed shell-shaped niche is cut into the load-bearing face. It is
@@ -319,7 +352,8 @@ export function createProductionWallGeometry(
       ),
       scale: new THREE.Vector3(1.04, 0.95, 1),
       colour: JOINT,
-      glow: 0.006
+      glow: 0.006,
+      materialRole: MATERIAL_ROLE.lapis
     }));
     if (lod === 0) {
       parts.push(styled(new THREE.SphereGeometry(0.055, 10, 6), {
@@ -330,7 +364,8 @@ export function createProductionWallGeometry(
         ),
         scale: new THREE.Vector3(0.84, 1.12, 0.28),
         colour: SHELL,
-        glow: 0.045
+        glow: 0.045,
+        materialRole: MATERIAL_ROLE.bronze
       }));
     }
   }
@@ -379,7 +414,12 @@ export function createProductionWallGeometry(
           colour: (row + column + variant) % 3 === 0
             ? STONE_LIGHT
             : STONE,
-          glow: 0.018
+          glow: 0.018,
+          materialRole: variant === 3 && (row + column) % 3 === 0
+            ? MATERIAL_ROLE.nacre
+            : variant === 4 && (row + column) % 2 === 0
+              ? MATERIAL_ROLE.lapis
+              : MATERIAL_ROLE.limestone
         }
       ));
     }
@@ -403,9 +443,125 @@ export function createProductionWallGeometry(
           gapDirection * Math.sin(index * 1.3) * 0.018
         ),
         colour: index % 2 === 0 ? STONE_LIGHT : STONE,
-        glow: 0.025
+        glow: 0.025,
+        materialRole: variant === 4
+          ? MATERIAL_ROLE.lapis
+          : variant === 3 && index % 2 === 0
+            ? MATERIAL_ROLE.nacre
+            : MATERIAL_ROLE.limestone
       }
     ));
+  }
+
+  // Each district has one large, decipherable facade motif. These broad forms
+  // survive portrait distance and replace the former scatter of interchangeable
+  // rods, rings and decals.
+  if (lod < 2) {
+    const faceX = gapDirection * 0.235;
+    if (variant === 0) {
+      parts.push(styled(new THREE.TorusGeometry(
+        0.13,
+        0.025,
+        lod === 0 ? 7 : 5,
+        lod === 0 ? 18 : 12,
+        Math.PI * 1.72
+      ), {
+        position: new THREE.Vector3(faceX, 0.14, 0.635),
+        rotation: new THREE.Euler(0, 0, -Math.PI * 0.36),
+        scale: new THREE.Vector3(0.82, 1, 0.4),
+        colour: BRONZE,
+        glow: 0.055,
+        materialRole: MATERIAL_ROLE.bronze
+      }));
+    } else if (variant === 1) {
+      const archive = new THREE.Shape([
+        new THREE.Vector2(-0.105, -0.16),
+        new THREE.Vector2(0.105, -0.16),
+        new THREE.Vector2(0.105, 0.055),
+        new THREE.Vector2(0, 0.18),
+        new THREE.Vector2(-0.105, 0.055)
+      ]);
+      parts.push(styled(new THREE.ExtrudeGeometry(archive, {
+        depth: 0.045,
+        steps: 1,
+        bevelEnabled: true,
+        bevelSegments: 1,
+        bevelSize: 0.012,
+        bevelThickness: 0.008
+      }), {
+        position: new THREE.Vector3(faceX, 0.13, 0.61),
+        colour: LAPIS,
+        glow: 0.025,
+        materialRole: MATERIAL_ROLE.lapis
+      }));
+      for (const offset of [-0.07, 0, 0.07]) {
+        parts.push(styled(stoneBlock(0.125, 0.018, 0.025, 0.003), {
+          position: new THREE.Vector3(faceX, 0.09 + offset, 0.676),
+          colour: BRONZE,
+          glow: 0.045,
+          materialRole: MATERIAL_ROLE.bronze
+        }));
+      }
+    } else if (variant === 2) {
+      const root = new THREE.Vector3(faceX, -0.04, 0.64);
+      const branchCount = lod === 0 ? 5 : 3;
+      for (let index = 0; index < branchCount; index++) {
+        const spread = (index / Math.max(1, branchCount - 1) - 0.5) * 0.28;
+        parts.push(styled(branchBetween(
+          root,
+          new THREE.Vector3(
+            faceX + gapDirection * spread * 0.28,
+            0.19 + Math.abs(spread) * 0.34,
+            0.655 + Math.cos(index) * 0.012
+          ),
+          0.021,
+          0.01,
+          lod === 0 ? 6 : 4
+        ), {
+          colour: index % 2 === 0 ? ROSE : VIOLET,
+          glow: 0.28,
+          materialRole: MATERIAL_ROLE.livingCoral
+        }));
+      }
+    } else if (variant === 3) {
+      parts.push(styled(new THREE.SphereGeometry(
+        0.155,
+        lod === 0 ? 14 : 9,
+        lod === 0 ? 7 : 5,
+        0,
+        Math.PI * 2,
+        0,
+        Math.PI * 0.56
+      ), {
+        position: new THREE.Vector3(faceX, 0.2, 0.63),
+        rotation: new THREE.Euler(0, 0, Math.PI),
+        scale: new THREE.Vector3(0.86, 1, 0.34),
+        colour: NACRE,
+        glow: 0.05,
+        materialRole: MATERIAL_ROLE.nacre
+      }));
+      parts.push(styled(stoneBlock(0.23, 0.052, 0.06, 0.008), {
+        position: new THREE.Vector3(faceX, 0.045, 0.645),
+        colour: BRONZE,
+        glow: 0.04,
+        materialRole: MATERIAL_ROLE.bronze
+      }));
+    } else {
+      const crystal = new THREE.OctahedronGeometry(0.11, 0);
+      parts.push(styled(crystal, {
+        position: new THREE.Vector3(faceX, 0.22, 0.65),
+        scale: new THREE.Vector3(0.64, 1.3, 0.42),
+        colour: CRYSTAL,
+        glow: 0.17,
+        materialRole: MATERIAL_ROLE.crystal
+      }));
+      parts.push(styled(stoneBlock(0.045, 0.38, 0.055, 0.006), {
+        position: new THREE.Vector3(faceX, -0.015, 0.64),
+        colour: BRONZE,
+        glow: 0.035,
+        materialRole: MATERIAL_ROLE.bronze
+      }));
+    }
   }
 
   if (lod < 2) {
@@ -416,7 +572,8 @@ export function createProductionWallGeometry(
         position: new THREE.Vector3(buttressX, -0.22, 0.28),
         rotation: new THREE.Euler(0, gapDirection * 0.08, gapDirection * 0.05),
         colour: STONE_DARK,
-        glow: 0.01
+        glow: 0.01,
+        materialRole: variant === 4 ? MATERIAL_ROLE.lapis : MATERIAL_ROLE.limestone
       }
     ));
   }
@@ -479,57 +636,103 @@ export function createProductionWallGeometry(
  * only the upper architectural silhouette.
  */
 export function createProductionGateCanopyGeometry(
-  lod: ArtLod
+  lod: ArtLod,
+  variant: GateFacadeVariant = 0
 ): THREE.BufferGeometry {
+  // Observatory gates deliberately have no overhead arch. A zero-count
+  // instanced placeholder keeps the renderer's fixed pool topology stable.
+  if (variant === 4) {
+    return merged([styled(new THREE.BoxGeometry(0.01, 0.01, 0.01), {
+      colour: LAPIS,
+      materialRole: MATERIAL_ROLE.lapis
+    })]);
+  }
+
   const parts: THREE.BufferGeometry[] = [];
   const samples = lod === 0 ? 18 : lod === 1 ? 12 : 7;
   const start = 0.08 * Math.PI;
   const end = 0.92 * Math.PI;
+  const outerRadius = variant === 3 ? 0.58 : variant === 2 ? 0.56 : 0.54;
+  const innerRadius = variant === 3 ? 0.33 : variant === 2 ? 0.31 : 0.32;
 
-  // One uninterrupted carved body carries its weight into both springers.
-  // The previous two independent ribbons had no visible load path and read as
-  // two tusks suspended between the piers even when their transforms touched.
-  parts.push(styled(archRibbonSegment(
-    start,
-    end,
-    samples,
-    0.54,
-    0.32,
-    -0.1,
-    0.34
-  ), {
-    position: new THREE.Vector3(0, 0, 0.02),
-    colour: STONE_DARK,
-    glow: 0.008
-  }));
-
-  // Deep overlapping voussoirs sit on the uninterrupted structural core. The
-  // overlap prevents the old floating-block read while the alternating front
-  // depth catches enough moonlight to reveal a carved stone arch.
-  const voussoirCount = lod === 0 ? 11 : lod === 1 ? 8 : 5;
-  for (let index = 0; index < voussoirCount; index++) {
-    const t = (index + 0.5) / voussoirCount;
-    const angle = THREE.MathUtils.lerp(start, end, t);
-    const radius = 0.435;
-    parts.push(styled(stoneBlock(
-      lod === 2 ? 0.16 : 0.145,
-      lod === 2 ? 0.13 : 0.115,
-      0.4,
-      0.012 + (index % 3) * 0.004
-    ), {
-      position: new THREE.Vector3(
-        Math.cos(angle) * radius,
-        -0.1 + Math.sin(angle) * radius,
-        0.11 + (index % 2) * 0.012
-      ),
-      rotation: new THREE.Euler(
-        0,
-        (index % 2 === 0 ? -1 : 1) * 0.012,
-        angle - Math.PI * 0.5
-      ),
-      colour: index % 3 === 0 ? STONE_LIGHT : STONE,
-      glow: 0.014 + (index % 3 === 0 ? 0.006 : 0)
+  // The Archive uses a high pointed vault; the other districts use genuinely
+  // different round, scalloped or domed load paths rather than recoloured
+  // copies of one ring.
+  if (variant === 1) {
+    const pointed = new THREE.Shape([
+      new THREE.Vector2(-0.62, -0.16),
+      new THREE.Vector2(0, 0.58),
+      new THREE.Vector2(0.62, -0.16),
+      new THREE.Vector2(0.36, -0.16),
+      new THREE.Vector2(0, 0.31),
+      new THREE.Vector2(-0.36, -0.16)
+    ]);
+    const core = new THREE.ExtrudeGeometry(pointed, {
+      depth: 0.34,
+      steps: 1,
+      bevelEnabled: true,
+      bevelSegments: 1,
+      bevelSize: 0.016,
+      bevelThickness: 0.014
+    });
+    core.translate(0, 0, -0.17);
+    parts.push(styled(core, {
+      colour: LAPIS,
+      glow: 0.012,
+      materialRole: MATERIAL_ROLE.lapis
     }));
+  } else {
+    parts.push(styled(archRibbonSegment(
+      start,
+      end,
+      samples,
+      outerRadius,
+      innerRadius,
+      -0.1,
+      0.34
+    ), {
+      position: new THREE.Vector3(0, 0, 0.02),
+      colour: variant === 3 ? NACRE : STONE_DARK,
+      glow: variant === 3 ? 0.026 : 0.008,
+      materialRole: variant === 3 ? MATERIAL_ROLE.nacre : MATERIAL_ROLE.limestone
+    }));
+  }
+
+  if (variant !== 1) {
+    const voussoirCount = lod === 0 ? 11 : lod === 1 ? 8 : 5;
+    for (let index = 0; index < voussoirCount; index++) {
+      const t = (index + 0.5) / voussoirCount;
+      const angle = THREE.MathUtils.lerp(start, end, t);
+      const radius = (outerRadius + innerRadius) * 0.5;
+      parts.push(styled(stoneBlock(
+        lod === 2 ? 0.16 : 0.145,
+        lod === 2 ? 0.13 : 0.115,
+        0.4,
+        0.012 + (index % 3) * 0.004
+      ), {
+        position: new THREE.Vector3(
+          Math.cos(angle) * radius,
+          -0.1 + Math.sin(angle) * radius,
+          0.11 + (index % 2) * 0.012
+        ),
+        rotation: new THREE.Euler(
+          0,
+          (index % 2 === 0 ? -1 : 1) * 0.012,
+          angle - Math.PI * 0.5
+        ),
+        colour: variant === 2
+          ? (index % 2 === 0 ? ROSE : VIOLET)
+          : variant === 3
+            ? (index % 3 === 0 ? NACRE : LIMESTONE)
+            : (index % 3 === 0 ? STONE_LIGHT : STONE),
+        glow: variant === 2 ? 0.16 : 0.014 + (index % 3 === 0 ? 0.006 : 0),
+        materialRole: variant === 2
+          ? MATERIAL_ROLE.livingCoral
+          : variant === 3 && index % 3 === 0
+            ? MATERIAL_ROLE.nacre
+            : MATERIAL_ROLE.limestone
+      }));
+    }
   }
 
   // Wide springers and overlapping capitals sit outside the authoritative
@@ -544,33 +747,89 @@ export function createProductionGateCanopyGeometry(
     ), {
       position: new THREE.Vector3(side * 0.62, -0.08, 0.01),
       rotation: new THREE.Euler(0, side * 0.025, -side * 0.018),
-      colour: STONE,
-      glow: 0.014
+      colour: variant === 1 ? LAPIS : variant === 3 ? LIMESTONE : STONE,
+      glow: 0.014,
+      materialRole: variant === 1
+        ? MATERIAL_ROLE.lapis
+        : MATERIAL_ROLE.limestone
     }));
     if (lod < 2) {
       parts.push(styled(stoneBlock(0.28, 0.12, 0.42, 0.016), {
         position: new THREE.Vector3(side * 0.64, 0.1, 0.015),
         rotation: new THREE.Euler(0, -side * 0.018, side * 0.012),
-        colour: STONE_LIGHT,
-        glow: 0.018
+        colour: variant === 3 ? NACRE : STONE_LIGHT,
+        glow: 0.018,
+        materialRole: variant === 3 ? MATERIAL_ROLE.nacre : MATERIAL_ROLE.limestone
       }));
     }
   }
 
-  // A narrow shell-metal reveal sits inside the deep stone arch.
-  if (lod < 2) {
+  if (lod < 2 && variant !== 1) {
     parts.push(styled(archRibbonSegment(
       start + 0.015,
       end - 0.015,
       lod === 0 ? 16 : 10,
-      0.335,
-      0.307,
+      innerRadius + 0.015,
+      innerRadius - 0.013,
       -0.1,
       0.37
     ), {
       position: new THREE.Vector3(0, 0, 0.13),
-      colour: SHELL,
-      glow: 0.04
+      colour: variant === 2 ? NACRE : BRONZE,
+      glow: variant === 2 ? 0.09 : 0.04,
+      materialRole: variant === 2 ? MATERIAL_ROLE.nacre : MATERIAL_ROLE.bronze
+    }));
+  }
+
+  if (lod < 2 && variant === 1) {
+    for (const side of [-1, 1]) {
+      parts.push(styled(stoneBlock(0.035, 0.66, 0.38, 0.006), {
+        position: new THREE.Vector3(side * 0.19, 0.1, 0.16),
+        rotation: new THREE.Euler(0, 0, -side * 0.69),
+        colour: BRONZE,
+        glow: 0.045,
+        materialRole: MATERIAL_ROLE.bronze
+      }));
+    }
+  } else if (lod < 2 && variant === 2) {
+    const scallops = lod === 0 ? 7 : 5;
+    for (let index = 0; index < scallops; index++) {
+      const angle = THREE.MathUtils.lerp(0.18 * Math.PI, 0.82 * Math.PI,
+        index / Math.max(1, scallops - 1));
+      parts.push(styled(new THREE.SphereGeometry(0.052, 7, 5), {
+        position: new THREE.Vector3(
+          Math.cos(angle) * 0.575,
+          -0.1 + Math.sin(angle) * 0.575,
+          0.19
+        ),
+        scale: new THREE.Vector3(1.25, 0.78, 0.6),
+        colour: index % 2 === 0 ? ROSE : VIOLET,
+        glow: 0.2,
+        materialRole: MATERIAL_ROLE.livingCoral
+      }));
+    }
+  } else if (lod < 2 && variant === 3) {
+    parts.push(styled(new THREE.SphereGeometry(
+      0.17,
+      lod === 0 ? 16 : 10,
+      lod === 0 ? 8 : 5,
+      0,
+      Math.PI * 2,
+      0,
+      Math.PI * 0.55
+    ), {
+      position: new THREE.Vector3(0, 0.49, 0.12),
+      scale: new THREE.Vector3(1.55, 0.72, 0.82),
+      colour: NACRE,
+      glow: 0.045,
+      materialRole: MATERIAL_ROLE.nacre
+    }));
+    parts.push(styled(new THREE.OctahedronGeometry(0.075, 0), {
+      position: new THREE.Vector3(0, 0.65, 0.15),
+      scale: new THREE.Vector3(0.62, 1.25, 0.62),
+      colour: CRYSTAL,
+      glow: 0.14,
+      materialRole: MATERIAL_ROLE.crystal
     }));
   }
 
@@ -1048,6 +1307,454 @@ export function createProductionKelp(lod: 0 | 1 | 2): THREE.BufferGeometry {
     }));
   }
   return merged(parts);
+}
+
+function curvedTube(
+  points: THREE.Vector3[],
+  tubularSegments: number,
+  radius: number,
+  radialSegments: number,
+  closed = false
+): THREE.BufferGeometry {
+  return new THREE.TubeGeometry(
+    new THREE.CatmullRomCurve3(points, closed, "centripetal"),
+    tubularSegments,
+    radius,
+    radialSegments,
+    closed
+  );
+}
+
+function scallopedPlateShape(radius: number, lobes: number): THREE.Shape {
+  const points: THREE.Vector2[] = [];
+  const samples = lobes * 4;
+  for (let index = 0; index < samples; index++) {
+    const angle = index / samples * Math.PI * 2;
+    const edge = radius * (0.9 + Math.sin(angle * lobes) * 0.1);
+    points.push(new THREE.Vector2(
+      Math.cos(angle) * edge,
+      Math.sin(angle) * edge
+    ));
+  }
+  return new THREE.Shape(points);
+}
+
+/**
+ * Maze-ridged brain coral. The five wandering ridges are deliberately
+ * non-concentric and sit on a single rounded colony, preventing the purple
+ * faceted-rock/cone read seen in the Phase 3A captures.
+ */
+export function createProductionBrainCoral(lod: ArtLod): THREE.BufferGeometry {
+  const parts = coralRockBase(lod, 0.62, true);
+  const radial = lod === 0 ? 18 : lod === 1 ? 13 : 8;
+  parts.push(styled(new THREE.SphereGeometry(
+    0.62,
+    radial,
+    lod === 0 ? 11 : lod === 1 ? 8 : 5
+  ), {
+    position: new THREE.Vector3(0, 0.5, 0),
+    scale: new THREE.Vector3(1.08, 0.72, 0.86),
+    colour: VIOLET,
+    glow: 0.18,
+    materialRole: MATERIAL_ROLE.livingCoral
+  }));
+  const ridgeCount = lod === 2 ? 3 : 5;
+  for (let ridge = 0; ridge < ridgeCount; ridge++) {
+    const points: THREE.Vector3[] = [];
+    const pointCount = lod === 0 ? 9 : lod === 1 ? 7 : 5;
+    for (let point = 0; point < pointCount; point++) {
+      const t = point / Math.max(1, pointCount - 1);
+      const x = THREE.MathUtils.lerp(-0.5, 0.5, t);
+      const dome = Math.sqrt(Math.max(0.05, 1 - (x / 0.58) ** 2));
+      const row = ridge - (ridgeCount - 1) * 0.5;
+      points.push(new THREE.Vector3(
+        x + Math.sin(t * Math.PI * 3 + ridge) * 0.028,
+        0.48 + row * 0.105 + dome * 0.15 + Math.sin(t * 8 + ridge) * 0.025,
+        0.48 * dome - Math.abs(row) * 0.026
+      ));
+    }
+    parts.push(styled(curvedTube(
+      points,
+      lod === 0 ? 18 : lod === 1 ? 12 : 7,
+      lod === 2 ? 0.025 : 0.032,
+      lod === 0 ? 6 : 4
+    ), {
+      colour: ridge % 2 === 0 ? ROSE : NACRE,
+      glow: 0.24,
+      materialRole: ridge % 2 === 0
+        ? MATERIAL_ROLE.livingCoral
+        : MATERIAL_ROLE.nacre,
+      sway: lod === 2 ? 0 : 0.08
+    }));
+  }
+  return merged(parts);
+}
+
+/** Thick, offset, scalloped shelves on a load-bearing organic pedestal. */
+export function createProductionTableCoral(lod: ArtLod): THREE.BufferGeometry {
+  const parts = coralRockBase(lod, 0.74, true);
+  const radial = lod === 0 ? 8 : lod === 1 ? 6 : 4;
+  parts.push(styled(branchBetween(
+    new THREE.Vector3(0, 0.1, 0),
+    new THREE.Vector3(-0.04, 0.7, 0.02),
+    0.17,
+    0.11,
+    radial
+  ), {
+    colour: ROSE,
+    glow: 0.18,
+    materialRole: MATERIAL_ROLE.livingCoral
+  }));
+  const plateCount = lod === 2 ? 1 : 2;
+  for (let index = 0; index < plateCount; index++) {
+    const shape = scallopedPlateShape(index === 0 ? 0.7 : 0.45, index === 0 ? 9 : 7);
+    const plate = new THREE.ExtrudeGeometry(shape, {
+      depth: index === 0 ? 0.105 : 0.08,
+      steps: 1,
+      curveSegments: 2,
+      bevelEnabled: true,
+      bevelSegments: 1,
+      bevelSize: 0.025,
+      bevelThickness: 0.018
+    });
+    plate.translate(0, 0, -(index === 0 ? 0.0525 : 0.04));
+    plate.rotateX(-Math.PI / 2);
+    parts.push(styled(plate, {
+      position: new THREE.Vector3(
+        index === 0 ? 0.08 : -0.26,
+        index === 0 ? 0.68 : 0.94,
+        index === 0 ? 0 : 0.06
+      ),
+      rotation: new THREE.Euler(0.04, index * 0.45, index === 0 ? 0.02 : -0.08),
+      scale: new THREE.Vector3(1.18, 1, 0.82),
+      colour: index === 0 ? ROSE : VIOLET,
+      glow: 0.2,
+      materialRole: MATERIAL_ROLE.livingCoral,
+      sway: index === 0 ? 0.08 : 0.14
+    }));
+  }
+  return merged(parts);
+}
+
+/** Grounded palace district: terrace, stairs, colonnade, domes and obelisk. */
+export function createProductionPalaceDistrict(lod: ArtLod): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
+  parts.push(styled(stoneBlock(2.6, 0.22, 1.5, 0.035), {
+    position: new THREE.Vector3(0, 0.11, 0),
+    colour: STONE_DARK,
+    materialRole: MATERIAL_ROLE.limestone
+  }));
+  const stairs = lod === 2 ? 2 : 4;
+  for (let step = 0; step < stairs; step++) {
+    parts.push(styled(stoneBlock(
+      1.32 - step * 0.14,
+      0.08,
+      0.28,
+      0.008
+    ), {
+      position: new THREE.Vector3(0, 0.22 + step * 0.075, 0.74 - step * 0.19),
+      colour: step % 2 === 0 ? LIMESTONE : STONE_LIGHT,
+      materialRole: MATERIAL_ROLE.limestone
+    }));
+  }
+  const columns = lod === 0 ? 7 : lod === 1 ? 5 : 3;
+  for (let index = 0; index < columns; index++) {
+    const x = THREE.MathUtils.lerp(-0.92, 0.92, index / Math.max(1, columns - 1));
+    const height = index === Math.floor(columns / 2) ? 1.18 : 0.96;
+    parts.push(styled(new THREE.CylinderGeometry(
+      0.075,
+      0.095,
+      height,
+      lod === 0 ? 10 : lod === 1 ? 7 : 5,
+      1
+    ), {
+      position: new THREE.Vector3(x, 0.34 + height * 0.5, 0.18),
+      colour: index % 2 === 0 ? LIMESTONE : NACRE,
+      materialRole: index % 2 === 0 ? MATERIAL_ROLE.limestone : MATERIAL_ROLE.nacre
+    }));
+    parts.push(styled(stoneBlock(0.22, 0.075, 0.22, 0.01), {
+      position: new THREE.Vector3(x, 0.34 + height + 0.02, 0.18),
+      colour: BRONZE,
+      glow: 0.025,
+      materialRole: MATERIAL_ROLE.bronze
+    }));
+  }
+  parts.push(styled(stoneBlock(2.15, 0.14, 0.42, 0.018), {
+    position: new THREE.Vector3(0, 1.38, 0.15),
+    colour: LIMESTONE,
+    materialRole: MATERIAL_ROLE.limestone
+  }));
+  for (const side of [-1, 1]) {
+    parts.push(styled(new THREE.SphereGeometry(
+      0.38,
+      lod === 0 ? 16 : lod === 1 ? 11 : 7,
+      lod === 0 ? 8 : 5,
+      0,
+      Math.PI * 2,
+      0,
+      Math.PI * 0.54
+    ), {
+      position: new THREE.Vector3(side * 0.72, 1.48, 0.06),
+      scale: new THREE.Vector3(1.05, 0.72, 0.86),
+      colour: NACRE,
+      glow: 0.024,
+      materialRole: MATERIAL_ROLE.nacre
+    }));
+  }
+  parts.push(styled(new THREE.OctahedronGeometry(0.16, 0), {
+    position: new THREE.Vector3(0, 1.82, 0.12),
+    scale: new THREE.Vector3(0.48, 1.8, 0.48),
+    colour: CRYSTAL,
+    glow: 0.09,
+    materialRole: MATERIAL_ROLE.crystal
+  }));
+  return merged(parts);
+}
+
+/** Twin load-bearing pylons and a celestial instrument—explicitly no arch. */
+export function createProductionObservatory(lod: ArtLod): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [
+    styled(stoneBlock(2.5, 0.18, 1.35, 0.025), {
+      position: new THREE.Vector3(0, 0.09, 0),
+      colour: STONE_DARK,
+      materialRole: MATERIAL_ROLE.limestone
+    })
+  ];
+  for (const side of [-1, 1]) {
+    const pylonShape = new THREE.Shape([
+      new THREE.Vector2(-0.32, 0),
+      new THREE.Vector2(0.32, 0),
+      new THREE.Vector2(0.23, 1.62),
+      new THREE.Vector2(-0.19, 1.82)
+    ]);
+    const pylon = new THREE.ExtrudeGeometry(pylonShape, {
+      depth: 0.5,
+      steps: 1,
+      bevelEnabled: true,
+      bevelSegments: 1,
+      bevelSize: 0.035,
+      bevelThickness: 0.03
+    });
+    pylon.translate(0, 0, -0.25);
+    parts.push(styled(pylon, {
+      position: new THREE.Vector3(side * 0.82, 0.18, 0),
+      scale: new THREE.Vector3(side, 1, 1),
+      colour: LAPIS,
+      materialRole: MATERIAL_ROLE.lapis
+    }));
+    parts.push(styled(new THREE.OctahedronGeometry(0.16, 0), {
+      position: new THREE.Vector3(side * 0.82, 2.03, 0.03),
+      scale: new THREE.Vector3(0.7, 1.55, 0.7),
+      colour: CRYSTAL,
+      glow: 0.12,
+      materialRole: MATERIAL_ROLE.crystal
+    }));
+  }
+  if (lod < 2) {
+    parts.push(styled(new THREE.TorusGeometry(
+      0.42,
+      0.038,
+      lod === 0 ? 8 : 6,
+      lod === 0 ? 24 : 16
+    ), {
+      position: new THREE.Vector3(0, 1.1, 0.24),
+      rotation: new THREE.Euler(0.18, 0, 0),
+      colour: BRONZE,
+      glow: 0.035,
+      materialRole: MATERIAL_ROLE.bronze
+    }));
+    parts.push(styled(new THREE.OctahedronGeometry(0.13, 0), {
+      position: new THREE.Vector3(0, 1.1, 0.28),
+      colour: CRYSTAL,
+      glow: 0.13,
+      materialRole: MATERIAL_ROLE.crystal
+    }));
+  }
+  return merged(parts);
+}
+
+function merfolkFigure(monument: boolean): THREE.BufferGeometry {
+  const skin = monument ? LIMESTONE : NACRE;
+  const tailColour = monument ? STONE_LIGHT : VIOLET;
+  const accent = monument ? BRONZE : ROSE;
+  const glow = monument ? 0.012 : 0.15;
+  const skinRole = monument ? MATERIAL_ROLE.limestone : MATERIAL_ROLE.nacre;
+  const parts: THREE.BufferGeometry[] = [];
+  parts.push(styled(new THREE.SphereGeometry(0.18, 12, 8), {
+    position: new THREE.Vector3(0, 1.27, 0),
+    scale: new THREE.Vector3(0.9, 1.08, 0.82),
+    colour: skin,
+    glow,
+    materialRole: skinRole
+  }));
+  parts.push(styled(new THREE.CapsuleGeometry(0.17, 0.42, 5, 10), {
+    position: new THREE.Vector3(0, 0.88, 0),
+    scale: new THREE.Vector3(0.9, 1, 0.72),
+    colour: skin,
+    glow,
+    materialRole: skinRole
+  }));
+  const tail = new THREE.Shape([
+    new THREE.Vector2(-0.15, 0.85),
+    new THREE.Vector2(0.15, 0.85),
+    new THREE.Vector2(0.12, 0.48),
+    new THREE.Vector2(0.03, 0.18),
+    new THREE.Vector2(0.28, -0.1),
+    new THREE.Vector2(0.02, -0.02),
+    new THREE.Vector2(-0.28, -0.1),
+    new THREE.Vector2(-0.03, 0.18),
+    new THREE.Vector2(-0.12, 0.48)
+  ]);
+  const tailGeometry = new THREE.ExtrudeGeometry(tail, {
+    depth: 0.16,
+    steps: 1,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: 0.025,
+    bevelThickness: 0.018
+  });
+  tailGeometry.translate(0, 0, -0.08);
+  parts.push(styled(tailGeometry, {
+    colour: tailColour,
+    glow: monument ? 0.012 : 0.18,
+    materialRole: monument ? MATERIAL_ROLE.limestone : MATERIAL_ROLE.livingCoral
+  }));
+  for (const side of [-1, 1]) {
+    parts.push(styled(curvedTube([
+      new THREE.Vector3(side * 0.12, 1.02, 0),
+      new THREE.Vector3(side * 0.31, 0.9, 0.015),
+      new THREE.Vector3(side * 0.37, 0.68, 0.02)
+    ], 7, 0.035, 5), {
+      colour: skin,
+      glow,
+      materialRole: skinRole
+    }));
+    parts.push(styled(curvedTube([
+      new THREE.Vector3(side * 0.12, 1.38, -0.03),
+      new THREE.Vector3(side * 0.23, 1.48, 0),
+      new THREE.Vector3(side * 0.29, 1.34, 0.03)
+    ], 6, 0.038, 5), {
+      colour: accent,
+      glow: monument ? 0.018 : 0.19,
+      materialRole: monument ? MATERIAL_ROLE.bronze : MATERIAL_ROLE.livingCoral
+    }));
+  }
+  parts.push(styled(new THREE.TorusGeometry(0.26, 0.025, 5, 16, Math.PI * 1.5), {
+    position: new THREE.Vector3(0, 1.3, -0.08),
+    rotation: new THREE.Euler(0, 0, -Math.PI * 0.25),
+    colour: accent,
+    glow: monument ? 0.02 : 0.2,
+    materialRole: monument ? MATERIAL_ROLE.bronze : MATERIAL_ROLE.livingCoral
+  }));
+  return merged(parts);
+}
+
+export function createProductionMerfolkGuardian(): THREE.BufferGeometry {
+  return merfolkFigure(false);
+}
+
+export function createProductionMerfolkMonument(): THREE.BufferGeometry {
+  const figure = merfolkFigure(true);
+  return merged([
+    styled(figure, {
+      position: new THREE.Vector3(0, 0.2, 0),
+      colour: LIMESTONE,
+      materialRole: MATERIAL_ROLE.limestone
+    }),
+    styled(new THREE.CylinderGeometry(0.45, 0.54, 0.28, 10), {
+      position: new THREE.Vector3(0, 0.14, 0),
+      colour: STONE_DARK,
+      materialRole: MATERIAL_ROLE.limestone
+    }),
+    styled(new THREE.TorusGeometry(0.4, 0.035, 5, 18), {
+      position: new THREE.Vector3(0, 0.29, 0),
+      rotation: new THREE.Euler(Math.PI / 2, 0, 0),
+      colour: BRONZE,
+      glow: 0.025,
+      materialRole: MATERIAL_ROLE.bronze
+    })
+  ]);
+}
+
+export function createProductionTideSpear(): THREE.BufferGeometry {
+  const blade = new THREE.Shape([
+    new THREE.Vector2(0, 0.56),
+    new THREE.Vector2(0.13, 0.24),
+    new THREE.Vector2(0.05, 0.31),
+    new THREE.Vector2(0, 0.18),
+    new THREE.Vector2(-0.05, 0.31),
+    new THREE.Vector2(-0.13, 0.24)
+  ]);
+  const bladeGeometry = new THREE.ExtrudeGeometry(blade, {
+    depth: 0.08,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: 0.012,
+    bevelThickness: 0.01
+  });
+  bladeGeometry.translate(0, 0, -0.04);
+  return merged([
+    styled(new THREE.CylinderGeometry(0.035, 0.055, 1.45, 8), {
+      position: new THREE.Vector3(0, 0.84, 0),
+      colour: BRONZE,
+      glow: 0.025,
+      materialRole: MATERIAL_ROLE.bronze
+    }),
+    styled(bladeGeometry, {
+      position: new THREE.Vector3(0, 1.5, 0),
+      colour: CRYSTAL,
+      glow: 0.11,
+      materialRole: MATERIAL_ROLE.crystal
+    }),
+    styled(new THREE.CylinderGeometry(0.23, 0.3, 0.18, 9), {
+      position: new THREE.Vector3(0, 0.09, 0),
+      colour: STONE_DARK,
+      materialRole: MATERIAL_ROLE.limestone
+    })
+  ]);
+}
+
+export function createProductionConchFountain(): THREE.BufferGeometry {
+  const spiral: THREE.Vector3[] = [];
+  for (let index = 0; index < 13; index++) {
+    const t = index / 12;
+    const angle = t * Math.PI * 3.8;
+    const radius = THREE.MathUtils.lerp(0.06, 0.34, t);
+    spiral.push(new THREE.Vector3(
+      Math.cos(angle) * radius,
+      0.58 + Math.sin(angle) * radius,
+      0.17
+    ));
+  }
+  return merged([
+    styled(new THREE.CylinderGeometry(0.48, 0.58, 0.22, 12), {
+      position: new THREE.Vector3(0, 0.11, 0),
+      colour: STONE_DARK,
+      materialRole: MATERIAL_ROLE.limestone
+    }),
+    styled(new THREE.TorusGeometry(0.39, 0.075, 7, 18), {
+      position: new THREE.Vector3(0, 0.24, 0),
+      rotation: new THREE.Euler(Math.PI / 2, 0, 0),
+      colour: NACRE,
+      materialRole: MATERIAL_ROLE.nacre
+    }),
+    styled(curvedTube(spiral, 24, 0.045, 6), {
+      colour: BRONZE,
+      glow: 0.035,
+      materialRole: MATERIAL_ROLE.bronze
+    }),
+    styled(curvedTube([
+      new THREE.Vector3(0.23, 0.58, 0.16),
+      new THREE.Vector3(0.34, 0.72, 0.12),
+      new THREE.Vector3(0.42, 0.42, 0.06),
+      new THREE.Vector3(0.34, 0.27, 0.02)
+    ], 10, 0.025, 5), {
+      colour: CYAN_LIGHT,
+      glow: 0.16,
+      materialRole: MATERIAL_ROLE.crystal,
+      sway: 0.15
+    })
+  ]);
 }
 
 export function createProductionSkyline(): THREE.BufferGeometry {

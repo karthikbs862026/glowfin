@@ -7,6 +7,7 @@ import {
   checkCapture,
   checkCreature,
   checkTrail,
+  checkWorldQuality,
   percentile
 } from "../src/checks.ts";
 import { checkAssetColliderTruth } from "../src/colliderTruth.ts";
@@ -64,6 +65,18 @@ describe("integrated gate fixtures", () => {
     input.assets[0]!.baselineProcedural = true;
     const result = runGate(input, config, "signoff");
     assert.ok(codes(result.findings).includes("PROCEDURAL_BASELINE_NOT_RELEASEABLE"));
+  });
+
+  test("missing moonfolk or reef species cannot masquerade as a premium world", () => {
+    const input = load("gate-input.pass.json");
+    input.worldQuality.life = input.worldQuality.life.filter(
+      (signature) => signature !== "moonfolk-guardian"
+    );
+    input.worldQuality.reef = input.worldQuality.reef.slice(0, 4);
+    const findings = checkWorldQuality(input, config.worldQuality);
+    const found = new Set(codes(findings));
+    assert.ok(found.has("PREMIUM_WORLD_FAMILY_MISSING"));
+    assert.ok(found.has("PREMIUM_WORLD_DIVERSITY_BELOW_FLOOR"));
   });
 });
 

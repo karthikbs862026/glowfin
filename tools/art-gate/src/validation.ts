@@ -95,6 +95,10 @@ export function validateGateConfig(raw: unknown): Finding[] {
     "beauty.nearBlackFractionMax",
     "beauty.colourfulFractionMin",
     "beauty.clippedHighlightFractionMax",
+    "worldQuality.minimumDistinctVisibleGateFamilies",
+    "worldQuality.minimumDistinctReefFamilies",
+    "worldQuality.minimumAmbientLifeFamilies",
+    "worldQuality.minimumPropFamilies",
     "creature.viewportWidthFractionMin",
     "creature.viewportWidthFractionMax",
     "creature.eyeGlowPixelsMin",
@@ -152,6 +156,29 @@ export function validateGateConfig(raw: unknown): Finding[] {
           `Asset family "${name}" is missing collidable/maxMaterials/strategy.`
         ));
       }
+    }
+  }
+
+  const worldQuality = record(cfg.worldQuality);
+  for (const key of [
+    "requiredGateFamilies",
+    "requiredArchitecture",
+    "requiredReef",
+    "requiredLife",
+    "requiredProps",
+    "requiredMaterials"
+  ]) {
+    const values = worldQuality?.[key];
+    if (
+      !Array.isArray(values) ||
+      values.length === 0 ||
+      !values.every(nonEmptyString)
+    ) {
+      findings.push(blocker(
+        "CONFIG_MALFORMED",
+        `World-quality contract "${key}" must be a non-empty string array.`,
+        "Phase 3B premium world contract"
+      ));
     }
   }
 
@@ -436,6 +463,26 @@ export function validateGateInput(
       "Trail implementation, particle use and max-momentum width are required.",
       "Art Bible §8"
     ));
+  }
+
+
+  const worldQuality = record(input.worldQuality);
+  for (const key of [
+    "gateFamilies",
+    "architecture",
+    "reef",
+    "life",
+    "props",
+    "materials"
+  ]) {
+    const values = worldQuality?.[key];
+    if (!Array.isArray(values) || !values.every(nonEmptyString)) {
+      findings.push(blocker(
+        "WORLD_QUALITY_EVIDENCE_MALFORMED",
+        `World-quality evidence "${key}" must be a string array.`,
+        "Phase 3B premium world contract"
+      ));
+    }
   }
 
   if (

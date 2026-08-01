@@ -13,6 +13,7 @@
     "colliderTruth",
     "contrast",
     "beauty",
+    "worldQuality",
     "creature",
     "trail",
     "performance",
@@ -29,6 +30,21 @@
     "colliderTruth": { "type": "object" },
     "contrast": { "type": "object" },
     "beauty": { "type": "object" },
+    "worldQuality": {
+      "type": "object",
+      "required": [
+        "requiredGateFamilies",
+        "requiredArchitecture",
+        "requiredReef",
+        "requiredLife",
+        "requiredProps",
+        "requiredMaterials",
+        "minimumDistinctVisibleGateFamilies",
+        "minimumDistinctReefFamilies",
+        "minimumAmbientLifeFamilies",
+        "minimumPropFamilies"
+      ]
+    },
     "creature": { "type": "object" },
     "trail": { "type": "object" },
     "performance": { "type": "object" },

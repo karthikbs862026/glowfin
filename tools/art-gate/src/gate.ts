@@ -12,7 +12,8 @@ import {
   checkPayload,
   checkReaction,
   checkTierSignoff,
-  checkTrail
+  checkTrail,
+  checkWorldQuality
 } from "./checks.ts";
 import type {
   Finding,
@@ -162,6 +163,7 @@ export function runGate(
   }
 
   findings.push(...checkTrail(input, cfg.trail));
+  findings.push(...checkWorldQuality(input, cfg.worldQuality));
   findings.push(...checkCaptureCoverage(input.captures, tierName, tier));
   for (const capture of input.captures) {
     findings.push(...checkCapture(capture, cfg));

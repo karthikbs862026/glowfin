@@ -41,7 +41,7 @@ describe("authoritative gate geometry", () => {
   });
 
   it("selects a stable facade without changing collision geometry", () => {
-    for (const artVariant of [0, 1, 2] as const) {
+    for (const artVariant of [0, 1, 2, 3, 4] as const) {
       const variantGate = {
         ...gate,
         templateId: "visual-test",

@@ -1,5 +1,9 @@
 import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
+import {
+  GATE_FAMILIES,
+  type GateFacadeVariant
+} from "../art/premiumWorld";
 import type { Gate } from "../sim/course";
 import {
   gateWallGeometry,
@@ -17,15 +21,18 @@ import { createMoonstoneObstacleMaterial } from "./moonGardenMaterial";
 
 const MAX_GATE_PARTS = 32;
 
-export type GateFacadeVariant = 0 | 1 | 2;
+export type { GateFacadeVariant } from "../art/premiumWorld";
 
 /** Stable fallback for hand-authored/test gates that predate `artVariant`. */
 export function gateFacadeVariant(gate: Gate): GateFacadeVariant {
-  if (gate.artVariant === 0 || gate.artVariant === 1 || gate.artVariant === 2) {
-    return gate.artVariant;
+  if (
+    typeof gate.artVariant === "number" &&
+    GATE_FAMILIES.some((family) => family.id === gate.artVariant)
+  ) {
+    return gate.artVariant as GateFacadeVariant;
   }
   const bucket = Math.abs(Math.round(gate.distance * 10));
-  return (bucket % 3) as GateFacadeVariant;
+  return (bucket % GATE_FAMILIES.length) as GateFacadeVariant;
 }
 
 export function contourWorldWidth(
@@ -59,7 +66,10 @@ export class MoonGardenGates {
     ArtLod,
     Record<GateFacadeVariant, LodMeshes>
   >;
-  private readonly canopies: Record<ArtLod, THREE.InstancedMesh>;
+  private readonly canopies: Record<
+    ArtLod,
+    Record<GateFacadeVariant, THREE.InstancedMesh>
+  >;
   private readonly foundations: THREE.InstancedMesh;
   private readonly contours: THREE.InstancedMesh;
   private readonly matrix = new THREE.Matrix4();
@@ -116,26 +126,24 @@ export class MoonGardenGates {
       left: createSide(lod, 1, variant),
       right: createSide(lod, -1, variant)
     });
+    const createVariants = (lod: ArtLod) => Object.fromEntries(
+      GATE_FAMILIES.map((family) => [
+        family.id,
+        createVariant(lod, family.id)
+      ])
+    ) as Record<GateFacadeVariant, LodMeshes>;
     this.lods = {
-      0: {
-        0: createVariant(0, 0),
-        1: createVariant(0, 1),
-        2: createVariant(0, 2)
-      },
-      1: {
-        0: createVariant(1, 0),
-        1: createVariant(1, 1),
-        2: createVariant(1, 2)
-      },
-      2: {
-        0: createVariant(2, 0),
-        1: createVariant(2, 1),
-        2: createVariant(2, 2)
-      }
+      0: createVariants(0),
+      1: createVariants(1),
+      2: createVariants(2)
     };
-    const createCanopy = (lod: ArtLod): THREE.InstancedMesh => {
+    const createCanopy = (
+      lod: ArtLod,
+      variant: GateFacadeVariant
+    ): THREE.InstancedMesh => {
       const geometry = createProductionGateCanopyGeometry(
-        lod
+        lod,
+        variant
       );
       const mesh = new THREE.InstancedMesh(
         geometry,
@@ -150,10 +158,16 @@ export class MoonGardenGates {
       this.disposables.push(geometry);
       return mesh;
     };
+    const createCanopyVariants = (lod: ArtLod) => Object.fromEntries(
+      GATE_FAMILIES.map((family) => [
+        family.id,
+        createCanopy(lod, family.id)
+      ])
+    ) as Record<GateFacadeVariant, THREE.InstancedMesh>;
     this.canopies = {
-      0: createCanopy(0),
-      1: createCanopy(1),
-      2: createCanopy(2)
+      0: createCanopyVariants(0),
+      1: createCanopyVariants(1),
+      2: createCanopyVariants(2)
     };
 
     const foundationGeometry = createGateFoundationGeometry(0);
@@ -193,12 +207,12 @@ export class MoonGardenGates {
             (1.0 - smoothstep(0.42, 0.5, vLocalPosition.y));
           float waterFlow = 0.94 + 0.06 *
             sin(vLocalPosition.y * 31.0 + vLocalPosition.z * 4.0);
-          vec3 deepCyan = vec3(0.08, 0.58, 0.72);
-          vec3 moonCyan = vec3(0.24, 0.86, 0.94);
+          vec3 deepCyan = vec3(0.05, 0.55, 0.64);
+          vec3 moonCyan = vec3(0.18, 0.84, 0.88);
           gl_FragColor = vec4(mix(deepCyan, moonCyan, endFade) * waterFlow, 1.0);
         }
       `,
-      toneMapped: false
+      toneMapped: true
     });
     this.contours = new THREE.InstancedMesh(
       contourGeometry,
@@ -228,32 +242,32 @@ export class MoonGardenGates {
     camera: THREE.PerspectiveCamera,
     viewportHeightCss: number
   ): void {
+    const emptyVariantCounts = () => Object.fromEntries(
+      GATE_FAMILIES.map((family) => [
+        family.id,
+        { left: 0, right: 0 }
+      ])
+    ) as Record<GateFacadeVariant, { left: number; right: number }>;
     const counts: Record<
       ArtLod,
       Record<GateFacadeVariant, { left: number; right: number }>
     > = {
-      0: {
-        0: { left: 0, right: 0 },
-        1: { left: 0, right: 0 },
-        2: { left: 0, right: 0 }
-      },
-      1: {
-        0: { left: 0, right: 0 },
-        1: { left: 0, right: 0 },
-        2: { left: 0, right: 0 }
-      },
-      2: {
-        0: { left: 0, right: 0 },
-        1: { left: 0, right: 0 },
-        2: { left: 0, right: 0 }
-      }
+      0: emptyVariantCounts(),
+      1: emptyVariantCounts(),
+      2: emptyVariantCounts()
     };
     let foundationCount = 0;
     let contourCount = 0;
-    const canopyCounts: Record<ArtLod, number> = {
-      0: 0,
-      1: 0,
-      2: 0
+    const emptyCanopyCounts = () => Object.fromEntries(
+      GATE_FAMILIES.map((family) => [family.id, 0])
+    ) as Record<GateFacadeVariant, number>;
+    const canopyCounts: Record<
+      ArtLod,
+      Record<GateFacadeVariant, number>
+    > = {
+      0: emptyCanopyCounts(),
+      1: emptyCanopyCounts(),
+      2: emptyCanopyCounts()
     };
     // Passed gates used to remain visible between the chase camera and
     // Glowfin, turning their outer wall mass into giant foreground cones and
@@ -269,12 +283,13 @@ export class MoonGardenGates {
       const artVariant = gateFacadeVariant(gate);
       const walls = gateWallGeometry(gate, this.cfg.lane.halfWidth);
       const wallHeight = PROCEDURAL_GATE_VISUAL.wallHeight *
-        ([1.08, 1.12, 1.16][artVariant] ?? 1.12);
+        ([1.08, 1.12, 1.16, 1.14, 1.24][artVariant] ?? 1.12);
       const wallDepth = PROCEDURAL_GATE_VISUAL.wallDepth *
-        ([1.12, 1.02, 1.08][artVariant] ?? 1.08);
-      const canopy = this.canopies[lod];
-      const canopyIndex = canopyCounts[lod];
-      if (canopyIndex < MAX_GATE_PARTS) {
+        ([1.12, 1.02, 1.08, 1.1, 1.16][artVariant] ?? 1.08);
+      const family = GATE_FAMILIES[artVariant];
+      const canopy = this.canopies[lod][artVariant];
+      const canopyIndex = canopyCounts[lod][artVariant];
+      if (family.canopy && canopyIndex < MAX_GATE_PARTS) {
         const gapWidth = gate.gapRight - gate.gapLeft;
         const gapCentre = (gate.gapLeft + gate.gapRight) * 0.5;
         this.position.set(
@@ -294,7 +309,7 @@ export class MoonGardenGates {
         this.scale.set(gapWidth, wallHeight, wallDepth);
         this.matrix.compose(this.position, this.quaternion, this.scale);
         canopy.setMatrixAt(canopyIndex, this.matrix);
-        canopyCounts[lod] += 1;
+        canopyCounts[lod][artVariant] += 1;
       }
       for (const wall of walls) {
         if (wall.width <= 0.01 || contourCount >= MAX_GATE_PARTS) continue;
@@ -329,7 +344,7 @@ export class MoonGardenGates {
         );
         this.scale.set(
           foundationWidth,
-          [1.1, 0.92, 1.22][artVariant] ?? 1,
+          [1.1, 0.92, 1.22, 1.06, 1.18][artVariant] ?? 1,
           PROCEDURAL_GATE_VISUAL.wallDepth * 1.18
         );
         this.matrix.compose(this.position, this.quaternion, this.scale);
@@ -369,10 +384,10 @@ export class MoonGardenGates {
     }
 
     for (const lod of [0, 1, 2] as const) {
-      const canopy = this.canopies[lod];
-      canopy.count = canopyCounts[lod];
-      canopy.instanceMatrix.needsUpdate = true;
-      for (const variant of [0, 1, 2] as const) {
+      for (const variant of GATE_FAMILIES.map((family) => family.id)) {
+        const canopy = this.canopies[lod][variant];
+        canopy.count = canopyCounts[lod][variant];
+        canopy.instanceMatrix.needsUpdate = true;
         for (const side of ["left", "right"] as const) {
           const mesh = this.lods[lod][variant][side];
           mesh.count = counts[lod][variant][side];

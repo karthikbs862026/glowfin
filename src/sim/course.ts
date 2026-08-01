@@ -13,6 +13,10 @@
  */
 import type { TuningConfig } from "../core/config";
 import { SeededRandom } from "../core/rng";
+import {
+  GATE_FAMILIES,
+  type GateFacadeVariant
+} from "../art/premiumWorld";
 import chunkData from "../../config/chunks.json";
 
 export interface Gate {
@@ -30,7 +34,7 @@ export interface Gate {
    * Stable authored facade family. Optional so replay fixtures from older
    * revisions remain readable; newly generated gates always populate it.
    */
-  artVariant?: 0 | 1 | 2;
+  artVariant?: GateFacadeVariant;
 }
 
 interface GateTemplate {
@@ -339,7 +343,9 @@ export class CourseGenerator {
       tier,
       // Cycle without adjacent repeats. Keeping this on the gate prevents art
       // from changing when old gates are pruned from the endless-runner pool.
-      artVariant: (this.nextArtVariant++ % 3) as 0 | 1 | 2
+      artVariant: (
+        this.nextArtVariant++ % GATE_FAMILIES.length
+      ) as GateFacadeVariant
     };
   }
 }

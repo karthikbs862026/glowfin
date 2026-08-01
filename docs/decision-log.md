@@ -385,3 +385,17 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Keep the evidence boundary explicit: desktop simulated-time soak is a CI
   regression gate. It does not replace the required real-time Android and iOS
   Safari 30-minute soak or device performance sign-off.
+
+## 2026-08-01 — Integrate five premium districts, ecology and inhabitants
+
+- Owner Android evidence rejected the repeated arches, rod-like relief,
+  faceted purple coral, disconnected scenery and absent merfolk/props.
+- Adopt ADR-0021's five district silhouettes, six physical material roles,
+  six reef species, grounded palace/observatory sets, moonfolk guardians and
+  three ceremonial prop families without changing gameplay or collider truth.
+- Make every named world family a structural art-gate requirement. A build
+  missing a gate district, brain/table coral, moonfolk, prop or material role
+  fails even when its frame budgets and contrast pass.
+- Lower bloom, exposure and god-ray energy; cap portrait clipped highlights at
+  1.2%. Keep PR #7 draft pending authored GLB/PBR replacement, owner visual
+  approval and Android/iOS Safari sign-off.

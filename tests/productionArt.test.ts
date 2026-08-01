@@ -6,13 +6,21 @@ import {
 } from "../src/render/moonGardenGeometry";
 import {
   createProductionAnemone,
+  createProductionBrainCoral,
   createProductionBranchCoral,
   createProductionCollapsedArch,
   createProductionFanCoral,
   createProductionGateCanopyGeometry,
   createProductionKelp,
+  createProductionMerfolkGuardian,
+  createProductionMerfolkMonument,
+  createProductionObservatory,
+  createProductionPalaceDistrict,
   createProductionSkyline,
   createProductionSpire,
+  createProductionTableCoral,
+  createProductionTideSpear,
+  createProductionConchFountain,
   createProductionTower,
   createProductionWallGeometry,
   productionTriangles
@@ -40,6 +48,14 @@ describe("Phase 3B art geometry inventory", () => {
         (lod: 0 | 1 | 2) => createProductionSpire(lod)
       ],
       [
+        "palaceDistrict",
+        (lod: 0 | 1 | 2) => createProductionPalaceDistrict(lod)
+      ],
+      [
+        "observatory",
+        (lod: 0 | 1 | 2) => createProductionObservatory(lod)
+      ],
+      [
         "mediumCoral",
         (lod: 0 | 1 | 2) => createProductionBranchCoral(lod)
       ],
@@ -50,6 +66,14 @@ describe("Phase 3B art geometry inventory", () => {
       [
         "shellGarden",
         (lod: 0 | 1 | 2) => createProductionFanCoral(lod)
+      ],
+      [
+        "brainCoral",
+        (lod: 0 | 1 | 2) => createProductionBrainCoral(lod)
+      ],
+      [
+        "tableCoral",
+        (lod: 0 | 1 | 2) => createProductionTableCoral(lod)
       ],
       [
         "gateFoundation",
@@ -71,33 +95,39 @@ describe("Phase 3B art geometry inventory", () => {
   it("keeps every wall LOD on the exact straight playable plane", () => {
     for (const lod of [0, 1, 2] as const) {
       const signatures = new Set<string>();
-      for (const variant of [0, 1, 2] as const) {
+      for (const variant of [0, 1, 2, 3, 4] as const) {
         const left = createProductionWallGeometry(lod, 1, variant);
         const right = createProductionWallGeometry(lod, -1, variant);
         left.computeBoundingBox();
         right.computeBoundingBox();
         expect(left.boundingBox?.max.x).toBeCloseTo(0.5, 6);
         expect(right.boundingBox?.min.x).toBeCloseTo(-0.5, 6);
-        const positions = left.getAttribute("position");
-        signatures.add(Array.from({ length: Math.min(24, positions.count) }, (_, index) =>
-          positions.getY(index).toFixed(4)
-        ).join(","));
+        signatures.add([
+          productionTriangles(left),
+          left.boundingBox?.max.y.toFixed(4)
+        ].join(":"));
         left.dispose();
         right.dispose();
       }
-      expect(signatures.size).toBe(3);
+      expect(signatures.size).toBe(5);
     }
   });
 
   it("gives the hero arch a continuous supported silhouette", () => {
     for (const lod of [0, 1, 2] as const) {
-      const canopy = createProductionGateCanopyGeometry(lod);
-      canopy.computeBoundingBox();
-      expect(canopy.boundingBox?.min.x).toBeLessThanOrEqual(-0.7);
-      expect(canopy.boundingBox?.max.x).toBeGreaterThanOrEqual(0.7);
-      expect(canopy.boundingBox?.min.y).toBeLessThan(0);
-      expect(canopy.boundingBox?.max.y).toBeGreaterThan(0.4);
-      canopy.dispose();
+      for (const variant of [0, 1, 2, 3] as const) {
+        const canopy = createProductionGateCanopyGeometry(lod, variant);
+        canopy.computeBoundingBox();
+        expect(canopy.boundingBox?.min.x).toBeLessThanOrEqual(-0.6);
+        expect(canopy.boundingBox?.max.x).toBeGreaterThanOrEqual(0.6);
+        expect(canopy.boundingBox?.min.y).toBeLessThan(0);
+        expect(canopy.boundingBox?.max.y).toBeGreaterThan(0.4);
+        canopy.dispose();
+      }
+      const observatory = createProductionGateCanopyGeometry(lod, 4);
+      observatory.computeBoundingBox();
+      expect(observatory.boundingBox?.max.x).toBeLessThan(0.01);
+      observatory.dispose();
     }
   });
 
@@ -125,9 +155,23 @@ describe("Phase 3B art geometry inventory", () => {
     const context = gates.objects.filter((object) => object.userData["isObstacleContext"]);
     const maskHidden = gates.objects.filter((object) => object.userData["hideInArtMask"]);
     expect(contours).toHaveLength(1);
-    expect(context).toHaveLength(22);
+    expect(context).toHaveLength(46);
     expect(maskHidden).toHaveLength(0);
     gates.dispose();
+  });
+
+  it("budgets visible moonfolk and ceremonial props as volumetric production art", () => {
+    const assets = [
+      [createProductionMerfolkGuardian(), PRODUCTION_ART.moonfolkGuardian.lod0],
+      [createProductionMerfolkMonument(), PRODUCTION_ART.merfolkMonument.lod0],
+      [createProductionTideSpear(), PRODUCTION_ART.tideSpear.lod0],
+      [createProductionConchFountain(), PRODUCTION_ART.conchFountain.lod0]
+    ] as const;
+    for (const [geometry, triangles] of assets) {
+      expect(productionTriangles(geometry)).toBe(triangles);
+      expect(geometry.hasAttribute("materialRole")).toBe(true);
+      geometry.dispose();
+    }
   });
 
   it("keeps the configured collision-contour width through camera changes", () => {

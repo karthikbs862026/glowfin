@@ -15,7 +15,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1134,
+          "triangles": 1386,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -50,7 +50,7 @@
         },
         {
           "level": 1,
-          "triangles": 718,
+          "triangles": 838,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -133,7 +133,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1134,
+          "triangles": 1386,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -168,7 +168,7 @@
         },
         {
           "level": 1,
-          "triangles": 718,
+          "triangles": 838,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -342,6 +342,50 @@
       ]
     },
     {
+      "name": "moon-garden-grand-palace-district",
+      "family": "palaceDistrict",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 1132
+        },
+        {
+          "level": 1,
+          "triangles": 654
+        },
+        {
+          "level": 2,
+          "triangles": 390
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-twin-pylon-observatory",
+      "family": "observatory",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 492
+        },
+        {
+          "level": 1,
+          "triangles": 300
+        },
+        {
+          "level": 2,
+          "triangles": 100
+        }
+      ]
+    },
+    {
       "name": "moon-garden-volumetric-hero-coral",
       "family": "heroCoral",
       "collidable": false,
@@ -404,6 +448,50 @@
         {
           "level": 2,
           "triangles": 81
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-maze-ridged-brain-coral",
+      "family": "brainCoral",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 1764
+        },
+        {
+          "level": 1,
+          "triangles": 870
+        },
+        {
+          "level": 2,
+          "triangles": 268
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-scalloped-table-coral",
+      "family": "tableCoral",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 876
+        },
+        {
+          "level": 1,
+          "triangles": 748
+        },
+        {
+          "level": 2,
+          "triangles": 344
         }
       ]
     },
@@ -500,8 +588,8 @@
       ]
     },
     {
-      "name": "moon-garden-garden-spirit",
-      "family": "ambientCreature",
+      "name": "moon-garden-moonfolk-guardian",
+      "family": "merfolkCreature",
       "collidable": false,
       "materials": 1,
       "textureMemoryMB": 0,
@@ -509,7 +597,49 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 160
+          "triangles": 1076
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-merfolk-monument",
+      "family": "heroProp",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 1296
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-tide-spear",
+      "family": "heroProp",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 112
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-conch-fountain",
+      "family": "heroProp",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 688
         }
       ]
     },
@@ -866,6 +996,49 @@
       "particleReplacementUsed": false,
       "laneWidthFractionAtMaxMomentum": 0.12083333333333333
     }
+  },
+  "worldQuality": {
+    "gateFamilies": [
+      "tide-court",
+      "lapis-archive",
+      "coral-sanctuary",
+      "nacre-palace",
+      "astral-observatory"
+    ],
+    "architecture": [
+      "broken-tower",
+      "collapsed-arch",
+      "forked-spire",
+      "grand-palace-district",
+      "twin-pylon-observatory"
+    ],
+    "reef": [
+      "maze-ridged-brain-coral",
+      "scalloped-table-coral",
+      "staghorn-coral",
+      "sea-fan",
+      "anemone-lantern",
+      "ribbon-kelp"
+    ],
+    "life": [
+      "moon-minnow-school",
+      "lantern-jelly",
+      "ribbon-manta",
+      "moonfolk-guardian"
+    ],
+    "props": [
+      "merfolk-monument",
+      "tide-spear",
+      "conch-fountain"
+    ],
+    "materials": [
+      "limestone",
+      "nacre",
+      "bronze",
+      "lapis",
+      "crystal",
+      "living-coral"
+    ]
   },
   "compressedArtPayloadMB": 0.16
 }

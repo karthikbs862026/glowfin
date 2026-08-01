@@ -43,7 +43,19 @@
     "meanLuminanceMin": 0.032,
     "nearBlackFractionMax": 0.84,
     "colourfulFractionMin": 0.1,
-    "clippedHighlightFractionMax": 0.04
+    "clippedHighlightFractionMax": 0.012
+  },
+  "worldQuality": {
+    "requiredGateFamilies": ["tide-court", "lapis-archive", "coral-sanctuary", "nacre-palace", "astral-observatory"],
+    "requiredArchitecture": ["broken-tower", "collapsed-arch", "forked-spire", "grand-palace-district", "twin-pylon-observatory"],
+    "requiredReef": ["maze-ridged-brain-coral", "scalloped-table-coral", "staghorn-coral", "sea-fan", "anemone-lantern", "ribbon-kelp"],
+    "requiredLife": ["moon-minnow-school", "lantern-jelly", "ribbon-manta", "moonfolk-guardian"],
+    "requiredProps": ["merfolk-monument", "tide-spear", "conch-fountain"],
+    "requiredMaterials": ["limestone", "nacre", "bronze", "lapis", "crystal", "living-coral"],
+    "minimumDistinctVisibleGateFamilies": 3,
+    "minimumDistinctReefFamilies": 6,
+    "minimumAmbientLifeFamilies": 4,
+    "minimumPropFamilies": 3
   },
   "creature": {
     "viewportWidthFractionMin": 0.08,
@@ -81,12 +93,18 @@
     "collapsedArchRuin": { "lod0": [300, 500], "lod1": [200, 350], "lod2": [160, 260], "maxMaterials": 1, "strategy": "outside-lane-block-arch", "collidable": false },
     "collapsedArchPair": { "lod0": [4000, 5000], "lod1": [1800, 2500], "lod2": [500, 800], "maxMaterials": 1, "strategy": "mirrored-modules", "collidable": true },
     "spire": { "lod0": [1500, 2000], "lod1": [600, 900], "lod2": [150, 300], "maxMaterials": 1, "strategy": "background-instancing", "collidable": false },
-    "wallFragment": { "lod0": [1000, 1600], "lod1": [450, 800], "lod2": [120, 250], "maxMaterials": 1, "strategy": "core-gate-archetype", "collidable": true },
+    "palaceDistrict": { "lod0": [900, 1500], "lod1": [500, 900], "lod2": [250, 450], "maxMaterials": 1, "strategy": "grounded-district-instancing", "collidable": false },
+    "observatory": { "lod0": [400, 650], "lod1": [250, 400], "lod2": [80, 140], "maxMaterials": 1, "strategy": "archless-twin-pylon-instancing", "collidable": false },
+    "wallFragment": { "lod0": [1000, 1600], "lod1": [450, 900], "lod2": [120, 250], "maxMaterials": 1, "strategy": "core-gate-archetype", "collidable": true },
     "heroCoral": { "lod0": [2000, 2800], "lod1": [800, 1300], "lod2": [250, 400], "maxMaterials": 1, "strategy": "outside-lane-signature", "collidable": false },
+    "brainCoral": { "lod0": [1400, 2200], "lod1": [700, 1100], "lod2": [200, 400], "maxMaterials": 1, "strategy": "maze-ridged-outside-lane-signature", "collidable": false },
+    "tableCoral": { "lod0": [700, 1100], "lod1": [550, 900], "lod2": [250, 450], "maxMaterials": 1, "strategy": "scalloped-shelf-instancing", "collidable": false },
     "mediumCoral": { "lod0": [600, 1000], "lod1": [250, 450], "lod2": [80, 160], "maxMaterials": 1, "strategy": "instanced-family", "collidable": false },
     "smallProp": { "lod0": [80, 400], "lod1": [40, 160], "lod2": null, "maxMaterials": 1, "strategy": "atlas-instancing", "collidable": false },
     "distantSkyline": { "lod0": [200, 400], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "far-field-volumetric-instancing", "collidable": false },
     "ambientCreature": { "lod0": [70, 240], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "low-poly-volumetric-instancing", "collidable": false },
+    "merfolkCreature": { "lod0": [900, 1300], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "outside-lane-volumetric-inhabitant", "collidable": false },
+    "heroProp": { "lod0": [80, 1500], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "grounded-ceremonial-instancing", "collidable": false },
     "artReviewImpostor": { "lod0": [2, 4], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "temporary-authored-review-source", "collidable": false },
     "ribbonKelp": { "lod0": [300, 600], "lod1": [120, 250], "lod2": null, "maxMaterials": 1, "strategy": "vertex-sway", "collidable": false },
     "godRayMesh": { "lod0": [12, 24], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "hard-capped-three", "collidable": false }

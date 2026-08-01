@@ -10,8 +10,8 @@ export const PRODUCTION_ART = {
     bones: 10
   },
   wallFragment: {
-    lod0: 1134,
-    lod1: 718,
+    lod0: 1386,
+    lod1: 838,
     lod2: 168,
     materials: 1,
     maxReliefDepth: 0.07,
@@ -36,6 +36,18 @@ export const PRODUCTION_ART = {
     lod2: 244,
     materials: 1
   },
+  palaceDistrict: {
+    lod0: 1132,
+    lod1: 654,
+    lod2: 390,
+    materials: 1
+  },
+  observatory: {
+    lod0: 492,
+    lod1: 300,
+    lod2: 100,
+    materials: 1
+  },
   mediumCoral: {
     lod0: 842,
     lod1: 418,
@@ -52,6 +64,18 @@ export const PRODUCTION_ART = {
     lod0: 892,
     lod1: 396,
     lod2: 81,
+    materials: 1
+  },
+  brainCoral: {
+    lod0: 1764,
+    lod1: 870,
+    lod2: 268,
+    materials: 1
+  },
+  tableCoral: {
+    lod0: 876,
+    lod1: 748,
+    lod2: 344,
     materials: 1
   },
   gateFoundation: {
@@ -83,6 +107,22 @@ export const PRODUCTION_ART = {
   },
   gardenSpirit: {
     lod0: 160,
+    materials: 1
+  },
+  moonfolkGuardian: {
+    lod0: 1076,
+    materials: 1
+  },
+  merfolkMonument: {
+    lod0: 1296,
+    materials: 1
+  },
+  tideSpear: {
+    lod0: 112,
+    materials: 1
+  },
+  conchFountain: {
+    lod0: 688,
     materials: 1
   },
   godRayMesh: {

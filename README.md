@@ -13,16 +13,21 @@ The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
 trail, contrast probe and hardened art gate are in place. Draft PR #7 is an
 explicit visual reset after the first evidence frame failed owner Art-Bible
-review. It must not be merged in its current state. The reset now includes:
+review. It must not be merged in its current state. The integrated draft now
+includes:
 
 - a ten-bone volumetric Glowfin with an explicit negative-Z forward axis; the
   chase camera sees its cute round back, manta fins and central tail while its
   face remains aimed into the obstacle corridor
-- truthful LOD wall fragments with independent cyan collider contours
+- five truthful LOD gate districts with distinct round, pointed, scalloped,
+  domed and archless silhouettes plus independent cyan collider contours
 - an authored Moon-Garden seabed surface in place of generated road paving
-- authored broken-tower and reef-cluster review sources, instanced in the
-  playable renderer from one shared atlas while their final GLB replacements
-  are modeled
+- grounded palace/observatory districts, maze-ridged brain coral, scalloped
+  table coral and four supporting reef species
+- moving moonfolk guardians, larger fish schools, mantas, jellies, merfolk
+  monuments, tide-spears and conch fountains outside the collision lane
+- limestone, nacre, bronze, lapis, crystal and living-coral responses in one
+  instanced material system
 - fork-crowned spires and shader-sway ribbon kelp retained as interim depth
 - three hard-capped god-ray meshes
 - an in-camera Art-Bible acceptance target at
@@ -30,8 +35,10 @@ review. It must not be merged in its current state. The reset now includes:
 
 The slice is not approved for merge until its revised frame visibly follows the
 **Moon-Garden Ruins** Concept-First Art Bible. Technical contrast/performance
-checks cannot override visual rejection. The review impostors are not final 3D
-art and cannot satisfy Phase 3B completion; production GLBs remain required.
+checks cannot override visual rejection. The code-native integration meshes are
+not final premium DCC art and cannot satisfy Phase 3B completion; optimized
+production GLBs/PBR assets remain required. ADR-0021 makes the world-family
+inventory and mobile budgets hard regression gates during that replacement.
 Real-device Android and iOS sign-off remains separate from CI emulation.
 
 ## Local setup
@@ -68,7 +75,8 @@ scripts/        repo/CI and production bundle checks
 ## Open release items
 
 - [ ] `CODEOWNERS` currently points everything at one owner — update if/when the team grows
-- [ ] Replace authored review impostors with optimized broken-tower and reef GLBs
+- [ ] Replace code-native district, reef, prop and moonfolk integration sources
+      with optimized authored GLB/PBR assets
 - [ ] Replace the rejected code-native Glowfin and gate treatment with approved
       authored models while preserving collider truth
 - [x] Full 36-state emulated art matrix required on pull requests

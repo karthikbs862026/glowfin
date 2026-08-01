@@ -20,6 +20,7 @@ import {
   GLOWFIN_ANIMATION,
   PRODUCTION_ART
 } from "../../../src/art/productionManifest.ts";
+import { PREMIUM_WORLD_SIGNATURES } from "../../../src/art/premiumWorld.ts";
 
 const SAMPLE_GATE = {
   distance: 100,
@@ -127,6 +128,32 @@ function decorativeManifests(): AssetManifest[] {
       ]
     },
     {
+      name: "moon-garden-grand-palace-district",
+      family: "palaceDistrict",
+      collidable: false,
+      materials: PRODUCTION_ART.palaceDistrict.materials,
+      textureMemoryMB: 0,
+      contour: "decorative",
+      lods: [
+        { level: 0, triangles: PRODUCTION_ART.palaceDistrict.lod0 },
+        { level: 1, triangles: PRODUCTION_ART.palaceDistrict.lod1 },
+        { level: 2, triangles: PRODUCTION_ART.palaceDistrict.lod2 }
+      ]
+    },
+    {
+      name: "moon-garden-twin-pylon-observatory",
+      family: "observatory",
+      collidable: false,
+      materials: PRODUCTION_ART.observatory.materials,
+      textureMemoryMB: 0,
+      contour: "decorative",
+      lods: [
+        { level: 0, triangles: PRODUCTION_ART.observatory.lod0 },
+        { level: 1, triangles: PRODUCTION_ART.observatory.lod1 },
+        { level: 2, triangles: PRODUCTION_ART.observatory.lod2 }
+      ]
+    },
+    {
       name: "moon-garden-volumetric-hero-coral",
       family: "heroCoral",
       collidable: false,
@@ -163,6 +190,32 @@ function decorativeManifests(): AssetManifest[] {
         { level: 0, triangles: PRODUCTION_ART.shellGarden.lod0 },
         { level: 1, triangles: PRODUCTION_ART.shellGarden.lod1 },
         { level: 2, triangles: PRODUCTION_ART.shellGarden.lod2 }
+      ]
+    },
+    {
+      name: "moon-garden-maze-ridged-brain-coral",
+      family: "brainCoral",
+      collidable: false,
+      materials: PRODUCTION_ART.brainCoral.materials,
+      textureMemoryMB: 0,
+      contour: "decorative",
+      lods: [
+        { level: 0, triangles: PRODUCTION_ART.brainCoral.lod0 },
+        { level: 1, triangles: PRODUCTION_ART.brainCoral.lod1 },
+        { level: 2, triangles: PRODUCTION_ART.brainCoral.lod2 }
+      ]
+    },
+    {
+      name: "moon-garden-scalloped-table-coral",
+      family: "tableCoral",
+      collidable: false,
+      materials: PRODUCTION_ART.tableCoral.materials,
+      textureMemoryMB: 0,
+      contour: "decorative",
+      lods: [
+        { level: 0, triangles: PRODUCTION_ART.tableCoral.lod0 },
+        { level: 1, triangles: PRODUCTION_ART.tableCoral.lod1 },
+        { level: 2, triangles: PRODUCTION_ART.tableCoral.lod2 }
       ]
     },
     {
@@ -229,13 +282,40 @@ function decorativeManifests(): AssetManifest[] {
       lods: [{ level: 0, triangles: PRODUCTION_ART.ribbonRay.lod0 }]
     },
     {
-      name: "moon-garden-garden-spirit",
-      family: "ambientCreature",
+      name: "moon-garden-moonfolk-guardian",
+      family: "merfolkCreature",
       collidable: false,
-      materials: PRODUCTION_ART.gardenSpirit.materials,
+      materials: PRODUCTION_ART.moonfolkGuardian.materials,
       textureMemoryMB: 0,
       contour: "none",
-      lods: [{ level: 0, triangles: PRODUCTION_ART.gardenSpirit.lod0 }]
+      lods: [{ level: 0, triangles: PRODUCTION_ART.moonfolkGuardian.lod0 }]
+    },
+    {
+      name: "moon-garden-merfolk-monument",
+      family: "heroProp",
+      collidable: false,
+      materials: PRODUCTION_ART.merfolkMonument.materials,
+      textureMemoryMB: 0,
+      contour: "decorative",
+      lods: [{ level: 0, triangles: PRODUCTION_ART.merfolkMonument.lod0 }]
+    },
+    {
+      name: "moon-garden-tide-spear",
+      family: "heroProp",
+      collidable: false,
+      materials: PRODUCTION_ART.tideSpear.materials,
+      textureMemoryMB: 0,
+      contour: "decorative",
+      lods: [{ level: 0, triangles: PRODUCTION_ART.tideSpear.lod0 }]
+    },
+    {
+      name: "moon-garden-conch-fountain",
+      family: "heroProp",
+      collidable: false,
+      materials: PRODUCTION_ART.conchFountain.materials,
+      textureMemoryMB: 0,
+      contour: "decorative",
+      lods: [{ level: 0, triangles: PRODUCTION_ART.conchFountain.lod0 }]
     },
     {
       name: "moon-garden-god-ray",
@@ -301,6 +381,14 @@ export function buildVerticalSliceEvidence(
         particleReplacementUsed: false,
         laneWidthFractionAtMaxMomentum: 1.45 / (LANE_HALF_WIDTH * 2)
       }
+    },
+    worldQuality: {
+      gateFamilies: [...PREMIUM_WORLD_SIGNATURES.gateFamilies],
+      architecture: [...PREMIUM_WORLD_SIGNATURES.architecture],
+      reef: [...PREMIUM_WORLD_SIGNATURES.reef],
+      life: [...PREMIUM_WORLD_SIGNATURES.life],
+      props: [...PREMIUM_WORLD_SIGNATURES.props],
+      materials: [...PREMIUM_WORLD_SIGNATURES.materials]
     },
     compressedArtPayloadMB: 0.16
   };

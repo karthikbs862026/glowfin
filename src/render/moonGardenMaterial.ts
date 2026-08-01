@@ -3,10 +3,12 @@ import * as THREE from "three";
 const VERTEX = /* glsl */ `
   attribute float glowWeight;
   attribute float swayWeight;
+  attribute float materialRole;
   varying vec3 vWorldPos;
   varying vec3 vNormalW;
   varying vec3 vColour;
   varying float vGlowWeight;
+  varying float vMaterialRole;
   varying float vViewDepth;
   uniform float uTime;
 
@@ -44,6 +46,7 @@ const VERTEX = /* glsl */ `
       vColour *= mix(vec3(1.0), instanceTint, 0.24);
     #endif
     vGlowWeight = glowWeight;
+    vMaterialRole = materialRole;
     vec4 mvPosition = viewMatrix * worldPosition;
     vViewDepth = -mvPosition.z;
     gl_Position = projectionMatrix * mvPosition;
@@ -52,6 +55,7 @@ const VERTEX = /* glsl */ `
 
 const FRAGMENT = /* glsl */ `
   precision highp float;
+  uniform float uTime;
   uniform vec3 uGlowCentre;
   uniform float uGlowRadius;
   uniform float uMomentum;
@@ -65,6 +69,7 @@ const FRAGMENT = /* glsl */ `
   varying vec3 vNormalW;
   varying vec3 vColour;
   varying float vGlowWeight;
+  varying float vMaterialRole;
   varying float vViewDepth;
 
   vec3 perturbSurfaceNormal(
@@ -85,6 +90,10 @@ const FRAGMENT = /* glsl */ `
       abs(determinant) * surfaceNormal -
       surfaceGradient * strength
     );
+  }
+
+  float roleIs(float target) {
+    return 1.0 - smoothstep(0.18, 0.45, abs(vMaterialRole - target));
   }
 
   void main() {
@@ -111,6 +120,12 @@ const FRAGMENT = /* glsl */ `
     float joint = 1.0 - smoothstep(0.025, 0.065, min(0.5 - cell.x, 0.5 - cell.y));
     float stoneWeight = 1.0 - smoothstep(0.08, 0.30, vGlowWeight);
     float livingWeight = smoothstep(0.3, 0.72, vGlowWeight);
+    float limestoneRole = roleIs(0.0);
+    float nacreRole = roleIs(1.0);
+    float bronzeRole = roleIs(2.0);
+    float lapisRole = roleIs(3.0);
+    float crystalRole = roleIs(4.0);
+    float coralRole = roleIs(5.0);
     float porousBreakup = 0.5 + 0.5 * sin(
       vWorldPos.x * 8.7 + sin(vWorldPos.y * 6.2) + vWorldPos.z * 7.1
     );
@@ -199,6 +214,27 @@ const FRAGMENT = /* glsl */ `
       livingWeight * 0.08;
     colour += awakened * wake * livingWeight * mix(0.16, 0.52, uMomentum);
 
+    // One shared shader, six authored material responses. Role-specific
+    // roughness, colour travel and restrained emission keep a district from
+    // reading as one uniformly painted procedural mesh.
+    colour = mix(colour, colour * vec3(1.04, 1.0, 0.92), limestoneRole * 0.16);
+    vec3 nacreShift = mix(
+      vec3(0.28, 0.52, 0.62),
+      vec3(0.5, 0.29, 0.58),
+      clamp(viewDirection.y * 0.5 + moonRim, 0.0, 1.0)
+    );
+    colour += nacreShift * nacreRole * (0.035 + moonRim * 0.11);
+    colour = mix(colour, colour * vec3(1.18, 0.86, 0.48), bronzeRole * 0.34);
+    colour += vec3(0.2, 0.1, 0.025) * wetSpecular * bronzeRole * 0.24;
+    colour = mix(colour, colour * vec3(0.58, 0.72, 1.14), lapisRole * 0.46);
+    colour += vec3(0.05, 0.18, 0.3) * crystalRole * (0.18 + moonRim * 0.28);
+    float tideWave = smoothstep(
+      0.72,
+      0.98,
+      sin(vWorldPos.z * 0.23 - uTime * 1.35 + vWorldPos.x * 0.11) * 0.5 + 0.5
+    );
+    colour += awakened * coralRole * tideWave * (0.045 + uMomentum * 0.055);
+
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
     colour = mix(colour, uFogColor, fog);
     gl_FragColor = vec4(colour, 1.0);
@@ -267,10 +303,12 @@ export function updateMoonGardenMaterial(
 
 const OBSTACLE_VERTEX = /* glsl */ `
   attribute float glowWeight;
+  attribute float materialRole;
   varying vec3 vWorldPos;
   varying vec3 vNormalW;
   varying vec3 vColour;
   varying float vGlowWeight;
+  varying float vMaterialRole;
   varying float vViewDepth;
 
   void main() {
@@ -294,6 +332,7 @@ const OBSTACLE_VERTEX = /* glsl */ `
     vNormalW = normalize(mat3(modelMatrix) * transformedNormal);
     vColour = color;
     vGlowWeight = glowWeight;
+    vMaterialRole = materialRole;
 
     vec4 mvPosition = viewMatrix * worldPosition;
     vViewDepth = -mvPosition.z;
@@ -317,6 +356,7 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
   varying vec3 vNormalW;
   varying vec3 vColour;
   varying float vGlowWeight;
+  varying float vMaterialRole;
   varying float vViewDepth;
 
   vec3 perturbSurfaceNormal(
@@ -337,6 +377,10 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
       abs(determinant) * surfaceNormal -
       surfaceGradient * strength
     );
+  }
+
+  float roleIs(float target) {
+    return 1.0 - smoothstep(0.18, 0.45, abs(vMaterialRole - target));
   }
 
   float caustics(vec2 p, float t) {
@@ -426,6 +470,11 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     colour *= 1.0 - joint * 0.14;
     colour *= mix(1.0, 0.43, groundContact);
     float stoneWeight = 1.0 - smoothstep(0.28, 0.66, vGlowWeight);
+    float nacreRole = roleIs(1.0);
+    float bronzeRole = roleIs(2.0);
+    float lapisRole = roleIs(3.0);
+    float crystalRole = roleIs(4.0);
+    float coralRole = roleIs(5.0);
     colour += vec3(0.035, 0.085, 0.11) * stoneWeight;
     colour += vec3(0.08, 0.34, 0.46) * moonRim * 0.28;
     vec3 coralDirection = normalize(vec3(0.6, -0.2, -0.77));
@@ -441,6 +490,17 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     colour += vec3(0.46, 0.72, 0.82) * wetSpecular * 0.12;
     colour += uCausticColor * pattern * uIntensity * facing;
     colour += vColour * vGlowWeight * 0.035;
+    colour += mix(vec3(0.04, 0.16, 0.2), vec3(0.18, 0.05, 0.16), moonRim) *
+      nacreRole * (0.04 + moonRim * 0.08);
+    colour = mix(colour, colour * vec3(1.2, 0.82, 0.46), bronzeRole * 0.32);
+    colour = mix(colour, colour * vec3(0.56, 0.7, 1.12), lapisRole * 0.44);
+    colour += vec3(0.04, 0.2, 0.28) * crystalRole * (0.13 + moonRim * 0.18);
+    float tideWave = smoothstep(
+      0.74,
+      0.98,
+      sin(vWorldPos.z * 0.21 - uTime * 1.25 + vWorldPos.y * 0.13) * 0.5 + 0.5
+    );
+    colour += vec3(0.16, 0.08, 0.2) * coralRole * tideWave * 0.1;
 
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
     colour = mix(colour, uFogColor, fog);

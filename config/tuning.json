@@ -64,9 +64,9 @@
     "obstacleEdgeWidthPixels": 7.0,
     "fogNearMultiplier": 1.75,
     "fogFarMultiplier": 3.0,
-    "bloomStrength": 0.34,
-    "bloomRadius": 0.28,
-    "bloomThreshold": 0.84
+    "bloomStrength": 0.18,
+    "bloomRadius": 0.16,
+    "bloomThreshold": 0.93
   },
 
   "environment": {
@@ -80,10 +80,10 @@
     "buildingBrightness": 0.15,
     "godRayCount": 3,
     "godRayBandSpacing": 130.0,
-    "godRayIntensity": 0.16,
+    "godRayIntensity": 0.09,
     "godRayWidth": 3.6,
     "godRayHeight": 32.0,
-    "coralCount": 120,
+    "coralCount": 96,
     "coralBandSpacing": 3.8,
     "coralPulseRadiusUnits": 9.0,
     "coralPulseDecayPerSec": 1.9,

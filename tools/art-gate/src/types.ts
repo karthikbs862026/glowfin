@@ -25,12 +25,18 @@ export type AssetFamily =
   | "collapsedArchRuin"
   | "collapsedArchPair"
   | "spire"
+  | "palaceDistrict"
+  | "observatory"
   | "wallFragment"
   | "heroCoral"
+  | "brainCoral"
+  | "tableCoral"
   | "mediumCoral"
   | "smallProp"
   | "distantSkyline"
   | "ambientCreature"
+  | "merfolkCreature"
+  | "heroProp"
   | "artReviewImpostor"
   | "ribbonKelp"
   | "godRayMesh";
@@ -178,6 +184,15 @@ export interface PerformanceEvidence {
   };
 }
 
+export interface WorldQualityEvidence {
+  gateFamilies: string[];
+  architecture: string[];
+  reef: string[];
+  life: string[];
+  props: string[];
+  materials: string[];
+}
+
 export interface GateInput {
   evidenceVersion: string;
   runtimeRevision: string;
@@ -185,6 +200,7 @@ export interface GateInput {
   runtimeObstacles: RuntimeObstacle[];
   captures: SceneCapture[];
   renderEvidence: RenderEvidence;
+  worldQuality: WorldQualityEvidence;
   performanceEvidence?: PerformanceEvidence;
   compressedArtPayloadMB?: number;
   soakMinutes?: number;
@@ -257,6 +273,18 @@ export interface GateConfig {
     nearBlackFractionMax: number;
     colourfulFractionMin: number;
     clippedHighlightFractionMax: number;
+  };
+  worldQuality: {
+    requiredGateFamilies: string[];
+    requiredArchitecture: string[];
+    requiredReef: string[];
+    requiredLife: string[];
+    requiredProps: string[];
+    requiredMaterials: string[];
+    minimumDistinctVisibleGateFamilies: number;
+    minimumDistinctReefFamilies: number;
+    minimumAmbientLifeFamilies: number;
+    minimumPropFamilies: number;
   };
   creature: {
     viewportWidthFractionMin: number;

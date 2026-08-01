@@ -10,16 +10,23 @@ import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
 import {
   createProductionAnemone,
+  createProductionBrainCoral,
   createProductionBranchCoral,
   createProductionCollapsedArch,
+  createProductionConchFountain,
   createProductionFanCoral,
   createProductionJelly,
   createProductionKelp,
+  createProductionMerfolkGuardian,
+  createProductionMerfolkMonument,
   createProductionMinnow,
+  createProductionObservatory,
+  createProductionPalaceDistrict,
   createProductionRay,
   createProductionSkyline,
   createProductionSpire,
-  createProductionSpirit,
+  createProductionTableCoral,
+  createProductionTideSpear,
   createProductionTower
 } from "./productionGeometry";
 import {
@@ -106,6 +113,7 @@ export class Environment {
   private readonly skyline: InstancedVolumeFamily;
   private readonly reef: readonly InstancedVolumeFamily[];
   private readonly life: readonly InstancedVolumeFamily[];
+  private readonly props: readonly InstancedVolumeFamily[];
   private readonly godRays: THREE.InstancedMesh;
   private readonly moonAndMotes: THREE.Points;
   private readonly pointPositions: THREE.BufferAttribute;
@@ -142,7 +150,9 @@ export class Environment {
     const architectureGeometry = [
       createProductionTower(1),
       createProductionCollapsedArch(1),
-      createProductionSpire(1)
+      createProductionSpire(1),
+      createProductionPalaceDistrict(1),
+      createProductionObservatory(1)
     ] as const;
     this.architecture = architectureGeometry.map((geometry) =>
       new InstancedVolumeFamily(
@@ -159,6 +169,8 @@ export class Environment {
       this.disposables
     );
     const reefGeometry = [
+      createProductionBrainCoral(1),
+      createProductionTableCoral(1),
       createProductionBranchCoral(1),
       createProductionFanCoral(1),
       createProductionAnemone(1),
@@ -172,12 +184,12 @@ export class Environment {
         this.disposables
       )
     );
-    const lifeCaps = [24, 12, 6, 10];
+    const lifeCaps = [48, 14, 8, 8];
     const lifeGeometry = [
       createProductionMinnow(),
       createProductionJelly(),
       createProductionRay(),
-      createProductionSpirit()
+      createProductionMerfolkGuardian()
     ] as const;
     this.life = lifeGeometry.map((geometry, index) =>
       new InstancedVolumeFamily(
@@ -188,11 +200,26 @@ export class Environment {
         false
       )
     );
+    const propGeometry = [
+      createProductionMerfolkMonument(),
+      createProductionTideSpear(),
+      createProductionConchFountain()
+    ] as const;
+    this.props = propGeometry.map((geometry) =>
+      new InstancedVolumeFamily(
+        geometry,
+        this.volumeMaterial,
+        8,
+        this.disposables,
+        false
+      )
+    );
     this.objects.push(
       ...this.architecture.map((family) => family.object),
       this.skyline.object,
       ...this.reef.map((family) => family.object),
-      ...this.life.map((family) => family.object)
+      ...this.life.map((family) => family.object),
+      ...this.props.map((family) => family.object)
     );
 
     const rayGeometry = new THREE.PlaneGeometry(1, 1, 3, 2);
@@ -209,7 +236,7 @@ export class Environment {
       depthWrite: false,
       depthTest: false,
       side: THREE.DoubleSide,
-      toneMapped: false,
+      toneMapped: true,
       vertexShader: /* glsl */ `
         varying vec2 vUv;
         varying vec3 vTint;
@@ -234,8 +261,8 @@ export class Environment {
           float horizontal = 1.0 - smoothstep(0.04, 0.5, abs(vUv.x - 0.5));
           float lowerFade = smoothstep(0.0, 0.22, vUv.y);
           float upperFade = 1.0 - smoothstep(0.78, 1.0, vUv.y);
-          float alpha = horizontal * lowerFade * upperFade * 0.2;
-          gl_FragColor = vec4(vTint * 2.2, alpha);
+          float alpha = horizontal * lowerFade * upperFade * 0.11;
+          gl_FragColor = vec4(vTint * 0.9, alpha);
         }
       `
     });
@@ -320,6 +347,7 @@ export class Environment {
     this.updateArchitecture(forwardDistance);
     this.updateSkyline(forwardDistance);
     this.updateReef(forwardDistance, lateralPosition, momentumFraction);
+    this.updateProps(forwardDistance);
     this.updateLife(forwardDistance, time);
     this.updateMoonAndMotes(forwardDistance, time);
     this.updateGodRays(forwardDistance, momentumFraction);
@@ -344,7 +372,7 @@ export class Environment {
       for (let index = 0; index < perSide; index++) {
         const band = firstBand + index;
         const salt = side > 0 ? 7717 : 3313;
-        const variant = positiveMod(band + (side > 0 ? 1 : 0), 3);
+        const variant = positiveMod(band + (side > 0 ? 1 : 0), 5);
         const zDistance = band * env.buildingBandSpacing +
           (hash01(band, salt + 4) - 0.5) * env.buildingBandSpacing * 0.45;
         const height = lerp(
@@ -354,10 +382,10 @@ export class Environment {
         );
         const family = this.architecture[variant];
         if (!family) continue;
-        const silhouetteScale = [0.92, 0.8, 0.86][variant] ?? 0.84;
+        const silhouetteScale = [0.92, 0.8, 0.86, 0.76, 0.78][variant] ?? 0.84;
         const unitScale = height * silhouetteScale / family.height;
-        const widthStretch = [0.76, 0.9, 0.82][variant] ?? 0.82;
-        const depthStretch = [0.72, 0.84, 0.76][variant] ?? 0.76;
+        const widthStretch = [0.76, 0.9, 0.82, 1.04, 0.94][variant] ?? 0.82;
+        const depthStretch = [0.72, 0.84, 0.76, 0.9, 0.88][variant] ?? 0.76;
         const safeInnerEdge =
           this.cfg.lane.halfWidth +
           family.halfWidth * unitScale * widthStretch +
@@ -458,7 +486,7 @@ export class Environment {
         const clusterMember = positiveMod(band, 3);
         const variant = positiveMod(
           cluster * 3 + clusterMember + (side > 0 ? 2 : 0),
-          4
+          6
         );
         const family = this.reef[variant];
         if (!family) continue;
@@ -466,19 +494,19 @@ export class Environment {
         const localOffset = [0, 0.88, 2.05][clusterMember] ?? 0;
         const zDistance = clusterStart + localOffset +
           (hash01(band, salt + 2) - 0.5) * 0.58;
-        const isHero = variant === 0 && positiveMod(band, 6) === 0;
+        const isHero = variant < 2 && positiveMod(band, 6) === 0;
         const desiredHeight = lerp(
-          variant === 2 ? 1.05 : 1.28,
-          variant === 3 ? 2.9 : 2.72,
+          variant === 4 ? 1.02 : 1.22,
+          variant === 5 ? 2.9 : variant < 2 ? 2.35 : 2.72,
           hash01(band, salt + 1)
         ) * (isHero ? 1.24 : 1);
         const unitScale = desiredHeight / family.height;
         const widthStretch = lerp(
-          variant === 3 ? 1.0 : 1.16,
-          variant === 3 ? 1.32 : 1.58,
+          variant === 5 ? 1.0 : variant < 2 ? 1.08 : 1.16,
+          variant === 5 ? 1.32 : variant < 2 ? 1.36 : 1.58,
           hash01(band, salt + 5)
         );
-        const depthStretch = [1.05, 0.92, 0.96, 0.72][variant] ?? 0.9;
+        const depthStretch = [0.88, 0.78, 1.05, 0.92, 0.96, 0.72][variant] ?? 0.9;
         // Place from the actual 3D bounds' inner edge. Larger volumetric reef
         // can overlap in depth while remaining entirely outside gameplay.
         const halfVisualWidth = family.halfWidth * unitScale * widthStretch;
@@ -530,11 +558,47 @@ export class Environment {
     for (const family of this.reef) family.finish();
   }
 
+  private updateProps(forwardDistance: number): void {
+    for (const family of this.props) family.begin();
+    const spacing = 31;
+    const count = Math.max(5, Math.round(8 * this.density));
+    const firstBand = Math.ceil((forwardDistance + 10) / spacing);
+    for (let index = 0; index < count; index++) {
+      const band = firstBand + index;
+      const variant = positiveMod(band, this.props.length);
+      const family = this.props[variant];
+      if (!family) continue;
+      const side = hash01(band, 731) < 0.5 ? -1 : 1;
+      const size = lerp(1.08, variant === 0 ? 1.52 : 1.34, hash01(band, 732));
+      const safeInnerEdge = this.cfg.lane.halfWidth + family.halfWidth * size + 0.7;
+      const lateral = side * lerp(
+        safeInnerEdge,
+        safeInnerEdge + 2.8,
+        Math.pow(hash01(band, 733), 1.7)
+      );
+      this.position.set(
+        lateral,
+        -0.98,
+        -(band * spacing + hash01(band, 734) * 7)
+      );
+      this.quaternion.setFromEuler(new THREE.Euler(
+        0,
+        side * lerp(-0.24, 0.18, hash01(band, 735)),
+        side * lerp(-0.035, 0.035, hash01(band, 736))
+      ));
+      this.scale.set(side * size, size, size);
+      this.matrix.compose(this.position, this.quaternion, this.scale);
+      this.colour.setRGB(0.72, 0.82, 0.9);
+      family.add(this.matrix, this.colour);
+    }
+    for (const family of this.props) family.finish();
+  }
+
   private updateLife(forwardDistance: number, time: number): void {
     for (const family of this.life) family.begin();
 
     const schoolCount = Math.max(3, Math.round(5 * this.density));
-    const fishPerSchool = 4;
+    const fishPerSchool = 7;
     const schoolSpacing = 24;
     const firstSchool = Math.ceil((forwardDistance + 12) / schoolSpacing);
     for (let school = 0; school < schoolCount; school++) {
@@ -547,11 +611,11 @@ export class Environment {
         Math.sin(phase) * 0.65;
       const schoolY = lerp(4.6, 10.6, hash01(band, 815));
       for (let member = 0; member < fishPerSchool; member++) {
-        const row = Math.floor(member / 2);
-        const column = member % 2;
+        const row = Math.floor(member / 3);
+        const column = member % 3;
         this.position.set(
-          schoolX + direction * (column * 0.82 + row * 0.34),
-          schoolY + (column - 0.5) * 0.46 - row * 0.28,
+          schoolX + direction * ((column - 1) * 0.72 + row * 0.32),
+          schoolY + (column - 1) * 0.34 - row * 0.42,
           -(band * schoolSpacing + member * 0.92)
         );
         this.quaternion.setFromEuler(new THREE.Euler(
@@ -610,22 +674,27 @@ export class Environment {
       this.life[2]?.add(this.matrix, this.colour);
     }
 
-    const spiritCount = Math.max(2, Math.round(10 * this.density));
-    const spiritFirst = Math.ceil((forwardDistance + 12) / 22);
-    for (let index = 0; index < spiritCount; index++) {
-      const band = spiritFirst + index;
+    const guardianCount = Math.max(2, Math.round(4 * this.density));
+    const guardianSpacing = 38;
+    const guardianFirst = Math.ceil((forwardDistance + 16) / guardianSpacing);
+    for (let index = 0; index < guardianCount; index++) {
+      const band = guardianFirst + index;
       const side = hash01(band, 841) < 0.5 ? -1 : 1;
-      const phase = time * 0.9 + band;
+      const phase = time * 0.46 + band * 1.37;
       this.position.set(
-        side * lerp(7, 11, hash01(band, 842)) + Math.sin(phase) * 0.45,
-        0.25 + hash01(band, 843) * 1.6 + Math.sin(phase * 1.7) * 0.18,
-        -(band * 22 + hash01(band, 844) * 5)
+        side * lerp(3.2, 6.4, hash01(band, 842)) + Math.sin(phase) * 0.62,
+        7.2 + hash01(band, 843) * 3.2 + Math.sin(phase * 1.7) * 0.34,
+        -(band * guardianSpacing + hash01(band, 844) * 9)
       );
-      this.quaternion.identity();
-      const size = lerp(0.72, 1.25, hash01(band, 845));
-      this.scale.set(side * size, size, 1);
+      this.quaternion.setFromEuler(new THREE.Euler(
+        0,
+        side > 0 ? Math.PI * 0.64 : -Math.PI * 0.64,
+        side * 0.26 + Math.sin(phase) * 0.1
+      ));
+      const size = lerp(1.28, 1.72, hash01(band, 845));
+      this.scale.set(side * size, size, size);
       this.matrix.compose(this.position, this.quaternion, this.scale);
-      this.colour.setRGB(0.74, 0.78, 1);
+      this.colour.setRGB(0.86, 0.82, 1);
       this.life[3]?.add(this.matrix, this.colour);
     }
 

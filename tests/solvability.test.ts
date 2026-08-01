@@ -73,7 +73,7 @@ describe("course generation", () => {
       expect(gates[index]?.artVariant).not.toBe(gates[index - 1]?.artVariant);
     }
     expect(new Set(gates.slice(0, 12).map((gate) => gate.artVariant))).toEqual(
-      new Set([0, 1, 2])
+      new Set([0, 1, 2, 3, 4])
     );
   });
 
