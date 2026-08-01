@@ -580,7 +580,7 @@ function guardianRegaliaGeometry(
       new THREE.Vector2(-0.24, 0.2)
     ];
     parts.push(styled(extrudedShape(fan, 0.045, 0.008), {
-      position: new THREE.Vector3(0, 0.61, 0.075),
+      position: new THREE.Vector3(0, 0.61, -0.16),
       scale: new THREE.Vector3(1.12, 0.92, 1),
       colour: CORAL,
       glow: 0.24,
@@ -589,9 +589,9 @@ function guardianRegaliaGeometry(
     }));
     for (const side of [-1, 1]) {
       parts.push(styled(tube([
-        new THREE.Vector3(side * 0.2, 0.74, 0.09),
-        new THREE.Vector3(side * 0.42, 1.12, 0.1),
-        new THREE.Vector3(side * 0.62, 1.34, 0.12)
+        new THREE.Vector3(side * 0.2, 0.74, -0.14),
+        new THREE.Vector3(side * 0.42, 1.12, -0.13),
+        new THREE.Vector3(side * 0.62, 1.34, -0.11)
       ], 7, 0.032, 5), {
         colour: TAIL_LIGHT,
         glow: 0.22,
@@ -602,7 +602,7 @@ function guardianRegaliaGeometry(
   } else if (role === "astral-oracle") {
     parts.push(
       styled(new THREE.TorusGeometry(0.62, 0.038, 6, 24), {
-        position: new THREE.Vector3(0, 1, 0.06),
+        position: new THREE.Vector3(0, 1, -0.17),
         rotation: new THREE.Euler(0.1, 0.22, 0.12),
         scale: new THREE.Vector3(1, 0.72, 1),
         colour: BRONZE,
@@ -610,7 +610,7 @@ function guardianRegaliaGeometry(
         materialRole: MATERIAL_ROLE.bronze
       }),
       styled(new THREE.TorusGeometry(0.47, 0.032, 5, 20), {
-        position: new THREE.Vector3(0, 1, 0.085),
+        position: new THREE.Vector3(0, 1, -0.14),
         rotation: new THREE.Euler(0.45, -0.18, Math.PI * 0.5),
         scale: new THREE.Vector3(1, 0.82, 1),
         colour: LAPIS,
@@ -635,7 +635,7 @@ function guardianRegaliaGeometry(
         24,
         Math.PI * 1.24
       ), {
-        position: new THREE.Vector3(0, 1.03, 0.075),
+        position: new THREE.Vector3(0, 1.03, -0.16),
         rotation: new THREE.Euler(0.12, 0, -0.26),
         scale: new THREE.Vector3(1, 0.7, 1),
         colour: BRONZE,

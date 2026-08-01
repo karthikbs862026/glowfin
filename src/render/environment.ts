@@ -799,23 +799,25 @@ export class Environment {
     // screen-plane silhouette. Turning the old mesh around world Y made it
     // nearly edge-on to the phone camera, so the supposedly lateral role was
     // only 14–15 CSS pixels wide even though its upright height looked valid.
-    const swimmerCount = Math.max(2, Math.round(3 * this.density));
+    // The pair stays in the upper gallery opposite the guardian; otherwise a
+    // correctly enlarged swimmer can erase the hero's face at phone scale.
+    const swimmerCount = Math.max(2, Math.round(2 * this.density));
     for (let index = 0; index < swimmerCount; index++) {
       const direction: -1 | 1 = index % 2 === 0 ? 1 : -1;
       const phase = time * 0.54 + index * 1.61;
-      const side: -1 | 1 = index % 2 === 0 ? -1 : 1;
+      const gallerySide: -1 | 1 = heroStage.side === 1 ? -1 : 1;
       this.position.set(
-        side * (this.cfg.lane.halfWidth + 2.28) +
-          direction * Math.sin(phase) * 0.46,
-        4.55 + index * 0.58 + Math.sin(phase * 1.4) * 0.18,
-        -heroStage.anchor + 8.2 + index * 1.35
+        gallerySide * (this.cfg.lane.halfWidth + 1.58 + index * 0.32) +
+          direction * Math.sin(phase) * 0.24,
+        5.15 + index * 0.58 + Math.sin(phase * 1.4) * 0.14,
+        -heroStage.anchor + 6.1 + index * 1.15
       );
       this.quaternion.setFromEuler(new THREE.Euler(
         0.025,
-        side * 0.06,
+        gallerySide * 0.045,
         direction * (-Math.PI * 0.49) + Math.sin(phase) * 0.045
       ));
-      const size = 1.78 + index * 0.1;
+      const size = 1.12 + index * 0.06;
       this.scale.set(direction * size, size, size);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.7, 0.9, 0.98);
