@@ -478,3 +478,16 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Reject swimmer stacking, overlap, frozen/synchronized motion, upright-role
   drift or any choreography sample entering the gameplay route. Owner phone
   review remains the final visual authority.
+
+## 2026-08-01 — Make merfolk evidence colour-stable and depth-stable
+
+- The first clean-room capture correctly blocked the checkpoint. Beauty frames
+  contained the new faces, but colour-managed semantic shades were classified
+  as their nearest body primaries, producing zero measurable face/eye pixels.
+- Render semantic IDs through a raw double-sided shader with exact framebuffer
+  channels and cover all 13 classes with a round-trip regression test.
+- Keep both swimmers in separate foreground galleries for the entire motion
+  interval. The previous upper path crossed behind masonry at the second
+  sample, leaving fin fragments that could be mistaken for a stacked pair.
+- Reduce repeated residents to one upright citizen per side; preserve paired
+  heralds as the deliberate ceremonial anchors.

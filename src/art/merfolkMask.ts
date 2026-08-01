@@ -21,3 +21,43 @@ export const MERFOLK_MASK_ENTRIES = Object.values(MERFOLK_MASK);
 export const MERFOLK_MASK_MAX_ID = Math.max(
   ...MERFOLK_MASK_ENTRIES.map((entry) => entry.id)
 );
+
+/**
+ * Raw framebuffer channels for the semantic-mask shader. These values must
+ * bypass Three.js colour management: the mask is machine evidence, not a
+ * beauty render, and every authored feature needs a stable byte identity.
+ */
+export function merfolkMaskColourChannels(
+  colour: number
+): readonly [number, number, number] {
+  return [
+    ((colour >> 16) & 0xff) / 255,
+    ((colour >> 8) & 0xff) / 255,
+    (colour & 0xff) / 255
+  ];
+}
+
+export function classifyMerfolkMaskPixel(
+  red: number,
+  green: number,
+  blue: number
+): number {
+  let bestId = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const entry of MERFOLK_MASK_ENTRIES) {
+    const colour = entry.colour;
+    const deltaRed = red - ((colour >> 16) & 0xff);
+    const deltaGreen = green - ((colour >> 8) & 0xff);
+    const deltaBlue = blue - (colour & 0xff);
+    const distance =
+      deltaRed * deltaRed +
+      deltaGreen * deltaGreen +
+      deltaBlue * deltaBlue;
+    if (distance >= bestDistance) continue;
+    bestDistance = distance;
+    bestId = entry.id;
+  }
+  // Antialiased edge pixels blend toward black; only retain pixels still
+  // clearly nearer an authored semantic colour than the background.
+  return bestDistance <= 90 * 90 ? bestId : 0;
+}

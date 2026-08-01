@@ -19,8 +19,8 @@ import type {
 import { analyseContrast } from "./contrastAnalysis";
 import type { GameView } from "./gameView";
 import {
+  classifyMerfolkMaskPixel,
   MERFOLK_MASK,
-  MERFOLK_MASK_ENTRIES,
   MERFOLK_MASK_MAX_ID
 } from "../art/merfolkMask";
 import { MERFOLK_CITY_CONTRACT } from "../art/merfolkCharacter";
@@ -76,28 +76,6 @@ function captureGate(
   };
 }
 
-function maskClass(red: number, green: number, blue: number): number {
-  let bestId = 0;
-  let bestDistance = Number.POSITIVE_INFINITY;
-  for (const entry of MERFOLK_MASK_ENTRIES) {
-    const colour = entry.colour;
-    const deltaRed = red - ((colour >> 16) & 0xff);
-    const deltaGreen = green - ((colour >> 8) & 0xff);
-    const deltaBlue = blue - (colour & 0xff);
-    const distance =
-      deltaRed * deltaRed +
-      deltaGreen * deltaGreen +
-      deltaBlue * deltaBlue;
-    if (distance >= bestDistance) continue;
-    bestDistance = distance;
-    bestId = entry.id;
-  }
-  // Ignore antialias blends that are closer to the black background than to
-  // a semantic interior. Interior mask pixels are emitted without tone map or
-  // fog and therefore remain much closer than this threshold.
-  return bestDistance <= 90 * 90 ? bestId : 0;
-}
-
 interface CssMask {
   cells: Uint8Array;
   width: number;
@@ -124,7 +102,7 @@ function toCssMask(
       for (let sourceY = startY; sourceY < endY; sourceY++) {
         for (let sourceX = startX; sourceX < endX; sourceX++) {
           const offset = (sourceY * width + sourceX) * 4;
-          const role = maskClass(
+          const role = classifyMerfolkMaskPixel(
             pixels[offset] ?? 0,
             pixels[offset + 1] ?? 0,
             pixels[offset + 2] ?? 0

@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { tuning } from "../src/core/config";
 import { PRODUCTION_ART } from "../src/art/productionManifest";
 import {
+  classifyMerfolkMaskPixel,
+  MERFOLK_MASK_ENTRIES,
+  merfolkMaskColourChannels
+} from "../src/art/merfolkMask";
+import {
   createGateFoundationGeometry
 } from "../src/render/moonGardenGeometry";
 import {
@@ -35,6 +40,19 @@ import { createGlowfinRigGeometry } from "../src/render/glowfinGeometry";
 import { contourWorldWidth, MoonGardenGates } from "../src/render/gateArt";
 
 describe("Phase 3B art geometry inventory", () => {
+  it("round-trips every merfolk feature through raw semantic mask bytes", () => {
+    for (const entry of MERFOLK_MASK_ENTRIES) {
+      const channels = merfolkMaskColourChannels(entry.colour).map((value) =>
+        Math.round(value * 255)
+      );
+      expect(classifyMerfolkMaskPixel(
+        channels[0] ?? 0,
+        channels[1] ?? 0,
+        channels[2] ?? 0
+      )).toBe(entry.id);
+    }
+  });
+
   it("records every generated prototype and production LOD exactly", () => {
     const families = [
       [

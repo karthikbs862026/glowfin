@@ -1912,9 +1912,29 @@ function friendlyPopulationHead(
         materialRole: MATERIAL_ROLE.crystal
       })
     );
+
+    // A short, lifted brow gives the tiny phone-scale face an intentional
+    // friendly expression instead of the blank doll stare from the original
+    // population mesh.
+    face.push(styled(curvedTube([
+      new THREE.Vector3(eyeX - side * 0.052, eyeY + 0.084, centre.z + 0.205),
+      new THREE.Vector3(eyeX, eyeY + 0.096, centre.z + 0.214),
+      new THREE.Vector3(eyeX + side * 0.052, eyeY + 0.078, centre.z + 0.205)
+    ], 5, 0.011, 4), {
+      colour: palette.hair,
+      glow: 0.06,
+      materialRole: MATERIAL_ROLE.lapis
+    }));
   }
 
   face.push(
+    styled(new THREE.SphereGeometry(0.026, 6, 4), {
+      position: centre.clone().add(new THREE.Vector3(0, -0.018, 0.221)),
+      scale: new THREE.Vector3(0.82, 1.12, 0.5),
+      colour: palette.skin,
+      glow: 0.08,
+      materialRole: MATERIAL_ROLE.nacre
+    }),
     styled(new THREE.TorusGeometry(0.049, 0.01, 5, 11, Math.PI), {
       position: centre.clone().add(new THREE.Vector3(0, -0.09, 0.207)),
       rotation: new THREE.Euler(0, 0, Math.PI),

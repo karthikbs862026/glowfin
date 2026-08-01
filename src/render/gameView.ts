@@ -23,7 +23,10 @@ import { TrailRibbon } from "./trail";
 import { Creature } from "./creature";
 import { Environment } from "./environment";
 import { MoonGardenGates } from "./gateArt";
-import { MERFOLK_MASK_ENTRIES } from "../art/merfolkMask";
+import {
+  MERFOLK_MASK_ENTRIES,
+  merfolkMaskColourChannels
+} from "../art/merfolkMask";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
@@ -121,11 +124,33 @@ export class GameView {
   private maskMode = false;
   private readonly merfolkMaskMaterials = new Map<
     string,
-    THREE.MeshBasicMaterial
+    THREE.ShaderMaterial
   >(MERFOLK_MASK_ENTRIES.map((entry) => [
     entry.role,
-    new THREE.MeshBasicMaterial({
-      color: entry.colour,
+    new THREE.ShaderMaterial({
+      uniforms: {
+        uMaskColour: {
+          value: new THREE.Vector3(
+            ...merfolkMaskColourChannels(entry.colour)
+          )
+        }
+      },
+      vertexShader: `
+        void main() {
+          vec4 localPosition = vec4(position, 1.0);
+          #ifdef USE_INSTANCING
+            localPosition = instanceMatrix * localPosition;
+          #endif
+          gl_Position = projectionMatrix * modelViewMatrix * localPosition;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uMaskColour;
+        void main() {
+          gl_FragColor = vec4(uMaskColour, 1.0);
+        }
+      `,
+      side: THREE.DoubleSide,
       toneMapped: false,
       fog: false
     })

@@ -95,7 +95,10 @@ export function sampleMerfolkChoreography({
   // Upright residents remain composed around the gate. Their tiny independent
   // breathing offsets keep them from reading as frozen duplicates while their
   // travel stays below the anchored-resident contract.
-  const citizenCount = Math.max(2, Math.round(3 * clampedDensity));
+  // One resident per side is enough to establish the upright/static read.
+  // A third resident repeated the same silhouette on one side and recreated
+  // the unsettling vertical stack visible in the owner screenshots.
+  const citizenCount = Math.max(2, Math.round(2 * clampedDensity));
   for (let index = 0; index < citizenCount; index++) {
     const side: -1 | 1 = index % 2 === 0
       ? (heroSide === 1 ? -1 : 1)
@@ -110,9 +113,9 @@ export function sampleMerfolkChoreography({
       motionSeed: seed,
       speed: 0.31 + seed * 0.08,
       position: {
-        x: side * (laneHalfWidth + 3.42 + index * 0.34 + seed * 0.18),
-        y: 3.58 + index * 0.72 + Math.sin(phase) * 0.045,
-        z: -anchor + 5.35 + index * 1.28
+        x: side * (laneHalfWidth + 3.02 + index * 0.16 + seed * 0.12),
+        y: 4.08 + index * 0.48 + Math.sin(phase) * 0.045,
+        z: -anchor + 4.72 + index * 0.92
       },
       rotation: {
         x: 0.012 + seed * 0.012,
@@ -139,11 +142,13 @@ export function sampleMerfolkChoreography({
     const track = Math.sin(phase);
     const velocity = Math.cos(phase);
     const direction: -1 | 1 = velocity >= 0 ? 1 : -1;
-    const pathWidth = 0.62 + seed * 0.18;
+    const pathWidth = index === 0
+      ? 0.55 + seed * 0.1
+      : 0.48 + seed * 0.08;
     const verticalAmplitude = index === 0
-      ? 0.24 + seed * 0.08
-      : 0.38 + seed * 0.1;
-    const scale = 1.3 + seed * 0.08 + momentum * 0.035;
+      ? 0.44 + seed * 0.08
+      : 0.58 + seed * 0.08;
+    const scale = 1.4 + seed * 0.08 + momentum * 0.035;
     poses.push({
       id: `current-swimmer-${index}`,
       role: "current-swimmer",
@@ -151,11 +156,14 @@ export function sampleMerfolkChoreography({
       motionSeed: seed,
       speed,
       position: {
-        x: side * (laneHalfWidth + 3.38) + track * pathWidth,
+        x: side * (laneHalfWidth + 3.08) + track * pathWidth,
         y: (index === 0 ? 5.45 : 7.2) +
-          Math.sin(phase * (index === 0 ? 1.37 : 0.81)) * verticalAmplitude,
-        z: -anchor + (index === 0 ? 3.0 : -1.25) +
-          Math.cos(phase * 0.73) * (0.28 + seed * 0.14)
+          Math.cos(phase) * verticalAmplitude,
+        // Both swimmers stay in front of the gate depth plane. Previously the
+        // upper swimmer passed behind masonry at the second evidence sample,
+        // leaving only disconnected fin fragments for the tracker.
+        z: -anchor + (index === 0 ? 3.05 : 1.55) +
+          Math.sin(phase) * (0.24 + seed * 0.08)
       },
       rotation: {
         x: 0.018 + Math.sin(phase * 0.61) * 0.018,
