@@ -796,25 +796,26 @@ export class Environment {
     }
 
     // Current swimmers cross between architecture shelves in an unmistakable
-    // horizontal mermaid pose. They travel in loose pairs rather than sharing
-    // the upright citizen placement, preventing one repeated mannequin read.
+    // screen-plane silhouette. Turning the old mesh around world Y made it
+    // nearly edge-on to the phone camera, so the supposedly lateral role was
+    // only 14–15 CSS pixels wide even though its upright height looked valid.
     const swimmerCount = Math.max(2, Math.round(3 * this.density));
     for (let index = 0; index < swimmerCount; index++) {
       const direction: -1 | 1 = index % 2 === 0 ? 1 : -1;
       const phase = time * 0.54 + index * 1.61;
       const side: -1 | 1 = index % 2 === 0 ? -1 : 1;
       this.position.set(
-        side * (this.cfg.lane.halfWidth + 2.15) +
+        side * (this.cfg.lane.halfWidth + 2.28) +
           direction * Math.sin(phase) * 0.46,
-        5.7 + index * 0.78 + Math.sin(phase * 1.4) * 0.22,
-        -heroStage.anchor + 10.5 + index * 1.8
+        4.55 + index * 0.58 + Math.sin(phase * 1.4) * 0.18,
+        -heroStage.anchor + 8.2 + index * 1.35
       );
       this.quaternion.setFromEuler(new THREE.Euler(
-        0,
-        direction > 0 ? Math.PI * 0.56 : -Math.PI * 0.56,
-        direction * (-Math.PI * 0.34) + Math.sin(phase) * 0.08
+        0.025,
+        side * 0.06,
+        direction * (-Math.PI * 0.49) + Math.sin(phase) * 0.045
       ));
-      const size = 1.42 + index * 0.08;
+      const size = 1.78 + index * 0.1;
       this.scale.set(direction * size, size, size);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.7, 0.9, 0.98);

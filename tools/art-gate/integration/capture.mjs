@@ -24,10 +24,11 @@ const castReviewScreenshot = screenshot.replace(
   "-merfolk-cast.png"
 );
 const beautyReviewOutput = output.replace(/\.json$/i, "-beauty-review.json");
-// The fast tier renders four states, while the full tier renders the complete
-// 36-state matrix before it marks the page ready. Keep the quick failure bound
-// for PR smoke captures without applying it to the substantially larger run.
-const readyTimeoutMs = tier === "full" ? 180_000 : 60_000;
+// Software-rendered GitHub Chromium can take more than one minute to expose
+// its first deterministic frame when parallel jobs install/start together.
+// Keep both tiers bounded, but do not turn that known cold-start variance into
+// a false art failure before any rendered evidence exists.
+const readyTimeoutMs = tier === "full" ? 240_000 : 150_000;
 const revision = option("revision") ?? execFileSync(
   "git",
   ["rev-parse", "HEAD"],

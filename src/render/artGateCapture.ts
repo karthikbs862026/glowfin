@@ -202,6 +202,47 @@ function largestComponent(mask: CssMask, accepted: readonly number[]): Component
   return best;
 }
 
+/**
+ * Measures the complete semantic silhouette rather than only its largest
+ * connected island. Guardian regalia is deliberately composed from separated
+ * crescents, coral branches, rings and crystals; treating those authored gaps
+ * as missing geometry made the rendered-identity gate report the size of one
+ * tiny ring fragment instead of the district signature a player sees.
+ */
+function maskBounds(mask: CssMask, accepted: readonly number[]): Component {
+  const allowed = new Uint8Array(8);
+  for (const role of accepted) allowed[role] = 1;
+  let pixels = 0;
+  let minX = mask.width;
+  let maxX = -1;
+  let minY = mask.height;
+  let maxY = -1;
+  for (let index = 0; index < mask.cells.length; index++) {
+    if (!allowed[mask.cells[index] ?? 0]) continue;
+    const x = index % mask.width;
+    const y = Math.floor(index / mask.width);
+    pixels += 1;
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
+  }
+  if (pixels === 0) {
+    return { width: 0, height: 0, pixels: 0, edgeClearance: 0 };
+  }
+  return {
+    width: maxX - minX + 1,
+    height: maxY - minY + 1,
+    pixels,
+    edgeClearance: Math.min(
+      minX,
+      minY,
+      mask.width - 1 - maxX,
+      mask.height - 1 - maxY
+    )
+  };
+}
+
 function componentEvidence(
   visible: CssMask,
   isolated: CssMask,
@@ -209,6 +250,26 @@ function componentEvidence(
 ): MerfolkMaskComponentEvidence {
   const shown = largestComponent(visible, accepted);
   const whole = largestComponent(isolated, accepted);
+  const occlusionFraction = whole.pixels <= 0
+    ? 1
+    : Math.max(0, Math.min(1, 1 - shown.pixels / whole.pixels));
+  return {
+    widthPixels: shown.width,
+    heightPixels: shown.height,
+    visiblePixels: shown.pixels,
+    isolatedPixels: whole.pixels,
+    occlusionFraction,
+    edgeClearancePixels: shown.edgeClearance
+  };
+}
+
+function silhouetteEvidence(
+  visible: CssMask,
+  isolated: CssMask,
+  accepted: readonly number[]
+): MerfolkMaskComponentEvidence {
+  const shown = maskBounds(visible, accepted);
+  const whole = maskBounds(isolated, accepted);
   const occlusionFraction = whole.pixels <= 0
     ? 1
     : Math.max(0, Math.min(1, 1 - shown.pixels / whole.pixels));
@@ -240,7 +301,7 @@ function analyseMerfolkReview(
       MASK.guardianFace,
       MASK.guardianEyes
     ]),
-    identity: componentEvidence(visible, isolated, [MASK.guardianIdentity]),
+    identity: silhouetteEvidence(visible, isolated, [MASK.guardianIdentity]),
     face: componentEvidence(visible, isolated, [MASK.guardianFace]),
     eyes: componentEvidence(visible, isolated, [MASK.guardianEyes]),
     population: [
