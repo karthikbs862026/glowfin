@@ -40,12 +40,16 @@ missing all of these defects.
    labelled semantic-mask atlas beside the beauty atlas. Exact byte-class
    round-trip tests and the visible atlas make colour or feature-loss defects
    diagnosable instead of silently producing a false measurement.
-7. Extend phone evidence from one frame to a 3.25-second time-lapse. Reject
+7. Allocate the mask lookup from the highest declared class ID and group only
+   nearby multipart islands into one authored figure. Select the two largest
+   swimmer figures before ordering them by side so loose fin/hair pixels cannot
+   masquerade as a stacked pair.
+8. Extend phone evidence from one frame to a 3.25-second time-lapse. Reject
    unreadable population faces/eyes, horizontal residents, non-horizontal
    swimmers, fewer than two visible role instances, swimmer centre separation
    below 96 px, more than 8% swimmer-box overlap, travel below 6 px, matched
    swimmer travel, or upright-herald drift above 4 px.
-8. Keep owner phone review authoritative. These measurements prevent a false
+9. Keep owner phone review authoritative. These measurements prevent a false
    green result; they do not certify taste, beauty or final DCC quality.
 
 ## Consequences

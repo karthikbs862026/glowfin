@@ -487,6 +487,11 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Render semantic IDs with flat double-sided materials, cover all 13 classes
   with a round-trip regression test, and upload a labelled semantic-mask atlas
   beside each clean-room beauty atlas.
+- The atlas exposed two evidence bugs rather than missing geometry: an
+  eight-element allow-list discarded population classes 8–13, and horizontal
+  ordering selected small fin/hair islands before the two full swimmers.
+- Size the lookup from the declared maximum class, merge only nearby multipart
+  islands, and select the two largest swimmer figures before side ordering.
 - Keep both swimmers in separate foreground galleries for the entire motion
   interval. The previous upper path crossed behind masonry at the second
   sample, leaving fin fragments that could be mistaken for a stacked pair.

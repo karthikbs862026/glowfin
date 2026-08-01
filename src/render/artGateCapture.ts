@@ -130,7 +130,7 @@ interface Component {
 }
 
 function largestComponent(mask: CssMask, accepted: readonly number[]): Component {
-  const allowed = new Uint8Array(8);
+  const allowed = new Uint8Array(MERFOLK_MASK_MAX_ID + 1);
   for (const role of accepted) allowed[role] = 1;
   const visited = new Uint8Array(mask.cells.length);
   const stack = new Int32Array(mask.cells.length);
@@ -194,6 +194,81 @@ function largestComponent(mask: CssMask, accepted: readonly number[]): Component
     };
   }
   return best;
+}
+
+function componentEdges(component: Component): {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+} {
+  return {
+    left: component.centreX - (component.width - 1) * 0.5,
+    right: component.centreX + (component.width - 1) * 0.5,
+    top: component.centreY - (component.height - 1) * 0.5,
+    bottom: component.centreY + (component.height - 1) * 0.5
+  };
+}
+
+/**
+ * One authored merperson is made from several separated volumes (hair, arms,
+ * face, tail and fins). CSS downsampling can leave a few transparent pixels
+ * between those volumes, so strict flood-fill alone mistakes one figure for
+ * several people. Join only very close islands; genuinely stacked figures
+ * still merge into one instance and therefore fail the required count.
+ */
+export function mergeNearbyMaskComponents(
+  source: readonly Component[],
+  maximumGapPixels = 6
+): Component[] {
+  const components = source.map((component) => ({ ...component }));
+  let changed = true;
+  while (changed) {
+    changed = false;
+    outer: for (let leftIndex = 0; leftIndex < components.length; leftIndex++) {
+      const left = components[leftIndex];
+      if (!left) continue;
+      const leftEdges = componentEdges(left);
+      for (
+        let rightIndex = leftIndex + 1;
+        rightIndex < components.length;
+        rightIndex++
+      ) {
+        const right = components[rightIndex];
+        if (!right) continue;
+        const rightEdges = componentEdges(right);
+        const horizontalGap = Math.max(
+          0,
+          Math.max(leftEdges.left, rightEdges.left) -
+            Math.min(leftEdges.right, rightEdges.right) - 1
+        );
+        const verticalGap = Math.max(
+          0,
+          Math.max(leftEdges.top, rightEdges.top) -
+            Math.min(leftEdges.bottom, rightEdges.bottom) - 1
+        );
+        if (Math.hypot(horizontalGap, verticalGap) > maximumGapPixels) {
+          continue;
+        }
+        const mergedLeft = Math.min(leftEdges.left, rightEdges.left);
+        const mergedRight = Math.max(leftEdges.right, rightEdges.right);
+        const mergedTop = Math.min(leftEdges.top, rightEdges.top);
+        const mergedBottom = Math.max(leftEdges.bottom, rightEdges.bottom);
+        components[leftIndex] = {
+          width: Math.round(mergedRight - mergedLeft + 1),
+          height: Math.round(mergedBottom - mergedTop + 1),
+          pixels: left.pixels + right.pixels,
+          edgeClearance: Math.min(left.edgeClearance, right.edgeClearance),
+          centreX: (mergedLeft + mergedRight) * 0.5,
+          centreY: (mergedTop + mergedBottom) * 0.5
+        };
+        components.splice(rightIndex, 1);
+        changed = true;
+        break outer;
+      }
+    }
+  }
+  return components.sort((left, right) => right.pixels - left.pixels);
 }
 
 function connectedComponents(
@@ -360,8 +435,12 @@ function componentListEvidence(
   accepted: readonly number[],
   minimumPixels = 8
 ): MerfolkMaskComponentEvidence[] {
-  const shown = connectedComponents(visible, accepted, minimumPixels);
-  const whole = connectedComponents(isolated, accepted, minimumPixels);
+  const shown = mergeNearbyMaskComponents(
+    connectedComponents(visible, accepted, 3)
+  ).filter((component) => component.pixels >= minimumPixels);
+  const whole = mergeNearbyMaskComponents(
+    connectedComponents(isolated, accepted, 3)
+  ).filter((component) => component.pixels >= minimumPixels);
   return shown.map((component) => {
     const baseline = [...whole].sort((left, right) => {
       const leftDistance = Math.hypot(
@@ -488,18 +567,25 @@ function analyseMerfolkReview(
     body: number,
     face: number,
     eyes: number
-  ) => ({
-    role: populationRole,
-    component: componentEvidence(visible, isolated, [body, face, eyes]),
-    face: componentEvidence(visible, isolated, [face]),
-    eyes: componentEvidence(visible, isolated, [eyes]),
-    instances: componentListEvidence(
+  ) => {
+    const instances = componentListEvidence(
       visible,
       isolated,
       [body, face, eyes],
       8
-    ).slice(0, populationRole === "reef-citizen" ? 3 : 2)
-  });
+    ).slice(0, populationRole === "reef-citizen" ? 3 : 2);
+    return {
+      role: populationRole,
+      component: instances[0] ?? componentEvidence(
+        visible,
+        isolated,
+        [body, face, eyes]
+      ),
+      face: componentEvidence(visible, isolated, [face]),
+      eyes: componentEvidence(visible, isolated, [eyes]),
+      instances
+    };
+  };
   const swimmerMasks = [
     MERFOLK_MASK.swimmerBody.id,
     MERFOLK_MASK.swimmerFace.id,
@@ -534,9 +620,16 @@ function analyseMerfolkReview(
     heraldMasks,
     8
   );
+  // Component lists are pixel-area sorted. Select the two authored figures
+  // first, then order those two by side; sorting every tiny fin/hair island by
+  // X recreated a false stacked pair at the frame edge.
+  const swimmerStartPrimary = byHorizontalPosition(swimmerStart.slice(0, 2));
+  const swimmerEndPrimary = byHorizontalPosition(swimmerEnd.slice(0, 2));
+  const heraldStartPrimary = byHorizontalPosition(heraldStart.slice(0, 2));
+  const heraldEndPrimary = byHorizontalPosition(heraldEnd.slice(0, 2));
   return {
     guardianRole: role,
-    guardian: componentEvidence(visible, isolated, [
+    guardian: silhouetteEvidence(visible, isolated, [
       MERFOLK_MASK.guardianBody.id,
       MERFOLK_MASK.guardianIdentity.id,
       MERFOLK_MASK.guardianFace.id,
@@ -573,18 +666,24 @@ function analyseMerfolkReview(
     ],
     motion: {
       sampleIntervalSec: motionSampleIntervalSec,
-      swimmerStart: byHorizontalPosition(swimmerStart, 2),
-      swimmerEnd: byHorizontalPosition(swimmerEnd, 2),
-      swimmerTravelPixels: componentTravel(swimmerStart, swimmerEnd).slice(0, 2),
+      swimmerStart: swimmerStartPrimary,
+      swimmerEnd: swimmerEndPrimary,
+      swimmerTravelPixels: componentTravel(
+        swimmerStartPrimary,
+        swimmerEndPrimary
+      ).slice(0, 2),
       swimmerCentreSeparationPixels: [
-        centreSeparation(swimmerStart),
-        centreSeparation(swimmerEnd)
+        centreSeparation(swimmerStartPrimary),
+        centreSeparation(swimmerEndPrimary)
       ],
       swimmerBoxOverlapFraction: [
-        boxOverlapFraction(swimmerStart),
-        boxOverlapFraction(swimmerEnd)
+        boxOverlapFraction(swimmerStartPrimary),
+        boxOverlapFraction(swimmerEndPrimary)
       ],
-      heraldTravelPixels: componentTravel(heraldStart, heraldEnd).slice(0, 2)
+      heraldTravelPixels: componentTravel(
+        heraldStartPrimary,
+        heraldEndPrimary
+      ).slice(0, 2)
     }
   };
 }
