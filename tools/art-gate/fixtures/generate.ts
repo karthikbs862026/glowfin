@@ -33,6 +33,9 @@ function captures(lowContrast = false): SceneCapture[] {
     textureMemoryMB: 0,
     activeMaterials: 9,
     godRayMeshes: 3,
+    heroMerfolkHeightPixels: 84,
+    heroMerfolkFaceHeightPixels: 26,
+    heroMerfolkEyeDiameterPixels: 5.5,
     frameContrastRatios: Array.from({ length: 20 }, () => 4.2),
     obstacles: [{
       obstacleId: "procedural-gate-pair",

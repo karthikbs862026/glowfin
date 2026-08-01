@@ -49,12 +49,12 @@
     "requiredGateFamilies": ["tide-court", "lapis-archive", "coral-sanctuary", "nacre-palace", "astral-observatory"],
     "requiredArchitecture": ["broken-tower", "collapsed-arch", "forked-spire", "grand-palace-district", "twin-pylon-observatory"],
     "requiredReef": ["maze-ridged-brain-coral", "scalloped-table-coral", "staghorn-coral", "sea-fan", "anemone-lantern", "ribbon-kelp"],
-    "requiredLife": ["moon-minnow-school", "lantern-jelly", "ribbon-manta", "moonfolk-guardian"],
+    "requiredLife": ["moon-minnow-school", "lantern-jelly", "ribbon-manta", "merfolk-citizen", "hero-merfolk-guardian"],
     "requiredProps": ["merfolk-monument", "tide-spear", "conch-fountain"],
     "requiredMaterials": ["limestone", "nacre", "bronze", "lapis", "crystal", "living-coral"],
     "minimumDistinctVisibleGateFamilies": 3,
     "minimumDistinctReefFamilies": 6,
-    "minimumAmbientLifeFamilies": 4,
+    "minimumAmbientLifeFamilies": 5,
     "minimumPropFamilies": 3
   },
   "creature": {
@@ -67,6 +67,18 @@
     "maxTextureSizePx": 1024,
     "requiredStates": ["calm", "mid", "max", "collision", "recovery"],
     "requiredClips": ["breathe", "propulsion", "bank", "collisionSquash", "recovery"],
+    "animationDriver": "simulation"
+  },
+  "merfolk": {
+    "minimumReadableHeightPixels": 72,
+    "minimumFaceHeightPixels": 22,
+    "minimumEyeDiameterPixels": 4.5,
+    "maxArticulatedJoints": 12,
+    "maxMaterials": 1,
+    "requiredRecognitionLabel": "mermaid",
+    "requiredParts": ["readable-face", "expressive-eyes", "flowing-hair", "articulated-arms", "readable-hands", "shell-cuirass", "lapis-pendant", "scaled-tail", "broad-caudal-fin", "translucent-side-fins", "tide-spear"],
+    "requiredStates": ["patrol", "approach", "greeting", "turn-away"],
+    "requiredClips": ["hover", "swim", "turn", "patrol", "greeting"],
     "animationDriver": "simulation"
   },
   "trail": {
@@ -104,6 +116,7 @@
     "distantSkyline": { "lod0": [200, 400], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "far-field-volumetric-instancing", "collidable": false },
     "ambientCreature": { "lod0": [70, 240], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "low-poly-volumetric-instancing", "collidable": false },
     "merfolkCreature": { "lod0": [900, 1300], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "outside-lane-volumetric-inhabitant", "collidable": false },
+    "heroMerfolk": { "lod0": [6500, 8000], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "articulated-phone-readable-hero", "collidable": false },
     "heroProp": { "lod0": [80, 1500], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "grounded-ceremonial-instancing", "collidable": false },
     "artReviewImpostor": { "lod0": [2, 4], "lod1": null, "lod2": null, "maxMaterials": 1, "strategy": "temporary-authored-review-source", "collidable": false },
     "ribbonKelp": { "lod0": [300, 600], "lod1": [120, 250], "lod2": null, "maxMaterials": 1, "strategy": "vertex-sway", "collidable": false },

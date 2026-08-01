@@ -588,7 +588,7 @@
       ]
     },
     {
-      "name": "moon-garden-moonfolk-guardian",
+      "name": "moon-garden-merfolk-citizen",
       "family": "merfolkCreature",
       "collidable": false,
       "materials": 1,
@@ -598,6 +598,52 @@
         {
           "level": 0,
           "triangles": 1076
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-hero-merfolk-guardian",
+      "family": "heroMerfolk",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "articulatedJoints": 12,
+      "readableHeightPixels": 72,
+      "readableFaceHeightPixels": 22,
+      "readableEyeDiameterPixels": 4.5,
+      "recognitionLabel": "mermaid",
+      "parts": [
+        "readable-face",
+        "expressive-eyes",
+        "flowing-hair",
+        "articulated-arms",
+        "readable-hands",
+        "shell-cuirass",
+        "lapis-pendant",
+        "scaled-tail",
+        "broad-caudal-fin",
+        "translucent-side-fins",
+        "tide-spear"
+      ],
+      "clips": [
+        "hover",
+        "swim",
+        "turn",
+        "patrol",
+        "greeting"
+      ],
+      "animationDriver": "simulation",
+      "observedStates": [
+        "patrol",
+        "approach",
+        "greeting",
+        "turn-away"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 7647
         }
       ]
     },
@@ -729,6 +775,9 @@
       "textureMemoryMB": 0,
       "activeMaterials": 9,
       "godRayMeshes": 3,
+      "heroMerfolkHeightPixels": 84,
+      "heroMerfolkFaceHeightPixels": 26,
+      "heroMerfolkEyeDiameterPixels": 5.5,
       "frameContrastRatios": [
         4.2,
         4.2,
@@ -799,6 +848,9 @@
       "textureMemoryMB": 0,
       "activeMaterials": 9,
       "godRayMeshes": 3,
+      "heroMerfolkHeightPixels": 84,
+      "heroMerfolkFaceHeightPixels": 26,
+      "heroMerfolkEyeDiameterPixels": 5.5,
       "frameContrastRatios": [
         4.2,
         4.2,
@@ -869,6 +921,9 @@
       "textureMemoryMB": 0,
       "activeMaterials": 9,
       "godRayMeshes": 3,
+      "heroMerfolkHeightPixels": 84,
+      "heroMerfolkFaceHeightPixels": 26,
+      "heroMerfolkEyeDiameterPixels": 5.5,
       "frameContrastRatios": [
         4.2,
         4.2,
@@ -939,6 +994,9 @@
       "textureMemoryMB": 0,
       "activeMaterials": 9,
       "godRayMeshes": 3,
+      "heroMerfolkHeightPixels": 84,
+      "heroMerfolkFaceHeightPixels": 26,
+      "heroMerfolkEyeDiameterPixels": 5.5,
       "frameContrastRatios": [
         4.2,
         4.2,
@@ -1024,7 +1082,8 @@
       "moon-minnow-school",
       "lantern-jelly",
       "ribbon-manta",
-      "moonfolk-guardian"
+      "merfolk-citizen",
+      "hero-merfolk-guardian"
     ],
     "props": [
       "merfolk-monument",

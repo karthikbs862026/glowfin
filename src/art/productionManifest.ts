@@ -113,6 +113,15 @@ export const PRODUCTION_ART = {
     lod0: 1076,
     materials: 1
   },
+  heroMerfolkGuardian: {
+    lod0: 7647,
+    materials: 1,
+    draws: 16,
+    articulatedJoints: 12,
+    readableHeightPixels: 72,
+    readableFaceHeightPixels: 22,
+    readableEyeDiameterPixels: 4.5
+  },
   merfolkMonument: {
     lod0: 1296,
     materials: 1

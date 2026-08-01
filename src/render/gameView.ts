@@ -157,7 +157,7 @@ export class GameView {
       this.renderer.capabilities.getMaxAnisotropy()
     );
     const moonstoneSurface = textureLoader.load(
-      "/art/moon-garden/moonstone-seabed.webp"
+      "art/moon-garden/moonstone-seabed.webp"
     );
     moonstoneSurface.colorSpace = THREE.SRGBColorSpace;
     moonstoneSurface.wrapS = THREE.RepeatWrapping;
@@ -172,21 +172,21 @@ export class GameView {
     moonstoneFloorSurface.repeat.set(1, 1);
     moonstoneFloorSurface.anisotropy = maxAnisotropy;
     const moonstoneVolumeSurface = textureLoader.load(
-      "/art/moon-garden/moonstone-surface.webp"
+      "art/moon-garden/moonstone-surface.webp"
     );
     moonstoneVolumeSurface.colorSpace = THREE.SRGBColorSpace;
     moonstoneVolumeSurface.wrapS = THREE.MirroredRepeatWrapping;
     moonstoneVolumeSurface.wrapT = THREE.MirroredRepeatWrapping;
     moonstoneVolumeSurface.anisotropy = maxAnisotropy;
     const livingReefSurface = textureLoader.load(
-      "/art/moon-garden/living-reef-surface.webp"
+      "art/moon-garden/living-reef-surface.webp"
     );
     livingReefSurface.colorSpace = THREE.SRGBColorSpace;
     livingReefSurface.wrapS = THREE.MirroredRepeatWrapping;
     livingReefSurface.wrapT = THREE.MirroredRepeatWrapping;
     livingReefSurface.anisotropy = maxAnisotropy;
     const glowfinSurface = textureLoader.load(
-      "/art/moon-garden/glowfin-surface.webp"
+      "art/moon-garden/glowfin-surface.webp"
     );
     glowfinSurface.colorSpace = THREE.SRGBColorSpace;
     glowfinSurface.wrapS = THREE.MirroredRepeatWrapping;
@@ -541,6 +541,9 @@ export class GameView {
     activeMaterials: number;
     godRayMeshes: number;
     textureMemoryMB: number;
+    heroMerfolkHeightPixels: number;
+    heroMerfolkFaceHeightPixels: number;
+    heroMerfolkEyeDiameterPixels: number;
   } {
     const materials = new Set<string>();
     this.scene.traverse((object) => {
@@ -556,7 +559,21 @@ export class GameView {
       // Two authored moonstone sources plus the independently sampled floor
       // clone and tiny generated water gradient. Review-character and
       // skyline/life atlas textures are no longer loaded.
-      textureMemoryMB: 10.3
+      textureMemoryMB: 10.3,
+      heroMerfolkHeightPixels: this.environment.heroMerfolkScreenHeightPixels(
+        this.camera,
+        this.renderer.domElement.clientHeight || window.innerHeight
+      ),
+      heroMerfolkFaceHeightPixels:
+        this.environment.heroMerfolkFaceHeightPixels(
+          this.camera,
+          this.renderer.domElement.clientHeight || window.innerHeight
+        ),
+      heroMerfolkEyeDiameterPixels:
+        this.environment.heroMerfolkEyeDiameterPixels(
+          this.camera,
+          this.renderer.domElement.clientHeight || window.innerHeight
+        )
     };
   }
 
@@ -672,7 +689,8 @@ export class GameView {
     this.environment.update(
       sim.forwardDistance,
       sim.lateralPosition,
-      momentumFraction
+      momentumFraction,
+      gates
     );
 
     this.updateStripes(sim.forwardDistance);

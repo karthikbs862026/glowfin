@@ -36,6 +36,7 @@ export type AssetFamily =
   | "distantSkyline"
   | "ambientCreature"
   | "merfolkCreature"
+  | "heroMerfolk"
   | "heroProp"
   | "artReviewImpostor"
   | "ribbonKelp"
@@ -90,6 +91,12 @@ export interface AssetManifest {
   observedStates?: string[];
   viewportWidthFraction?: number;
   eyeGlowPixels?: number;
+  articulatedJoints?: number;
+  readableHeightPixels?: number;
+  readableFaceHeightPixels?: number;
+  readableEyeDiameterPixels?: number;
+  recognitionLabel?: string;
+  parts?: string[];
 }
 
 /**
@@ -147,6 +154,9 @@ export interface SceneCapture {
   textureMemoryMB: number;
   activeMaterials: number;
   godRayMeshes: number;
+  heroMerfolkHeightPixels: number;
+  heroMerfolkFaceHeightPixels: number;
+  heroMerfolkEyeDiameterPixels: number;
   frameContrastRatios: number[];
   obstacles: ObstacleContrast[];
   /** Bounded attribution evidence for failed browser samples. */
@@ -294,6 +304,18 @@ export interface GateConfig {
     maxBones: number;
     maxMaterials: number;
     maxTextureSizePx: number;
+    requiredStates: string[];
+    requiredClips: string[];
+    animationDriver: string;
+  };
+  merfolk: {
+    minimumReadableHeightPixels: number;
+    minimumFaceHeightPixels: number;
+    minimumEyeDiameterPixels: number;
+    maxArticulatedJoints: number;
+    maxMaterials: number;
+    requiredRecognitionLabel: string;
+    requiredParts: string[];
     requiredStates: string[];
     requiredClips: string[];
     animationDriver: string;

@@ -106,6 +106,11 @@ export function validateGateConfig(raw: unknown): Finding[] {
     "creature.maxBones",
     "creature.maxMaterials",
     "creature.maxTextureSizePx",
+    "merfolk.minimumReadableHeightPixels",
+    "merfolk.minimumFaceHeightPixels",
+    "merfolk.minimumEyeDiameterPixels",
+    "merfolk.maxArticulatedJoints",
+    "merfolk.maxMaterials",
     "trail.maxLaneWidthFractionAtMaxMomentum"
     ,"performance.minMedianFps"
     ,"performance.maxColdStartMs"
@@ -178,6 +183,33 @@ export function validateGateConfig(raw: unknown): Finding[] {
         "CONFIG_MALFORMED",
         `World-quality contract "${key}" must be a non-empty string array.`,
         "Phase 3B premium world contract"
+      ));
+    }
+  }
+
+  const merfolk = record(cfg.merfolk);
+  if (
+    !merfolk ||
+    !nonEmptyString(merfolk.requiredRecognitionLabel) ||
+    !nonEmptyString(merfolk.animationDriver)
+  ) {
+    findings.push(blocker(
+      "CONFIG_MALFORMED",
+      "Merfolk recognition label and animation driver are required.",
+      "Phase 3B Merfolk Character Pass"
+    ));
+  }
+  for (const key of ["requiredParts", "requiredStates", "requiredClips"]) {
+    const values = merfolk?.[key];
+    if (
+      !Array.isArray(values) ||
+      values.length === 0 ||
+      !values.every(nonEmptyString)
+    ) {
+      findings.push(blocker(
+        "CONFIG_MALFORMED",
+        `Merfolk contract "${key}" must be a non-empty string array.`,
+        "Phase 3B Merfolk Character Pass"
       ));
     }
   }
@@ -288,6 +320,30 @@ export function validateAssetManifest(
   }
 
   if (!levels.has(0)) fail("No LOD0 entry.", "MANIFEST_NO_LOD0");
+  if (
+    asset.articulatedJoints !== undefined &&
+    (!finite(asset.articulatedJoints) || asset.articulatedJoints < 0)
+  ) fail('Invalid "articulatedJoints".');
+  if (
+    asset.readableHeightPixels !== undefined &&
+    (!finite(asset.readableHeightPixels) || asset.readableHeightPixels < 0)
+  ) fail('Invalid "readableHeightPixels".');
+  if (
+    asset.readableFaceHeightPixels !== undefined &&
+    (!finite(asset.readableFaceHeightPixels) || asset.readableFaceHeightPixels < 0)
+  ) fail('Invalid "readableFaceHeightPixels".');
+  if (
+    asset.readableEyeDiameterPixels !== undefined &&
+    (!finite(asset.readableEyeDiameterPixels) || asset.readableEyeDiameterPixels < 0)
+  ) fail('Invalid "readableEyeDiameterPixels".');
+  if (
+    asset.recognitionLabel !== undefined &&
+    !nonEmptyString(asset.recognitionLabel)
+  ) fail('Invalid "recognitionLabel".');
+  if (
+    asset.parts !== undefined &&
+    (!Array.isArray(asset.parts) || !asset.parts.every(nonEmptyString))
+  ) fail('Invalid "parts".');
   return findings;
 }
 
@@ -366,7 +422,10 @@ export function validateCapture(raw: unknown): Finding[] {
     "triangles",
     "textureMemoryMB",
     "activeMaterials",
-    "godRayMeshes"
+    "godRayMeshes",
+    "heroMerfolkHeightPixels",
+    "heroMerfolkFaceHeightPixels",
+    "heroMerfolkEyeDiameterPixels"
   ]) {
     if (!finite(capture[key]) || (capture[key] as number) < 0) {
       fail(`Capture metric "${key}" is invalid.`);

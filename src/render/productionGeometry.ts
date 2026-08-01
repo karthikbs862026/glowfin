@@ -254,18 +254,41 @@ export function createProductionWallGeometry(
 
   // Dark backing closes every collidable opening while real stone courses
   // create the visible silhouette and readable joints in front of it.
-  const backing = new THREE.Shape([
-    new THREE.Vector2(innerX, -0.5),
-    new THREE.Vector2(innerX, crownHeight),
-    new THREE.Vector2(gapDirection * 0.4, crownHeight + 0.015),
-    new THREE.Vector2(gapDirection * 0.4, 0.2),
-    new THREE.Vector2(gapDirection * 0.24, 0.2),
-    new THREE.Vector2(gapDirection * 0.24, -0.035),
-    new THREE.Vector2(gapDirection * 0.04, -0.035),
-    new THREE.Vector2(gapDirection * 0.04, -0.14),
-    new THREE.Vector2(outerX, -0.14),
-    new THREE.Vector2(outerX, -0.5)
-  ]);
+  const backing = new THREE.Shape();
+  backing.moveTo(innerX, -0.5);
+  backing.lineTo(innerX, crownHeight);
+  if (variant === 3) {
+    // The Nacre Palace is a shell court, not a crenellated block tower. A
+    // descending compound curve carries the inner pier into a low outer
+    // terrace while preserving the exact collider-facing plane at innerX.
+    backing.bezierCurveTo(
+      innerX - gapDirection * 0.045,
+      crownHeight + 0.055,
+      gapDirection * 0.34,
+      0.49,
+      gapDirection * 0.29,
+      0.35
+    );
+    backing.bezierCurveTo(
+      gapDirection * 0.23,
+      0.19,
+      gapDirection * 0.08,
+      0.02,
+      gapDirection * 0.015,
+      -0.08
+    );
+    backing.lineTo(outerX, -0.17);
+  } else {
+    backing.lineTo(gapDirection * 0.4, crownHeight + 0.015);
+    backing.lineTo(gapDirection * 0.4, 0.2);
+    backing.lineTo(gapDirection * 0.24, 0.2);
+    backing.lineTo(gapDirection * 0.24, -0.035);
+    backing.lineTo(gapDirection * 0.04, -0.035);
+    backing.lineTo(gapDirection * 0.04, -0.14);
+    backing.lineTo(outerX, -0.14);
+  }
+  backing.lineTo(outerX, -0.5);
+  backing.closePath();
   const backingGeometry = new THREE.ExtrudeGeometry(backing, {
     depth: 0.82,
     steps: 1,
@@ -427,30 +450,73 @@ export function createProductionWallGeometry(
 
   // A stacked gap-facing pier is the primary readable gate silhouette.
   const pierBlocks = lod === 0 ? 5 : lod === 1 ? 4 : 1;
-  for (let index = 0; index < pierBlocks; index++) {
-    const height = 0.17 + (index % 2) * 0.012;
-    parts.push(styled(
-      stoneBlock(0.16, height, 0.28, 0.015),
-      {
+  if (variant === 3 && lod < 2) {
+    const drums = lod === 0 ? 4 : 3;
+    for (let index = 0; index < drums; index++) {
+      const height = 0.205;
+      parts.push(styled(new THREE.CylinderGeometry(
+        0.082,
+        0.092,
+        height,
+        lod === 0 ? 10 : 7,
+        1
+      ), {
         position: new THREE.Vector3(
-          innerX - gapDirection * 0.082,
-          -0.4 + index * 0.175,
-          0.51 + (index % 2) * 0.015
+          innerX - gapDirection * 0.085,
+          -0.4 + index * 0.2,
+          0.52
         ),
-        rotation: new THREE.Euler(
-          0,
-          gapDirection * (index % 2) * 0.025,
-          gapDirection * Math.sin(index * 1.3) * 0.018
-        ),
-        colour: index % 2 === 0 ? STONE_LIGHT : STONE,
-        glow: 0.025,
-        materialRole: variant === 4
-          ? MATERIAL_ROLE.lapis
-          : variant === 3 && index % 2 === 0
-            ? MATERIAL_ROLE.nacre
+        scale: new THREE.Vector3(1, 1, 0.82),
+        colour: index % 2 === 0 ? NACRE : LIMESTONE,
+        glow: 0.035,
+        materialRole: index % 2 === 0
+          ? MATERIAL_ROLE.nacre
+          : MATERIAL_ROLE.limestone
+      }));
+    }
+    parts.push(styled(new THREE.SphereGeometry(
+      0.12,
+      lod === 0 ? 12 : 8,
+      lod === 0 ? 6 : 4,
+      0,
+      Math.PI * 2,
+      0,
+      Math.PI * 0.52
+    ), {
+      position: new THREE.Vector3(
+        innerX - gapDirection * 0.085,
+        0.39,
+        0.52
+      ),
+      scale: new THREE.Vector3(1.2, 0.68, 0.78),
+      colour: NACRE,
+      glow: 0.045,
+      materialRole: MATERIAL_ROLE.nacre
+    }));
+  } else {
+    for (let index = 0; index < pierBlocks; index++) {
+      const height = 0.17 + (index % 2) * 0.012;
+      parts.push(styled(
+        stoneBlock(0.16, height, 0.28, 0.015),
+        {
+          position: new THREE.Vector3(
+            innerX - gapDirection * 0.082,
+            -0.4 + index * 0.175,
+            0.51 + (index % 2) * 0.015
+          ),
+          rotation: new THREE.Euler(
+            0,
+            gapDirection * (index % 2) * 0.025,
+            gapDirection * Math.sin(index * 1.3) * 0.018
+          ),
+          colour: index % 2 === 0 ? STONE_LIGHT : STONE,
+          glow: 0.025,
+          materialRole: variant === 4
+            ? MATERIAL_ROLE.lapis
             : MATERIAL_ROLE.limestone
-      }
-    ));
+        }
+      ));
+    }
   }
 
   // Each district has one large, decipherable facade motif. These broad forms
@@ -652,8 +718,8 @@ export function createProductionGateCanopyGeometry(
   const samples = lod === 0 ? 18 : lod === 1 ? 12 : 7;
   const start = 0.08 * Math.PI;
   const end = 0.92 * Math.PI;
-  const outerRadius = variant === 3 ? 0.58 : variant === 2 ? 0.56 : 0.54;
-  const innerRadius = variant === 3 ? 0.33 : variant === 2 ? 0.31 : 0.32;
+  const outerRadius = variant === 3 ? 0.525 : variant === 2 ? 0.56 : 0.54;
+  const innerRadius = variant === 3 ? 0.355 : variant === 2 ? 0.31 : 0.32;
 
   // The Archive uses a high pointed vault; the other districts use genuinely
   // different round, scalloped or domed load paths rather than recoloured
@@ -809,26 +875,40 @@ export function createProductionGateCanopyGeometry(
       }));
     }
   } else if (lod < 2 && variant === 3) {
-    parts.push(styled(new THREE.SphereGeometry(
-      0.17,
-      lod === 0 ? 16 : 10,
-      lod === 0 ? 8 : 5,
-      0,
-      Math.PI * 2,
-      0,
-      Math.PI * 0.55
-    ), {
-      position: new THREE.Vector3(0, 0.49, 0.12),
-      scale: new THREE.Vector3(1.55, 0.72, 0.82),
-      colour: NACRE,
-      glow: 0.045,
-      materialRole: MATERIAL_ROLE.nacre
+    // Three small palace lantern-domes create a layered royal skyline. The old
+    // single oversized hemisphere and diamond read as an unrelated concrete
+    // building pasted above the gate, especially when it filled a phone frame.
+    const lanterns = lod === 0 ? [-0.29, 0, 0.29] : [-0.24, 0.24];
+    parts.push(styled(stoneBlock(0.82, 0.07, 0.28, 0.012), {
+      position: new THREE.Vector3(0, 0.4, 0.1),
+      colour: LIMESTONE,
+      glow: 0.02,
+      materialRole: MATERIAL_ROLE.limestone
     }));
-    parts.push(styled(new THREE.OctahedronGeometry(0.075, 0), {
-      position: new THREE.Vector3(0, 0.65, 0.15),
-      scale: new THREE.Vector3(0.62, 1.25, 0.62),
+    for (const [index, x] of lanterns.entries()) {
+      parts.push(styled(new THREE.SphereGeometry(
+        index === Math.floor(lanterns.length / 2) ? 0.12 : 0.1,
+        lod === 0 ? 12 : 8,
+        lod === 0 ? 6 : 4,
+        0,
+        Math.PI * 2,
+        0,
+        Math.PI * 0.52
+      ), {
+        position: new THREE.Vector3(x, 0.475, 0.12),
+        scale: new THREE.Vector3(1.08, 0.7, 0.76),
+        colour: index % 2 === 0 ? NACRE : LIMESTONE,
+        glow: 0.038,
+        materialRole: index % 2 === 0
+          ? MATERIAL_ROLE.nacre
+          : MATERIAL_ROLE.limestone
+      }));
+    }
+    parts.push(styled(new THREE.OctahedronGeometry(0.048, 0), {
+      position: new THREE.Vector3(0, 0.62, 0.15),
+      scale: new THREE.Vector3(0.58, 1.12, 0.58),
       colour: CRYSTAL,
-      glow: 0.14,
+      glow: 0.13,
       materialRole: MATERIAL_ROLE.crystal
     }));
   }

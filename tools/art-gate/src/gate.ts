@@ -9,6 +9,7 @@ import {
   checkCapture,
   checkCaptureCoverage,
   checkCreature,
+  checkMerfolk,
   checkPayload,
   checkReaction,
   checkTierSignoff,
@@ -154,6 +155,7 @@ export function runGate(
     }
     findings.push(...checkAssetBudget(asset, family));
     findings.push(...checkCreature(asset, cfg.creature));
+    findings.push(...checkMerfolk(asset, cfg.merfolk));
     findings.push(...checkAssetColliderTruth(
       asset,
       family,

@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { createGlowfinRigGeometry } from "../../src/render/glowfinGeometry.ts";
+import { HeroMerfolkGuardian } from "../../src/render/merfolkGuardian.ts";
 import {
   createProductionAnemone,
   createProductionBranchCoral,
@@ -102,6 +103,15 @@ const eyeMaterial = new THREE.MeshStandardMaterial({
   metalness: 0,
   emissive: 0x388bc4,
   emissiveIntensity: 0.7
+});
+const merfolkMaterial = new THREE.MeshStandardMaterial({
+  name: "Tidekeeper_PBR",
+  color: 0xffffff,
+  vertexColors: true,
+  roughness: 0.48,
+  metalness: 0.04,
+  emissive: 0x071d35,
+  emissiveIntensity: 0.22
 });
 
 function productionMesh(geometry, name, material, metadata = {}) {
@@ -213,6 +223,65 @@ function glowfinClips() {
   ];
 }
 
+function quaternionValues(axis, angles) {
+  return angles.flatMap((angle) => {
+    const quaternion = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+    return [quaternion.x, quaternion.y, quaternion.z, quaternion.w];
+  });
+}
+
+function merfolkClips() {
+  const zAxis = new THREE.Vector3(0, 0, 1);
+  const yAxis = new THREE.Vector3(0, 1, 0);
+  return [
+    new THREE.AnimationClip("hover", 2, [
+      new THREE.VectorKeyframeTrack(
+        "hero-merfolk-guardian.position",
+        [0, 1, 2],
+        [0, 0, 0, 0, 0.08, 0, 0, 0, 0]
+      )
+    ]),
+    new THREE.AnimationClip("swim", 0.8, [
+      new THREE.QuaternionKeyframeTrack(
+        "scaled-tail.quaternion",
+        [0, 0.2, 0.4, 0.6, 0.8],
+        quaternionValues(zAxis, [0, 0.16, 0, -0.16, 0])
+      ),
+      new THREE.QuaternionKeyframeTrack(
+        "MerfolkTailMid.quaternion",
+        [0, 0.2, 0.4, 0.6, 0.8],
+        quaternionValues(zAxis, [0, -0.3, 0, 0.3, 0])
+      )
+    ]),
+    new THREE.AnimationClip("turn", 1.2, [
+      new THREE.QuaternionKeyframeTrack(
+        "hero-merfolk-guardian.quaternion",
+        [0, 0.6, 1.2],
+        quaternionValues(yAxis, [-0.28, 0.28, -0.28])
+      )
+    ]),
+    new THREE.AnimationClip("patrol", 2.4, [
+      new THREE.VectorKeyframeTrack(
+        "hero-merfolk-guardian.position",
+        [0, 1.2, 2.4],
+        [-0.2, 0, 0, 0.2, 0.05, 0, -0.2, 0, 0]
+      )
+    ]),
+    new THREE.AnimationClip("greeting", 1.15, [
+      new THREE.QuaternionKeyframeTrack(
+        "MerfolkLeftUpperArm.quaternion",
+        [0, 0.45, 0.8, 1.15],
+        quaternionValues(zAxis, [-0.32, -1.2, -1.08, -0.32])
+      ),
+      new THREE.QuaternionKeyframeTrack(
+        "MerfolkLeftForearm.quaternion",
+        [0, 0.45, 0.8, 1.15],
+        quaternionValues(zAxis, [-0.18, -0.8, -0.5, -0.18])
+      )
+    ])
+  ];
+}
+
 function createGlowfinAsset() {
   const rig = createGlowfinRigGeometry(tuning, 0);
   const group = new THREE.Group();
@@ -262,6 +331,26 @@ function createGlowfinAsset() {
   );
   group.add(body, eyes);
   return group;
+}
+
+function createHeroMerfolkAsset() {
+  const guardian = new HeroMerfolkGuardian(
+    merfolkMaterial,
+    tuning.lane.halfWidth
+  );
+  guardian.update(0, 0, 0, { anchor: 24, side: 1 });
+  guardian.object.position.set(0, 0, 0);
+  guardian.object.rotation.set(0, 0, 0);
+  guardian.object.scale.setScalar(1);
+  guardian.object.visible = true;
+  guardian.object.userData = {
+    ...guardian.object.userData,
+    triangleCount: guardian.triangleCount,
+    drawCount: guardian.drawCount,
+    laneSafe: true,
+    runtimeAnimationDriver: guardian.animationDriver
+  };
+  return guardian.object;
 }
 
 function createGateAsset() {
@@ -318,6 +407,11 @@ function createKit(name, families, material) {
 
 await mkdir(outputDirectory, { recursive: true });
 await writeGlb("glowfin-v1.glb", createGlowfinAsset(), glowfinClips());
+await writeGlb(
+  "hero-merfolk-v1.glb",
+  createHeroMerfolkAsset(),
+  merfolkClips()
+);
 await writeGlb("moon-gate-v1.glb", createGateAsset());
 await writeGlb("ruin-kit-v1.glb", createKit("RuinKit", [
   { name: "BrokenTower", create: createProductionTower, lods: [0, 1, 2] },

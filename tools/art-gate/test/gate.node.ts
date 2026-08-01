@@ -6,6 +6,7 @@ import { describe, test } from "node:test";
 import {
   checkCapture,
   checkCreature,
+  checkMerfolk,
   checkTrail,
   checkWorldQuality,
   percentile
@@ -67,16 +68,33 @@ describe("integrated gate fixtures", () => {
     assert.ok(codes(result.findings).includes("PROCEDURAL_BASELINE_NOT_RELEASEABLE"));
   });
 
-  test("missing moonfolk or reef species cannot masquerade as a premium world", () => {
+  test("missing hero merfolk or reef species cannot masquerade as a premium world", () => {
     const input = load("gate-input.pass.json");
     input.worldQuality.life = input.worldQuality.life.filter(
-      (signature) => signature !== "moonfolk-guardian"
+      (signature) => signature !== "hero-merfolk-guardian"
     );
     input.worldQuality.reef = input.worldQuality.reef.slice(0, 4);
     const findings = checkWorldQuality(input, config.worldQuality);
     const found = new Set(codes(findings));
     assert.ok(found.has("PREMIUM_WORLD_FAMILY_MISSING"));
     assert.ok(found.has("PREMIUM_WORLD_DIVERSITY_BELOW_FLOOR"));
+  });
+
+  test("a faceless or static merfolk asset cannot pass the character gate", () => {
+    const input = load("gate-input.pass.json");
+    const hero = input.assets.find((asset) => asset.family === "heroMerfolk");
+    assert.ok(hero);
+    hero.parts = hero.parts?.filter((part) => part !== "readable-face");
+    hero.clips = hero.clips?.filter((clip) => clip !== "greeting");
+    hero.readableHeightPixels = 32;
+    hero.readableFaceHeightPixels = 11;
+    hero.readableEyeDiameterPixels = 2;
+    const found = new Set(codes(checkMerfolk(hero, config.merfolk)));
+    assert.ok(found.has("MERFOLK_CHARACTER_PARTS_MISSING"));
+    assert.ok(found.has("MERFOLK_ANIMATION_CLIPS_MISSING"));
+    assert.ok(found.has("MERFOLK_PHONE_HEIGHT_BELOW_FLOOR"));
+    assert.ok(found.has("MERFOLK_FACE_HEIGHT_BELOW_FLOOR"));
+    assert.ok(found.has("MERFOLK_EYE_SIZE_BELOW_FLOOR"));
   });
 });
 
@@ -301,6 +319,19 @@ describe("capture evidence cannot pass by omission", () => {
     const found = codes(checkCapture(capture, config));
     assert.ok(!found.includes("FRAME_CONTRAST_BELOW_FLOOR"));
     assert.ok(found.includes("OBSTACLE_CONTRAST_BELOW_FLOOR"));
+  });
+
+  test("a hero merfolk that shrinks below phone readability blocks capture", () => {
+    const capture = baseCapture();
+    capture.heroMerfolkHeightPixels = 40;
+    capture.heroMerfolkFaceHeightPixels = 12;
+    capture.heroMerfolkEyeDiameterPixels = 2;
+    assert.ok(codes(checkCapture(capture, config))
+      .includes("MERFOLK_PHONE_HEIGHT_BELOW_FLOOR"));
+    assert.ok(codes(checkCapture(capture, config))
+      .includes("MERFOLK_FACE_HEIGHT_BELOW_FLOOR"));
+    assert.ok(codes(checkCapture(capture, config))
+      .includes("MERFOLK_EYE_SIZE_BELOW_FLOOR"));
   });
 
   test("CI emulation cannot satisfy sign-off source policy", () => {

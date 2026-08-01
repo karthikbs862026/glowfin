@@ -8,6 +8,7 @@
  */
 import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
+import type { Gate } from "../sim/course";
 import {
   createProductionAnemone,
   createProductionBrainCoral,
@@ -33,6 +34,7 @@ import {
   createMoonGardenMaterial,
   updateMoonGardenMaterial
 } from "./moonGardenMaterial";
+import { HeroMerfolkGuardian } from "./merfolkGuardian";
 
 function hash01(a: number, salt: number): number {
   let h = Math.imul(a ^ salt, 0x27d4eb2d);
@@ -105,6 +107,11 @@ export interface MoonGardenTextures {
 
 const POINT_COUNT = 193;
 
+interface HeroStage {
+  anchor: number;
+  side: -1 | 1;
+}
+
 export class Environment {
   readonly objects: THREE.Object3D[] = [];
 
@@ -114,6 +121,7 @@ export class Environment {
   private readonly reef: readonly InstancedVolumeFamily[];
   private readonly life: readonly InstancedVolumeFamily[];
   private readonly props: readonly InstancedVolumeFamily[];
+  private readonly heroMerfolk: HeroMerfolkGuardian;
   private readonly godRays: THREE.InstancedMesh;
   private readonly moonAndMotes: THREE.Points;
   private readonly pointPositions: THREE.BufferAttribute;
@@ -200,6 +208,10 @@ export class Environment {
         false
       )
     );
+    this.heroMerfolk = new HeroMerfolkGuardian(
+      this.volumeMaterial,
+      this.cfg.lane.halfWidth
+    );
     const propGeometry = [
       createProductionMerfolkMonument(),
       createProductionTideSpear(),
@@ -219,6 +231,7 @@ export class Environment {
       this.skyline.object,
       ...this.reef.map((family) => family.object),
       ...this.life.map((family) => family.object),
+      this.heroMerfolk.object,
       ...this.props.map((family) => family.object)
     );
 
@@ -325,16 +338,39 @@ export class Environment {
 
   setDensity(fraction: number): void {
     this.density = THREE.MathUtils.clamp(fraction, 0.25, 1);
+    this.heroMerfolk.setDetail(this.density);
   }
 
   reset(): void {
     // All placements derive from simulation distance; no retained response state.
   }
 
+  heroMerfolkScreenHeightPixels(
+    camera: THREE.Camera,
+    viewportHeightPixels: number
+  ): number {
+    return this.heroMerfolk.screenHeightPixels(camera, viewportHeightPixels);
+  }
+
+  heroMerfolkFaceHeightPixels(
+    camera: THREE.Camera,
+    viewportHeightPixels: number
+  ): number {
+    return this.heroMerfolk.faceHeightPixels(camera, viewportHeightPixels);
+  }
+
+  heroMerfolkEyeDiameterPixels(
+    camera: THREE.Camera,
+    viewportHeightPixels: number
+  ): number {
+    return this.heroMerfolk.eyeDiameterPixels(camera, viewportHeightPixels);
+  }
+
   update(
     forwardDistance: number,
     lateralPosition: number,
-    momentumFraction: number
+    momentumFraction: number,
+    gates: readonly Gate[] = []
   ): void {
     const time = forwardDistance /
       Math.max(1, this.cfg.speed.forwardAtZeroMomentum);
@@ -344,11 +380,17 @@ export class Environment {
       this.position.set(lateralPosition, -0.15, -forwardDistance),
       momentumFraction
     );
+    const heroStage = this.resolveHeroStage(forwardDistance, gates);
     this.updateArchitecture(forwardDistance);
     this.updateSkyline(forwardDistance);
-    this.updateReef(forwardDistance, lateralPosition, momentumFraction);
-    this.updateProps(forwardDistance);
-    this.updateLife(forwardDistance, time);
+    this.updateReef(
+      forwardDistance,
+      lateralPosition,
+      momentumFraction,
+      heroStage
+    );
+    this.updateProps(forwardDistance, heroStage);
+    this.updateLife(forwardDistance, time, momentumFraction, heroStage);
     this.updateMoonAndMotes(forwardDistance, time);
     this.updateGodRays(forwardDistance, momentumFraction);
   }
@@ -467,7 +509,8 @@ export class Environment {
   private updateReef(
     forwardDistance: number,
     lateralPosition: number,
-    momentumFraction: number
+    momentumFraction: number,
+    heroStage: HeroStage
   ): void {
     const env = this.cfg.environment;
     const halfWidth = this.cfg.lane.halfWidth;
@@ -520,11 +563,22 @@ export class Environment {
           0,
           1
         );
-        const lateral = side * lerp(
+        let lateral = side * lerp(
           halfWidth + halfVisualWidth + 0.12,
           halfWidth + halfVisualWidth + 3.6,
           depthIntoBank
         );
+        // Reserve a deliberate character alcove around the staged guardian.
+        // Reef remains dense, but it frames rather than buries her silhouette.
+        if (
+          side === heroStage.side &&
+          Math.abs(zDistance - heroStage.anchor) < 12.5
+        ) {
+          lateral = side * Math.max(
+            Math.abs(lateral),
+            halfWidth + halfVisualWidth + 3.45
+          );
+        }
         this.position.set(lateral, -1.02, -zDistance);
         this.quaternion.setFromEuler(new THREE.Euler(
           0,
@@ -558,7 +612,10 @@ export class Environment {
     for (const family of this.reef) family.finish();
   }
 
-  private updateProps(forwardDistance: number): void {
+  private updateProps(
+    forwardDistance: number,
+    heroStage: HeroStage
+  ): void {
     for (const family of this.props) family.begin();
     const spacing = 31;
     const count = Math.max(5, Math.round(8 * this.density));
@@ -571,15 +628,22 @@ export class Environment {
       const side = hash01(band, 731) < 0.5 ? -1 : 1;
       const size = lerp(1.08, variant === 0 ? 1.52 : 1.34, hash01(band, 732));
       const safeInnerEdge = this.cfg.lane.halfWidth + family.halfWidth * size + 0.7;
-      const lateral = side * lerp(
+      let lateral = side * lerp(
         safeInnerEdge,
         safeInnerEdge + 2.8,
         Math.pow(hash01(band, 733), 1.7)
       );
+      const zDistance = band * spacing + hash01(band, 734) * 7;
+      if (
+        side === heroStage.side &&
+        Math.abs(zDistance - heroStage.anchor) < 9
+      ) {
+        lateral += side * 2.4;
+      }
       this.position.set(
         lateral,
         -0.98,
-        -(band * spacing + hash01(band, 734) * 7)
+        -zDistance
       );
       this.quaternion.setFromEuler(new THREE.Euler(
         0,
@@ -594,7 +658,12 @@ export class Environment {
     for (const family of this.props) family.finish();
   }
 
-  private updateLife(forwardDistance: number, time: number): void {
+  private updateLife(
+    forwardDistance: number,
+    time: number,
+    momentumFraction: number,
+    heroStage: HeroStage
+  ): void {
     for (const family of this.life) family.begin();
 
     const schoolCount = Math.max(3, Math.round(5 * this.density));
@@ -674,24 +743,26 @@ export class Environment {
       this.life[2]?.add(this.matrix, this.colour);
     }
 
-    const guardianCount = Math.max(2, Math.round(4 * this.density));
-    const guardianSpacing = 38;
-    const guardianFirst = Math.ceil((forwardDistance + 16) / guardianSpacing);
-    for (let index = 0; index < guardianCount; index++) {
-      const band = guardianFirst + index;
+    // Lower-detail citizens occupy the upper midground. The articulated hero
+    // below is staged independently at phone-readable scale beside the lane.
+    const citizenCount = Math.max(2, Math.round(5 * this.density));
+    const citizenSpacing = 42;
+    const citizenFirst = Math.ceil((forwardDistance + 28) / citizenSpacing);
+    for (let index = 0; index < citizenCount; index++) {
+      const band = citizenFirst + index;
       const side = hash01(band, 841) < 0.5 ? -1 : 1;
       const phase = time * 0.46 + band * 1.37;
       this.position.set(
-        side * lerp(3.2, 6.4, hash01(band, 842)) + Math.sin(phase) * 0.62,
-        7.2 + hash01(band, 843) * 3.2 + Math.sin(phase * 1.7) * 0.34,
-        -(band * guardianSpacing + hash01(band, 844) * 9)
+        side * lerp(5.4, 8.2, hash01(band, 842)) + Math.sin(phase) * 0.62,
+        6.4 + hash01(band, 843) * 3.4 + Math.sin(phase * 1.7) * 0.34,
+        -(band * citizenSpacing + hash01(band, 844) * 9)
       );
       this.quaternion.setFromEuler(new THREE.Euler(
         0,
         side > 0 ? Math.PI * 0.64 : -Math.PI * 0.64,
         side * 0.26 + Math.sin(phase) * 0.1
       ));
-      const size = lerp(1.28, 1.72, hash01(band, 845));
+      const size = lerp(0.92, 1.28, hash01(band, 845));
       this.scale.set(side * size, size, size);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.86, 0.82, 1);
@@ -699,6 +770,42 @@ export class Environment {
     }
 
     for (const family of this.life) family.finish();
+    this.heroMerfolk.update(
+      forwardDistance,
+      time,
+      momentumFraction,
+      heroStage
+    );
+  }
+
+  private resolveHeroStage(
+    forwardDistance: number,
+    gates: readonly Gate[]
+  ): HeroStage {
+    const gate = gates
+      .filter((candidate) => {
+        const ahead = candidate.distance - forwardDistance;
+        return ahead >= 18 && ahead <= 72;
+      })
+      .sort((left, right) => left.distance - right.distance)[0];
+    if (gate) {
+      let signature = gate.artVariant ?? 0;
+      if (gate.artVariant === undefined) {
+        for (const character of gate.templateId) {
+          signature = (signature * 31 + character.charCodeAt(0)) >>> 0;
+        }
+      }
+      return {
+        anchor: gate.distance,
+        side: signature % 2 === 0 ? 1 : -1
+      };
+    }
+
+    const band = Math.floor((forwardDistance + 30) / 64);
+    return {
+      anchor: band * 64 + 27,
+      side: band % 2 === 0 ? 1 : -1
+    };
   }
 
   private updateMoonAndMotes(forwardDistance: number, time: number): void {
@@ -769,6 +876,7 @@ export class Environment {
   }
 
   dispose(): void {
+    this.heroMerfolk.dispose();
     for (const item of this.disposables) item.dispose();
   }
 }

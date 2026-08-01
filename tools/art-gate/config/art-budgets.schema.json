@@ -15,6 +15,7 @@
     "beauty",
     "worldQuality",
     "creature",
+    "merfolk",
     "trail",
     "performance",
     "assetFamilies",
@@ -46,6 +47,21 @@
       ]
     },
     "creature": { "type": "object" },
+    "merfolk": {
+      "type": "object",
+      "required": [
+        "minimumReadableHeightPixels",
+        "minimumFaceHeightPixels",
+        "minimumEyeDiameterPixels",
+        "maxArticulatedJoints",
+        "maxMaterials",
+        "requiredRecognitionLabel",
+        "requiredParts",
+        "requiredStates",
+        "requiredClips",
+        "animationDriver"
+      ]
+    },
     "trail": { "type": "object" },
     "performance": { "type": "object" },
     "assetFamilies": {

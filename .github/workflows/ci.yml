@@ -57,6 +57,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Hosted mount safety check
+        run: npm run check:mounted-build
+
       - name: Bundle size check
         run: npm run check:bundle-size
 

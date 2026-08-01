@@ -35,7 +35,7 @@ export const GATE_FAMILIES = [
     id: 3,
     key: "nacre-palace",
     name: "Nacre Palace",
-    silhouette: "domed-royal-portal",
+    silhouette: "layered-shell-court-with-lantern-domes",
     canopy: true,
     materials: ["nacre", "limestone", "bronze"]
   },
@@ -73,7 +73,8 @@ export const PREMIUM_WORLD_CONTRACT = {
     "moon-minnow-school",
     "lantern-jelly",
     "ribbon-manta",
-    "moonfolk-guardian"
+    "merfolk-citizen",
+    "hero-merfolk-guardian"
   ],
   requiredProps: [
     "merfolk-monument",
@@ -91,7 +92,7 @@ export const PREMIUM_WORLD_CONTRACT = {
   maxRepeatedGateFamilyRun: 1,
   minimumDistinctVisibleGateFamilies: 3,
   minimumDistinctReefFamilies: 6,
-  minimumAmbientLifeFamilies: 4,
+  minimumAmbientLifeFamilies: 5,
   minimumPropFamilies: 3
 } as const;
 

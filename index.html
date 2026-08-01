@@ -105,7 +105,50 @@
       }
       #hud-final-detail { font-size: 14px; color: var(--dim); }
       #hud-restart { margin-top: 18px; font-size: 14px; color: var(--dim); }
+
+      #startup-error {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 32px;
+        background: rgba(4, 6, 15, 0.94);
+        color: var(--ink);
+        text-align: center;
+      }
+      body[data-startup-error="true"] #startup-error { display: flex; }
+      #startup-error strong { font-size: 22px; }
+      #startup-error span { max-width: 28rem; color: var(--dim); }
+      #startup-error button {
+        min-height: 44px;
+        margin-top: 4px;
+        padding: 0 22px;
+        border: 1px solid rgba(128, 218, 241, 0.55);
+        border-radius: 999px;
+        background: rgba(53, 208, 255, 0.14);
+        color: var(--ink);
+        font: inherit;
+        cursor: pointer;
+      }
     </style>
+    <script>
+      (() => {
+        let startupWindowOpen = true;
+        const revealStartupError = () => {
+          if (startupWindowOpen && document.body) {
+            document.body.dataset.startupError = "true";
+          }
+        };
+
+        window.addEventListener("error", revealStartupError);
+        window.addEventListener("unhandledrejection", revealStartupError);
+        window.setTimeout(() => { startupWindowOpen = false; }, 10000);
+      })();
+    </script>
   </head>
   <body>
     <canvas id="glowfin-canvas"></canvas>
@@ -124,6 +167,12 @@
       <div id="hud-final-score">0</div>
       <div id="hud-final-detail"></div>
       <div id="hud-restart">Tap to dive again</div>
+    </div>
+
+    <div id="startup-error" role="alert">
+      <strong>Glowfin could not start</strong>
+      <span>The underwater world did not finish loading on this device.</span>
+      <button type="button" onclick="window.location.reload()">Reload game</button>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

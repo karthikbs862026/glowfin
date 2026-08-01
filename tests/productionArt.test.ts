@@ -131,6 +131,17 @@ describe("Phase 3B art geometry inventory", () => {
     }
   });
 
+  it("keeps the Nacre Palace as a layered shell court, not a giant dome", () => {
+    for (const lod of [0, 1, 2] as const) {
+      const palace = createProductionGateCanopyGeometry(lod, 3);
+      palace.computeBoundingBox();
+      expect(palace.boundingBox?.max.y).toBeLessThan(0.7);
+      expect(palace.boundingBox?.max.x).toBeGreaterThanOrEqual(0.6);
+      expect(palace.boundingBox?.min.x).toBeLessThanOrEqual(-0.6);
+      palace.dispose();
+    }
+  });
+
   it("records the three-blade kelp cluster LODs exactly", () => {
     for (const lod of [0, 1] as const) {
       const geometry = createProductionKelp(lod);

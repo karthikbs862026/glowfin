@@ -225,6 +225,157 @@ export function checkCreature(
   return findings;
 }
 
+/**
+ * Hero-merfolk checks are deliberately separate from generic ambient life.
+ * A triangle-valid silhouette cannot satisfy this contract without a readable
+ * face, articulated character parts and deterministic character behaviours.
+ */
+export function checkMerfolk(
+  asset: AssetManifest,
+  cfg: GateConfig["merfolk"]
+): Finding[] {
+  if (asset.family !== "heroMerfolk") return [];
+  const findings: Finding[] = [];
+  const missing = (code: string, message: string) => findings.push(result(
+    code,
+    "blocker",
+    message,
+    "Phase 3B Merfolk Character Pass",
+    { asset: asset.name }
+  ));
+
+  if (asset.recognitionLabel !== cfg.requiredRecognitionLabel) {
+    missing(
+      "MERFOLK_RECOGNITION_LABEL_MISSING",
+      `Hero must be explicitly recognizable as "${cfg.requiredRecognitionLabel}".`
+    );
+  }
+  if (asset.readableHeightPixels === undefined) {
+    missing(
+      "MERFOLK_PHONE_HEIGHT_NOT_MEASURED",
+      "Hero manifest omits portrait gameplay height evidence."
+    );
+  } else if (asset.readableHeightPixels < cfg.minimumReadableHeightPixels) {
+    findings.push(result(
+      "MERFOLK_PHONE_HEIGHT_BELOW_FLOOR",
+      "blocker",
+      "Hero is too small to read as a character in portrait gameplay.",
+      "Phase 3B Merfolk Character Pass",
+      {
+        asset: asset.name,
+        observed: asset.readableHeightPixels,
+        limit: cfg.minimumReadableHeightPixels
+      }
+    ));
+  }
+  if (asset.readableFaceHeightPixels === undefined) {
+    missing(
+      "MERFOLK_FACE_HEIGHT_NOT_MEASURED",
+      "Hero manifest omits portrait face-height evidence."
+    );
+  } else if (
+    asset.readableFaceHeightPixels < cfg.minimumFaceHeightPixels
+  ) {
+    findings.push(result(
+      "MERFOLK_FACE_HEIGHT_BELOW_FLOOR",
+      "blocker",
+      "Hero face is too small to remain legible in portrait gameplay.",
+      "Phase 3B Merfolk Character Pass",
+      {
+        asset: asset.name,
+        observed: asset.readableFaceHeightPixels,
+        limit: cfg.minimumFaceHeightPixels
+      }
+    ));
+  }
+  if (asset.readableEyeDiameterPixels === undefined) {
+    missing(
+      "MERFOLK_EYE_SIZE_NOT_MEASURED",
+      "Hero manifest omits portrait eye-size evidence."
+    );
+  } else if (
+    asset.readableEyeDiameterPixels < cfg.minimumEyeDiameterPixels
+  ) {
+    findings.push(result(
+      "MERFOLK_EYE_SIZE_BELOW_FLOOR",
+      "blocker",
+      "Hero eyes are too small to remain distinct from the face and hair.",
+      "Phase 3B Merfolk Character Pass",
+      {
+        asset: asset.name,
+        observed: asset.readableEyeDiameterPixels,
+        limit: cfg.minimumEyeDiameterPixels
+      }
+    ));
+  }
+  if (asset.articulatedJoints === undefined) {
+    missing(
+      "MERFOLK_JOINT_COUNT_NOT_MEASURED",
+      "Hero manifest omits articulated-joint evidence."
+    );
+  } else if (
+    asset.articulatedJoints <= 0 ||
+    asset.articulatedJoints > cfg.maxArticulatedJoints
+  ) {
+    findings.push(result(
+      "MERFOLK_JOINT_COUNT_OUTSIDE_BUDGET",
+      "blocker",
+      "Hero joint count is invalid or exceeds the mobile budget.",
+      "Phase 3B Merfolk Character Pass",
+      {
+        asset: asset.name,
+        observed: asset.articulatedJoints,
+        limit: cfg.maxArticulatedJoints
+      }
+    ));
+  }
+  if (asset.materials > cfg.maxMaterials) {
+    findings.push(result(
+      "MERFOLK_MATERIAL_COUNT_EXCEEDED",
+      "blocker",
+      "Hero uses more materials than the shared Moon-Garden budget allows.",
+      "Phase 3B Merfolk Character Pass",
+      {
+        asset: asset.name,
+        observed: asset.materials,
+        limit: cfg.maxMaterials
+      }
+    ));
+  }
+
+  const parts = asset.parts ?? [];
+  const missingParts = cfg.requiredParts.filter((part) => !parts.includes(part));
+  if (missingParts.length > 0) {
+    missing(
+      "MERFOLK_CHARACTER_PARTS_MISSING",
+      `Missing hero parts: ${missingParts.join(", ")}.`
+    );
+  }
+  const clips = asset.clips ?? [];
+  const missingClips = cfg.requiredClips.filter((clip) => !clips.includes(clip));
+  if (missingClips.length > 0) {
+    missing(
+      "MERFOLK_ANIMATION_CLIPS_MISSING",
+      `Missing hero behaviours: ${missingClips.join(", ")}.`
+    );
+  }
+  const states = asset.observedStates ?? [];
+  const missingStates = cfg.requiredStates.filter((state) => !states.includes(state));
+  if (missingStates.length > 0) {
+    missing(
+      "MERFOLK_ANIMATION_STATES_MISSING",
+      `Missing observed hero states: ${missingStates.join(", ")}.`
+    );
+  }
+  if (asset.animationDriver !== cfg.animationDriver) {
+    missing(
+      "MERFOLK_ANIMATION_DRIVER_MISMATCH",
+      "Hero animation must be driven by deterministic simulation state."
+    );
+  }
+  return findings;
+}
+
 export function checkTrail(
   input: GateInput,
   cfg: GateConfig["trail"]
@@ -496,6 +647,51 @@ export function checkCapture(
       `${capture.godRayMeshes} god-ray instances at ${where}.`,
       "Art Bible §8 / §10",
       { observed: capture.godRayMeshes, limit: cfg.scene.godRayMeshes.hard }
+    ));
+  }
+  if (
+    capture.heroMerfolkHeightPixels <
+    cfg.merfolk.minimumReadableHeightPixels
+  ) {
+    findings.push(result(
+      "MERFOLK_PHONE_HEIGHT_BELOW_FLOOR",
+      "blocker",
+      `Hero merfolk is ${capture.heroMerfolkHeightPixels.toFixed(1)}px tall at ${where}.`,
+      "Phase 3B Merfolk Character Pass",
+      {
+        observed: capture.heroMerfolkHeightPixels,
+        limit: cfg.merfolk.minimumReadableHeightPixels
+      }
+    ));
+  }
+  if (
+    capture.heroMerfolkFaceHeightPixels <
+    cfg.merfolk.minimumFaceHeightPixels
+  ) {
+    findings.push(result(
+      "MERFOLK_FACE_HEIGHT_BELOW_FLOOR",
+      "blocker",
+      `Hero face is ${capture.heroMerfolkFaceHeightPixels.toFixed(1)}px tall at ${where}.`,
+      "Phase 3B Merfolk Character Pass",
+      {
+        observed: capture.heroMerfolkFaceHeightPixels,
+        limit: cfg.merfolk.minimumFaceHeightPixels
+      }
+    ));
+  }
+  if (
+    capture.heroMerfolkEyeDiameterPixels <
+    cfg.merfolk.minimumEyeDiameterPixels
+  ) {
+    findings.push(result(
+      "MERFOLK_EYE_SIZE_BELOW_FLOOR",
+      "blocker",
+      `Hero eyes are ${capture.heroMerfolkEyeDiameterPixels.toFixed(1)}px tall at ${where}.`,
+      "Phase 3B Merfolk Character Pass",
+      {
+        observed: capture.heroMerfolkEyeDiameterPixels,
+        limit: cfg.merfolk.minimumEyeDiameterPixels
+      }
     ));
   }
 

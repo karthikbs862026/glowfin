@@ -19,6 +19,9 @@ viewer must identify the following by silhouette and value grouping alone:
 - a cute round axolotl-puffer Glowfin, facing the obstacle corridor, with broad
   scalloped manta fins, one central teardrop tail, three rounded external gill
   leaves per side and two high lateral eyes visible around the body crown;
+- a Tidekeeper mermaid guardian with a readable face and eyes, flowing hair,
+  articulated arms and hands, shell/lapis regalia, a scaled tail, broad fins
+  and a tide-spear;
 - distant drowned towers, minnows, jellies and rays with real volume.
 
 ## Runtime asset set
@@ -26,6 +29,7 @@ viewer must identify the following by silhouette and value grouping alone:
 | GLB | Required contents | Runtime rule |
 | --- | --- | --- |
 | `glowfin-v1.glb` | One skinned body primitive, one combined high-lateral eye primitive, 10–18 bones, calm/propulsion/collision/recovery clips | Forward axis is negative Z; side-set eyes remain crown-visible; simulation selects and blends clips; two materials maximum |
+| `hero-merfolk-v1.glb` | Tidekeeper hierarchy with face, eyes, hair, hands, shell cuirass, pendant, three-joint tail, caudal/side fins and spear; hover/swim/turn/patrol/greeting clips | Gate-side staging only; never collidable; one material and no more than 16 draws; at the tested phone view require ≥72 px overall, ≥22 px face and ≥4.5 px eyes |
 | `moon-gate-v1.glb` | Three asymmetric wall-fragment variants, mirrored-safe inner pier, broken voussoirs, dark channel and rubble base across LOD0–2 | Inner cyan edge remains a separate collider-derived runtime mesh |
 | `ruin-kit-v1.glb` | Broken tower, collapsed arch and forked spire across LOD0–2 | Outside-lane instancing only |
 | `reef-kit-v1.glb` | Staghorn, sea fan, anemone and kelp families across approved LODs | Bounds drive lane-safe placement |
@@ -54,6 +58,8 @@ orientation, pivot and export presets so a later revision is reproducible.
 - Living reef: one shared atlas with species-separated hues and a local-response
   emissive mask.
 - Glowfin: sea-glass body plus eye/gill emissive mask; no white plastic.
+- Tidekeeper: one shared shell/skin/hair/tail atlas with bronze, lapis, coral and
+  crystal masks; facial features cannot depend on bloom.
 - All maps use baked AO and roughness breakup. World lighting supplies form;
   emissive colour may support silhouette but cannot replace light and shadow.
 
@@ -83,6 +89,10 @@ orientation, pivot and export presets so a later revision is reproducible.
    manta fins, centered teardrop tail, six separated rounded gill leaves and two
    high side-set eyes. Missing eyes or an inward camera-facing facial mask both
    block acceptance.
+9. The hero Tidekeeper must remain at least 72 portrait pixels tall across the
+   complete render matrix, with a face at least 22 px tall and either eye at
+   least 4.5 px. She must retain all required character parts and five named
+   animation clips. CI blocks a faceless, static or undersized replacement.
 
 ## Production order
 
@@ -90,8 +100,10 @@ orientation, pivot and export presets so a later revision is reproducible.
    the perceived quality ceiling.
 2. Glowfin: final sculpt, rig, rear-eye read and five simulation-driven states.
 3. Ruin kit and distant skyline: depth hierarchy without repeated silhouettes.
-4. Ambient creatures: volumetric motion replacing the final atlas dependency.
-5. PBR/light polish, texture compression, full render matrix and device soak.
+4. Tidekeeper: final sculpt, facial rig, cloth/hair dynamics and five authored
+   animation clips, preserving the approved gate-side silhouette and budgets.
+5. Ambient creatures: volumetric motion replacing the final atlas dependency.
+6. PBR/light polish, texture compression, full render matrix and device soak.
 
 The code-native production-transition meshes on PR #7 are the measurable
 silhouette/layout contract for these GLBs. They are not the final sculpt source.

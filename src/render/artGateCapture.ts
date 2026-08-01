@@ -183,6 +183,9 @@ export function runArtGateCapture(
       textureMemoryMB: artStats.textureMemoryMB,
       activeMaterials: artStats.activeMaterials,
       godRayMeshes: artStats.godRayMeshes,
+      heroMerfolkHeightPixels: artStats.heroMerfolkHeightPixels,
+      heroMerfolkFaceHeightPixels: artStats.heroMerfolkFaceHeightPixels,
+      heroMerfolkEyeDiameterPixels: artStats.heroMerfolkEyeDiameterPixels,
       frameContrastRatios: report.ratios,
       obstacles: [{
         obstacleId: "moon-garden-wall-fragments",

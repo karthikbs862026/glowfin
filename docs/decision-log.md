@@ -399,3 +399,35 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Lower bloom, exposure and god-ray energy; cap portrait clipped highlights at
   1.2%. Keep PR #7 draft pending authored GLB/PBR replacement, owner visual
   approval and Android/iOS Safari sign-off.
+
+## 2026-08-01 — Make one hero mermaid readable before scaling the cast
+
+- Adopt ADR-0022 and replace the old guardian role with one articulated
+  Tidekeeper staged in a reef-cleared alcove beside the next gate.
+- Require face, eyes, hair, hands, shell/lapis regalia, a three-joint tail,
+  broad fins, spear and independent hover/swim/turn/patrol/greeting motion.
+- Retain the smaller moonfolk silhouettes only as background citizens; they
+  cannot satisfy the hero-merfolk asset signature.
+- Fail the full portrait matrix if the Tidekeeper drops below 72 px. The
+  accepted draft checkpoint measures 74.17–97.10 px while preserving all
+  existing frame, texture, contrast, clipping and collider limits.
+- Export `hero-merfolk-v1.glb` as a hierarchy/animation handoff baseline, not
+  final DCC approval. Keep PR #7 draft pending owner and real-device review.
+
+## 2026-08-01 — Separate the Tidekeeper face from the Nacre Palace gatehouse
+
+- Owner phone evidence showed that whole-character height was an insufficient
+  proxy: hair, crown and eyes merged into one small dark patch even though the
+  Tidekeeper cleared the 72 px body-height gate.
+- Raise and simplify the hairline, enlarge the warm sclera/lapis iris/crystal
+  pupils, add broad brows, use intentionally mobile-game head proportions and
+  stage the guardian in a deeper outer alcove so she remains fully framed as
+  the player approaches the gate.
+- Add independent 390×844 minimums of 22 px for the face and 4.5 px for either
+  eye. Structural and rendered evidence must both carry these measurements.
+- Identify the object behind her correctly as the Nacre Palace gatehouse, not
+  a separate city building. Replace its oversized hemisphere, diamond cap and
+  square block pier with a low shell court, three lantern domes, curved wall
+  shoulders and rounded nacre column drums.
+- Preserve the exact collider-facing wall plane, gate opening, non-collidable
+  guardian role and one-material/16-draw character envelope.

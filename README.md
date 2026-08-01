@@ -24,8 +24,10 @@ includes:
 - an authored Moon-Garden seabed surface in place of generated road paving
 - grounded palace/observatory districts, maze-ridged brain coral, scalloped
   table coral and four supporting reef species
-- moving moonfolk guardians, larger fish schools, mantas, jellies, merfolk
-  monuments, tide-spears and conch fountains outside the collision lane
+- the articulated Tidekeeper hero mermaid, staged beside gates at a measured
+  74–97 portrait pixels, plus lower-cost moonfolk citizens, larger fish schools,
+  mantas, jellies, merfolk monuments, tide-spears and conch fountains outside
+  the collision lane
 - limestone, nacre, bronze, lapis, crystal and living-coral responses in one
   instanced material system
 - fork-crowned spires and shader-sway ribbon kelp retained as interim depth
@@ -75,7 +77,7 @@ scripts/        repo/CI and production bundle checks
 ## Open release items
 
 - [ ] `CODEOWNERS` currently points everything at one owner — update if/when the team grows
-- [ ] Replace code-native district, reef, prop and moonfolk integration sources
+- [ ] Replace code-native district, reef, prop and Tidekeeper integration sources
       with optimized authored GLB/PBR assets
 - [ ] Replace the rejected code-native Glowfin and gate treatment with approved
       authored models while preserving collider truth

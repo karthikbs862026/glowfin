@@ -21,6 +21,10 @@ import {
   PRODUCTION_ART
 } from "../../../src/art/productionManifest.ts";
 import { PREMIUM_WORLD_SIGNATURES } from "../../../src/art/premiumWorld.ts";
+import {
+  MERFOLK_ANIMATION,
+  MERFOLK_CHARACTER_CONTRACT
+} from "../../../src/art/merfolkCharacter.ts";
 
 const SAMPLE_GATE = {
   distance: 100,
@@ -282,13 +286,38 @@ function decorativeManifests(): AssetManifest[] {
       lods: [{ level: 0, triangles: PRODUCTION_ART.ribbonRay.lod0 }]
     },
     {
-      name: "moon-garden-moonfolk-guardian",
+      name: "moon-garden-merfolk-citizen",
       family: "merfolkCreature",
       collidable: false,
       materials: PRODUCTION_ART.moonfolkGuardian.materials,
       textureMemoryMB: 0,
       contour: "none",
       lods: [{ level: 0, triangles: PRODUCTION_ART.moonfolkGuardian.lod0 }]
+    },
+    {
+      name: "moon-garden-hero-merfolk-guardian",
+      family: "heroMerfolk",
+      collidable: false,
+      materials: PRODUCTION_ART.heroMerfolkGuardian.materials,
+      textureMemoryMB: 0,
+      contour: "none",
+      articulatedJoints:
+        PRODUCTION_ART.heroMerfolkGuardian.articulatedJoints,
+      readableHeightPixels:
+        PRODUCTION_ART.heroMerfolkGuardian.readableHeightPixels,
+      readableFaceHeightPixels:
+        PRODUCTION_ART.heroMerfolkGuardian.readableFaceHeightPixels,
+      readableEyeDiameterPixels:
+        PRODUCTION_ART.heroMerfolkGuardian.readableEyeDiameterPixels,
+      recognitionLabel: MERFOLK_CHARACTER_CONTRACT.recognitionLabel,
+      parts: [...MERFOLK_CHARACTER_CONTRACT.requiredParts],
+      clips: [...MERFOLK_ANIMATION.clips],
+      animationDriver: MERFOLK_ANIMATION.driver,
+      observedStates: [...MERFOLK_ANIMATION.states],
+      lods: [{
+        level: 0,
+        triangles: PRODUCTION_ART.heroMerfolkGuardian.lod0
+      }]
     },
     {
       name: "moon-garden-merfolk-monument",

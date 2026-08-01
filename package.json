@@ -22,7 +22,8 @@
     "art-gate:soak": "node --experimental-strip-types tools/art-gate/integration/soak.mjs --minutes 30 --render-fps 3 --output build/art-gate-soak.json --report build/art-gate-soak-report.txt",
     "art:export-glbs": "node --experimental-strip-types tools/art/exportProductionGlbs.mjs",
     "check:bundle-size": "node scripts/check-bundle-size.mjs",
-    "check:no-debug": "node scripts/check-no-debug.mjs"
+    "check:no-debug": "node scripts/check-no-debug.mjs",
+    "check:mounted-build": "node scripts/check-mounted-build.mjs"
   },
   "dependencies": {
     "three": "^0.165.0"
