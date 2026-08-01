@@ -817,7 +817,7 @@ export class Environment {
         gallerySide * 0.045,
         direction * (-Math.PI * 0.49) + Math.sin(phase) * 0.045
       ));
-      const size = 1.12 + index * 0.06;
+      const size = 1.28 + index * 0.06;
       this.scale.set(direction * size, size, size);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.7, 0.9, 0.98);
