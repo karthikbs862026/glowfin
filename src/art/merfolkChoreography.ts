@@ -44,6 +44,7 @@ export const MERFOLK_CHOREOGRAPHY_CONTRACT = {
   minimumLaneClearanceUnits: 0.55,
   minimumSwimmerWorldSeparationUnits: 3.2,
   minimumSwimmerTravelUnits: 0.45,
+  minimumSwimmerTravelDifferenceUnits: 0.2,
   minimumSpeedDifference: 0.08,
   maximumAnchoredDriftUnits: 0.13
 } as const;
@@ -142,13 +143,24 @@ export function sampleMerfolkChoreography({
     const track = Math.sin(phase);
     const velocity = Math.cos(phase);
     const direction: -1 | 1 = velocity >= 0 ? 1 : -1;
+    // The lower swimmer follows a broad/faster circular current; the upper
+    // swimmer follows a smaller/slower one. Circular screen-plane paths keep
+    // travel visible even when a sample begins near a sine turning point.
     const pathWidth = index === 0
-      ? 0.55 + seed * 0.1
-      : 0.48 + seed * 0.08;
+      ? 0.88 + seed * 0.08
+      : 0.5 + seed * 0.05;
     const verticalAmplitude = index === 0
-      ? 0.44 + seed * 0.08
-      : 0.58 + seed * 0.08;
-    const scale = 1.4 + seed * 0.08 + momentum * 0.035;
+      ? pathWidth
+      : pathWidth * 1.08;
+    // Wide maximum-momentum FOV previously shrank Astral swimmers below the
+    // phone floor. Compensate only the decorative cast scale; collision and
+    // course geometry remain untouched.
+    const scale = 1.46 + seed * 0.08 + momentum * 0.9;
+    const galleryDistance =
+      laneHalfWidth +
+      LOCAL_HALF_WIDTH["current-swimmer"] * scale +
+      pathWidth +
+      0.78;
     poses.push({
       id: `current-swimmer-${index}`,
       role: "current-swimmer",
@@ -156,14 +168,14 @@ export function sampleMerfolkChoreography({
       motionSeed: seed,
       speed,
       position: {
-        x: side * (laneHalfWidth + 3.08) + track * pathWidth,
-        y: (index === 0 ? 5.45 : 7.2) +
+        x: side * galleryDistance + track * pathWidth,
+        y: (index === 0 ? 7.45 : 9.35) +
           Math.cos(phase) * verticalAmplitude,
         // Both swimmers stay in front of the gate depth plane. Previously the
         // upper swimmer passed behind masonry at the second evidence sample,
         // leaving only disconnected fin fragments for the tracker.
-        z: -anchor + (index === 0 ? 3.05 : 1.55) +
-          Math.sin(phase) * (0.24 + seed * 0.08)
+        z: -anchor + (index === 0 ? 4.15 : 3.05) +
+          Math.sin(phase * 0.47) * (0.16 + seed * 0.04)
       },
       rotation: {
         x: 0.018 + Math.sin(phase * 0.61) * 0.018,

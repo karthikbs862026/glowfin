@@ -492,6 +492,10 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   ordering selected small fin/hair islands before the two full swimmers.
 - Size the lookup from the declared maximum class, merge only nearby multipart
   islands, and select the two largest swimmer figures before side ordering.
+- The corrected evidence then exposed real residual scene defects at maximum
+  FOV: 21–28 px swimmers and two Tidekeeper paths with nearly equal travel.
+  Give the swimmers disjoint circular current radii/tempos, separate upper
+  water bands, and momentum-aware scale/lateral clearance outside the route.
 - Keep both swimmers in separate foreground galleries for the entire motion
   interval. The previous upper path crossed behind masonry at the second
   sample, leaving fin fragments that could be mistaken for a stacked pair.

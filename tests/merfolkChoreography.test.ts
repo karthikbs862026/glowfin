@@ -71,6 +71,51 @@ describe("Moon-Garden merfolk choreography", () => {
     }
   });
 
+  it("keeps both swim loops moving at visibly different distances", () => {
+    for (const anchor of [24, 38, 62]) {
+      for (const heroSide of [-1, 1] as const) {
+        for (const momentumFraction of [0, 0.5, 1]) {
+          for (let sample = 0; sample <= 24; sample++) {
+            const timeSec = sample * 0.5;
+            const start = sampleMerfolkChoreography({
+              ...base,
+              anchor,
+              heroSide,
+              momentumFraction,
+              timeSec
+            });
+            const end = sampleMerfolkChoreography({
+              ...base,
+              anchor,
+              heroSide,
+              momentumFraction,
+              timeSec: timeSec + 3.25
+            });
+            const travel = [0, 1].map((index) => {
+              const first = start.find((pose) =>
+                pose.id === `current-swimmer-${index}`
+              );
+              const later = end.find((pose) =>
+                pose.id === `current-swimmer-${index}`
+              );
+              expect(first).toBeDefined();
+              expect(later).toBeDefined();
+              return distance(first!, later!);
+            });
+            expect(Math.min(...travel)).toBeGreaterThanOrEqual(
+              MERFOLK_CHOREOGRAPHY_CONTRACT.minimumSwimmerTravelUnits
+            );
+            expect(
+              Math.abs((travel[0] ?? 0) - (travel[1] ?? 0))
+            ).toBeGreaterThanOrEqual(
+              MERFOLK_CHOREOGRAPHY_CONTRACT.minimumSwimmerTravelDifferenceUnits
+            );
+          }
+        }
+      }
+    }
+  });
+
   it("keeps every randomized pose outside the gameplay route", () => {
     for (const heroSide of [-1, 1] as const) {
       for (let frame = 0; frame <= 80; frame++) {

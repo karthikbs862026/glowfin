@@ -29,13 +29,17 @@ missing all of these defects.
 3. Keep reef citizens and conch heralds vertical and spatially anchored with
    only subtle asynchronous idle drift. Keep one citizen per side rather than
    repeating a stacked row. Place the two swimmers on opposite foreground
-   galleries, different height/depth bands and disjoint speed ranges.
+   galleries, different height/depth bands and disjoint speed ranges. Use a
+   broad fast current for one and a smaller slow current for the other so their
+   3.25-second travel cannot read as synchronized.
 4. Derive phases, speeds and path amplitudes from the active gate anchor and
    simulation time. The result looks randomized but remains deterministic for
    replay, CI and debugging.
 5. Sample every choreography path across both guardian sides and reject any
    pose whose authored bounds approach the gameplay lane closer than 0.55 world
    units.
+   Compensate swimmer scale for the maximum-momentum camera FOV while deriving
+   its lateral gallery distance from the scaled authored bounds.
 6. Render semantic feature IDs with flat double-sided materials and upload a
    labelled semantic-mask atlas beside the beauty atlas. Exact byte-class
    round-trip tests and the visible atlas make colour or feature-loss defects
