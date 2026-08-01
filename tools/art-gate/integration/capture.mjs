@@ -23,6 +23,10 @@ const castReviewScreenshot = screenshot.replace(
   /\.png$/i,
   "-merfolk-cast.png"
 );
+const merfolkMaskScreenshot = screenshot.replace(
+  /\.png$/i,
+  "-merfolk-mask.png"
+);
 const beautyReviewOutput = output.replace(/\.json$/i, "-beauty-review.json");
 // Software-rendered GitHub Chromium can take more than one minute to expose
 // its first deterministic frame when parallel jobs install/start together.
@@ -110,6 +114,17 @@ try {
     castReviewScreenshot,
     Buffer.from(castReviewDataUrl.split(",", 2)[1], "base64")
   );
+  const merfolkMaskDataUrl = bundle.merfolkMaskAtlasDataUrl;
+  if (
+    typeof merfolkMaskDataUrl !== "string" ||
+    !merfolkMaskDataUrl.startsWith("data:image/png;base64,")
+  ) {
+    throw new Error("Browser did not expose the three-role semantic mask atlas.");
+  }
+  writeFileSync(
+    merfolkMaskScreenshot,
+    Buffer.from(merfolkMaskDataUrl.split(",", 2)[1], "base64")
+  );
   // Capture the fixed gameplay canvas directly. `fullPage` can temporarily
   // resize a mobile viewport while calculating document bounds, producing a
   // misleading portrait where Glowfin appears to jump toward the lower crop.
@@ -118,6 +133,7 @@ try {
   console.log(`wrote ${beautyReviewOutput}`);
   console.log(`wrote ${screenshot}`);
   console.log(`wrote ${castReviewScreenshot}`);
+  console.log(`wrote ${merfolkMaskScreenshot}`);
 
   const review = bundle.beautyReview;
   const failures = [];

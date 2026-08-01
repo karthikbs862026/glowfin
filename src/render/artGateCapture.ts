@@ -593,6 +593,7 @@ export interface BrowserCaptureBundle {
   tier: "fast" | "full";
   captures: SceneCapture[];
   castReviewAtlasDataUrl: string;
+  merfolkMaskAtlasDataUrl: string;
   beautyReview: {
     meanLuminance: number;
     nearBlackFraction: number;
@@ -707,6 +708,11 @@ export function runArtGateCapture(
     width: number;
     height: number;
   }> = [];
+  const merfolkMaskFrames: Array<{
+    pixels: Uint8Array;
+    width: number;
+    height: number;
+  }> = [];
   const states = tier === "fast" ? FAST_STATES : fullEffectStates();
 
   for (const [index, state] of states.entries()) {
@@ -772,6 +778,11 @@ export function runArtGateCapture(
       view.renderMerfolkMask();
       const visibleMerfolk = view.capturePixels();
       view.setMerfolkMaskMode(false);
+      merfolkMaskFrames.push({
+        pixels: visibleMerfolk.pixels.slice(),
+        width: visibleMerfolk.width,
+        height: visibleMerfolk.height
+      });
 
       view.setMerfolkMaskMode(true, true);
       view.renderMerfolkMask();
@@ -877,6 +888,7 @@ export function runArtGateCapture(
     tier,
     captures,
     beautyReview,
-    castReviewAtlasDataUrl: castReviewAtlas(castFrames)
+    castReviewAtlasDataUrl: castReviewAtlas(castFrames),
+    merfolkMaskAtlasDataUrl: castReviewAtlas(merfolkMaskFrames)
   };
 }

@@ -74,6 +74,7 @@ jobs:
             build/art-gate-fast.json
             build/art-gate-fast.png
             build/art-gate-fast-merfolk-cast.png
+            build/art-gate-fast-merfolk-mask.png
             build/art-gate-fast-beauty-review.json
             build/art-gate-fast-report.txt
 
@@ -119,6 +120,7 @@ jobs:
             build/art-gate-full.json
             build/art-gate-full.png
             build/art-gate-full-merfolk-cast.png
+            build/art-gate-full-merfolk-mask.png
             build/art-gate-full-beauty-review.json
             build/art-gate-full-report.txt
 

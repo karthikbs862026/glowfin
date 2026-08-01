@@ -36,9 +36,10 @@ missing all of these defects.
 5. Sample every choreography path across both guardian sides and reject any
    pose whose authored bounds approach the gameplay lane closer than 0.55 world
    units.
-6. Emit semantic feature IDs through a raw shader that bypasses beauty-render
-   colour management. This prevents face and eye IDs from collapsing into the
-   nearest body colour before pixel classification.
+6. Render semantic feature IDs with flat double-sided materials and upload a
+   labelled semantic-mask atlas beside the beauty atlas. Exact byte-class
+   round-trip tests and the visible atlas make colour or feature-loss defects
+   diagnosable instead of silently producing a false measurement.
 7. Extend phone evidence from one frame to a 3.25-second time-lapse. Reject
    unreadable population faces/eyes, horizontal residents, non-horizontal
    swimmers, fewer than two visible role instances, swimmer centre separation
