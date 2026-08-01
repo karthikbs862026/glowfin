@@ -12,8 +12,11 @@ import {
   createProductionFanCoral,
   createProductionGateCanopyGeometry,
   createProductionKelp,
+  createProductionMerfolkCitizen,
+  createProductionMerfolkConchHerald,
   createProductionMerfolkGuardian,
   createProductionMerfolkMonument,
+  createProductionMerfolkSwimmer,
   createProductionObservatory,
   createProductionPalaceDistrict,
   createProductionSkyline,
@@ -174,6 +177,12 @@ describe("Phase 3B art geometry inventory", () => {
   it("budgets visible moonfolk and ceremonial props as volumetric production art", () => {
     const assets = [
       [createProductionMerfolkGuardian(), PRODUCTION_ART.moonfolkGuardian.lod0],
+      [createProductionMerfolkCitizen(), PRODUCTION_ART.moonfolkCitizen.lod0],
+      [createProductionMerfolkSwimmer(), PRODUCTION_ART.moonfolkSwimmer.lod0],
+      [
+        createProductionMerfolkConchHerald(),
+        PRODUCTION_ART.merfolkConchHerald.lod0
+      ],
       [createProductionMerfolkMonument(), PRODUCTION_ART.merfolkMonument.lod0],
       [createProductionTideSpear(), PRODUCTION_ART.tideSpear.lod0],
       [createProductionConchFountain(), PRODUCTION_ART.conchFountain.lod0]

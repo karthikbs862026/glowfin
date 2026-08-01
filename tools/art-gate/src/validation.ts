@@ -199,7 +199,13 @@ export function validateGateConfig(raw: unknown): Finding[] {
       "Phase 3B Merfolk Character Pass"
     ));
   }
-  for (const key of ["requiredParts", "requiredStates", "requiredClips"]) {
+  for (const key of [
+    "requiredGuardianRoles",
+    "requiredPopulationRoles",
+    "requiredParts",
+    "requiredStates",
+    "requiredClips"
+  ]) {
     const values = merfolk?.[key];
     if (
       !Array.isArray(values) ||

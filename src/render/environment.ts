@@ -18,8 +18,10 @@ import {
   createProductionFanCoral,
   createProductionJelly,
   createProductionKelp,
-  createProductionMerfolkGuardian,
+  createProductionMerfolkCitizen,
+  createProductionMerfolkConchHerald,
   createProductionMerfolkMonument,
+  createProductionMerfolkSwimmer,
   createProductionMinnow,
   createProductionObservatory,
   createProductionPalaceDistrict,
@@ -35,6 +37,10 @@ import {
   updateMoonGardenMaterial
 } from "./moonGardenMaterial";
 import { HeroMerfolkGuardian } from "./merfolkGuardian";
+import {
+  guardianRoleForGateFamily,
+  type MerfolkGuardianRole
+} from "../art/merfolkCharacter";
 
 function hash01(a: number, salt: number): number {
   let h = Math.imul(a ^ salt, 0x27d4eb2d);
@@ -110,6 +116,7 @@ const POINT_COUNT = 193;
 interface HeroStage {
   anchor: number;
   side: -1 | 1;
+  role: MerfolkGuardianRole;
 }
 
 export class Environment {
@@ -192,12 +199,14 @@ export class Environment {
         this.disposables
       )
     );
-    const lifeCaps = [48, 14, 8, 8];
+    const lifeCaps = [48, 14, 8, 6, 8, 4];
     const lifeGeometry = [
       createProductionMinnow(),
       createProductionJelly(),
       createProductionRay(),
-      createProductionMerfolkGuardian()
+      createProductionMerfolkCitizen(),
+      createProductionMerfolkSwimmer(),
+      createProductionMerfolkConchHerald()
     ] as const;
     this.life = lifeGeometry.map((geometry, index) =>
       new InstancedVolumeFamily(
@@ -745,7 +754,7 @@ export class Environment {
 
     // Lower-detail citizens occupy the upper midground. The articulated hero
     // below is staged independently at phone-readable scale beside the lane.
-    const citizenCount = Math.max(2, Math.round(5 * this.density));
+    const citizenCount = Math.max(2, Math.round(3 * this.density));
     const citizenSpacing = 42;
     const citizenFirst = Math.ceil((forwardDistance + 28) / citizenSpacing);
     for (let index = 0; index < citizenCount; index++) {
@@ -769,6 +778,60 @@ export class Environment {
       this.life[3]?.add(this.matrix, this.colour);
     }
 
+    // Current swimmers cross between architecture shelves in an unmistakable
+    // horizontal mermaid pose. They travel in loose pairs rather than sharing
+    // the upright citizen placement, preventing one repeated mannequin read.
+    const swimmerCount = Math.max(2, Math.round(4 * this.density));
+    const swimmerSpacing = 36;
+    const swimmerFirst = Math.ceil((forwardDistance + 20) / swimmerSpacing);
+    for (let index = 0; index < swimmerCount; index++) {
+      const band = swimmerFirst + index;
+      const direction = hash01(band, 851) < 0.5 ? -1 : 1;
+      const phase = time * 0.54 + band * 1.61;
+      const side = hash01(band, 852) < 0.5 ? -1 : 1;
+      this.position.set(
+        side * lerp(5.2, 7.6, hash01(band, 853)) +
+          direction * Math.sin(phase) * 0.82,
+        4.1 + hash01(band, 854) * 3.2 + Math.sin(phase * 1.4) * 0.42,
+        -(band * swimmerSpacing + hash01(band, 855) * 8)
+      );
+      this.quaternion.setFromEuler(new THREE.Euler(
+        0,
+        direction > 0 ? Math.PI * 0.56 : -Math.PI * 0.56,
+        direction * (-Math.PI * 0.34) + Math.sin(phase) * 0.08
+      ));
+      const size = lerp(0.82, 1.08, hash01(band, 856));
+      this.scale.set(direction * size, size, size);
+      this.matrix.compose(this.position, this.quaternion, this.scale);
+      this.colour.setRGB(0.7, 0.9, 0.98);
+      this.life[4]?.add(this.matrix, this.colour);
+    }
+
+    // A paired conch ceremony belongs to the gate vignette. Keeping one
+    // herald on each shoulder makes the city feel inhabited without putting
+    // any decorative character inside collider truth.
+    for (const heraldSide of [-1, 1] as const) {
+      const heroShoulder = heraldSide === heroStage.side;
+      const heraldPhase = time * 0.72 + heraldSide * 1.7;
+      const lateral = this.cfg.lane.halfWidth + (heroShoulder ? 4.5 : 3.25);
+      this.position.set(
+        heraldSide * lateral,
+        2.25 + Math.sin(heraldPhase) * 0.12,
+        -heroStage.anchor - (heroShoulder ? 8.5 : 6.8)
+      );
+      this.quaternion.setFromEuler(new THREE.Euler(
+        0.02,
+        heraldSide * -0.16,
+        heraldSide * (0.035 + Math.sin(heraldPhase * 1.8) * 0.025)
+      ));
+      const heraldScale = 1.28 + momentumFraction * 0.06;
+      this.scale.set(heraldSide * heraldScale, heraldScale, heraldScale);
+      this.matrix.compose(this.position, this.quaternion, this.scale);
+      const pulse = 0.88 + Math.sin(heraldPhase * 2.2) * 0.08;
+      this.colour.setRGB(0.9 * pulse, 0.78 * pulse, 0.98 * pulse);
+      this.life[5]?.add(this.matrix, this.colour);
+    }
+
     for (const family of this.life) family.finish();
     this.heroMerfolk.update(
       forwardDistance,
@@ -789,22 +852,25 @@ export class Environment {
       })
       .sort((left, right) => left.distance - right.distance)[0];
     if (gate) {
-      let signature = gate.artVariant ?? 0;
-      if (gate.artVariant === undefined) {
-        for (const character of gate.templateId) {
-          signature = (signature * 31 + character.charCodeAt(0)) >>> 0;
-        }
-      }
+      // Match gateArt's stable fallback exactly so the guardian's identity is
+      // always native to the visible district, including hand-authored/test
+      // gates that predate the explicit artVariant field.
+      const gateFamily = gate.artVariant ?? positiveMod(
+        Math.abs(Math.round(gate.distance * 10)),
+        5
+      );
       return {
         anchor: gate.distance,
-        side: signature % 2 === 0 ? 1 : -1
+        side: gateFamily % 2 === 0 ? 1 : -1,
+        role: guardianRoleForGateFamily(gateFamily)
       };
     }
 
     const band = Math.floor((forwardDistance + 30) / 64);
     return {
       anchor: band * 64 + 27,
-      side: band % 2 === 0 ? 1 : -1
+      side: band % 2 === 0 ? 1 : -1,
+      role: guardianRoleForGateFamily(positiveMod(band, 5))
     };
   }
 

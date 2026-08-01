@@ -602,6 +602,34 @@
       ]
     },
     {
+      "name": "moon-garden-merfolk-current-swimmer",
+      "family": "merfolkCreature",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 1328
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-merfolk-conch-herald",
+      "family": "merfolkCreature",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 1428
+        }
+      ]
+    },
+    {
       "name": "moon-garden-hero-merfolk-guardian",
       "family": "heroMerfolk",
       "collidable": false,
@@ -613,6 +641,16 @@
       "readableFaceHeightPixels": 22,
       "readableEyeDiameterPixels": 4.5,
       "recognitionLabel": "mermaid",
+      "castRoles": [
+        "tidekeeper",
+        "coral-warden",
+        "astral-oracle"
+      ],
+      "populationRoles": [
+        "reef-citizen",
+        "current-swimmer",
+        "conch-herald"
+      ],
       "parts": [
         "readable-face",
         "expressive-eyes",
@@ -624,7 +662,8 @@
         "scaled-tail",
         "broad-caudal-fin",
         "translucent-side-fins",
-        "tide-spear"
+        "tide-spear",
+        "district-regalia"
       ],
       "clips": [
         "hover",
@@ -643,7 +682,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 7647
+          "triangles": 8143
         }
       ]
     },
@@ -1083,6 +1122,8 @@
       "lantern-jelly",
       "ribbon-manta",
       "merfolk-citizen",
+      "merfolk-current-swimmer",
+      "merfolk-conch-herald",
       "hero-merfolk-guardian"
     ],
     "props": [

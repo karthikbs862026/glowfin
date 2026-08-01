@@ -97,6 +97,8 @@ export interface AssetManifest {
   readableEyeDiameterPixels?: number;
   recognitionLabel?: string;
   parts?: string[];
+  castRoles?: string[];
+  populationRoles?: string[];
 }
 
 /**
@@ -315,6 +317,8 @@ export interface GateConfig {
     maxArticulatedJoints: number;
     maxMaterials: number;
     requiredRecognitionLabel: string;
+    requiredGuardianRoles: string[];
+    requiredPopulationRoles: string[];
     requiredParts: string[];
     requiredStates: string[];
     requiredClips: string[];

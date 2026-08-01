@@ -67,11 +67,11 @@ describe("coral response (Part 3.2 priority 5)", () => {
 
 describe("draw call budget (Part 4.6)", () => {
   it("the complete LOD art kit remains instanced and budgeted", () => {
-    // Five architecture districts, one skyline, six reefs, four ambient-life
-    // families, three prop families, god rays and moon/motes remain 21 fixed
+    // Five architecture districts, one skyline, six reefs, six ambient-life
+    // families, three prop families, god rays and moon/motes remain 23 fixed
     // draws even as
     // their represented object count and course distance grow.
-    const environmentDraws = 21;
+    const environmentDraws = 23;
     const conservativeSceneWithoutEnvironment = 64;
     expect(conservativeSceneWithoutEnvironment + environmentDraws).toBeLessThan(
       budgets.scene.maxDrawCalls

@@ -250,6 +250,26 @@ export function checkMerfolk(
       `Hero must be explicitly recognizable as "${cfg.requiredRecognitionLabel}".`
     );
   }
+  const castRoles = asset.castRoles ?? [];
+  const missingCastRoles = cfg.requiredGuardianRoles.filter(
+    (role) => !castRoles.includes(role)
+  );
+  if (missingCastRoles.length > 0) {
+    missing(
+      "MERFOLK_GUARDIAN_ROLES_MISSING",
+      `Missing district guardian roles: ${missingCastRoles.join(", ")}.`
+    );
+  }
+  const populationRoles = asset.populationRoles ?? [];
+  const missingPopulationRoles = cfg.requiredPopulationRoles.filter(
+    (role) => !populationRoles.includes(role)
+  );
+  if (missingPopulationRoles.length > 0) {
+    missing(
+      "MERFOLK_POPULATION_ROLES_MISSING",
+      `Missing inhabited-city roles: ${missingPopulationRoles.join(", ")}.`
+    );
+  }
   if (asset.readableHeightPixels === undefined) {
     missing(
       "MERFOLK_PHONE_HEIGHT_NOT_MEASURED",

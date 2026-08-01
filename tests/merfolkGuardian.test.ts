@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import {
+  guardianRoleForGateFamily,
   MERFOLK_CHARACTER_CONTRACT,
-  MERFOLK_ANIMATION
+  MERFOLK_ANIMATION,
+  MERFOLK_CITY_CONTRACT,
+  MERFOLK_GUARDIAN_ROLES
 } from "../src/art/merfolkCharacter";
 import { PRODUCTION_ART } from "../src/art/productionManifest";
 import { HeroMerfolkGuardian } from "../src/render/merfolkGuardian";
@@ -110,6 +113,47 @@ describe("Phase 3B hero merfolk guardian", () => {
     expect(armA).not.toBe(armB);
     expect(tailA).not.toBe(tailB);
     expect(hairA).not.toBe(hairB);
+    rig.dispose();
+    material.dispose();
+  });
+
+  it("maps all five districts to three distinct guardian identities", () => {
+    expect(Array.from({ length: 5 }, (_, family) =>
+      guardianRoleForGateFamily(family)
+    )).toEqual([
+      "tidekeeper",
+      "astral-oracle",
+      "coral-warden",
+      "tidekeeper",
+      "astral-oracle"
+    ]);
+    expect(MERFOLK_GUARDIAN_ROLES.map((role) => role.key)).toEqual(
+      MERFOLK_CITY_CONTRACT.guardianRoles
+    );
+  });
+
+  it("switches district regalia without multiplying hero draw calls", () => {
+    const { rig, material } = createRig();
+    const geometryIds = new Set<string>();
+    for (const role of MERFOLK_GUARDIAN_ROLES) {
+      rig.update(0, 0.8, 0.25, {
+        anchor: 38,
+        side: 1,
+        role: role.key
+      });
+      expect(rig.activeRole).toBe(role.key);
+      expect(rig.object.userData["castRole"]).toBe(role.key);
+      const regalia = rig.object.getObjectByName("district-regalia");
+      expect(regalia).toBeInstanceOf(THREE.Mesh);
+      if (regalia instanceof THREE.Mesh) {
+        expect(regalia.geometry.userData["castRole"]).toBe(role.key);
+        geometryIds.add(regalia.geometry.uuid);
+      }
+      expect(rig.drawCount).toBeLessThanOrEqual(
+        MERFOLK_CHARACTER_CONTRACT.maxDraws
+      );
+    }
+    expect(geometryIds.size).toBe(MERFOLK_GUARDIAN_ROLES.length);
     rig.dispose();
     material.dispose();
   });

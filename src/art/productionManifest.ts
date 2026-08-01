@@ -113,10 +113,22 @@ export const PRODUCTION_ART = {
     lod0: 1076,
     materials: 1
   },
+  moonfolkCitizen: {
+    lod0: 1076,
+    materials: 1
+  },
+  moonfolkSwimmer: {
+    lod0: 1328,
+    materials: 1
+  },
+  merfolkConchHerald: {
+    lod0: 1428,
+    materials: 1
+  },
   heroMerfolkGuardian: {
-    lod0: 7647,
+    lod0: 8143,
     materials: 1,
-    draws: 16,
+    draws: 17,
     articulatedJoints: 12,
     readableHeightPixels: 72,
     readableFaceHeightPixels: 22,

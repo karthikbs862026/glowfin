@@ -56,6 +56,8 @@
         "maxArticulatedJoints",
         "maxMaterials",
         "requiredRecognitionLabel",
+        "requiredGuardianRoles",
+        "requiredPopulationRoles",
         "requiredParts",
         "requiredStates",
         "requiredClips",

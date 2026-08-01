@@ -2,7 +2,9 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import {
   MERFOLK_CHARACTER_CONTRACT,
-  MERFOLK_ANIMATION
+  MERFOLK_ANIMATION,
+  MERFOLK_GUARDIAN_ROLES,
+  type MerfolkGuardianRole
 } from "../art/merfolkCharacter.ts";
 import { MATERIAL_ROLE } from "./productionGeometry.ts";
 
@@ -551,6 +553,105 @@ function spearGeometry(): THREE.BufferGeometry[] {
   ];
 }
 
+function guardianRegaliaGeometry(
+  role: MerfolkGuardianRole
+): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
+  if (role === "coral-warden") {
+    const fan = [
+      new THREE.Vector2(0, 0),
+      new THREE.Vector2(0.24, 0.2),
+      new THREE.Vector2(0.48, 0.14),
+      new THREE.Vector2(0.39, 0.4),
+      new THREE.Vector2(0.66, 0.48),
+      new THREE.Vector2(0.35, 0.62),
+      new THREE.Vector2(0.23, 0.88),
+      new THREE.Vector2(0, 0.67),
+      new THREE.Vector2(-0.23, 0.88),
+      new THREE.Vector2(-0.35, 0.62),
+      new THREE.Vector2(-0.66, 0.48),
+      new THREE.Vector2(-0.39, 0.4),
+      new THREE.Vector2(-0.48, 0.14),
+      new THREE.Vector2(-0.24, 0.2)
+    ];
+    parts.push(styled(extrudedShape(fan, 0.045, 0.008), {
+      position: new THREE.Vector3(0, 0.66, -0.21),
+      scale: new THREE.Vector3(0.88, 0.74, 1),
+      colour: CORAL,
+      glow: 0.24,
+      sway: 0.28,
+      materialRole: MATERIAL_ROLE.livingCoral
+    }));
+    for (const side of [-1, 1]) {
+      parts.push(styled(tube([
+        new THREE.Vector3(side * 0.18, 0.76, -0.16),
+        new THREE.Vector3(side * 0.35, 1.1, -0.17),
+        new THREE.Vector3(side * 0.5, 1.28, -0.14)
+      ], 7, 0.022, 5), {
+        colour: TAIL_LIGHT,
+        glow: 0.22,
+        sway: 0.24,
+        materialRole: MATERIAL_ROLE.livingCoral
+      }));
+    }
+  } else if (role === "astral-oracle") {
+    parts.push(
+      styled(new THREE.TorusGeometry(0.52, 0.025, 6, 24), {
+        position: new THREE.Vector3(0, 0.98, -0.22),
+        rotation: new THREE.Euler(0.1, 0.22, 0.12),
+        scale: new THREE.Vector3(1, 0.72, 1),
+        colour: BRONZE,
+        glow: 0.08,
+        materialRole: MATERIAL_ROLE.bronze
+      }),
+      styled(new THREE.TorusGeometry(0.39, 0.02, 5, 20), {
+        position: new THREE.Vector3(0, 0.98, -0.2),
+        rotation: new THREE.Euler(0.45, -0.18, Math.PI * 0.5),
+        scale: new THREE.Vector3(1, 0.82, 1),
+        colour: LAPIS,
+        glow: 0.2,
+        materialRole: MATERIAL_ROLE.lapis
+      }),
+      styled(new THREE.OctahedronGeometry(0.11, 0), {
+        position: new THREE.Vector3(0, 1.53, -0.14),
+        scale: new THREE.Vector3(0.62, 1.48, 0.62),
+        colour: CRYSTAL,
+        glow: 0.42,
+        sway: 0.16,
+        materialRole: MATERIAL_ROLE.crystal
+      })
+    );
+  } else {
+    parts.push(
+      styled(new THREE.TorusGeometry(
+        0.43,
+        0.025,
+        6,
+        24,
+        Math.PI * 1.16
+      ), {
+        position: new THREE.Vector3(0, 1.02, -0.19),
+        rotation: new THREE.Euler(0.12, 0, -0.26),
+        scale: new THREE.Vector3(1, 0.7, 1),
+        colour: BRONZE,
+        glow: 0.07,
+        materialRole: MATERIAL_ROLE.bronze
+      }),
+      styled(new THREE.OctahedronGeometry(0.09, 0), {
+        position: new THREE.Vector3(0, 1.45, -0.12),
+        scale: new THREE.Vector3(0.65, 1.35, 0.65),
+        colour: CRYSTAL,
+        glow: 0.36,
+        sway: 0.12,
+        materialRole: MATERIAL_ROLE.crystal
+      })
+    );
+  }
+  const geometry = merged(parts);
+  geometry.userData["castRole"] = role;
+  return geometry;
+}
+
 function smoothstep(edge0: number, edge1: number, value: number): number {
   const t = THREE.MathUtils.clamp((value - edge0) / (edge1 - edge0), 0, 1);
   return t * t * (3 - 2 * t);
@@ -567,6 +668,7 @@ export class HeroMerfolkGuardian {
   readonly drawCount: number;
   readonly animationDriver = MERFOLK_ANIMATION.driver;
   readonly animationClips = MERFOLK_ANIMATION.clips;
+  readonly roleKeys = MERFOLK_GUARDIAN_ROLES.map((role) => role.key);
 
   private readonly torso = new THREE.Group();
   private readonly head = new THREE.Group();
@@ -584,8 +686,14 @@ export class HeroMerfolkGuardian {
   private readonly hairLeft = new THREE.Group();
   private readonly hairRight = new THREE.Group();
   private readonly spear = new THREE.Group();
+  private readonly districtRegalia: THREE.Mesh;
+  private readonly roleGeometries = new Map<
+    MerfolkGuardianRole,
+    THREE.BufferGeometry
+  >();
   private readonly geometries: THREE.BufferGeometry[] = [];
   private readonly laneHalfWidth: number;
+  private currentRole: MerfolkGuardianRole = "tidekeeper";
   private detailFraction = 1;
 
   constructor(
@@ -600,6 +708,8 @@ export class HeroMerfolkGuardian {
     this.object.userData["nonCollidable"] = true;
     this.object.userData["animationDriver"] = MERFOLK_ANIMATION.driver;
     this.object.userData["animationClips"] = [...MERFOLK_ANIMATION.clips];
+    this.object.userData["castRoles"] = [...this.roleKeys];
+    this.object.userData["castRole"] = this.currentRole;
     this.object.userData["characterParts"] = [
       ...MERFOLK_CHARACTER_CONTRACT.requiredParts
     ];
@@ -702,15 +812,57 @@ export class HeroMerfolkGuardian {
     this.spear.add(mesh("tide-spear-mesh", spearGeometry(), material));
     this.object.add(this.spear);
 
+    for (const role of MERFOLK_GUARDIAN_ROLES) {
+      this.roleGeometries.set(role.key, guardianRegaliaGeometry(role.key));
+    }
+    const initialRegalia = this.roleGeometries.get(this.currentRole);
+    if (!initialRegalia) throw new Error("Tidekeeper regalia is missing.");
+    this.districtRegalia = new THREE.Mesh(initialRegalia, material);
+    this.districtRegalia.name = "district-regalia";
+    this.districtRegalia.frustumCulled = false;
+    this.districtRegalia.userData["artSignature"] =
+      MERFOLK_CHARACTER_CONTRACT.key;
+    this.districtRegalia.userData["castRole"] = this.currentRole;
+    this.districtRegalia.userData["nonCollidable"] = true;
+    this.object.add(this.districtRegalia);
+
     this.object.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
       this.geometries.push(child.geometry);
     });
-    this.triangleCount = this.geometries.reduce((total, geometry) => {
+    const activeDrawCount = this.geometries.length;
+    const activeTriangles = this.geometries.reduce((total, geometry) => {
       const position = geometry.getAttribute("position");
       return total + Math.floor(position.count / 3);
     }, 0);
-    this.drawCount = this.geometries.length;
+    const initialRegaliaTriangles = Math.floor(
+      initialRegalia.getAttribute("position").count / 3
+    );
+    const maximumRegaliaTriangles = Math.max(
+      ...[...this.roleGeometries.values()].map((geometry) =>
+        Math.floor(geometry.getAttribute("position").count / 3)
+      )
+    );
+    this.triangleCount =
+      activeTriangles - initialRegaliaTriangles + maximumRegaliaTriangles;
+    for (const geometry of this.roleGeometries.values()) {
+      if (!this.geometries.includes(geometry)) this.geometries.push(geometry);
+    }
+    this.drawCount = activeDrawCount;
+  }
+
+  get activeRole(): MerfolkGuardianRole {
+    return this.currentRole;
+  }
+
+  private setRole(role: MerfolkGuardianRole): void {
+    if (role === this.currentRole) return;
+    const geometry = this.roleGeometries.get(role);
+    if (!geometry) throw new Error(`Unknown merfolk guardian role: ${role}`);
+    this.currentRole = role;
+    this.districtRegalia.geometry = geometry;
+    this.districtRegalia.userData["castRole"] = role;
+    this.object.userData["castRole"] = role;
   }
 
   setDetail(fraction: number): void {
@@ -724,13 +876,18 @@ export class HeroMerfolkGuardian {
     forwardDistance: number,
     timeSec: number,
     momentumFraction: number,
-    stage?: { anchor: number; side: -1 | 1 }
+    stage?: {
+      anchor: number;
+      side: -1 | 1;
+      role?: MerfolkGuardianRole;
+    }
   ): void {
     const spacing = 64;
     const band = Math.floor((forwardDistance + 30) / spacing);
     const anchor = stage?.anchor ?? band * spacing + 27;
     const ahead = anchor - forwardDistance;
     const side: -1 | 1 = stage?.side ?? (band % 2 === 0 ? 1 : -1);
+    this.setRole(stage?.role ?? "tidekeeper");
     const phase = timeSec * (1.28 + momentumFraction * 0.22) + band * 1.71;
     const hover = Math.sin(phase * 1.18);
     const patrol = Math.sin(phase * 0.42);

@@ -68,10 +68,13 @@ describe("integrated gate fixtures", () => {
     assert.ok(codes(result.findings).includes("PROCEDURAL_BASELINE_NOT_RELEASEABLE"));
   });
 
-  test("missing hero merfolk or reef species cannot masquerade as a premium world", () => {
+  test("missing hero, cast role or reef species cannot masquerade as a premium world", () => {
     const input = load("gate-input.pass.json");
     input.worldQuality.life = input.worldQuality.life.filter(
-      (signature) => signature !== "hero-merfolk-guardian"
+      (signature) => ![
+        "hero-merfolk-guardian",
+        "merfolk-conch-herald"
+      ].includes(signature)
     );
     input.worldQuality.reef = input.worldQuality.reef.slice(0, 4);
     const findings = checkWorldQuality(input, config.worldQuality);
@@ -86,12 +89,18 @@ describe("integrated gate fixtures", () => {
     assert.ok(hero);
     hero.parts = hero.parts?.filter((part) => part !== "readable-face");
     hero.clips = hero.clips?.filter((clip) => clip !== "greeting");
+    hero.castRoles = hero.castRoles?.filter((role) => role !== "coral-warden");
+    hero.populationRoles = hero.populationRoles?.filter(
+      (role) => role !== "conch-herald"
+    );
     hero.readableHeightPixels = 32;
     hero.readableFaceHeightPixels = 11;
     hero.readableEyeDiameterPixels = 2;
     const found = new Set(codes(checkMerfolk(hero, config.merfolk)));
     assert.ok(found.has("MERFOLK_CHARACTER_PARTS_MISSING"));
     assert.ok(found.has("MERFOLK_ANIMATION_CLIPS_MISSING"));
+    assert.ok(found.has("MERFOLK_GUARDIAN_ROLES_MISSING"));
+    assert.ok(found.has("MERFOLK_POPULATION_ROLES_MISSING"));
     assert.ok(found.has("MERFOLK_PHONE_HEIGHT_BELOW_FLOOR"));
     assert.ok(found.has("MERFOLK_FACE_HEIGHT_BELOW_FLOOR"));
     assert.ok(found.has("MERFOLK_EYE_SIZE_BELOW_FLOOR"));

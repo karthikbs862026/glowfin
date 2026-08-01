@@ -6,6 +6,7 @@ import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { createGlowfinRigGeometry } from "../../src/render/glowfinGeometry.ts";
 import { HeroMerfolkGuardian } from "../../src/render/merfolkGuardian.ts";
+import { MERFOLK_GUARDIAN_ROLES } from "../../src/art/merfolkCharacter.ts";
 import {
   createProductionAnemone,
   createProductionBranchCoral,
@@ -14,6 +15,9 @@ import {
   createProductionGateCanopyGeometry,
   createProductionJelly,
   createProductionKelp,
+  createProductionMerfolkCitizen,
+  createProductionMerfolkConchHerald,
+  createProductionMerfolkSwimmer,
   createProductionMinnow,
   createProductionRay,
   createProductionSkyline,
@@ -333,12 +337,12 @@ function createGlowfinAsset() {
   return group;
 }
 
-function createHeroMerfolkAsset() {
+function createHeroMerfolkAsset(role = "tidekeeper") {
   const guardian = new HeroMerfolkGuardian(
     merfolkMaterial,
     tuning.lane.halfWidth
   );
-  guardian.update(0, 0, 0, { anchor: 24, side: 1 });
+  guardian.update(0, 0, 0, { anchor: 24, side: 1, role });
   guardian.object.position.set(0, 0, 0);
   guardian.object.rotation.set(0, 0, 0);
   guardian.object.scale.setScalar(1);
@@ -348,6 +352,7 @@ function createHeroMerfolkAsset() {
     triangleCount: guardian.triangleCount,
     drawCount: guardian.drawCount,
     laneSafe: true,
+    castRole: role,
     runtimeAnimationDriver: guardian.animationDriver
   };
   return guardian.object;
@@ -409,9 +414,18 @@ await mkdir(outputDirectory, { recursive: true });
 await writeGlb("glowfin-v1.glb", createGlowfinAsset(), glowfinClips());
 await writeGlb(
   "hero-merfolk-v1.glb",
-  createHeroMerfolkAsset(),
+  createHeroMerfolkAsset("tidekeeper"),
   merfolkClips()
 );
+for (const role of MERFOLK_GUARDIAN_ROLES.filter(
+  (candidate) => candidate.key !== "tidekeeper"
+)) {
+  await writeGlb(
+    `hero-merfolk-${role.key}-v1.glb`,
+    createHeroMerfolkAsset(role.key),
+    merfolkClips()
+  );
+}
 await writeGlb("moon-gate-v1.glb", createGateAsset());
 await writeGlb("ruin-kit-v1.glb", createKit("RuinKit", [
   { name: "BrokenTower", create: createProductionTower, lods: [0, 1, 2] },
@@ -428,7 +442,10 @@ await writeGlb("moon-life-v1.glb", createKit("MoonLife", [
   { name: "MoonMinnow", create: createProductionMinnow, lods: [0] },
   { name: "LanternJelly", create: createProductionJelly, lods: [0] },
   { name: "RibbonRay", create: createProductionRay, lods: [0] },
-  { name: "GardenSpirit", create: createProductionSpirit, lods: [0] }
+  { name: "GardenSpirit", create: createProductionSpirit, lods: [0] },
+  { name: "ReefCitizen", create: createProductionMerfolkCitizen, lods: [0] },
+  { name: "CurrentSwimmer", create: createProductionMerfolkSwimmer, lods: [0] },
+  { name: "ConchHerald", create: createProductionMerfolkConchHerald, lods: [0] }
 ], livingMaterial));
 await writeGlb("drowned-skyline-v1.glb", createKit("DrownedSkyline", [
   { name: "SkylineCluster", create: createProductionSkyline, lods: [0] }
@@ -437,7 +454,7 @@ await writeGlb("drowned-skyline-v1.glb", createKit("DrownedSkyline", [
 await writeFile(
   resolve(outputDirectory, "manifest.json"),
   `${JSON.stringify({
-    version: 1,
+    version: 2,
     source: "validated Phase 3B runtime production-transition meshes",
     status: "handoff baseline; requires sculpt/material authoring before runtime sign-off",
     assets: manifest

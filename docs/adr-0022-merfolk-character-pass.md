@@ -1,6 +1,7 @@
 # ADR-0022: Hero Tidekeeper and phone-readable merfolk contract
 
-**Status:** Accepted for the Phase 3B draft checkpoint on 2026-08-01. This does
+**Status:** Accepted for the Phase 3B draft checkpoint on 2026-08-01 and
+superseded for cast-scaling decisions by ADR-0023. This does
 not approve Phase 3B for merge or release; authored DCC replacement and real
 Android/iOS sign-off remain open.
 

@@ -23,7 +23,8 @@ import {
 import { PREMIUM_WORLD_SIGNATURES } from "../../../src/art/premiumWorld.ts";
 import {
   MERFOLK_ANIMATION,
-  MERFOLK_CHARACTER_CONTRACT
+  MERFOLK_CHARACTER_CONTRACT,
+  MERFOLK_CITY_CONTRACT
 } from "../../../src/art/merfolkCharacter.ts";
 
 const SAMPLE_GATE = {
@@ -289,10 +290,28 @@ function decorativeManifests(): AssetManifest[] {
       name: "moon-garden-merfolk-citizen",
       family: "merfolkCreature",
       collidable: false,
-      materials: PRODUCTION_ART.moonfolkGuardian.materials,
+      materials: PRODUCTION_ART.moonfolkCitizen.materials,
       textureMemoryMB: 0,
       contour: "none",
-      lods: [{ level: 0, triangles: PRODUCTION_ART.moonfolkGuardian.lod0 }]
+      lods: [{ level: 0, triangles: PRODUCTION_ART.moonfolkCitizen.lod0 }]
+    },
+    {
+      name: "moon-garden-merfolk-current-swimmer",
+      family: "merfolkCreature",
+      collidable: false,
+      materials: PRODUCTION_ART.moonfolkSwimmer.materials,
+      textureMemoryMB: 0,
+      contour: "none",
+      lods: [{ level: 0, triangles: PRODUCTION_ART.moonfolkSwimmer.lod0 }]
+    },
+    {
+      name: "moon-garden-merfolk-conch-herald",
+      family: "merfolkCreature",
+      collidable: false,
+      materials: PRODUCTION_ART.merfolkConchHerald.materials,
+      textureMemoryMB: 0,
+      contour: "none",
+      lods: [{ level: 0, triangles: PRODUCTION_ART.merfolkConchHerald.lod0 }]
     },
     {
       name: "moon-garden-hero-merfolk-guardian",
@@ -310,6 +329,8 @@ function decorativeManifests(): AssetManifest[] {
       readableEyeDiameterPixels:
         PRODUCTION_ART.heroMerfolkGuardian.readableEyeDiameterPixels,
       recognitionLabel: MERFOLK_CHARACTER_CONTRACT.recognitionLabel,
+      castRoles: [...MERFOLK_CITY_CONTRACT.guardianRoles],
+      populationRoles: [...MERFOLK_CITY_CONTRACT.populationRoles],
       parts: [...MERFOLK_CHARACTER_CONTRACT.requiredParts],
       clips: [...MERFOLK_ANIMATION.clips],
       animationDriver: MERFOLK_ANIMATION.driver,

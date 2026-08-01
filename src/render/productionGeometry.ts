@@ -1733,6 +1733,123 @@ export function createProductionMerfolkGuardian(): THREE.BufferGeometry {
   return merfolkFigure(false);
 }
 
+/**
+ * Lightweight midground citizen. The legacy export name above remains as a
+ * compatibility alias while the inhabited-city pass gives each population
+ * role an explicit production signature.
+ */
+export function createProductionMerfolkCitizen(): THREE.BufferGeometry {
+  return merfolkFigure(false);
+}
+
+function merfolkMantle(
+  colour: THREE.Color,
+  role: MaterialRole
+): THREE.BufferGeometry {
+  const shape = new THREE.Shape([
+    new THREE.Vector2(0, 0),
+    new THREE.Vector2(0.26, 0.12),
+    new THREE.Vector2(0.46, 0.02),
+    new THREE.Vector2(0.32, -0.18),
+    new THREE.Vector2(0.48, -0.36),
+    new THREE.Vector2(0.16, -0.3),
+    new THREE.Vector2(0, -0.48),
+    new THREE.Vector2(-0.16, -0.3),
+    new THREE.Vector2(-0.48, -0.36),
+    new THREE.Vector2(-0.32, -0.18),
+    new THREE.Vector2(-0.46, 0.02),
+    new THREE.Vector2(-0.26, 0.12)
+  ]);
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.06,
+    steps: 1,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: 0.012,
+    bevelThickness: 0.01
+  });
+  geometry.translate(0, 0, -0.03);
+  return styled(geometry, {
+    position: new THREE.Vector3(0, 1.02, -0.13),
+    rotation: new THREE.Euler(0.08, 0, 0),
+    scale: new THREE.Vector3(0.78, 0.72, 1),
+    colour,
+    glow: 0.2,
+    sway: 0.34,
+    materialRole: role
+  });
+}
+
+/**
+ * A current swimmer keeps the five required mermaid silhouette features but
+ * adds a broad trailing mantle. Runtime staging rotates the figure into a
+ * horizontal swim pose, making it distinct from upright citizens at a glance.
+ */
+export function createProductionMerfolkSwimmer(): THREE.BufferGeometry {
+  return merged([
+    merfolkFigure(false),
+    merfolkMantle(CYAN_LIGHT, MATERIAL_ROLE.crystal),
+    styled(new THREE.TorusGeometry(0.23, 0.028, 5, 16, Math.PI * 1.35), {
+      position: new THREE.Vector3(0, 1.3, -0.12),
+      rotation: new THREE.Euler(0, 0, -Math.PI * 0.18),
+      colour: LAPIS,
+      glow: 0.16,
+      sway: 0.24,
+      materialRole: MATERIAL_ROLE.lapis
+    })
+  ]);
+}
+
+/**
+ * Gate heralds carry a readable spiral conch and a scalloped ceremonial
+ * mantle. They are paired at the gate shoulders rather than scattered as
+ * generic decoration, so the city reads as inhabited and purposeful.
+ */
+export function createProductionMerfolkConchHerald(): THREE.BufferGeometry {
+  const conchLip = new THREE.Shape([
+    new THREE.Vector2(-0.12, -0.04),
+    new THREE.Vector2(0.12, -0.08),
+    new THREE.Vector2(0.2, 0.02),
+    new THREE.Vector2(0.1, 0.1),
+    new THREE.Vector2(-0.08, 0.08)
+  ]);
+  const lipGeometry = new THREE.ExtrudeGeometry(conchLip, {
+    depth: 0.08,
+    steps: 1,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: 0.016,
+    bevelThickness: 0.012
+  });
+  lipGeometry.translate(0, 0, -0.04);
+  return merged([
+    merfolkFigure(false),
+    merfolkMantle(ROSE, MATERIAL_ROLE.livingCoral),
+    styled(new THREE.TorusGeometry(0.14, 0.052, 6, 18, Math.PI * 1.72), {
+      position: new THREE.Vector3(0.24, 1.13, 0.15),
+      rotation: new THREE.Euler(0.18, 0.42, -0.78),
+      scale: new THREE.Vector3(1, 0.78, 0.72),
+      colour: BRONZE,
+      glow: 0.08,
+      materialRole: MATERIAL_ROLE.bronze
+    }),
+    styled(lipGeometry, {
+      position: new THREE.Vector3(0.36, 1.18, 0.15),
+      rotation: new THREE.Euler(0.1, 0.2, -0.32),
+      scale: new THREE.Vector3(0.72, 0.72, 0.72),
+      colour: NACRE,
+      glow: 0.12,
+      materialRole: MATERIAL_ROLE.nacre
+    }),
+    styled(new THREE.OctahedronGeometry(0.055, 0), {
+      position: new THREE.Vector3(0.24, 1.13, 0.23),
+      colour: CRYSTAL,
+      glow: 0.34,
+      materialRole: MATERIAL_ROLE.crystal
+    })
+  ]);
+}
+
 export function createProductionMerfolkMonument(): THREE.BufferGeometry {
   const figure = merfolkFigure(true);
   return merged([

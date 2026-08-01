@@ -431,3 +431,16 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   shoulders and rounded nacre column drums.
 - Preserve the exact collider-facing wall plane, gate opening, non-collidable
   guardian role and one-material/16-draw character envelope.
+
+## 2026-08-01 — Scale the approved Tidekeeper into an inhabited merfolk city
+
+- Adopt ADR-0023 after owner approval of the revised Tidekeeper face and Nacre
+  Palace gatehouse.
+- Map the five districts to Tidekeeper, Coral Warden and Astral Oracle regalia
+  while keeping exactly one articulated hero visible.
+- Add reef citizens, horizontal current swimmers and paired conch heralds as
+  deterministic instanced roles outside the gameplay corridor.
+- Raise the guardian envelope to 17 draws only for one swappable district-
+  regalia mesh, and require every cast role in the structural art gate.
+- Keep PR #7 draft pending owner review of this population pass, authored
+  DCC/PBR replacement and real Android/iOS sign-off.

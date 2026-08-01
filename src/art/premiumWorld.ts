@@ -74,6 +74,8 @@ export const PREMIUM_WORLD_CONTRACT = {
     "lantern-jelly",
     "ribbon-manta",
     "merfolk-citizen",
+    "merfolk-current-swimmer",
+    "merfolk-conch-herald",
     "hero-merfolk-guardian"
   ],
   requiredProps: [
@@ -92,7 +94,7 @@ export const PREMIUM_WORLD_CONTRACT = {
   maxRepeatedGateFamilyRun: 1,
   minimumDistinctVisibleGateFamilies: 3,
   minimumDistinctReefFamilies: 6,
-  minimumAmbientLifeFamilies: 5,
+  minimumAmbientLifeFamilies: 7,
   minimumPropFamilies: 3
 } as const;
 
