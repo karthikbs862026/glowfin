@@ -118,6 +118,24 @@ export class GameView {
   private readonly savedMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
   private readonly savedVisibility = new Map<THREE.Object3D, boolean>();
   private maskMode = false;
+  private readonly merfolkMaskMaterials = new Map<string, THREE.MeshBasicMaterial>([
+    ["guardian-body", new THREE.MeshBasicMaterial({ color: 0xff0000, toneMapped: false, fog: false })],
+    ["guardian-regalia", new THREE.MeshBasicMaterial({ color: 0xffff00, toneMapped: false, fog: false })],
+    ["guardian-face", new THREE.MeshBasicMaterial({ color: 0x00ffff, toneMapped: false, fog: false })],
+    ["guardian-eyes", new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false, fog: false })],
+    ["reef-citizen", new THREE.MeshBasicMaterial({ color: 0x00ff00, toneMapped: false, fog: false })],
+    ["current-swimmer", new THREE.MeshBasicMaterial({ color: 0x0000ff, toneMapped: false, fog: false })],
+    ["conch-herald", new THREE.MeshBasicMaterial({ color: 0xff00ff, toneMapped: false, fog: false })]
+  ]);
+  private readonly merfolkSavedMaterials = new Map<
+    THREE.Mesh,
+    THREE.Material | THREE.Material[]
+  >();
+  private readonly merfolkSavedVisibility = new Map<THREE.Object3D, boolean>();
+  private readonly merfolkMaskBackground = new THREE.Color(0x000000);
+  private merfolkMaskMode = false;
+  private merfolkMaskBackgroundBefore: THREE.Scene["background"] = null;
+  private merfolkMaskFogBefore: THREE.Scene["fog"] = null;
   readonly gpuName: string;
   private readonly speedInlays: THREE.InstancedMesh;
   private readonly speedInlayMatrix = new THREE.Matrix4();
@@ -435,6 +453,68 @@ export class GameView {
   }
 
   /**
+   * Render-time semantic mask for phone visibility QA. Unlike the structural
+   * manifest, this proves that each role survives the real chase camera and
+   * architecture depth buffer. Isolated mode supplies the unoccluded baseline
+   * used to calculate how much of a role the city hides.
+   */
+  setMerfolkMaskMode(enabled: boolean, isolated = false): void {
+    if (!enabled && !this.merfolkMaskMode) return;
+    if (enabled && this.merfolkMaskMode) this.setMerfolkMaskMode(false);
+    if (enabled && this.maskMode) {
+      throw new Error("Merfolk and obstacle art masks cannot be active together.");
+    }
+
+    this.merfolkMaskMode = enabled;
+    if (enabled) {
+      this.merfolkMaskBackgroundBefore = this.scene.background;
+      this.merfolkMaskFogBefore = this.scene.fog;
+      this.scene.background = this.merfolkMaskBackground;
+      this.scene.fog = null;
+      this.merfolkSavedVisibility.set(this.trail.mesh, this.trail.mesh.visible);
+      this.trail.mesh.visible = false;
+      this.scene.traverse((object) => {
+        if (object === this.trail.mesh) return;
+        if (object instanceof THREE.Points || object instanceof THREE.Line) {
+          this.merfolkSavedVisibility.set(object, object.visible);
+          object.visible = false;
+          return;
+        }
+        if (!(object instanceof THREE.Mesh)) return;
+        this.merfolkSavedMaterials.set(object, object.material);
+        const role = object.userData["merfolkMaskRole"];
+        const roleMaterial = typeof role === "string"
+          ? this.merfolkMaskMaterials.get(role)
+          : undefined;
+        if (roleMaterial) {
+          object.material = roleMaterial;
+          return;
+        }
+        if (isolated) {
+          this.merfolkSavedVisibility.set(object, object.visible);
+          object.visible = false;
+        } else {
+          object.material = this.maskOther;
+        }
+      });
+      return;
+    }
+
+    for (const [mesh, material] of this.merfolkSavedMaterials) {
+      mesh.material = material;
+    }
+    this.merfolkSavedMaterials.clear();
+    for (const [object, visible] of this.merfolkSavedVisibility) {
+      object.visible = visible;
+    }
+    this.merfolkSavedVisibility.clear();
+    this.scene.background = this.merfolkMaskBackgroundBefore;
+    this.scene.fog = this.merfolkMaskFogBefore;
+    this.merfolkMaskBackgroundBefore = null;
+    this.merfolkMaskFogBefore = null;
+  }
+
+  /**
    * Read the framebuffer. Must run synchronously after a render, before the
    * browser composites, or the buffer is already gone.
    */
@@ -460,6 +540,10 @@ export class GameView {
 
   /** Render the silhouette mask directly, bypassing post-processing. */
   renderMask(): void {
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  renderMerfolkMask(): void {
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -575,6 +659,10 @@ export class GameView {
           this.renderer.domElement.clientHeight || window.innerHeight
         )
     };
+  }
+
+  activeHeroMerfolkRole(): string {
+    return this.environment.heroMerfolkRole();
   }
 
   /** Live draw-call and triangle counts, for the Part 4.6 budget check. */
@@ -729,6 +817,9 @@ export class GameView {
     this.maskObstacle.dispose();
     this.maskObstacleContext.dispose();
     this.maskOther.dispose();
+    for (const material of this.merfolkMaskMaterials.values()) {
+      material.dispose();
+    }
     this.composer.dispose();
     this.renderer.dispose();
   }

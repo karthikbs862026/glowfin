@@ -10,6 +10,7 @@ import {
   checkCaptureCoverage,
   checkCreature,
   checkMerfolk,
+  checkMerfolkVisualReviews,
   checkPayload,
   checkReaction,
   checkTierSignoff,
@@ -167,6 +168,11 @@ export function runGate(
   findings.push(...checkTrail(input, cfg.trail));
   findings.push(...checkWorldQuality(input, cfg.worldQuality));
   findings.push(...checkCaptureCoverage(input.captures, tierName, tier));
+  findings.push(...checkMerfolkVisualReviews(
+    input.captures,
+    cfg.merfolk,
+    tier.requireCaptures
+  ));
   for (const capture of input.captures) {
     findings.push(...checkCapture(capture, cfg));
   }

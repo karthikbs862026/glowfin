@@ -7,6 +7,7 @@ import {
   checkCapture,
   checkCreature,
   checkMerfolk,
+  checkMerfolkVisualReviews,
   checkTrail,
   checkWorldQuality,
   percentile
@@ -104,6 +105,42 @@ describe("integrated gate fixtures", () => {
     assert.ok(found.has("MERFOLK_PHONE_HEIGHT_BELOW_FLOOR"));
     assert.ok(found.has("MERFOLK_FACE_HEIGHT_BELOW_FLOOR"));
     assert.ok(found.has("MERFOLK_EYE_SIZE_BELOW_FLOOR"));
+  });
+
+  test("declared cast roles cannot pass when the rendered identities are tiny or hidden", () => {
+    const input = load("gate-input.pass.json");
+    const reviews = input.captures
+      .map((capture) => capture.merfolkVisualReview)
+      .filter((review) => review !== undefined);
+    assert.equal(reviews.length, 3);
+    reviews[0]!.guardian.heightPixels = 44;
+    reviews[0]!.face.heightPixels = 9;
+    reviews[0]!.eyes.heightPixels = 2;
+    reviews[0]!.identity.widthPixels = 8;
+    reviews[0]!.identity.heightPixels = 8;
+    reviews[0]!.guardian.occlusionFraction = 0.62;
+    const citizen = reviews[1]!.population.find(
+      (entry) => entry.role === "reef-citizen"
+    );
+    assert.ok(citizen);
+    citizen.component.visiblePixels = 12;
+    reviews[2]!.population = reviews[2]!.population.filter(
+      (entry) => entry.role !== "conch-herald"
+    );
+    const found = new Set(codes(checkMerfolkVisualReviews(
+      input.captures,
+      config.merfolk,
+      true
+    )));
+    for (const expected of [
+      "MERFOLK_RENDERED_HEIGHT_BELOW_FLOOR",
+      "MERFOLK_RENDERED_FACE_BELOW_FLOOR",
+      "MERFOLK_RENDERED_EYES_BELOW_FLOOR",
+      "MERFOLK_IDENTITY_REGALIA_BELOW_FLOOR",
+      "MERFOLK_GUARDIAN_OCCLUDED",
+      "MERFOLK_POPULATION_AREA_BELOW_FLOOR",
+      "MERFOLK_POPULATION_NOT_RENDERED"
+    ]) assert.ok(found.has(expected), `missing ${expected}`);
   });
 });
 

@@ -12,6 +12,8 @@ import { createSimState, stepSim, type SimState } from "../sim/state";
 import type { Gate } from "../sim/course";
 import type {
   EffectState,
+  MerfolkMaskComponentEvidence,
+  MerfolkVisualReviewEvidence,
   SceneCapture
 } from "../../tools/art-gate/src/types";
 import { analyseContrast } from "./contrastAnalysis";
@@ -54,25 +56,276 @@ function simulateToMomentum(
   return state;
 }
 
-function captureGate(sim: SimState): Gate {
+function captureGate(
+  sim: SimState,
+  artVariant: NonNullable<Gate["artVariant"]> = 0
+): Gate {
   return {
     distance: sim.forwardDistance + 38,
     gapLeft: -2,
     gapRight: 2,
     templateId: "art-gate-capture",
-    tier: 0
+    tier: 0,
+    artVariant
+  };
+}
+
+const MASK = {
+  guardianBody: 1,
+  guardianIdentity: 2,
+  guardianFace: 3,
+  guardianEyes: 4,
+  citizen: 5,
+  swimmer: 6,
+  herald: 7
+} as const;
+
+function maskClass(red: number, green: number, blue: number): number {
+  const high = 176;
+  const low = 92;
+  if (red > high && green > high && blue > high) return MASK.guardianEyes;
+  if (red > high && green > high && blue < low) return MASK.guardianIdentity;
+  if (red < low && green > high && blue > high) return MASK.guardianFace;
+  if (red > high && green < low && blue > high) return MASK.herald;
+  if (red > high && green < low && blue < low) return MASK.guardianBody;
+  if (red < low && green > high && blue < low) return MASK.citizen;
+  if (red < low && green < low && blue > high) return MASK.swimmer;
+  return 0;
+}
+
+interface CssMask {
+  cells: Uint8Array;
+  width: number;
+  height: number;
+}
+
+function toCssMask(
+  pixels: Uint8Array,
+  width: number,
+  height: number,
+  pixelRatio: number
+): CssMask {
+  const cssWidth = Math.max(1, Math.round(width / Math.max(0.25, pixelRatio)));
+  const cssHeight = Math.max(1, Math.round(height / Math.max(0.25, pixelRatio)));
+  const cells = new Uint8Array(cssWidth * cssHeight);
+  const counts = new Uint8Array(8);
+  for (let y = 0; y < cssHeight; y++) {
+    const startY = Math.floor(y * height / cssHeight);
+    const endY = Math.max(startY + 1, Math.floor((y + 1) * height / cssHeight));
+    for (let x = 0; x < cssWidth; x++) {
+      counts.fill(0);
+      const startX = Math.floor(x * width / cssWidth);
+      const endX = Math.max(startX + 1, Math.floor((x + 1) * width / cssWidth));
+      for (let sourceY = startY; sourceY < endY; sourceY++) {
+        for (let sourceX = startX; sourceX < endX; sourceX++) {
+          const offset = (sourceY * width + sourceX) * 4;
+          const role = maskClass(
+            pixels[offset] ?? 0,
+            pixels[offset + 1] ?? 0,
+            pixels[offset + 2] ?? 0
+          );
+          if (role > 0) counts[role] = (counts[role] ?? 0) + 1;
+        }
+      }
+      let selected = 0;
+      for (let role = 1; role < counts.length; role++) {
+        if ((counts[role] ?? 0) > (counts[selected] ?? 0)) selected = role;
+      }
+      cells[y * cssWidth + x] = selected;
+    }
+  }
+  return { cells, width: cssWidth, height: cssHeight };
+}
+
+interface Component {
+  width: number;
+  height: number;
+  pixels: number;
+  edgeClearance: number;
+}
+
+function largestComponent(mask: CssMask, accepted: readonly number[]): Component {
+  const allowed = new Uint8Array(8);
+  for (const role of accepted) allowed[role] = 1;
+  const visited = new Uint8Array(mask.cells.length);
+  const stack = new Int32Array(mask.cells.length);
+  let best: Component = { width: 0, height: 0, pixels: 0, edgeClearance: 0 };
+
+  for (let start = 0; start < mask.cells.length; start++) {
+    if (visited[start] || !allowed[mask.cells[start] ?? 0]) continue;
+    let stackSize = 1;
+    stack[0] = start;
+    visited[start] = 1;
+    let pixels = 0;
+    let minX = mask.width;
+    let maxX = -1;
+    let minY = mask.height;
+    let maxY = -1;
+    while (stackSize > 0) {
+      const cell = stack[--stackSize] ?? 0;
+      const x = cell % mask.width;
+      const y = Math.floor(cell / mask.width);
+      pixels += 1;
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+      for (let offsetY = -1; offsetY <= 1; offsetY++) {
+        for (let offsetX = -1; offsetX <= 1; offsetX++) {
+          if (offsetX === 0 && offsetY === 0) continue;
+          const nextX = x + offsetX;
+          const nextY = y + offsetY;
+          if (
+            nextX < 0 || nextX >= mask.width ||
+            nextY < 0 || nextY >= mask.height
+          ) continue;
+          const next = nextY * mask.width + nextX;
+          if (visited[next] || !allowed[mask.cells[next] ?? 0]) continue;
+          visited[next] = 1;
+          stack[stackSize++] = next;
+        }
+      }
+    }
+    if (pixels <= best.pixels) continue;
+    best = {
+      width: maxX - minX + 1,
+      height: maxY - minY + 1,
+      pixels,
+      edgeClearance: Math.min(
+        minX,
+        minY,
+        mask.width - 1 - maxX,
+        mask.height - 1 - maxY
+      )
+    };
+  }
+  return best;
+}
+
+function componentEvidence(
+  visible: CssMask,
+  isolated: CssMask,
+  accepted: readonly number[]
+): MerfolkMaskComponentEvidence {
+  const shown = largestComponent(visible, accepted);
+  const whole = largestComponent(isolated, accepted);
+  const occlusionFraction = whole.pixels <= 0
+    ? 1
+    : Math.max(0, Math.min(1, 1 - shown.pixels / whole.pixels));
+  return {
+    widthPixels: shown.width,
+    heightPixels: shown.height,
+    visiblePixels: shown.pixels,
+    isolatedPixels: whole.pixels,
+    occlusionFraction,
+    edgeClearancePixels: shown.edgeClearance
+  };
+}
+
+function analyseMerfolkReview(
+  role: string,
+  visiblePixels: Uint8Array,
+  isolatedPixels: Uint8Array,
+  width: number,
+  height: number,
+  pixelRatio: number
+): MerfolkVisualReviewEvidence {
+  const visible = toCssMask(visiblePixels, width, height, pixelRatio);
+  const isolated = toCssMask(isolatedPixels, width, height, pixelRatio);
+  return {
+    guardianRole: role,
+    guardian: componentEvidence(visible, isolated, [
+      MASK.guardianBody,
+      MASK.guardianIdentity,
+      MASK.guardianFace,
+      MASK.guardianEyes
+    ]),
+    identity: componentEvidence(visible, isolated, [MASK.guardianIdentity]),
+    face: componentEvidence(visible, isolated, [MASK.guardianFace]),
+    eyes: componentEvidence(visible, isolated, [MASK.guardianEyes]),
+    population: [
+      {
+        role: "reef-citizen",
+        component: componentEvidence(visible, isolated, [MASK.citizen])
+      },
+      {
+        role: "current-swimmer",
+        component: componentEvidence(visible, isolated, [MASK.swimmer])
+      },
+      {
+        role: "conch-herald",
+        component: componentEvidence(visible, isolated, [MASK.herald])
+      }
+    ]
   };
 }
 
 export interface BrowserCaptureBundle {
   tier: "fast" | "full";
   captures: SceneCapture[];
+  castReviewAtlasDataUrl: string;
   beautyReview: {
     meanLuminance: number;
     nearBlackFraction: number;
     colourfulFraction: number;
     clippedHighlightFraction: number;
   };
+}
+
+function castReviewAtlas(
+  frames: Array<{ pixels: Uint8Array; width: number; height: number }>
+): string {
+  if (frames.length !== 3) return "";
+  const panelWidth = 390;
+  const panelHeight = 844;
+  const labelHeight = 44;
+  const atlas = document.createElement("canvas");
+  atlas.width = panelWidth * frames.length;
+  atlas.height = panelHeight + labelHeight;
+  const atlasContext = atlas.getContext("2d");
+  if (!atlasContext) return "";
+  const labels = ["TIDEKEEPER", "CORAL WARDEN", "ASTRAL ORACLE"];
+
+  frames.forEach((frame, panel) => {
+    const source = document.createElement("canvas");
+    source.width = frame.width;
+    source.height = frame.height;
+    const context = source.getContext("2d");
+    if (!context) return;
+    const flipped = new Uint8ClampedArray(frame.pixels.length);
+    const rowBytes = frame.width * 4;
+    for (let row = 0; row < frame.height; row++) {
+      const sourceStart = row * rowBytes;
+      const targetStart = (frame.height - 1 - row) * rowBytes;
+      flipped.set(
+        frame.pixels.subarray(sourceStart, sourceStart + rowBytes),
+        targetStart
+      );
+    }
+    context.putImageData(
+      new ImageData(flipped, frame.width, frame.height),
+      0,
+      0
+    );
+    atlasContext.drawImage(
+      source,
+      panel * panelWidth,
+      labelHeight,
+      panelWidth,
+      panelHeight
+    );
+    atlasContext.fillStyle = "#06152d";
+    atlasContext.fillRect(panel * panelWidth, 0, panelWidth, labelHeight);
+    atlasContext.fillStyle = "#ecfbff";
+    atlasContext.font = "700 18px system-ui, sans-serif";
+    atlasContext.textAlign = "center";
+    atlasContext.fillText(
+      labels[panel] ?? "MERFOLK",
+      panel * panelWidth + panelWidth / 2,
+      29
+    );
+  });
+  return atlas.toDataURL("image/png");
 }
 
 function srgbToLinear(channel: number): number {
@@ -120,11 +373,20 @@ export function runArtGateCapture(
   device: string
 ): BrowserCaptureBundle {
   const captures: SceneCapture[] = [];
+  const castFrames: Array<{
+    pixels: Uint8Array;
+    width: number;
+    height: number;
+  }> = [];
   const states = tier === "fast" ? FAST_STATES : fullEffectStates();
 
   for (const [index, state] of states.entries()) {
     const sim = simulateToMomentum(cfg, state.momentum);
-    const gate = captureGate(sim);
+    // The first three renders are also the cast-review atlas: Tidekeeper,
+    // Coral Warden and Astral Oracle. Generic role arrays can no longer make a
+    // render tier green when one of those identities never appears on screen.
+    const reviewFamily = ([0, 2, 4] as const)[index % 3] ?? 0;
+    const gate = captureGate(sim, reviewFamily);
     view.resetTrail();
     view.setCaptureEffects(
       state.quality,
@@ -135,6 +397,13 @@ export function runArtGateCapture(
     const renderStats = view.stats();
     const artStats = view.artStats();
     const beauty = view.capturePixels();
+    if (index < 3) {
+      castFrames.push({
+        pixels: beauty.pixels.slice(),
+        width: beauty.width,
+        height: beauty.height
+      });
+    }
 
     view.setMaskMaxDepth(
       cfg.readability.visibleAheadUnits +
@@ -168,6 +437,27 @@ export function runArtGateCapture(
       }
     );
 
+    let merfolkVisualReview: MerfolkVisualReviewEvidence | undefined;
+    if (index < 3) {
+      view.setMerfolkMaskMode(true, false);
+      view.renderMerfolkMask();
+      const visibleMerfolk = view.capturePixels();
+      view.setMerfolkMaskMode(false);
+
+      view.setMerfolkMaskMode(true, true);
+      view.renderMerfolkMask();
+      const isolatedMerfolk = view.capturePixels();
+      view.setMerfolkMaskMode(false);
+      merfolkVisualReview = analyseMerfolkReview(
+        view.activeHeroMerfolkRole(),
+        visibleMerfolk.pixels,
+        isolatedMerfolk.pixels,
+        visibleMerfolk.width,
+        visibleMerfolk.height,
+        view.capturePixelRatio()
+      );
+    }
+
     captures.push({
       seed: CAPTURE_SEED + index,
       device,
@@ -186,6 +476,7 @@ export function runArtGateCapture(
       heroMerfolkHeightPixels: artStats.heroMerfolkHeightPixels,
       heroMerfolkFaceHeightPixels: artStats.heroMerfolkFaceHeightPixels,
       heroMerfolkEyeDiameterPixels: artStats.heroMerfolkEyeDiameterPixels,
+      ...(merfolkVisualReview ? { merfolkVisualReview } : {}),
       frameContrastRatios: report.ratios,
       obstacles: [{
         obstacleId: "moon-garden-wall-fragments",
@@ -223,7 +514,7 @@ export function runArtGateCapture(
     stepSim(previewSim, steering, FIXED_DT_SEC, cfg);
     view.render(
       previewSim,
-      [captureGate(previewSim)],
+      [captureGate(previewSim, 0)],
       1,
       previewSim.elapsedSec,
       FIXED_DT_SEC
@@ -231,5 +522,10 @@ export function runArtGateCapture(
   }
   const beautyReview = analyseBeautyFrame(view.capturePixels().pixels);
 
-  return { tier, captures, beautyReview };
+  return {
+    tier,
+    captures,
+    beautyReview,
+    castReviewAtlasDataUrl: castReviewAtlas(castFrames)
+  };
 }

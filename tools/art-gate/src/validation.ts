@@ -109,6 +109,17 @@ export function validateGateConfig(raw: unknown): Finding[] {
     "merfolk.minimumReadableHeightPixels",
     "merfolk.minimumFaceHeightPixels",
     "merfolk.minimumEyeDiameterPixels",
+    "merfolk.minimumGuardianIdentitySpanPixels",
+    "merfolk.minimumGuardianVisiblePixels",
+    "merfolk.minimumCitizenHeightPixels",
+    "merfolk.minimumCitizenVisiblePixels",
+    "merfolk.minimumSwimmerWidthPixels",
+    "merfolk.minimumSwimmerVisiblePixels",
+    "merfolk.minimumHeraldHeightPixels",
+    "merfolk.minimumHeraldVisiblePixels",
+    "merfolk.maximumGuardianOcclusionFraction",
+    "merfolk.maximumPopulationOcclusionFraction",
+    "merfolk.minimumGuardianEdgeClearancePixels",
     "merfolk.maxArticulatedJoints",
     "merfolk.maxMaterials",
     "trail.maxLaneWidthFractionAtMaxMomentum"
@@ -454,6 +465,41 @@ export function validateCapture(raw: unknown): Finding[] {
         fail("Obstacle contrast entry is incomplete.");
         break;
       }
+    }
+  }
+
+  if (capture.merfolkVisualReview !== undefined) {
+    const review = record(capture.merfolkVisualReview);
+    const componentKeys = [
+      "widthPixels",
+      "heightPixels",
+      "visiblePixels",
+      "isolatedPixels",
+      "occlusionFraction",
+      "edgeClearancePixels"
+    ];
+    const validComponent = (value: unknown): boolean => {
+      const component = record(value);
+      if (!component) return false;
+      if (!componentKeys.every((key) =>
+        finite(component[key]) && (component[key] as number) >= 0
+      )) return false;
+      return (component.occlusionFraction as number) <= 1;
+    };
+    if (
+      !review ||
+      !nonEmptyString(review.guardianRole) ||
+      !validComponent(review.guardian) ||
+      !validComponent(review.face) ||
+      !validComponent(review.eyes) ||
+      !validComponent(review.identity) ||
+      !Array.isArray(review.population) ||
+      !review.population.every((entry) => {
+        const item = record(entry);
+        return item && nonEmptyString(item.role) && validComponent(item.component);
+      })
+    ) {
+      fail("Merfolk pixel-mask review is incomplete or malformed.");
     }
   }
 

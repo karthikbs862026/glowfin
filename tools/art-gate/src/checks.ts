@@ -607,6 +607,166 @@ export function checkCaptureCoverage(
   return findings;
 }
 
+export function checkMerfolkVisualReviews(
+  captures: SceneCapture[],
+  cfg: GateConfig["merfolk"],
+  required: boolean
+): Finding[] {
+  if (!required) return [];
+  const findings: Finding[] = [];
+  const reviews = captures
+    .map((capture) => capture.merfolkVisualReview)
+    .filter((review) => review !== undefined);
+  const fail = (
+    code: string,
+    message: string,
+    observed?: number | string,
+    limit?: number | string
+  ) => findings.push(result(
+    code,
+    "blocker",
+    message,
+    "Phase 3B Merfolk rendered-identity contract",
+    { observed, limit }
+  ));
+
+  if (reviews.length === 0) {
+    fail(
+      "MERFOLK_VISUAL_REVIEW_MISSING",
+      "No role-specific pixel-mask evidence was captured from the chase camera."
+    );
+    return findings;
+  }
+
+  for (const role of cfg.requiredGuardianRoles) {
+    if (!reviews.some((review) => review.guardianRole === role)) {
+      fail(
+        "MERFOLK_GUARDIAN_NOT_RENDERED",
+        `${role} never appears in the rendered cast review.`
+      );
+    }
+  }
+
+  for (const review of reviews) {
+    const label = review.guardianRole;
+    const guardian = review.guardian;
+    if (guardian.heightPixels < cfg.minimumReadableHeightPixels) {
+      fail(
+        "MERFOLK_RENDERED_HEIGHT_BELOW_FLOOR",
+        `${label} is only ${guardian.heightPixels}px tall in the visible mask.`,
+        guardian.heightPixels,
+        cfg.minimumReadableHeightPixels
+      );
+    }
+    if (guardian.visiblePixels < cfg.minimumGuardianVisiblePixels) {
+      fail(
+        "MERFOLK_RENDERED_AREA_BELOW_FLOOR",
+        `${label} does not retain enough visible silhouette area on a phone.`,
+        guardian.visiblePixels,
+        cfg.minimumGuardianVisiblePixels
+      );
+    }
+    if (review.face.heightPixels < cfg.minimumFaceHeightPixels) {
+      fail(
+        "MERFOLK_RENDERED_FACE_BELOW_FLOOR",
+        `${label}'s actually visible face is too small.`,
+        review.face.heightPixels,
+        cfg.minimumFaceHeightPixels
+      );
+    }
+    if (review.eyes.heightPixels < cfg.minimumEyeDiameterPixels) {
+      fail(
+        "MERFOLK_RENDERED_EYES_BELOW_FLOOR",
+        `${label}'s eyes disappear in the rendered mask.`,
+        review.eyes.heightPixels,
+        cfg.minimumEyeDiameterPixels
+      );
+    }
+    const identitySpan = Math.max(
+      review.identity.widthPixels,
+      review.identity.heightPixels
+    );
+    if (identitySpan < cfg.minimumGuardianIdentitySpanPixels) {
+      fail(
+        "MERFOLK_IDENTITY_REGALIA_BELOW_FLOOR",
+        `${label}'s district identity feature is not large enough to distinguish.`,
+        identitySpan,
+        cfg.minimumGuardianIdentitySpanPixels
+      );
+    }
+    if (guardian.occlusionFraction > cfg.maximumGuardianOcclusionFraction) {
+      fail(
+        "MERFOLK_GUARDIAN_OCCLUDED",
+        `${label} loses ${(guardian.occlusionFraction * 100).toFixed(1)}% of its silhouette behind the city.`,
+        guardian.occlusionFraction,
+        cfg.maximumGuardianOcclusionFraction
+      );
+    }
+    if (guardian.edgeClearancePixels < cfg.minimumGuardianEdgeClearancePixels) {
+      fail(
+        "MERFOLK_GUARDIAN_FRAME_CLIPPED",
+        `${label} is clipped or too close to the portrait-frame edge.`,
+        guardian.edgeClearancePixels,
+        cfg.minimumGuardianEdgeClearancePixels
+      );
+    }
+
+    for (const role of cfg.requiredPopulationRoles) {
+      const population = review.population.find((entry) => entry.role === role);
+      if (!population) {
+        fail(
+          "MERFOLK_POPULATION_NOT_RENDERED",
+          `${role} has no role-specific rendered evidence beside ${label}.`
+        );
+        continue;
+      }
+      const component = population.component;
+      const minimumSpan = role === "current-swimmer"
+        ? cfg.minimumSwimmerWidthPixels
+        : role === "conch-herald"
+          ? cfg.minimumHeraldHeightPixels
+          : cfg.minimumCitizenHeightPixels;
+      const observedSpan = role === "current-swimmer"
+        ? component.widthPixels
+        : component.heightPixels;
+      const minimumPixels = role === "current-swimmer"
+        ? cfg.minimumSwimmerVisiblePixels
+        : role === "conch-herald"
+          ? cfg.minimumHeraldVisiblePixels
+          : cfg.minimumCitizenVisiblePixels;
+      if (observedSpan < minimumSpan) {
+        fail(
+          "MERFOLK_POPULATION_SPAN_BELOW_FLOOR",
+          `${role} is not large enough to identify in the ${label} frame.`,
+          observedSpan,
+          minimumSpan
+        );
+      }
+      if (component.visiblePixels < minimumPixels) {
+        fail(
+          "MERFOLK_POPULATION_AREA_BELOW_FLOOR",
+          `${role} collapses into a phone-scale speck in the ${label} frame.`,
+          component.visiblePixels,
+          minimumPixels
+        );
+      }
+      if (
+        component.occlusionFraction >
+        cfg.maximumPopulationOcclusionFraction
+      ) {
+        fail(
+          "MERFOLK_POPULATION_OCCLUDED",
+          `${role} is materially hidden by architecture in the ${label} frame.`,
+          component.occlusionFraction,
+          cfg.maximumPopulationOcclusionFraction
+        );
+      }
+    }
+  }
+
+  return findings;
+}
+
 export function checkCapture(
   capture: SceneCapture,
   cfg: GateConfig

@@ -19,6 +19,10 @@ const output = resolve(option("output") ?? `build/art-gate-${tier}.json`);
 const screenshot = resolve(
   option("screenshot") ?? `build/art-gate-${tier}.png`
 );
+const castReviewScreenshot = screenshot.replace(
+  /\.png$/i,
+  "-merfolk-cast.png"
+);
 const beautyReviewOutput = output.replace(/\.json$/i, "-beauty-review.json");
 // The fast tier renders four states, while the full tier renders the complete
 // 36-state matrix before it marks the page ready. Keep the quick failure bound
@@ -94,6 +98,17 @@ try {
     `${JSON.stringify(bundle.beautyReview, null, 2)}\n`,
     "utf8"
   );
+  const castReviewDataUrl = bundle.castReviewAtlasDataUrl;
+  if (
+    typeof castReviewDataUrl !== "string" ||
+    !castReviewDataUrl.startsWith("data:image/png;base64,")
+  ) {
+    throw new Error("Browser did not expose the three-role merfolk cast atlas.");
+  }
+  writeFileSync(
+    castReviewScreenshot,
+    Buffer.from(castReviewDataUrl.split(",", 2)[1], "base64")
+  );
   // Capture the fixed gameplay canvas directly. `fullPage` can temporarily
   // resize a mobile viewport while calculating document bounds, producing a
   // misleading portrait where Glowfin appears to jump toward the lower crop.
@@ -101,6 +116,7 @@ try {
   console.log(`wrote ${output}`);
   console.log(`wrote ${beautyReviewOutput}`);
   console.log(`wrote ${screenshot}`);
+  console.log(`wrote ${castReviewScreenshot}`);
 
   const review = bundle.beautyReview;
   const failures = [];

@@ -444,3 +444,19 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   regalia mesh, and require every cast role in the structural art gate.
 - Keep PR #7 draft pending owner review of this population pass, authored
   DCC/PBR replacement and real Android/iOS sign-off.
+
+## 2026-08-01 — Replace merfolk presence checks with rendered identity proof
+
+- Owner Android screenshots invalidated the previous green result: most roles
+  were distant faceless silhouettes, and declared identities were not visibly
+  distinguishable.
+- Adopt ADR-0024. Move the guardian in front of the gate, compose citizens,
+  current swimmers and heralds around that encounter, and add high-contrast
+  facial geometry to every population mesh.
+- Capture a labelled Tidekeeper / Coral Warden / Astral Oracle portrait atlas.
+  Measure semantic pixel masks through the real scene depth buffer against an
+  isolated baseline, including role size, face, eyes, identity regalia,
+  clipping and occlusion.
+- Make the owner's phone review authoritative over automated evidence. CI may
+  prove that a role is visible; it may not call code-native art premium or
+  semantically approved.

@@ -48,7 +48,23 @@ export const MERFOLK_CITY_CONTRACT = {
     "arms",
     "tapered-tail",
     "split-fin"
-  ]
+  ],
+  visualReview: {
+    guardianHeightPixels: 92,
+    guardianFaceHeightPixels: 24,
+    guardianEyeHeightPixels: 5.5,
+    guardianIdentitySpanPixels: 28,
+    guardianVisiblePixels: 620,
+    citizenHeightPixels: 27,
+    citizenVisiblePixels: 90,
+    swimmerWidthPixels: 32,
+    swimmerVisiblePixels: 90,
+    heraldHeightPixels: 31,
+    heraldVisiblePixels: 120,
+    maximumGuardianOcclusionFraction: 0.18,
+    maximumPopulationOcclusionFraction: 0.38,
+    guardianEdgeClearancePixels: 5
+  }
 } as const;
 
 export function guardianRoleForGateFamily(
@@ -63,9 +79,9 @@ export const MERFOLK_CHARACTER_CONTRACT = {
   key: "hero-merfolk-guardian",
   name: "Moon-Garden Tidekeeper",
   recognitionLabel: "mermaid",
-  minimumReadableHeightPixels: 72,
-  minimumFaceHeightPixels: 22,
-  minimumEyeDiameterPixels: 4.5,
+  minimumReadableHeightPixels: 92,
+  minimumFaceHeightPixels: 24,
+  minimumEyeDiameterPixels: 5.5,
   minimumWorldHeight: 3.45,
   safeLaneMarginUnits: 0.45,
   triangleRange: [6_800, 8_600] as const,

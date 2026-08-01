@@ -597,7 +597,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1076
+          "triangles": 1488
         }
       ]
     },
@@ -611,7 +611,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1328
+          "triangles": 1740
         }
       ]
     },
@@ -625,7 +625,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1428
+          "triangles": 1840
         }
       ]
     },
@@ -637,9 +637,9 @@
       "textureMemoryMB": 0,
       "contour": "none",
       "articulatedJoints": 12,
-      "readableHeightPixels": 72,
-      "readableFaceHeightPixels": 22,
-      "readableEyeDiameterPixels": 4.5,
+      "readableHeightPixels": 92,
+      "readableFaceHeightPixels": 24,
+      "readableEyeDiameterPixels": 5.5,
       "recognitionLabel": "mermaid",
       "castRoles": [
         "tidekeeper",
@@ -814,9 +814,79 @@
       "textureMemoryMB": 0,
       "activeMaterials": 9,
       "godRayMeshes": 3,
-      "heroMerfolkHeightPixels": 84,
-      "heroMerfolkFaceHeightPixels": 26,
-      "heroMerfolkEyeDiameterPixels": 5.5,
+      "heroMerfolkHeightPixels": 104,
+      "heroMerfolkFaceHeightPixels": 27,
+      "heroMerfolkEyeDiameterPixels": 6.5,
+      "merfolkVisualReview": {
+        "guardianRole": "tidekeeper",
+        "guardian": {
+          "widthPixels": 62,
+          "heightPixels": 104,
+          "visiblePixels": 1420,
+          "isolatedPixels": 1534,
+          "occlusionFraction": 0.0743155149934811,
+          "edgeClearancePixels": 12
+        },
+        "face": {
+          "widthPixels": 24,
+          "heightPixels": 27,
+          "visiblePixels": 420,
+          "isolatedPixels": 454,
+          "occlusionFraction": 0.07488986784140972,
+          "edgeClearancePixels": 12
+        },
+        "eyes": {
+          "widthPixels": 20,
+          "heightPixels": 7,
+          "visiblePixels": 82,
+          "isolatedPixels": 89,
+          "occlusionFraction": 0.0786516853932584,
+          "edgeClearancePixels": 12
+        },
+        "identity": {
+          "widthPixels": 38,
+          "heightPixels": 43,
+          "visiblePixels": 260,
+          "isolatedPixels": 281,
+          "occlusionFraction": 0.07473309608540923,
+          "edgeClearancePixels": 12
+        },
+        "population": [
+          {
+            "role": "reef-citizen",
+            "component": {
+              "widthPixels": 18,
+              "heightPixels": 33,
+              "visiblePixels": 142,
+              "isolatedPixels": 153,
+              "occlusionFraction": 0.07189542483660127,
+              "edgeClearancePixels": 12
+            }
+          },
+          {
+            "role": "current-swimmer",
+            "component": {
+              "widthPixels": 39,
+              "heightPixels": 19,
+              "visiblePixels": 134,
+              "isolatedPixels": 145,
+              "occlusionFraction": 0.07586206896551728,
+              "edgeClearancePixels": 12
+            }
+          },
+          {
+            "role": "conch-herald",
+            "component": {
+              "widthPixels": 23,
+              "heightPixels": 37,
+              "visiblePixels": 176,
+              "isolatedPixels": 190,
+              "occlusionFraction": 0.0736842105263158,
+              "edgeClearancePixels": 12
+            }
+          }
+        ]
+      },
       "frameContrastRatios": [
         4.2,
         4.2,
@@ -887,9 +957,79 @@
       "textureMemoryMB": 0,
       "activeMaterials": 9,
       "godRayMeshes": 3,
-      "heroMerfolkHeightPixels": 84,
-      "heroMerfolkFaceHeightPixels": 26,
-      "heroMerfolkEyeDiameterPixels": 5.5,
+      "heroMerfolkHeightPixels": 104,
+      "heroMerfolkFaceHeightPixels": 27,
+      "heroMerfolkEyeDiameterPixels": 6.5,
+      "merfolkVisualReview": {
+        "guardianRole": "coral-warden",
+        "guardian": {
+          "widthPixels": 62,
+          "heightPixels": 104,
+          "visiblePixels": 1420,
+          "isolatedPixels": 1534,
+          "occlusionFraction": 0.0743155149934811,
+          "edgeClearancePixels": 12
+        },
+        "face": {
+          "widthPixels": 24,
+          "heightPixels": 27,
+          "visiblePixels": 420,
+          "isolatedPixels": 454,
+          "occlusionFraction": 0.07488986784140972,
+          "edgeClearancePixels": 12
+        },
+        "eyes": {
+          "widthPixels": 20,
+          "heightPixels": 7,
+          "visiblePixels": 82,
+          "isolatedPixels": 89,
+          "occlusionFraction": 0.0786516853932584,
+          "edgeClearancePixels": 12
+        },
+        "identity": {
+          "widthPixels": 38,
+          "heightPixels": 43,
+          "visiblePixels": 260,
+          "isolatedPixels": 281,
+          "occlusionFraction": 0.07473309608540923,
+          "edgeClearancePixels": 12
+        },
+        "population": [
+          {
+            "role": "reef-citizen",
+            "component": {
+              "widthPixels": 18,
+              "heightPixels": 33,
+              "visiblePixels": 142,
+              "isolatedPixels": 153,
+              "occlusionFraction": 0.07189542483660127,
+              "edgeClearancePixels": 12
+            }
+          },
+          {
+            "role": "current-swimmer",
+            "component": {
+              "widthPixels": 39,
+              "heightPixels": 19,
+              "visiblePixels": 134,
+              "isolatedPixels": 145,
+              "occlusionFraction": 0.07586206896551728,
+              "edgeClearancePixels": 12
+            }
+          },
+          {
+            "role": "conch-herald",
+            "component": {
+              "widthPixels": 23,
+              "heightPixels": 37,
+              "visiblePixels": 176,
+              "isolatedPixels": 190,
+              "occlusionFraction": 0.0736842105263158,
+              "edgeClearancePixels": 12
+            }
+          }
+        ]
+      },
       "frameContrastRatios": [
         4.2,
         4.2,
@@ -960,9 +1100,79 @@
       "textureMemoryMB": 0,
       "activeMaterials": 9,
       "godRayMeshes": 3,
-      "heroMerfolkHeightPixels": 84,
-      "heroMerfolkFaceHeightPixels": 26,
-      "heroMerfolkEyeDiameterPixels": 5.5,
+      "heroMerfolkHeightPixels": 104,
+      "heroMerfolkFaceHeightPixels": 27,
+      "heroMerfolkEyeDiameterPixels": 6.5,
+      "merfolkVisualReview": {
+        "guardianRole": "astral-oracle",
+        "guardian": {
+          "widthPixels": 62,
+          "heightPixels": 104,
+          "visiblePixels": 1420,
+          "isolatedPixels": 1534,
+          "occlusionFraction": 0.0743155149934811,
+          "edgeClearancePixels": 12
+        },
+        "face": {
+          "widthPixels": 24,
+          "heightPixels": 27,
+          "visiblePixels": 420,
+          "isolatedPixels": 454,
+          "occlusionFraction": 0.07488986784140972,
+          "edgeClearancePixels": 12
+        },
+        "eyes": {
+          "widthPixels": 20,
+          "heightPixels": 7,
+          "visiblePixels": 82,
+          "isolatedPixels": 89,
+          "occlusionFraction": 0.0786516853932584,
+          "edgeClearancePixels": 12
+        },
+        "identity": {
+          "widthPixels": 38,
+          "heightPixels": 43,
+          "visiblePixels": 260,
+          "isolatedPixels": 281,
+          "occlusionFraction": 0.07473309608540923,
+          "edgeClearancePixels": 12
+        },
+        "population": [
+          {
+            "role": "reef-citizen",
+            "component": {
+              "widthPixels": 18,
+              "heightPixels": 33,
+              "visiblePixels": 142,
+              "isolatedPixels": 153,
+              "occlusionFraction": 0.07189542483660127,
+              "edgeClearancePixels": 12
+            }
+          },
+          {
+            "role": "current-swimmer",
+            "component": {
+              "widthPixels": 39,
+              "heightPixels": 19,
+              "visiblePixels": 134,
+              "isolatedPixels": 145,
+              "occlusionFraction": 0.07586206896551728,
+              "edgeClearancePixels": 12
+            }
+          },
+          {
+            "role": "conch-herald",
+            "component": {
+              "widthPixels": 23,
+              "heightPixels": 37,
+              "visiblePixels": 176,
+              "isolatedPixels": 190,
+              "occlusionFraction": 0.0736842105263158,
+              "edgeClearancePixels": 12
+            }
+          }
+        ]
+      },
       "frameContrastRatios": [
         4.2,
         4.2,
@@ -1033,9 +1243,9 @@
       "textureMemoryMB": 0,
       "activeMaterials": 9,
       "godRayMeshes": 3,
-      "heroMerfolkHeightPixels": 84,
-      "heroMerfolkFaceHeightPixels": 26,
-      "heroMerfolkEyeDiameterPixels": 5.5,
+      "heroMerfolkHeightPixels": 104,
+      "heroMerfolkFaceHeightPixels": 27,
+      "heroMerfolkEyeDiameterPixels": 6.5,
       "frameContrastRatios": [
         4.2,
         4.2,

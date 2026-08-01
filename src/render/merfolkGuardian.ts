@@ -106,6 +106,11 @@ function mesh(
   object.frustumCulled = false;
   object.userData["artSignature"] = MERFOLK_CHARACTER_CONTRACT.key;
   object.userData["nonCollidable"] = true;
+  object.userData["merfolkMaskRole"] = name === "readable-face"
+    ? "guardian-face"
+    : name === "expressive-eyes"
+      ? "guardian-eyes"
+      : "guardian-body";
   return object;
 }
 
@@ -824,6 +829,7 @@ export class HeroMerfolkGuardian {
       MERFOLK_CHARACTER_CONTRACT.key;
     this.districtRegalia.userData["castRole"] = this.currentRole;
     this.districtRegalia.userData["nonCollidable"] = true;
+    this.districtRegalia.userData["merfolkMaskRole"] = "guardian-regalia";
     this.object.add(this.districtRegalia);
 
     this.object.traverse((child) => {
@@ -897,13 +903,13 @@ export class HeroMerfolkGuardian {
     // scale compensation keeps facial features stable without moving the
     // guardian into the lane. Horizontal scale stays slimmer so the complete
     // silhouette remains inside the portrait frame near the gate.
-    const scale = 1.82 + momentumFraction * 0.3;
+    const scale = 2.06 + momentumFraction * 0.28;
 
-    this.object.visible = ahead > -9 && ahead < 58;
+    this.object.visible = ahead > 11 && ahead < 60;
     this.object.position.set(
-      side * (this.laneHalfWidth + 2.58) + patrol * 0.18,
-      2.82 + hover * 0.11,
-      -anchor - 14 + Math.cos(phase * 0.38) * 0.34
+      side * (this.laneHalfWidth + 2.72) + patrol * 0.14,
+      2.68 + hover * 0.1,
+      -anchor + 1.8 + Math.cos(phase * 0.38) * 0.24
     );
     this.object.scale.set(scale * 0.88, scale, scale);
     this.object.rotation.set(

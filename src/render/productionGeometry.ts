@@ -17,6 +17,8 @@ const CYAN = new THREE.Color(0x075c70);
 const CYAN_LIGHT = new THREE.Color(0x20a7b5);
 const VIOLET = new THREE.Color(0x56357b);
 const ROSE = new THREE.Color(0x873c70);
+const FACE_WHITE = new THREE.Color(0xfff4df);
+const EYE_DARK = new THREE.Color(0x11173d);
 
 export const MATERIAL_ROLE = {
   limestone: 0,
@@ -1667,6 +1669,49 @@ function merfolkFigure(monument: boolean): THREE.BufferGeometry {
     glow,
     materialRole: skinRole
   }));
+  if (!monument) {
+    // Midground inhabitants used to have a literal blank sphere for a head.
+    // Oversized light/dark eye layers and a coral mouth survive the 27–40 px
+    // phone silhouette without introducing another material or draw call.
+    for (const side of [-1, 1]) {
+      parts.push(
+        styled(new THREE.SphereGeometry(0.058, 8, 6), {
+          position: new THREE.Vector3(side * 0.066, 1.3, 0.15),
+          scale: new THREE.Vector3(1, 0.92, 0.42),
+          colour: FACE_WHITE,
+          glow: 0.24,
+          materialRole: MATERIAL_ROLE.nacre
+        }),
+        styled(new THREE.SphereGeometry(0.032, 7, 5), {
+          position: new THREE.Vector3(side * 0.066, 1.3, 0.174),
+          scale: new THREE.Vector3(1, 0.96, 0.38),
+          colour: EYE_DARK,
+          glow: 0.05,
+          materialRole: MATERIAL_ROLE.lapis
+        }),
+        styled(new THREE.SphereGeometry(0.01, 5, 4), {
+          position: new THREE.Vector3(side * 0.058, 1.314, 0.188),
+          colour: FACE_WHITE,
+          glow: 0.52,
+          materialRole: MATERIAL_ROLE.crystal
+        })
+      );
+    }
+    parts.push(styled(new THREE.TorusGeometry(
+      0.042,
+      0.009,
+      4,
+      10,
+      Math.PI
+    ), {
+      position: new THREE.Vector3(0, 1.225, 0.166),
+      rotation: new THREE.Euler(0, 0, Math.PI),
+      scale: new THREE.Vector3(1, 0.58, 1),
+      colour: ROSE,
+      glow: 0.18,
+      materialRole: MATERIAL_ROLE.livingCoral
+    }));
+  }
   parts.push(styled(new THREE.CapsuleGeometry(0.17, 0.42, 5, 10), {
     position: new THREE.Vector3(0, 0.88, 0),
     scale: new THREE.Vector3(0.9, 1, 0.72),
@@ -1739,7 +1784,10 @@ export function createProductionMerfolkGuardian(): THREE.BufferGeometry {
  * role an explicit production signature.
  */
 export function createProductionMerfolkCitizen(): THREE.BufferGeometry {
-  return merfolkFigure(false);
+  const geometry = merfolkFigure(false);
+  geometry.userData["populationRole"] = "reef-citizen";
+  geometry.userData["facialFeatures"] = "eye-white-pupil-highlight-mouth";
+  return geometry;
 }
 
 function merfolkMantle(
@@ -1786,7 +1834,7 @@ function merfolkMantle(
  * horizontal swim pose, making it distinct from upright citizens at a glance.
  */
 export function createProductionMerfolkSwimmer(): THREE.BufferGeometry {
-  return merged([
+  const geometry = merged([
     merfolkFigure(false),
     merfolkMantle(CYAN_LIGHT, MATERIAL_ROLE.crystal),
     styled(new THREE.TorusGeometry(0.23, 0.028, 5, 16, Math.PI * 1.35), {
@@ -1798,6 +1846,9 @@ export function createProductionMerfolkSwimmer(): THREE.BufferGeometry {
       materialRole: MATERIAL_ROLE.lapis
     })
   ]);
+  geometry.userData["populationRole"] = "current-swimmer";
+  geometry.userData["facialFeatures"] = "eye-white-pupil-highlight-mouth";
+  return geometry;
 }
 
 /**
@@ -1822,7 +1873,7 @@ export function createProductionMerfolkConchHerald(): THREE.BufferGeometry {
     bevelThickness: 0.012
   });
   lipGeometry.translate(0, 0, -0.04);
-  return merged([
+  const geometry = merged([
     merfolkFigure(false),
     merfolkMantle(ROSE, MATERIAL_ROLE.livingCoral),
     styled(new THREE.TorusGeometry(0.14, 0.052, 6, 18, Math.PI * 1.72), {
@@ -1848,6 +1899,10 @@ export function createProductionMerfolkConchHerald(): THREE.BufferGeometry {
       materialRole: MATERIAL_ROLE.crystal
     })
   ]);
+  geometry.userData["populationRole"] = "conch-herald";
+  geometry.userData["facialFeatures"] = "eye-white-pupil-highlight-mouth";
+  geometry.userData["ceremonialProp"] = "spiral-conch";
+  return geometry;
 }
 
 export function createProductionMerfolkMonument(): THREE.BufferGeometry {

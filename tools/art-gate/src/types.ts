@@ -134,6 +134,27 @@ export interface ObstacleContrast {
   ratios: number[];
 }
 
+export interface MerfolkMaskComponentEvidence {
+  widthPixels: number;
+  heightPixels: number;
+  visiblePixels: number;
+  isolatedPixels: number;
+  occlusionFraction: number;
+  edgeClearancePixels: number;
+}
+
+export interface MerfolkVisualReviewEvidence {
+  guardianRole: string;
+  guardian: MerfolkMaskComponentEvidence;
+  face: MerfolkMaskComponentEvidence;
+  eyes: MerfolkMaskComponentEvidence;
+  identity: MerfolkMaskComponentEvidence;
+  population: Array<{
+    role: string;
+    component: MerfolkMaskComponentEvidence;
+  }>;
+}
+
 export type CaptureSourceKind =
   | "ci-emulated"
   | "real-device"
@@ -159,6 +180,12 @@ export interface SceneCapture {
   heroMerfolkHeightPixels: number;
   heroMerfolkFaceHeightPixels: number;
   heroMerfolkEyeDiameterPixels: number;
+  /**
+   * Pixel-mask evidence is emitted for the first three deterministic frames,
+   * one per guardian identity. It measures the rendered/occluded result rather
+   * than trusting declared object names or world-space bounds.
+   */
+  merfolkVisualReview?: MerfolkVisualReviewEvidence;
   frameContrastRatios: number[];
   obstacles: ObstacleContrast[];
   /** Bounded attribution evidence for failed browser samples. */
@@ -314,6 +341,17 @@ export interface GateConfig {
     minimumReadableHeightPixels: number;
     minimumFaceHeightPixels: number;
     minimumEyeDiameterPixels: number;
+    minimumGuardianIdentitySpanPixels: number;
+    minimumGuardianVisiblePixels: number;
+    minimumCitizenHeightPixels: number;
+    minimumCitizenVisiblePixels: number;
+    minimumSwimmerWidthPixels: number;
+    minimumSwimmerVisiblePixels: number;
+    minimumHeraldHeightPixels: number;
+    minimumHeraldVisiblePixels: number;
+    maximumGuardianOcclusionFraction: number;
+    maximumPopulationOcclusionFraction: number;
+    minimumGuardianEdgeClearancePixels: number;
     maxArticulatedJoints: number;
     maxMaterials: number;
     requiredRecognitionLabel: string;

@@ -217,6 +217,18 @@ export class Environment {
         false
       )
     );
+    const merfolkMaskRoles = [
+      "reef-citizen",
+      "current-swimmer",
+      "conch-herald"
+    ] as const;
+    for (const [offset, role] of merfolkMaskRoles.entries()) {
+      const family = this.life[offset + 3];
+      if (!family) continue;
+      family.object.name = `moon-garden-${role}`;
+      family.object.userData["merfolkMaskRole"] = role;
+      family.object.userData["nonCollidable"] = true;
+    }
     this.heroMerfolk = new HeroMerfolkGuardian(
       this.volumeMaterial,
       this.cfg.lane.halfWidth
@@ -373,6 +385,10 @@ export class Environment {
     viewportHeightPixels: number
   ): number {
     return this.heroMerfolk.eyeDiameterPixels(camera, viewportHeightPixels);
+  }
+
+  heroMerfolkRole(): MerfolkGuardianRole {
+    return this.heroMerfolk.activeRole;
   }
 
   update(
@@ -752,26 +768,27 @@ export class Environment {
       this.life[2]?.add(this.matrix, this.colour);
     }
 
-    // Lower-detail citizens occupy the upper midground. The articulated hero
-    // below is staged independently at phone-readable scale beside the lane.
+    // Citizens now belong to the same gate vignette as the hero. The previous
+    // 42-unit world bands put them behind several layers of architecture, so a
+    // valid mesh became a 6–15 px faceless speck in the actual phone frame.
     const citizenCount = Math.max(2, Math.round(3 * this.density));
-    const citizenSpacing = 42;
-    const citizenFirst = Math.ceil((forwardDistance + 28) / citizenSpacing);
     for (let index = 0; index < citizenCount; index++) {
-      const band = citizenFirst + index;
-      const side = hash01(band, 841) < 0.5 ? -1 : 1;
-      const phase = time * 0.46 + band * 1.37;
+      const side: -1 | 1 = index % 2 === 0
+        ? (heroStage.side === 1 ? -1 : 1)
+        : heroStage.side;
+      const phase = time * 0.46 + index * 1.37;
+      const outward = this.cfg.lane.halfWidth + 3.35 + (index % 2) * 0.35;
       this.position.set(
-        side * lerp(5.4, 8.2, hash01(band, 842)) + Math.sin(phase) * 0.62,
-        6.4 + hash01(band, 843) * 3.4 + Math.sin(phase * 1.7) * 0.34,
-        -(band * citizenSpacing + hash01(band, 844) * 9)
+        side * outward + Math.sin(phase) * 0.18,
+        3.65 + index * 0.62 + Math.sin(phase * 1.7) * 0.16,
+        -heroStage.anchor + 6.2 + index * 1.35
       );
       this.quaternion.setFromEuler(new THREE.Euler(
-        0,
-        side > 0 ? Math.PI * 0.64 : -Math.PI * 0.64,
-        side * 0.26 + Math.sin(phase) * 0.1
+        0.015,
+        side * -0.12,
+        side * 0.08 + Math.sin(phase) * 0.035
       ));
-      const size = lerp(0.92, 1.28, hash01(band, 845));
+      const size = 1.52 + index * 0.08;
       this.scale.set(side * size, size, size);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.86, 0.82, 1);
@@ -781,26 +798,23 @@ export class Environment {
     // Current swimmers cross between architecture shelves in an unmistakable
     // horizontal mermaid pose. They travel in loose pairs rather than sharing
     // the upright citizen placement, preventing one repeated mannequin read.
-    const swimmerCount = Math.max(2, Math.round(4 * this.density));
-    const swimmerSpacing = 36;
-    const swimmerFirst = Math.ceil((forwardDistance + 20) / swimmerSpacing);
+    const swimmerCount = Math.max(2, Math.round(3 * this.density));
     for (let index = 0; index < swimmerCount; index++) {
-      const band = swimmerFirst + index;
-      const direction = hash01(band, 851) < 0.5 ? -1 : 1;
-      const phase = time * 0.54 + band * 1.61;
-      const side = hash01(band, 852) < 0.5 ? -1 : 1;
+      const direction: -1 | 1 = index % 2 === 0 ? 1 : -1;
+      const phase = time * 0.54 + index * 1.61;
+      const side: -1 | 1 = index % 2 === 0 ? -1 : 1;
       this.position.set(
-        side * lerp(5.2, 7.6, hash01(band, 853)) +
-          direction * Math.sin(phase) * 0.82,
-        4.1 + hash01(band, 854) * 3.2 + Math.sin(phase * 1.4) * 0.42,
-        -(band * swimmerSpacing + hash01(band, 855) * 8)
+        side * (this.cfg.lane.halfWidth + 2.15) +
+          direction * Math.sin(phase) * 0.46,
+        5.7 + index * 0.78 + Math.sin(phase * 1.4) * 0.22,
+        -heroStage.anchor + 10.5 + index * 1.8
       );
       this.quaternion.setFromEuler(new THREE.Euler(
         0,
         direction > 0 ? Math.PI * 0.56 : -Math.PI * 0.56,
         direction * (-Math.PI * 0.34) + Math.sin(phase) * 0.08
       ));
-      const size = lerp(0.82, 1.08, hash01(band, 856));
+      const size = 1.42 + index * 0.08;
       this.scale.set(direction * size, size, size);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.7, 0.9, 0.98);
@@ -811,20 +825,19 @@ export class Environment {
     // herald on each shoulder makes the city feel inhabited without putting
     // any decorative character inside collider truth.
     for (const heraldSide of [-1, 1] as const) {
-      const heroShoulder = heraldSide === heroStage.side;
       const heraldPhase = time * 0.72 + heraldSide * 1.7;
-      const lateral = this.cfg.lane.halfWidth + (heroShoulder ? 4.5 : 3.25);
+      const lateral = this.cfg.lane.halfWidth + 1.62;
       this.position.set(
         heraldSide * lateral,
-        2.25 + Math.sin(heraldPhase) * 0.12,
-        -heroStage.anchor - (heroShoulder ? 8.5 : 6.8)
+        1.68 + Math.sin(heraldPhase) * 0.1,
+        -heroStage.anchor + 4.15
       );
       this.quaternion.setFromEuler(new THREE.Euler(
         0.02,
-        heraldSide * -0.16,
+        heraldSide * -0.08,
         heraldSide * (0.035 + Math.sin(heraldPhase * 1.8) * 0.025)
       ));
-      const heraldScale = 1.28 + momentumFraction * 0.06;
+      const heraldScale = 1.72 + momentumFraction * 0.08;
       this.scale.set(heraldSide * heraldScale, heraldScale, heraldScale);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       const pulse = 0.88 + Math.sin(heraldPhase * 2.2) * 0.08;

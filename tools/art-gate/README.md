@@ -56,6 +56,10 @@ two real-device matrices and performance evidence.
 - per-family triangles/materials and required production LODs
 - Glowfin bones, textures, screen size, eye size, clips, states and deterministic
   animation driver
+- separate rendered Tidekeeper, Coral Warden and Astral Oracle evidence, plus
+  a labelled three-panel phone atlas
+- depth-tested merfolk body, face, eye, regalia, citizen, swimmer and herald
+  masks with minimum size, visible-area, frame-clearance and occlusion limits
 - scene calls, triangles, texture memory, active materials, god-ray cap and
   compressed payload
 - frame and per-obstacle p10 contrast
@@ -69,3 +73,6 @@ The gate validates the source metadata attached to real-device evidence but
 cannot cryptographically prove that a JSON file originated on physical
 hardware. Device-farm attestation or supervised ingestion remains a human
 release responsibility. This limitation is never converted into CI emulation.
+Rendered masks likewise prove visibility and staging, not whether an unbriefed
+human considers a character beautiful or production-ready. Owner phone review
+remains a release blocker and overrides a green emulated capture.

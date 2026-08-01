@@ -194,6 +194,24 @@ describe("Phase 3B art geometry inventory", () => {
     }
   });
 
+  it("keeps every live population role faced and semantically distinct", () => {
+    const roles = [
+      [createProductionMerfolkCitizen(), "reef-citizen"],
+      [createProductionMerfolkSwimmer(), "current-swimmer"],
+      [createProductionMerfolkConchHerald(), "conch-herald"]
+    ] as const;
+    for (const [geometry, role] of roles) {
+      expect(geometry.userData["populationRole"]).toBe(role);
+      expect(geometry.userData["facialFeatures"]).toBe(
+        "eye-white-pupil-highlight-mouth"
+      );
+      if (role === "conch-herald") {
+        expect(geometry.userData["ceremonialProp"]).toBe("spiral-conch");
+      }
+      geometry.dispose();
+    }
+  });
+
   it("keeps the configured collision-contour width through camera changes", () => {
     const depth = 51.5;
     const fov = tuning.camera.fovAtMaxMomentum;
