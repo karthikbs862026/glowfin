@@ -110,19 +110,19 @@ export const PRODUCTION_ART = {
     materials: 1
   },
   moonfolkGuardian: {
-    lod0: 1488,
+    lod0: 1720,
     materials: 1
   },
   moonfolkCitizen: {
-    lod0: 1488,
+    lod0: 1720,
     materials: 1
   },
   moonfolkSwimmer: {
-    lod0: 1740,
+    lod0: 1780,
     materials: 1
   },
   merfolkConchHerald: {
-    lod0: 1840,
+    lod0: 2072,
     materials: 1
   },
   heroMerfolkGuardian: {

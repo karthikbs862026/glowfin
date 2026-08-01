@@ -18,10 +18,10 @@ import {
   createProductionFanCoral,
   createProductionJelly,
   createProductionKelp,
-  createProductionMerfolkCitizen,
-  createProductionMerfolkConchHerald,
+  createProductionMerfolkCitizenParts,
+  createProductionMerfolkConchHeraldParts,
   createProductionMerfolkMonument,
-  createProductionMerfolkSwimmer,
+  createProductionMerfolkSwimmerParts,
   createProductionMinnow,
   createProductionObservatory,
   createProductionPalaceDistrict,
@@ -41,6 +41,10 @@ import {
   guardianRoleForGateFamily,
   type MerfolkGuardianRole
 } from "../art/merfolkCharacter";
+import {
+  sampleMerfolkChoreography,
+  type MerfolkPopulationRole
+} from "../art/merfolkChoreography";
 
 function hash01(a: number, salt: number): number {
   let h = Math.imul(a ^ salt, 0x27d4eb2d);
@@ -106,6 +110,78 @@ class InstancedVolumeFamily {
   }
 }
 
+/** Three synchronized instanced draws keep body, face and eyes independently
+ * measurable in the real depth buffer without giving up population batching. */
+class InstancedMerfolkFamily {
+  readonly object = new THREE.Group();
+  private readonly body: InstancedVolumeFamily;
+  private readonly face: InstancedVolumeFamily;
+  private readonly eyes: InstancedVolumeFamily;
+
+  constructor(
+    parts: {
+      body: THREE.BufferGeometry;
+      face: THREE.BufferGeometry;
+      eyes: THREE.BufferGeometry;
+    },
+    material: THREE.Material,
+    maxCount: number,
+    role: MerfolkPopulationRole,
+    disposables: Array<{ dispose(): void }>
+  ) {
+    this.body = new InstancedVolumeFamily(
+      parts.body,
+      material,
+      maxCount,
+      disposables,
+      false
+    );
+    this.face = new InstancedVolumeFamily(
+      parts.face,
+      material,
+      maxCount,
+      disposables,
+      false
+    );
+    this.eyes = new InstancedVolumeFamily(
+      parts.eyes,
+      material,
+      maxCount,
+      disposables,
+      false
+    );
+    this.object.name = `moon-garden-${role}-rig`;
+    this.object.userData["nonCollidable"] = true;
+    const meshes = [this.body.object, this.face.object, this.eyes.object];
+    const maskRoles = [role, `${role}-face`, `${role}-eyes`];
+    for (const [index, mesh] of meshes.entries()) {
+      mesh.name = `moon-garden-${maskRoles[index]}`;
+      mesh.userData["merfolkMaskRole"] = maskRoles[index];
+      mesh.userData["populationRole"] = role;
+      mesh.userData["nonCollidable"] = true;
+      this.object.add(mesh);
+    }
+  }
+
+  begin(): void {
+    this.body.begin();
+    this.face.begin();
+    this.eyes.begin();
+  }
+
+  add(matrix: THREE.Matrix4, colour: THREE.Color): void {
+    this.body.add(matrix, colour);
+    this.face.add(matrix, colour);
+    this.eyes.add(matrix, colour);
+  }
+
+  finish(): void {
+    this.body.finish();
+    this.face.finish();
+    this.eyes.finish();
+  }
+}
+
 export interface MoonGardenTextures {
   surfaceMap: THREE.Texture;
   livingMap: THREE.Texture;
@@ -127,6 +203,7 @@ export class Environment {
   private readonly skyline: InstancedVolumeFamily;
   private readonly reef: readonly InstancedVolumeFamily[];
   private readonly life: readonly InstancedVolumeFamily[];
+  private readonly merfolkPopulation: readonly InstancedMerfolkFamily[];
   private readonly props: readonly InstancedVolumeFamily[];
   private readonly heroMerfolk: HeroMerfolkGuardian;
   private readonly godRays: THREE.InstancedMesh;
@@ -199,14 +276,11 @@ export class Environment {
         this.disposables
       )
     );
-    const lifeCaps = [48, 14, 8, 6, 8, 4];
+    const lifeCaps = [48, 14, 8];
     const lifeGeometry = [
       createProductionMinnow(),
       createProductionJelly(),
-      createProductionRay(),
-      createProductionMerfolkCitizen(),
-      createProductionMerfolkSwimmer(),
-      createProductionMerfolkConchHerald()
+      createProductionRay()
     ] as const;
     this.life = lifeGeometry.map((geometry, index) =>
       new InstancedVolumeFamily(
@@ -217,18 +291,26 @@ export class Environment {
         false
       )
     );
-    const merfolkMaskRoles = [
+    const populationRoles = [
       "reef-citizen",
       "current-swimmer",
       "conch-herald"
     ] as const;
-    for (const [offset, role] of merfolkMaskRoles.entries()) {
-      const family = this.life[offset + 3];
-      if (!family) continue;
-      family.object.name = `moon-garden-${role}`;
-      family.object.userData["merfolkMaskRole"] = role;
-      family.object.userData["nonCollidable"] = true;
-    }
+    const populationParts = [
+      createProductionMerfolkCitizenParts(),
+      createProductionMerfolkSwimmerParts(),
+      createProductionMerfolkConchHeraldParts()
+    ] as const;
+    const populationCaps = [6, 4, 4] as const;
+    this.merfolkPopulation = populationParts.map((parts, index) =>
+      new InstancedMerfolkFamily(
+        parts,
+        this.volumeMaterial,
+        populationCaps[index] ?? 4,
+        populationRoles[index] ?? "reef-citizen",
+        this.disposables
+      )
+    );
     this.heroMerfolk = new HeroMerfolkGuardian(
       this.volumeMaterial,
       this.cfg.lane.halfWidth
@@ -252,6 +334,7 @@ export class Environment {
       this.skyline.object,
       ...this.reef.map((family) => family.object),
       ...this.life.map((family) => family.object),
+      ...this.merfolkPopulation.map((family) => family.object),
       this.heroMerfolk.object,
       ...this.props.map((family) => family.object)
     );
@@ -395,10 +478,10 @@ export class Environment {
     forwardDistance: number,
     lateralPosition: number,
     momentumFraction: number,
+    timeSec: number,
     gates: readonly Gate[] = []
   ): void {
-    const time = forwardDistance /
-      Math.max(1, this.cfg.speed.forwardAtZeroMomentum);
+    const time = Math.max(0, timeSec);
     updateMoonGardenMaterial(
       this.volumeMaterial,
       time,
@@ -690,6 +773,7 @@ export class Environment {
     heroStage: HeroStage
   ): void {
     for (const family of this.life) family.begin();
+    for (const family of this.merfolkPopulation) family.begin();
 
     const schoolCount = Math.max(3, Math.round(5 * this.density));
     const fishPerSchool = 7;
@@ -768,87 +852,52 @@ export class Environment {
       this.life[2]?.add(this.matrix, this.colour);
     }
 
-    // Citizens now belong to the same gate vignette as the hero. The previous
-    // 42-unit world bands put them behind several layers of architecture, so a
-    // valid mesh became a 6–15 px faceless speck in the actual phone frame.
-    const citizenCount = Math.max(2, Math.round(3 * this.density));
-    for (let index = 0; index < citizenCount; index++) {
-      const side: -1 | 1 = index % 2 === 0
-        ? (heroStage.side === 1 ? -1 : 1)
-        : heroStage.side;
-      const phase = time * 0.46 + index * 1.37;
-      const outward = this.cfg.lane.halfWidth + 3.35 + (index % 2) * 0.35;
+    // One deterministic sampler owns the entire cast composition. Residents
+    // and heralds stay vertically anchored; two independently seeded swimmers
+    // occupy opposite galleries and never enter collider truth.
+    const population = sampleMerfolkChoreography({
+      laneHalfWidth: this.cfg.lane.halfWidth,
+      anchor: heroStage.anchor,
+      heroSide: heroStage.side,
+      timeSec: time,
+      momentumFraction,
+      density: this.density
+    });
+    const familyIndex: Record<MerfolkPopulationRole, number> = {
+      "reef-citizen": 0,
+      "current-swimmer": 1,
+      "conch-herald": 2
+    };
+    for (const pose of population) {
       this.position.set(
-        side * outward + Math.sin(phase) * 0.18,
-        3.65 + index * 0.62 + Math.sin(phase * 1.7) * 0.16,
-        -heroStage.anchor + 6.2 + index * 1.35
+        pose.position.x,
+        pose.position.y,
+        pose.position.z
       );
       this.quaternion.setFromEuler(new THREE.Euler(
-        0.015,
-        side * -0.12,
-        side * 0.08 + Math.sin(phase) * 0.035
+        pose.rotation.x,
+        pose.rotation.y,
+        pose.rotation.z
       ));
-      const size = 1.52 + index * 0.08;
-      this.scale.set(side * size, size, size);
+      this.scale.set(pose.scale.x, pose.scale.y, pose.scale.z);
       this.matrix.compose(this.position, this.quaternion, this.scale);
-      this.colour.setRGB(0.86, 0.82, 1);
-      this.life[3]?.add(this.matrix, this.colour);
-    }
-
-    // Current swimmers cross between architecture shelves in an unmistakable
-    // screen-plane silhouette. Turning the old mesh around world Y made it
-    // nearly edge-on to the phone camera, so the supposedly lateral role was
-    // only 14–15 CSS pixels wide even though its upright height looked valid.
-    // The pair stays in the upper gallery opposite the guardian; otherwise a
-    // correctly enlarged swimmer can erase the hero's face at phone scale.
-    const swimmerCount = Math.max(2, Math.round(2 * this.density));
-    for (let index = 0; index < swimmerCount; index++) {
-      const direction: -1 | 1 = index % 2 === 0 ? 1 : -1;
-      const phase = time * 0.54 + index * 1.61;
-      const gallerySide: -1 | 1 = heroStage.side === 1 ? -1 : 1;
-      this.position.set(
-        gallerySide * (this.cfg.lane.halfWidth + 1.58 + index * 0.32) +
-          direction * Math.sin(phase) * 0.24,
-        5.15 + index * 0.58 + Math.sin(phase * 1.4) * 0.14,
-        -heroStage.anchor + 6.1 + index * 1.15
+      // Preserve the authored warm skin/teal-tail vertex palette. Small role
+      // tints remain subtle enough that eye whites do not collapse into grey.
+      if (pose.role === "current-swimmer") {
+        this.colour.setRGB(0.94, 0.99, 1);
+      } else if (pose.role === "conch-herald") {
+        this.colour.setRGB(1, 0.94, 0.98);
+      } else {
+        this.colour.setRGB(0.98, 0.97, 1);
+      }
+      this.merfolkPopulation[familyIndex[pose.role]]?.add(
+        this.matrix,
+        this.colour
       );
-      this.quaternion.setFromEuler(new THREE.Euler(
-        0.025,
-        gallerySide * 0.045,
-        direction * (-Math.PI * 0.49) + Math.sin(phase) * 0.045
-      ));
-      const size = 1.28 + index * 0.06;
-      this.scale.set(direction * size, size, size);
-      this.matrix.compose(this.position, this.quaternion, this.scale);
-      this.colour.setRGB(0.7, 0.9, 0.98);
-      this.life[4]?.add(this.matrix, this.colour);
-    }
-
-    // A paired conch ceremony belongs to the gate vignette. Keeping one
-    // herald on each shoulder makes the city feel inhabited without putting
-    // any decorative character inside collider truth.
-    for (const heraldSide of [-1, 1] as const) {
-      const heraldPhase = time * 0.72 + heraldSide * 1.7;
-      const lateral = this.cfg.lane.halfWidth + 1.62;
-      this.position.set(
-        heraldSide * lateral,
-        1.68 + Math.sin(heraldPhase) * 0.1,
-        -heroStage.anchor + 4.15
-      );
-      this.quaternion.setFromEuler(new THREE.Euler(
-        0.02,
-        heraldSide * -0.08,
-        heraldSide * (0.035 + Math.sin(heraldPhase * 1.8) * 0.025)
-      ));
-      const heraldScale = 1.72 + momentumFraction * 0.08;
-      this.scale.set(heraldSide * heraldScale, heraldScale, heraldScale);
-      this.matrix.compose(this.position, this.quaternion, this.scale);
-      const pulse = 0.88 + Math.sin(heraldPhase * 2.2) * 0.08;
-      this.colour.setRGB(0.9 * pulse, 0.78 * pulse, 0.98 * pulse);
-      this.life[5]?.add(this.matrix, this.colour);
     }
 
     for (const family of this.life) family.finish();
+    for (const family of this.merfolkPopulation) family.finish();
     this.heroMerfolk.update(
       forwardDistance,
       time,

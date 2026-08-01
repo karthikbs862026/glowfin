@@ -23,6 +23,7 @@ import { TrailRibbon } from "./trail";
 import { Creature } from "./creature";
 import { Environment } from "./environment";
 import { MoonGardenGates } from "./gateArt";
+import { MERFOLK_MASK_ENTRIES } from "../art/merfolkMask";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
@@ -118,15 +119,17 @@ export class GameView {
   private readonly savedMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
   private readonly savedVisibility = new Map<THREE.Object3D, boolean>();
   private maskMode = false;
-  private readonly merfolkMaskMaterials = new Map<string, THREE.MeshBasicMaterial>([
-    ["guardian-body", new THREE.MeshBasicMaterial({ color: 0xff0000, toneMapped: false, fog: false })],
-    ["guardian-regalia", new THREE.MeshBasicMaterial({ color: 0xffff00, toneMapped: false, fog: false })],
-    ["guardian-face", new THREE.MeshBasicMaterial({ color: 0x00ffff, toneMapped: false, fog: false })],
-    ["guardian-eyes", new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false, fog: false })],
-    ["reef-citizen", new THREE.MeshBasicMaterial({ color: 0x00ff00, toneMapped: false, fog: false })],
-    ["current-swimmer", new THREE.MeshBasicMaterial({ color: 0x0000ff, toneMapped: false, fog: false })],
-    ["conch-herald", new THREE.MeshBasicMaterial({ color: 0xff00ff, toneMapped: false, fog: false })]
-  ]);
+  private readonly merfolkMaskMaterials = new Map<
+    string,
+    THREE.MeshBasicMaterial
+  >(MERFOLK_MASK_ENTRIES.map((entry) => [
+    entry.role,
+    new THREE.MeshBasicMaterial({
+      color: entry.colour,
+      toneMapped: false,
+      fog: false
+    })
+  ]));
   private readonly merfolkSavedMaterials = new Map<
     THREE.Mesh,
     THREE.Material | THREE.Material[]
@@ -778,6 +781,7 @@ export class GameView {
       sim.forwardDistance,
       sim.lateralPosition,
       momentumFraction,
+      elapsedSec,
       gates
     );
 

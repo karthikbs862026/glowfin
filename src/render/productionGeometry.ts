@@ -19,6 +19,12 @@ const VIOLET = new THREE.Color(0x56357b);
 const ROSE = new THREE.Color(0x873c70);
 const FACE_WHITE = new THREE.Color(0xfff4df);
 const EYE_DARK = new THREE.Color(0x11173d);
+const MERFOLK_SKIN = new THREE.Color(0xd6bdc9);
+const MERFOLK_SKIN_LIGHT = new THREE.Color(0xf1dfe1);
+const MERFOLK_HAIR = new THREE.Color(0x25205d);
+const MERFOLK_HAIR_TIP = new THREE.Color(0x75448f);
+const MERFOLK_TAIL = new THREE.Color(0x247f91);
+const MERFOLK_TAIL_LIGHT = new THREE.Color(0x3eb8bd);
 
 export const MATERIAL_ROLE = {
   limestone: 0,
@@ -1774,8 +1780,370 @@ function merfolkFigure(monument: boolean): THREE.BufferGeometry {
   return merged(parts);
 }
 
+export interface ProductionMerfolkParts {
+  body: THREE.BufferGeometry;
+  face: THREE.BufferGeometry;
+  eyes: THREE.BufferGeometry;
+}
+
+interface PopulationPalette {
+  skin: THREE.Color;
+  skinLight: THREE.Color;
+  hair: THREE.Color;
+  hairTip: THREE.Color;
+  tail: THREE.Color;
+  tailLight: THREE.Color;
+  accent: THREE.Color;
+}
+
+const CITIZEN_PALETTE: PopulationPalette = {
+  skin: MERFOLK_SKIN,
+  skinLight: MERFOLK_SKIN_LIGHT,
+  hair: MERFOLK_HAIR,
+  hairTip: MERFOLK_HAIR_TIP,
+  tail: MERFOLK_TAIL,
+  tailLight: MERFOLK_TAIL_LIGHT,
+  accent: ROSE
+};
+
+const HERALD_PALETTE: PopulationPalette = {
+  skin: new THREE.Color(0xd9c2d3),
+  skinLight: new THREE.Color(0xf4e1e6),
+  hair: new THREE.Color(0x3b245f),
+  hairTip: new THREE.Color(0x9a4f83),
+  tail: new THREE.Color(0x603f88),
+  tailLight: new THREE.Color(0xa1538b),
+  accent: new THREE.Color(0xc45c83)
+};
+
+function friendlyPopulationHead(
+  centre: THREE.Vector3,
+  palette: PopulationPalette,
+  pose: "upright" | "swim"
+): {
+  body: THREE.BufferGeometry[];
+  face: THREE.BufferGeometry[];
+  eyes: THREE.BufferGeometry[];
+} {
+  const body: THREE.BufferGeometry[] = [];
+  const face: THREE.BufferGeometry[] = [];
+  const eyes: THREE.BufferGeometry[] = [];
+  const radius = 0.235;
+
+  // A soft, warm nacre face and high hairline replace the grey blank sphere
+  // and dark ring that read as a mask on a phone.
+  face.push(styled(new THREE.SphereGeometry(radius, 12, 8), {
+    position: centre,
+    scale: new THREE.Vector3(0.96, 1.04, 0.82),
+    colour: palette.skinLight,
+    glow: 0.13,
+    materialRole: MATERIAL_ROLE.nacre
+  }));
+  body.push(styled(new THREE.SphereGeometry(
+    radius * 1.025,
+    12,
+    7,
+    0,
+    Math.PI * 2,
+    0,
+    Math.PI * 0.47
+  ), {
+    position: centre.clone().add(new THREE.Vector3(0, 0.082, -0.028)),
+    scale: new THREE.Vector3(1, 0.9, 1),
+    colour: palette.hair,
+    glow: 0.08,
+    materialRole: MATERIAL_ROLE.lapis
+  }));
+
+  if (pose === "upright") {
+    for (const side of [-1, 1]) {
+      body.push(styled(curvedTube([
+        centre.clone().add(new THREE.Vector3(side * 0.17, 0.08, -0.045)),
+        centre.clone().add(new THREE.Vector3(side * 0.225, -0.08, -0.055)),
+        centre.clone().add(new THREE.Vector3(side * 0.19, -0.245, -0.035))
+      ], 6, 0.027, 5), {
+        colour: side < 0 ? palette.hair : palette.hairTip,
+        glow: 0.11,
+        sway: 0.26,
+        materialRole: MATERIAL_ROLE.lapis
+      }));
+    }
+  } else {
+    for (const offset of [-0.075, 0.085]) {
+      body.push(styled(curvedTube([
+        centre.clone().add(new THREE.Vector3(-0.14, offset, -0.04)),
+        centre.clone().add(new THREE.Vector3(-0.34, offset + 0.035, -0.06)),
+        centre.clone().add(new THREE.Vector3(-0.49, offset - 0.045, -0.035))
+      ], 7, 0.026, 5), {
+        colour: offset < 0 ? palette.hair : palette.hairTip,
+        glow: 0.12,
+        sway: 0.34,
+        materialRole: MATERIAL_ROLE.lapis
+      }));
+    }
+  }
+
+  for (const side of [-1, 1]) {
+    const eyeX = centre.x + side * 0.083;
+    const eyeY = centre.y + 0.035;
+    eyes.push(
+      styled(new THREE.SphereGeometry(0.068, 9, 6), {
+        position: new THREE.Vector3(eyeX, eyeY, centre.z + 0.194),
+        scale: new THREE.Vector3(1, 0.92, 0.38),
+        colour: FACE_WHITE,
+        glow: 0.2,
+        materialRole: MATERIAL_ROLE.nacre
+      }),
+      styled(new THREE.SphereGeometry(0.038, 8, 5), {
+        position: new THREE.Vector3(eyeX, eyeY - 0.002, centre.z + 0.218),
+        scale: new THREE.Vector3(1, 0.96, 0.34),
+        colour: EYE_DARK,
+        glow: 0.04,
+        materialRole: MATERIAL_ROLE.lapis
+      }),
+      styled(new THREE.SphereGeometry(0.013, 5, 4), {
+        position: new THREE.Vector3(
+          eyeX - side * 0.009,
+          eyeY + 0.014,
+          centre.z + 0.232
+        ),
+        colour: FACE_WHITE,
+        glow: 0.46,
+        materialRole: MATERIAL_ROLE.crystal
+      })
+    );
+  }
+
+  face.push(
+    styled(new THREE.TorusGeometry(0.049, 0.01, 5, 11, Math.PI), {
+      position: centre.clone().add(new THREE.Vector3(0, -0.09, 0.207)),
+      rotation: new THREE.Euler(0, 0, Math.PI),
+      scale: new THREE.Vector3(1, 0.56, 1),
+      colour: palette.accent,
+      glow: 0.14,
+      materialRole: MATERIAL_ROLE.livingCoral
+    }),
+    styled(new THREE.SphereGeometry(0.024, 6, 4), {
+      position: centre.clone().add(new THREE.Vector3(-0.135, -0.045, 0.192)),
+      scale: new THREE.Vector3(1.25, 0.58, 0.34),
+      colour: palette.accent,
+      glow: 0.09,
+      materialRole: MATERIAL_ROLE.livingCoral
+    }),
+    styled(new THREE.SphereGeometry(0.024, 6, 4), {
+      position: centre.clone().add(new THREE.Vector3(0.135, -0.045, 0.192)),
+      scale: new THREE.Vector3(1.25, 0.58, 0.34),
+      colour: palette.accent,
+      glow: 0.09,
+      materialRole: MATERIAL_ROLE.livingCoral
+    })
+  );
+
+  return { body, face, eyes };
+}
+
+function uprightPopulationParts(
+  palette: PopulationPalette
+): ProductionMerfolkParts {
+  const head = friendlyPopulationHead(
+    new THREE.Vector3(0, 1.31, 0),
+    palette,
+    "upright"
+  );
+  const body = [...head.body];
+  body.push(
+    styled(new THREE.CapsuleGeometry(0.175, 0.39, 5, 9), {
+      position: new THREE.Vector3(0, 0.88, 0),
+      scale: new THREE.Vector3(0.92, 1, 0.74),
+      colour: palette.skin,
+      glow: 0.11,
+      materialRole: MATERIAL_ROLE.nacre
+    }),
+    styled(new THREE.TorusGeometry(0.16, 0.035, 5, 14, Math.PI), {
+      position: new THREE.Vector3(0, 1.015, 0.13),
+      rotation: new THREE.Euler(0, 0, Math.PI),
+      scale: new THREE.Vector3(1, 0.76, 0.7),
+      colour: palette.accent,
+      glow: 0.17,
+      materialRole: MATERIAL_ROLE.livingCoral
+    })
+  );
+
+  const tail = new THREE.Shape([
+    new THREE.Vector2(-0.16, 0.84),
+    new THREE.Vector2(0.16, 0.84),
+    new THREE.Vector2(0.13, 0.48),
+    new THREE.Vector2(0.045, 0.17),
+    new THREE.Vector2(0.32, -0.11),
+    new THREE.Vector2(0.025, -0.025),
+    new THREE.Vector2(-0.32, -0.11),
+    new THREE.Vector2(-0.045, 0.17),
+    new THREE.Vector2(-0.13, 0.48)
+  ]);
+  const tailGeometry = new THREE.ExtrudeGeometry(tail, {
+    depth: 0.17,
+    steps: 1,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: 0.025,
+    bevelThickness: 0.018
+  });
+  tailGeometry.translate(0, 0, -0.085);
+  body.push(styled(tailGeometry, {
+    colour: palette.tail,
+    glow: 0.16,
+    sway: (position) => Math.max(0, 0.2 - position.y) * 0.8,
+    materialRole: MATERIAL_ROLE.livingCoral
+  }));
+
+  for (const side of [-1, 1]) {
+    body.push(styled(curvedTube([
+      new THREE.Vector3(side * 0.12, 1.02, 0.01),
+      new THREE.Vector3(side * 0.29, 0.91, 0.025),
+      new THREE.Vector3(side * 0.34, 0.68, 0.035)
+    ], 7, 0.037, 5), {
+      colour: palette.skin,
+      glow: 0.1,
+      materialRole: MATERIAL_ROLE.nacre
+    }));
+  }
+
+  return {
+    body: merged(body),
+    face: merged(head.face),
+    eyes: merged(head.eyes)
+  };
+}
+
+function swimmerPopulationParts(): ProductionMerfolkParts {
+  const palette = CITIZEN_PALETTE;
+  const head = friendlyPopulationHead(
+    new THREE.Vector3(0.62, 0.16, 0),
+    palette,
+    "swim"
+  );
+  const body = [...head.body];
+  body.push(
+    styled(new THREE.CapsuleGeometry(0.17, 0.34, 5, 9), {
+      position: new THREE.Vector3(0.26, 0.03, 0),
+      rotation: new THREE.Euler(0, 0, -Math.PI / 2),
+      scale: new THREE.Vector3(0.9, 1, 0.72),
+      colour: palette.skin,
+      glow: 0.12,
+      materialRole: MATERIAL_ROLE.nacre
+    }),
+    styled(new THREE.TorusGeometry(0.155, 0.034, 5, 14, Math.PI), {
+      position: new THREE.Vector3(0.34, 0.03, 0.13),
+      rotation: new THREE.Euler(0, 0, Math.PI / 2),
+      scale: new THREE.Vector3(1, 0.72, 0.72),
+      colour: palette.accent,
+      glow: 0.18,
+      materialRole: MATERIAL_ROLE.livingCoral
+    })
+  );
+
+  const tail = new THREE.Shape([
+    new THREE.Vector2(0.22, 0.18),
+    new THREE.Vector2(0.22, -0.15),
+    new THREE.Vector2(-0.18, -0.14),
+    new THREE.Vector2(-0.48, -0.06),
+    new THREE.Vector2(-0.7, 0.07),
+    new THREE.Vector2(-0.5, 0.17),
+    new THREE.Vector2(-0.18, 0.2)
+  ]);
+  const tailGeometry = new THREE.ExtrudeGeometry(tail, {
+    depth: 0.17,
+    steps: 1,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: 0.025,
+    bevelThickness: 0.018
+  });
+  tailGeometry.translate(0, 0, -0.085);
+  body.push(styled(tailGeometry, {
+    colour: palette.tail,
+    glow: 0.18,
+    sway: (position) => Math.max(0, -position.x) * 0.48,
+    materialRole: MATERIAL_ROLE.crystal
+  }));
+
+  const upperFin = new THREE.Shape([
+    new THREE.Vector2(-0.61, 0.08),
+    new THREE.Vector2(-0.94, 0.38),
+    new THREE.Vector2(-1.04, 0.16),
+    new THREE.Vector2(-0.77, -0.01)
+  ]);
+  const lowerFin = new THREE.Shape([
+    new THREE.Vector2(-0.61, 0.06),
+    new THREE.Vector2(-0.94, -0.33),
+    new THREE.Vector2(-1.05, -0.12),
+    new THREE.Vector2(-0.77, 0.12)
+  ]);
+  for (const fin of [upperFin, lowerFin]) {
+    const geometry = new THREE.ExtrudeGeometry(fin, {
+      depth: 0.08,
+      steps: 1,
+      bevelEnabled: true,
+      bevelSegments: 1,
+      bevelSize: 0.012,
+      bevelThickness: 0.01
+    });
+    geometry.translate(0, 0, -0.04);
+    body.push(styled(geometry, {
+      colour: palette.tailLight,
+      glow: 0.22,
+      sway: 0.42,
+      materialRole: MATERIAL_ROLE.crystal
+    }));
+  }
+
+  // Arms sweep with the current instead of hanging downward from a rotated
+  // standing model. The face itself remains upright and friendly.
+  for (const side of [-1, 1]) {
+    body.push(styled(curvedTube([
+      new THREE.Vector3(0.38, side * 0.11, 0.01),
+      new THREE.Vector3(0.16, side * 0.27, 0.02),
+      new THREE.Vector3(-0.09, side * 0.24, 0.03)
+    ], 7, 0.035, 5), {
+      colour: palette.skin,
+      glow: 0.11,
+      materialRole: MATERIAL_ROLE.nacre
+    }));
+  }
+
+  return {
+    body: merged(body),
+    face: merged(head.face),
+    eyes: merged(head.eyes)
+  };
+}
+
+function tagPopulationParts(
+  parts: ProductionMerfolkParts,
+  role: string
+): ProductionMerfolkParts {
+  parts.body.userData["populationRole"] = role;
+  parts.face.userData["populationRole"] = role;
+  parts.face.userData["populationFeature"] = "friendly-face";
+  parts.eyes.userData["populationRole"] = role;
+  parts.eyes.userData["populationFeature"] = "expressive-eyes";
+  return parts;
+}
+
+function mergePopulationParts(
+  parts: ProductionMerfolkParts,
+  role: string
+): THREE.BufferGeometry {
+  const geometry = merged([parts.body, parts.face, parts.eyes]);
+  geometry.userData["populationRole"] = role;
+  geometry.userData["facialFeatures"] =
+    "warm-face-eye-white-pupil-highlight-smile-cheeks";
+  geometry.userData["faceOrientation"] = "screen-upright";
+  return geometry;
+}
+
 export function createProductionMerfolkGuardian(): THREE.BufferGeometry {
-  return merfolkFigure(false);
+  return mergePopulationParts(createProductionMerfolkCitizenParts(), "reef-citizen");
 }
 
 /**
@@ -1784,10 +2152,11 @@ export function createProductionMerfolkGuardian(): THREE.BufferGeometry {
  * role an explicit production signature.
  */
 export function createProductionMerfolkCitizen(): THREE.BufferGeometry {
-  const geometry = merfolkFigure(false);
-  geometry.userData["populationRole"] = "reef-citizen";
-  geometry.userData["facialFeatures"] = "eye-white-pupil-highlight-mouth";
-  return geometry;
+  return mergePopulationParts(createProductionMerfolkCitizenParts(), "reef-citizen");
+}
+
+export function createProductionMerfolkCitizenParts(): ProductionMerfolkParts {
+  return tagPopulationParts(uprightPopulationParts(CITIZEN_PALETTE), "reef-citizen");
 }
 
 function merfolkMantle(
@@ -1829,26 +2198,18 @@ function merfolkMantle(
 }
 
 /**
- * A current swimmer keeps the five required mermaid silhouette features but
- * adds a broad trailing mantle. Runtime staging rotates the figure into a
- * horizontal swim pose, making it distinct from upright citizens at a glance.
+ * A current swimmer is authored horizontally from the start. Its eyes remain
+ * level while the tail, swept arms and hair carry the swimming direction.
  */
 export function createProductionMerfolkSwimmer(): THREE.BufferGeometry {
-  const geometry = merged([
-    merfolkFigure(false),
-    merfolkMantle(CYAN_LIGHT, MATERIAL_ROLE.crystal),
-    styled(new THREE.TorusGeometry(0.23, 0.028, 5, 16, Math.PI * 1.35), {
-      position: new THREE.Vector3(0, 1.3, -0.12),
-      rotation: new THREE.Euler(0, 0, -Math.PI * 0.18),
-      colour: LAPIS,
-      glow: 0.16,
-      sway: 0.24,
-      materialRole: MATERIAL_ROLE.lapis
-    })
-  ]);
-  geometry.userData["populationRole"] = "current-swimmer";
-  geometry.userData["facialFeatures"] = "eye-white-pupil-highlight-mouth";
-  return geometry;
+  return mergePopulationParts(
+    createProductionMerfolkSwimmerParts(),
+    "current-swimmer"
+  );
+}
+
+export function createProductionMerfolkSwimmerParts(): ProductionMerfolkParts {
+  return tagPopulationParts(swimmerPopulationParts(), "current-swimmer");
 }
 
 /**
@@ -1857,6 +2218,13 @@ export function createProductionMerfolkSwimmer(): THREE.BufferGeometry {
  * generic decoration, so the city reads as inhabited and purposeful.
  */
 export function createProductionMerfolkConchHerald(): THREE.BufferGeometry {
+  const parts = createProductionMerfolkConchHeraldParts();
+  const geometry = mergePopulationParts(parts, "conch-herald");
+  geometry.userData["ceremonialProp"] = "spiral-conch";
+  return geometry;
+}
+
+export function createProductionMerfolkConchHeraldParts(): ProductionMerfolkParts {
   const conchLip = new THREE.Shape([
     new THREE.Vector2(-0.12, -0.04),
     new THREE.Vector2(0.12, -0.08),
@@ -1873,8 +2241,9 @@ export function createProductionMerfolkConchHerald(): THREE.BufferGeometry {
     bevelThickness: 0.012
   });
   lipGeometry.translate(0, 0, -0.04);
-  const geometry = merged([
-    merfolkFigure(false),
+  const parts = uprightPopulationParts(HERALD_PALETTE);
+  parts.body = merged([
+    parts.body,
     merfolkMantle(ROSE, MATERIAL_ROLE.livingCoral),
     styled(new THREE.TorusGeometry(0.14, 0.052, 6, 18, Math.PI * 1.72), {
       position: new THREE.Vector3(0.24, 1.13, 0.15),
@@ -1899,10 +2268,8 @@ export function createProductionMerfolkConchHerald(): THREE.BufferGeometry {
       materialRole: MATERIAL_ROLE.crystal
     })
   ]);
-  geometry.userData["populationRole"] = "conch-herald";
-  geometry.userData["facialFeatures"] = "eye-white-pupil-highlight-mouth";
-  geometry.userData["ceremonialProp"] = "spiral-conch";
-  return geometry;
+  parts.body.userData["ceremonialProp"] = "spiral-conch";
+  return tagPopulationParts(parts, "conch-herald");
 }
 
 export function createProductionMerfolkMonument(): THREE.BufferGeometry {

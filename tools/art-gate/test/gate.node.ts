@@ -142,6 +142,50 @@ describe("integrated gate fixtures", () => {
       "MERFOLK_POPULATION_NOT_RENDERED"
     ]) assert.ok(found.has(expected), `missing ${expected}`);
   });
+
+  test("faceless, stacked, frozen or horizontal residents fail rendered choreography", () => {
+    const input = load("gate-input.pass.json");
+    const reviews = input.captures
+      .map((capture) => capture.merfolkVisualReview)
+      .filter((review) => review !== undefined);
+    assert.equal(reviews.length, 3);
+    for (const review of reviews) {
+      const citizen = review.population.find((entry) =>
+        entry.role === "reef-citizen"
+      );
+      const swimmer = review.population.find((entry) =>
+        entry.role === "current-swimmer"
+      );
+      assert.ok(citizen);
+      assert.ok(swimmer);
+      citizen.face.heightPixels = 3;
+      citizen.eyes.heightPixels = 0;
+      citizen.instances[0]!.widthPixels = 40;
+      citizen.instances[0]!.heightPixels = 18;
+      swimmer.instances[0]!.widthPixels = 18;
+      swimmer.instances[0]!.heightPixels = 42;
+      review.motion.swimmerCentreSeparationPixels = [18, 22];
+      review.motion.swimmerBoxOverlapFraction = [0.72, 0.64];
+      review.motion.swimmerTravelPixels = [0.5, 0.5];
+      review.motion.heraldTravelPixels = [14, 11];
+    }
+    const found = new Set(codes(checkMerfolkVisualReviews(
+      input.captures,
+      config.merfolk,
+      true
+    )));
+    for (const expected of [
+      "MERFOLK_POPULATION_FACE_BELOW_FLOOR",
+      "MERFOLK_POPULATION_EYES_BELOW_FLOOR",
+      "MERFOLK_RESIDENT_POSE_NOT_UPRIGHT",
+      "MERFOLK_SWIMMER_POSE_NOT_HORIZONTAL",
+      "MERFOLK_SWIMMERS_STACKED",
+      "MERFOLK_SWIMMERS_OVERLAP",
+      "MERFOLK_SWIMMER_FROZEN",
+      "MERFOLK_SWIMMER_MOTION_SYNCHRONIZED",
+      "MERFOLK_UPRIGHT_RESIDENT_DRIFT"
+    ]) assert.ok(found.has(expected), `missing ${expected}`);
+  });
 });
 
 describe("collider authority hardening", () => {

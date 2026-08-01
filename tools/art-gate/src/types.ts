@@ -141,6 +141,26 @@ export interface MerfolkMaskComponentEvidence {
   isolatedPixels: number;
   occlusionFraction: number;
   edgeClearancePixels: number;
+  centreXPixels: number;
+  centreYPixels: number;
+}
+
+export interface MerfolkPopulationVisualEvidence {
+  role: string;
+  component: MerfolkMaskComponentEvidence;
+  face: MerfolkMaskComponentEvidence;
+  eyes: MerfolkMaskComponentEvidence;
+  instances: MerfolkMaskComponentEvidence[];
+}
+
+export interface MerfolkMotionReviewEvidence {
+  sampleIntervalSec: number;
+  swimmerStart: MerfolkMaskComponentEvidence[];
+  swimmerEnd: MerfolkMaskComponentEvidence[];
+  swimmerTravelPixels: number[];
+  swimmerCentreSeparationPixels: [number, number];
+  swimmerBoxOverlapFraction: [number, number];
+  heraldTravelPixels: number[];
 }
 
 export interface MerfolkVisualReviewEvidence {
@@ -149,10 +169,8 @@ export interface MerfolkVisualReviewEvidence {
   face: MerfolkMaskComponentEvidence;
   eyes: MerfolkMaskComponentEvidence;
   identity: MerfolkMaskComponentEvidence;
-  population: Array<{
-    role: string;
-    component: MerfolkMaskComponentEvidence;
-  }>;
+  population: MerfolkPopulationVisualEvidence[];
+  motion: MerfolkMotionReviewEvidence;
 }
 
 export type CaptureSourceKind =
@@ -349,6 +367,17 @@ export interface GateConfig {
     minimumSwimmerVisiblePixels: number;
     minimumHeraldHeightPixels: number;
     minimumHeraldVisiblePixels: number;
+    minimumPopulationFaceHeightPixels: number;
+    minimumPopulationEyeHeightPixels: number;
+    minimumPopulationInstancesPerRole: number;
+    minimumUprightAspectRatio: number;
+    minimumSwimmerHorizontalAspectRatio: number;
+    minimumSwimmerCentreSeparationPixels: number;
+    maximumSwimmerBoxOverlapFraction: number;
+    motionSampleIntervalSec: number;
+    minimumSwimmerTravelPixels: number;
+    maximumAnchoredTravelPixels: number;
+    minimumSwimmerTravelDifferencePixels: number;
     maximumGuardianOcclusionFraction: number;
     maximumPopulationOcclusionFraction: number;
     minimumGuardianEdgeClearancePixels: number;

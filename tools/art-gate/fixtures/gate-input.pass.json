@@ -597,7 +597,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1488
+          "triangles": 1720
         }
       ]
     },
@@ -611,7 +611,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1740
+          "triangles": 1780
         }
       ]
     },
@@ -625,7 +625,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1840
+          "triangles": 2072
         }
       ]
     },
@@ -825,7 +825,9 @@
           "visiblePixels": 1420,
           "isolatedPixels": 1534,
           "occlusionFraction": 0.0743155149934811,
-          "edgeClearancePixels": 12
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
         },
         "face": {
           "widthPixels": 24,
@@ -833,7 +835,9 @@
           "visiblePixels": 420,
           "isolatedPixels": 454,
           "occlusionFraction": 0.07488986784140972,
-          "edgeClearancePixels": 12
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
         },
         "eyes": {
           "widthPixels": 20,
@@ -841,7 +845,9 @@
           "visiblePixels": 82,
           "isolatedPixels": 89,
           "occlusionFraction": 0.0786516853932584,
-          "edgeClearancePixels": 12
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
         },
         "identity": {
           "widthPixels": 38,
@@ -849,7 +855,9 @@
           "visiblePixels": 260,
           "isolatedPixels": 281,
           "occlusionFraction": 0.07473309608540923,
-          "edgeClearancePixels": 12
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
         },
         "population": [
           {
@@ -860,19 +868,107 @@
               "visiblePixels": 142,
               "isolatedPixels": 153,
               "occlusionFraction": 0.07189542483660127,
-              "edgeClearancePixels": 12
-            }
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 10,
+              "heightPixels": 10,
+              "visiblePixels": 42,
+              "isolatedPixels": 45,
+              "occlusionFraction": 0.06666666666666665,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 18,
+                "heightPixels": 33,
+                "visiblePixels": 142,
+                "isolatedPixels": 152,
+                "occlusionFraction": 0.06578947368421051,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 92,
+                "centreYPixels": 390
+              },
+              {
+                "widthPixels": 19,
+                "heightPixels": 35,
+                "visiblePixels": 151,
+                "isolatedPixels": 160,
+                "occlusionFraction": 0.05625000000000002,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 294,
+                "centreYPixels": 404
+              }
+            ]
           },
           {
             "role": "current-swimmer",
             "component": {
-              "widthPixels": 39,
-              "heightPixels": 19,
-              "visiblePixels": 134,
-              "isolatedPixels": 145,
-              "occlusionFraction": 0.07586206896551728,
-              "edgeClearancePixels": 12
-            }
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 162,
+              "occlusionFraction": 0.07407407407407407,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 10,
+              "heightPixels": 10,
+              "visiblePixels": 40,
+              "isolatedPixels": 43,
+              "occlusionFraction": 0.06976744186046513,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 45,
+                "heightPixels": 20,
+                "visiblePixels": 150,
+                "isolatedPixels": 158,
+                "occlusionFraction": 0.05063291139240511,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 74,
+                "centreYPixels": 340
+              },
+              {
+                "widthPixels": 48,
+                "heightPixels": 21,
+                "visiblePixels": 162,
+                "isolatedPixels": 170,
+                "occlusionFraction": 0.04705882352941182,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 312,
+                "centreYPixels": 278
+              }
+            ]
           },
           {
             "role": "conch-herald",
@@ -882,10 +978,117 @@
               "visiblePixels": 176,
               "isolatedPixels": 190,
               "occlusionFraction": 0.0736842105263158,
-              "edgeClearancePixels": 12
-            }
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 10,
+              "heightPixels": 10,
+              "visiblePixels": 42,
+              "isolatedPixels": 45,
+              "occlusionFraction": 0.06666666666666665,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 23,
+                "heightPixels": 37,
+                "visiblePixels": 176,
+                "isolatedPixels": 184,
+                "occlusionFraction": 0.04347826086956519,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 114,
+                "centreYPixels": 464
+              },
+              {
+                "widthPixels": 24,
+                "heightPixels": 39,
+                "visiblePixels": 184,
+                "isolatedPixels": 192,
+                "occlusionFraction": 0.04166666666666663,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 276,
+                "centreYPixels": 470
+              }
+            ]
           }
-        ]
+        ],
+        "motion": {
+          "sampleIntervalSec": 3.25,
+          "swimmerStart": [
+            {
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 158,
+              "occlusionFraction": 0.05063291139240511,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 74,
+              "centreYPixels": 340
+            },
+            {
+              "widthPixels": 48,
+              "heightPixels": 21,
+              "visiblePixels": 162,
+              "isolatedPixels": 170,
+              "occlusionFraction": 0.04705882352941182,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 312,
+              "centreYPixels": 278
+            }
+          ],
+          "swimmerEnd": [
+            {
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 158,
+              "occlusionFraction": 0.05063291139240511,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 88,
+              "centreYPixels": 344
+            },
+            {
+              "widthPixels": 48,
+              "heightPixels": 21,
+              "visiblePixels": 162,
+              "isolatedPixels": 170,
+              "occlusionFraction": 0.04705882352941182,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 292,
+              "centreYPixels": 285
+            }
+          ],
+          "swimmerTravelPixels": [
+            14.56,
+            21.19
+          ],
+          "swimmerCentreSeparationPixels": [
+            245.94,
+            212.5
+          ],
+          "swimmerBoxOverlapFraction": [
+            0,
+            0
+          ],
+          "heraldTravelPixels": [
+            1.2,
+            1.8
+          ]
+        }
       },
       "frameContrastRatios": [
         4.2,
@@ -968,7 +1171,9 @@
           "visiblePixels": 1420,
           "isolatedPixels": 1534,
           "occlusionFraction": 0.0743155149934811,
-          "edgeClearancePixels": 12
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
         },
         "face": {
           "widthPixels": 24,
@@ -976,7 +1181,9 @@
           "visiblePixels": 420,
           "isolatedPixels": 454,
           "occlusionFraction": 0.07488986784140972,
-          "edgeClearancePixels": 12
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
         },
         "eyes": {
           "widthPixels": 20,
@@ -984,7 +1191,9 @@
           "visiblePixels": 82,
           "isolatedPixels": 89,
           "occlusionFraction": 0.0786516853932584,
-          "edgeClearancePixels": 12
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
         },
         "identity": {
           "widthPixels": 38,
@@ -992,7 +1201,9 @@
           "visiblePixels": 260,
           "isolatedPixels": 281,
           "occlusionFraction": 0.07473309608540923,
-          "edgeClearancePixels": 12
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
         },
         "population": [
           {
@@ -1003,19 +1214,107 @@
               "visiblePixels": 142,
               "isolatedPixels": 153,
               "occlusionFraction": 0.07189542483660127,
-              "edgeClearancePixels": 12
-            }
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 10,
+              "heightPixels": 10,
+              "visiblePixels": 42,
+              "isolatedPixels": 45,
+              "occlusionFraction": 0.06666666666666665,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 18,
+                "heightPixels": 33,
+                "visiblePixels": 142,
+                "isolatedPixels": 152,
+                "occlusionFraction": 0.06578947368421051,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 92,
+                "centreYPixels": 390
+              },
+              {
+                "widthPixels": 19,
+                "heightPixels": 35,
+                "visiblePixels": 151,
+                "isolatedPixels": 160,
+                "occlusionFraction": 0.05625000000000002,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 294,
+                "centreYPixels": 404
+              }
+            ]
           },
           {
             "role": "current-swimmer",
             "component": {
-              "widthPixels": 39,
-              "heightPixels": 19,
-              "visiblePixels": 134,
-              "isolatedPixels": 145,
-              "occlusionFraction": 0.07586206896551728,
-              "edgeClearancePixels": 12
-            }
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 162,
+              "occlusionFraction": 0.07407407407407407,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 10,
+              "heightPixels": 10,
+              "visiblePixels": 40,
+              "isolatedPixels": 43,
+              "occlusionFraction": 0.06976744186046513,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 45,
+                "heightPixels": 20,
+                "visiblePixels": 150,
+                "isolatedPixels": 158,
+                "occlusionFraction": 0.05063291139240511,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 74,
+                "centreYPixels": 340
+              },
+              {
+                "widthPixels": 48,
+                "heightPixels": 21,
+                "visiblePixels": 162,
+                "isolatedPixels": 170,
+                "occlusionFraction": 0.04705882352941182,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 312,
+                "centreYPixels": 278
+              }
+            ]
           },
           {
             "role": "conch-herald",
@@ -1025,10 +1324,117 @@
               "visiblePixels": 176,
               "isolatedPixels": 190,
               "occlusionFraction": 0.0736842105263158,
-              "edgeClearancePixels": 12
-            }
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 10,
+              "heightPixels": 10,
+              "visiblePixels": 42,
+              "isolatedPixels": 45,
+              "occlusionFraction": 0.06666666666666665,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 23,
+                "heightPixels": 37,
+                "visiblePixels": 176,
+                "isolatedPixels": 184,
+                "occlusionFraction": 0.04347826086956519,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 114,
+                "centreYPixels": 464
+              },
+              {
+                "widthPixels": 24,
+                "heightPixels": 39,
+                "visiblePixels": 184,
+                "isolatedPixels": 192,
+                "occlusionFraction": 0.04166666666666663,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 276,
+                "centreYPixels": 470
+              }
+            ]
           }
-        ]
+        ],
+        "motion": {
+          "sampleIntervalSec": 3.25,
+          "swimmerStart": [
+            {
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 158,
+              "occlusionFraction": 0.05063291139240511,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 74,
+              "centreYPixels": 340
+            },
+            {
+              "widthPixels": 48,
+              "heightPixels": 21,
+              "visiblePixels": 162,
+              "isolatedPixels": 170,
+              "occlusionFraction": 0.04705882352941182,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 312,
+              "centreYPixels": 278
+            }
+          ],
+          "swimmerEnd": [
+            {
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 158,
+              "occlusionFraction": 0.05063291139240511,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 88,
+              "centreYPixels": 344
+            },
+            {
+              "widthPixels": 48,
+              "heightPixels": 21,
+              "visiblePixels": 162,
+              "isolatedPixels": 170,
+              "occlusionFraction": 0.04705882352941182,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 292,
+              "centreYPixels": 285
+            }
+          ],
+          "swimmerTravelPixels": [
+            14.56,
+            21.19
+          ],
+          "swimmerCentreSeparationPixels": [
+            245.94,
+            212.5
+          ],
+          "swimmerBoxOverlapFraction": [
+            0,
+            0
+          ],
+          "heraldTravelPixels": [
+            1.2,
+            1.8
+          ]
+        }
       },
       "frameContrastRatios": [
         4.2,
@@ -1111,7 +1517,9 @@
           "visiblePixels": 1420,
           "isolatedPixels": 1534,
           "occlusionFraction": 0.0743155149934811,
-          "edgeClearancePixels": 12
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
         },
         "face": {
           "widthPixels": 24,
@@ -1119,7 +1527,9 @@
           "visiblePixels": 420,
           "isolatedPixels": 454,
           "occlusionFraction": 0.07488986784140972,
-          "edgeClearancePixels": 12
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
         },
         "eyes": {
           "widthPixels": 20,
@@ -1127,7 +1537,9 @@
           "visiblePixels": 82,
           "isolatedPixels": 89,
           "occlusionFraction": 0.0786516853932584,
-          "edgeClearancePixels": 12
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
         },
         "identity": {
           "widthPixels": 38,
@@ -1135,7 +1547,9 @@
           "visiblePixels": 260,
           "isolatedPixels": 281,
           "occlusionFraction": 0.07473309608540923,
-          "edgeClearancePixels": 12
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
         },
         "population": [
           {
@@ -1146,19 +1560,107 @@
               "visiblePixels": 142,
               "isolatedPixels": 153,
               "occlusionFraction": 0.07189542483660127,
-              "edgeClearancePixels": 12
-            }
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 10,
+              "heightPixels": 10,
+              "visiblePixels": 42,
+              "isolatedPixels": 45,
+              "occlusionFraction": 0.06666666666666665,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 18,
+                "heightPixels": 33,
+                "visiblePixels": 142,
+                "isolatedPixels": 152,
+                "occlusionFraction": 0.06578947368421051,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 92,
+                "centreYPixels": 390
+              },
+              {
+                "widthPixels": 19,
+                "heightPixels": 35,
+                "visiblePixels": 151,
+                "isolatedPixels": 160,
+                "occlusionFraction": 0.05625000000000002,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 294,
+                "centreYPixels": 404
+              }
+            ]
           },
           {
             "role": "current-swimmer",
             "component": {
-              "widthPixels": 39,
-              "heightPixels": 19,
-              "visiblePixels": 134,
-              "isolatedPixels": 145,
-              "occlusionFraction": 0.07586206896551728,
-              "edgeClearancePixels": 12
-            }
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 162,
+              "occlusionFraction": 0.07407407407407407,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 10,
+              "heightPixels": 10,
+              "visiblePixels": 40,
+              "isolatedPixels": 43,
+              "occlusionFraction": 0.06976744186046513,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 45,
+                "heightPixels": 20,
+                "visiblePixels": 150,
+                "isolatedPixels": 158,
+                "occlusionFraction": 0.05063291139240511,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 74,
+                "centreYPixels": 340
+              },
+              {
+                "widthPixels": 48,
+                "heightPixels": 21,
+                "visiblePixels": 162,
+                "isolatedPixels": 170,
+                "occlusionFraction": 0.04705882352941182,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 312,
+                "centreYPixels": 278
+              }
+            ]
           },
           {
             "role": "conch-herald",
@@ -1168,10 +1670,117 @@
               "visiblePixels": 176,
               "isolatedPixels": 190,
               "occlusionFraction": 0.0736842105263158,
-              "edgeClearancePixels": 12
-            }
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 10,
+              "heightPixels": 10,
+              "visiblePixels": 42,
+              "isolatedPixels": 45,
+              "occlusionFraction": 0.06666666666666665,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 23,
+                "heightPixels": 37,
+                "visiblePixels": 176,
+                "isolatedPixels": 184,
+                "occlusionFraction": 0.04347826086956519,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 114,
+                "centreYPixels": 464
+              },
+              {
+                "widthPixels": 24,
+                "heightPixels": 39,
+                "visiblePixels": 184,
+                "isolatedPixels": 192,
+                "occlusionFraction": 0.04166666666666663,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 276,
+                "centreYPixels": 470
+              }
+            ]
           }
-        ]
+        ],
+        "motion": {
+          "sampleIntervalSec": 3.25,
+          "swimmerStart": [
+            {
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 158,
+              "occlusionFraction": 0.05063291139240511,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 74,
+              "centreYPixels": 340
+            },
+            {
+              "widthPixels": 48,
+              "heightPixels": 21,
+              "visiblePixels": 162,
+              "isolatedPixels": 170,
+              "occlusionFraction": 0.04705882352941182,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 312,
+              "centreYPixels": 278
+            }
+          ],
+          "swimmerEnd": [
+            {
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 158,
+              "occlusionFraction": 0.05063291139240511,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 88,
+              "centreYPixels": 344
+            },
+            {
+              "widthPixels": 48,
+              "heightPixels": 21,
+              "visiblePixels": 162,
+              "isolatedPixels": 170,
+              "occlusionFraction": 0.04705882352941182,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 292,
+              "centreYPixels": 285
+            }
+          ],
+          "swimmerTravelPixels": [
+            14.56,
+            21.19
+          ],
+          "swimmerCentreSeparationPixels": [
+            245.94,
+            212.5
+          ],
+          "swimmerBoxOverlapFraction": [
+            0,
+            0
+          ],
+          "heraldTravelPixels": [
+            1.2,
+            1.8
+          ]
+        }
       },
       "frameContrastRatios": [
         4.2,

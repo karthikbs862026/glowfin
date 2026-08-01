@@ -13,10 +13,13 @@ import {
   createProductionGateCanopyGeometry,
   createProductionKelp,
   createProductionMerfolkCitizen,
+  createProductionMerfolkCitizenParts,
   createProductionMerfolkConchHerald,
+  createProductionMerfolkConchHeraldParts,
   createProductionMerfolkGuardian,
   createProductionMerfolkMonument,
   createProductionMerfolkSwimmer,
+  createProductionMerfolkSwimmerParts,
   createProductionObservatory,
   createProductionPalaceDistrict,
   createProductionSkyline,
@@ -203,12 +206,31 @@ describe("Phase 3B art geometry inventory", () => {
     for (const [geometry, role] of roles) {
       expect(geometry.userData["populationRole"]).toBe(role);
       expect(geometry.userData["facialFeatures"]).toBe(
-        "eye-white-pupil-highlight-mouth"
+        "warm-face-eye-white-pupil-highlight-smile-cheeks"
       );
+      expect(geometry.userData["faceOrientation"]).toBe("screen-upright");
       if (role === "conch-herald") {
         expect(geometry.userData["ceremonialProp"]).toBe("spiral-conch");
       }
       geometry.dispose();
+    }
+  });
+
+  it("keeps every population face and eye plane independently renderable", () => {
+    const roles = [
+      [createProductionMerfolkCitizenParts(), "reef-citizen"],
+      [createProductionMerfolkSwimmerParts(), "current-swimmer"],
+      [createProductionMerfolkConchHeraldParts(), "conch-herald"]
+    ] as const;
+    for (const [parts, role] of roles) {
+      expect(parts.body.userData["populationRole"]).toBe(role);
+      expect(parts.face.userData["populationFeature"]).toBe("friendly-face");
+      expect(parts.eyes.userData["populationFeature"]).toBe("expressive-eyes");
+      for (const geometry of [parts.body, parts.face, parts.eyes]) {
+        expect(geometry.hasAttribute("materialRole")).toBe(true);
+        expect(productionTriangles(geometry)).toBeGreaterThan(0);
+        geometry.dispose();
+      }
     }
   });
 

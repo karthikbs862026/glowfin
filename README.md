@@ -25,9 +25,10 @@ includes:
 - grounded palace/observatory districts, maze-ridged brain coral, scalloped
   table coral and four supporting reef species
 - one articulated, phone-readable hero mermaid whose Tidekeeper, Coral Warden
-  or Astral Oracle regalia follows the active district, plus instanced reef
-  citizens, horizontal current swimmers, paired conch heralds, larger fish
-  schools, mantas, jellies and ceremonial props outside the collision lane
+  or Astral Oracle regalia follows the active district, plus warm-faced upright
+  reef citizens, anchored conch heralds and genuinely horizontal current
+  swimmers on independently seeded lane-safe paths; larger fish schools,
+  mantas, jellies and ceremonial props remain outside the collision lane
 - limestone, nacre, bronze, lapis, crystal and living-coral responses in one
   instanced material system
 - fork-crowned spires and shader-sway ribbon kelp retained as interim depth

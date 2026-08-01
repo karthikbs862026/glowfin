@@ -761,6 +761,144 @@ export function checkMerfolkVisualReviews(
           cfg.maximumPopulationOcclusionFraction
         );
       }
+      if (population.face.heightPixels < cfg.minimumPopulationFaceHeightPixels) {
+        fail(
+          "MERFOLK_POPULATION_FACE_BELOW_FLOOR",
+          `${role} still has no phone-readable facial plane in the ${label} frame.`,
+          population.face.heightPixels,
+          cfg.minimumPopulationFaceHeightPixels
+        );
+      }
+      if (population.eyes.heightPixels < cfg.minimumPopulationEyeHeightPixels) {
+        fail(
+          "MERFOLK_POPULATION_EYES_BELOW_FLOOR",
+          `${role} eyes disappear or merge into the face in the ${label} frame.`,
+          population.eyes.heightPixels,
+          cfg.minimumPopulationEyeHeightPixels
+        );
+      }
+      if (
+        population.instances.length <
+        cfg.minimumPopulationInstancesPerRole
+      ) {
+        fail(
+          "MERFOLK_POPULATION_INSTANCE_COUNT_BELOW_FLOOR",
+          `${role} has only ${population.instances.length} separately readable figures beside ${label}.`,
+          population.instances.length,
+          cfg.minimumPopulationInstancesPerRole
+        );
+      }
+      for (const [index, instance] of population.instances.entries()) {
+        const aspect = role === "current-swimmer"
+          ? instance.widthPixels / Math.max(1, instance.heightPixels)
+          : instance.heightPixels / Math.max(1, instance.widthPixels);
+        const aspectFloor = role === "current-swimmer"
+          ? cfg.minimumSwimmerHorizontalAspectRatio
+          : cfg.minimumUprightAspectRatio;
+        if (aspect < aspectFloor) {
+          fail(
+            role === "current-swimmer"
+              ? "MERFOLK_SWIMMER_POSE_NOT_HORIZONTAL"
+              : "MERFOLK_RESIDENT_POSE_NOT_UPRIGHT",
+            `${role} instance ${index + 1} has the wrong portrait pose beside ${label}.`,
+            aspect,
+            aspectFloor
+          );
+        }
+      }
+    }
+
+    const motion = review.motion;
+    if (Math.abs(
+      motion.sampleIntervalSec - cfg.motionSampleIntervalSec
+    ) > 0.001) {
+      fail(
+        "MERFOLK_MOTION_INTERVAL_INVALID",
+        `${label} motion evidence used the wrong sampling interval.`,
+        motion.sampleIntervalSec,
+        cfg.motionSampleIntervalSec
+      );
+    }
+    if (
+      motion.swimmerStart.length < cfg.minimumPopulationInstancesPerRole ||
+      motion.swimmerEnd.length < cfg.minimumPopulationInstancesPerRole
+    ) {
+      fail(
+        "MERFOLK_SWIMMER_TIMELAPSE_INCOMPLETE",
+        `${label} does not retain two identifiable swimmers across the motion sample.`
+      );
+    }
+    for (const separation of motion.swimmerCentreSeparationPixels) {
+      if (separation < cfg.minimumSwimmerCentreSeparationPixels) {
+        fail(
+          "MERFOLK_SWIMMERS_STACKED",
+          `${label} swimmers are staged too close together and read as a body stack.`,
+          separation,
+          cfg.minimumSwimmerCentreSeparationPixels
+        );
+      }
+    }
+    for (const overlap of motion.swimmerBoxOverlapFraction) {
+      if (overlap > cfg.maximumSwimmerBoxOverlapFraction) {
+        fail(
+          "MERFOLK_SWIMMERS_OVERLAP",
+          `${label} swimmers overlap one another in the portrait frame.`,
+          overlap,
+          cfg.maximumSwimmerBoxOverlapFraction
+        );
+      }
+    }
+    if (motion.swimmerTravelPixels.length < 2) {
+      fail(
+        "MERFOLK_SWIMMER_MOTION_MISSING",
+        `${label} lacks two independently tracked swimmer paths.`
+      );
+    } else {
+      for (const [index, travel] of motion.swimmerTravelPixels.entries()) {
+        if (travel < cfg.minimumSwimmerTravelPixels) {
+          fail(
+            "MERFOLK_SWIMMER_FROZEN",
+            `${label} swimmer ${index + 1} moves only ${travel.toFixed(1)}px.`,
+            travel,
+            cfg.minimumSwimmerTravelPixels
+          );
+        }
+      }
+      if (
+        Math.abs(
+          (motion.swimmerTravelPixels[0] ?? 0) -
+          (motion.swimmerTravelPixels[1] ?? 0)
+        ) < cfg.minimumSwimmerTravelDifferencePixels
+      ) {
+        fail(
+          "MERFOLK_SWIMMER_MOTION_SYNCHRONIZED",
+          `${label} swimmers use visibly identical travel rather than independent paths.`,
+          Math.abs(
+            (motion.swimmerTravelPixels[0] ?? 0) -
+            (motion.swimmerTravelPixels[1] ?? 0)
+          ),
+          cfg.minimumSwimmerTravelDifferencePixels
+        );
+      }
+    }
+    if (
+      motion.heraldTravelPixels.length <
+      cfg.minimumPopulationInstancesPerRole
+    ) {
+      fail(
+        "MERFOLK_UPRIGHT_TIMELAPSE_INCOMPLETE",
+        `${label} lacks the paired upright herald anchors.`
+      );
+    }
+    for (const travel of motion.heraldTravelPixels) {
+      if (travel > cfg.maximumAnchoredTravelPixels) {
+        fail(
+          "MERFOLK_UPRIGHT_RESIDENT_DRIFT",
+          `${label} ceremonial residents drift instead of remaining vertically anchored.`,
+          travel,
+          cfg.maximumAnchoredTravelPixels
+        );
+      }
     }
   }
 

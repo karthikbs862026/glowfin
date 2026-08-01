@@ -24,14 +24,18 @@ function captures(lowContrast = false): SceneCapture[] {
     heightPixels: number,
     visiblePixels: number,
     isolatedPixels = Math.round(visiblePixels * 1.08),
-    edgeClearancePixels = 12
+    edgeClearancePixels = 12,
+    centreXPixels = 195,
+    centreYPixels = 422
   ) => ({
     widthPixels,
     heightPixels,
     visiblePixels,
     isolatedPixels,
     occlusionFraction: 1 - visiblePixels / isolatedPixels,
-    edgeClearancePixels
+    edgeClearancePixels,
+    centreXPixels,
+    centreYPixels
   });
   return fastStates.map((state, index) => ({
     seed: 20260730 + index,
@@ -59,10 +63,52 @@ function captures(lowContrast = false): SceneCapture[] {
         eyes: component(20, 7, 82),
         identity: component(38, 43, 260),
         population: [
-          { role: "reef-citizen", component: component(18, 33, 142) },
-          { role: "current-swimmer", component: component(39, 19, 134) },
-          { role: "conch-herald", component: component(23, 37, 176) }
-        ]
+          {
+            role: "reef-citizen",
+            component: component(18, 33, 142),
+            face: component(10, 10, 42),
+            eyes: component(7, 3, 12),
+            instances: [
+              component(18, 33, 142, 152, 12, 92, 390),
+              component(19, 35, 151, 160, 12, 294, 404)
+            ]
+          },
+          {
+            role: "current-swimmer",
+            component: component(45, 20, 150),
+            face: component(10, 10, 40),
+            eyes: component(7, 3, 12),
+            instances: [
+              component(45, 20, 150, 158, 12, 74, 340),
+              component(48, 21, 162, 170, 12, 312, 278)
+            ]
+          },
+          {
+            role: "conch-herald",
+            component: component(23, 37, 176),
+            face: component(10, 10, 42),
+            eyes: component(7, 3, 12),
+            instances: [
+              component(23, 37, 176, 184, 12, 114, 464),
+              component(24, 39, 184, 192, 12, 276, 470)
+            ]
+          }
+        ],
+        motion: {
+          sampleIntervalSec: 3.25,
+          swimmerStart: [
+            component(45, 20, 150, 158, 12, 74, 340),
+            component(48, 21, 162, 170, 12, 312, 278)
+          ],
+          swimmerEnd: [
+            component(45, 20, 150, 158, 12, 88, 344),
+            component(48, 21, 162, 170, 12, 292, 285)
+          ],
+          swimmerTravelPixels: [14.56, 21.19],
+          swimmerCentreSeparationPixels: [245.94, 212.5],
+          swimmerBoxOverlapFraction: [0, 0],
+          heraldTravelPixels: [1.2, 1.8]
+        }
       }
     } : {}),
     frameContrastRatios: Array.from({ length: 20 }, () => 4.2),

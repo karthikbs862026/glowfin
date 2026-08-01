@@ -18,6 +18,12 @@ import type {
 } from "../../tools/art-gate/src/types";
 import { analyseContrast } from "./contrastAnalysis";
 import type { GameView } from "./gameView";
+import {
+  MERFOLK_MASK,
+  MERFOLK_MASK_ENTRIES,
+  MERFOLK_MASK_MAX_ID
+} from "../art/merfolkMask";
+import { MERFOLK_CITY_CONTRACT } from "../art/merfolkCharacter";
 
 const CAPTURE_SEED = 20260730;
 
@@ -70,27 +76,26 @@ function captureGate(
   };
 }
 
-const MASK = {
-  guardianBody: 1,
-  guardianIdentity: 2,
-  guardianFace: 3,
-  guardianEyes: 4,
-  citizen: 5,
-  swimmer: 6,
-  herald: 7
-} as const;
-
 function maskClass(red: number, green: number, blue: number): number {
-  const high = 176;
-  const low = 92;
-  if (red > high && green > high && blue > high) return MASK.guardianEyes;
-  if (red > high && green > high && blue < low) return MASK.guardianIdentity;
-  if (red < low && green > high && blue > high) return MASK.guardianFace;
-  if (red > high && green < low && blue > high) return MASK.herald;
-  if (red > high && green < low && blue < low) return MASK.guardianBody;
-  if (red < low && green > high && blue < low) return MASK.citizen;
-  if (red < low && green < low && blue > high) return MASK.swimmer;
-  return 0;
+  let bestId = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const entry of MERFOLK_MASK_ENTRIES) {
+    const colour = entry.colour;
+    const deltaRed = red - ((colour >> 16) & 0xff);
+    const deltaGreen = green - ((colour >> 8) & 0xff);
+    const deltaBlue = blue - (colour & 0xff);
+    const distance =
+      deltaRed * deltaRed +
+      deltaGreen * deltaGreen +
+      deltaBlue * deltaBlue;
+    if (distance >= bestDistance) continue;
+    bestDistance = distance;
+    bestId = entry.id;
+  }
+  // Ignore antialias blends that are closer to the black background than to
+  // a semantic interior. Interior mask pixels are emitted without tone map or
+  // fog and therefore remain much closer than this threshold.
+  return bestDistance <= 90 * 90 ? bestId : 0;
 }
 
 interface CssMask {
@@ -108,7 +113,7 @@ function toCssMask(
   const cssWidth = Math.max(1, Math.round(width / Math.max(0.25, pixelRatio)));
   const cssHeight = Math.max(1, Math.round(height / Math.max(0.25, pixelRatio)));
   const cells = new Uint8Array(cssWidth * cssHeight);
-  const counts = new Uint8Array(8);
+  const counts = new Uint8Array(MERFOLK_MASK_MAX_ID + 1);
   for (let y = 0; y < cssHeight; y++) {
     const startY = Math.floor(y * height / cssHeight);
     const endY = Math.max(startY + 1, Math.floor((y + 1) * height / cssHeight));
@@ -142,6 +147,8 @@ interface Component {
   height: number;
   pixels: number;
   edgeClearance: number;
+  centreX: number;
+  centreY: number;
 }
 
 function largestComponent(mask: CssMask, accepted: readonly number[]): Component {
@@ -149,7 +156,14 @@ function largestComponent(mask: CssMask, accepted: readonly number[]): Component
   for (const role of accepted) allowed[role] = 1;
   const visited = new Uint8Array(mask.cells.length);
   const stack = new Int32Array(mask.cells.length);
-  let best: Component = { width: 0, height: 0, pixels: 0, edgeClearance: 0 };
+  let best: Component = {
+    width: 0,
+    height: 0,
+    pixels: 0,
+    edgeClearance: 0,
+    centreX: 0,
+    centreY: 0
+  };
 
   for (let start = 0; start < mask.cells.length; start++) {
     if (visited[start] || !allowed[mask.cells[start] ?? 0]) continue;
@@ -196,10 +210,76 @@ function largestComponent(mask: CssMask, accepted: readonly number[]): Component
         minY,
         mask.width - 1 - maxX,
         mask.height - 1 - maxY
-      )
+      ),
+      centreX: (minX + maxX) * 0.5,
+      centreY: (minY + maxY) * 0.5
     };
   }
   return best;
+}
+
+function connectedComponents(
+  mask: CssMask,
+  accepted: readonly number[],
+  minimumPixels = 3
+): Component[] {
+  const allowed = new Uint8Array(MERFOLK_MASK_MAX_ID + 1);
+  for (const role of accepted) allowed[role] = 1;
+  const visited = new Uint8Array(mask.cells.length);
+  const stack = new Int32Array(mask.cells.length);
+  const components: Component[] = [];
+
+  for (let start = 0; start < mask.cells.length; start++) {
+    if (visited[start] || !allowed[mask.cells[start] ?? 0]) continue;
+    let stackSize = 1;
+    stack[0] = start;
+    visited[start] = 1;
+    let pixels = 0;
+    let minX = mask.width;
+    let maxX = -1;
+    let minY = mask.height;
+    let maxY = -1;
+    while (stackSize > 0) {
+      const cell = stack[--stackSize] ?? 0;
+      const x = cell % mask.width;
+      const y = Math.floor(cell / mask.width);
+      pixels += 1;
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+      for (let offsetY = -1; offsetY <= 1; offsetY++) {
+        for (let offsetX = -1; offsetX <= 1; offsetX++) {
+          if (offsetX === 0 && offsetY === 0) continue;
+          const nextX = x + offsetX;
+          const nextY = y + offsetY;
+          if (
+            nextX < 0 || nextX >= mask.width ||
+            nextY < 0 || nextY >= mask.height
+          ) continue;
+          const next = nextY * mask.width + nextX;
+          if (visited[next] || !allowed[mask.cells[next] ?? 0]) continue;
+          visited[next] = 1;
+          stack[stackSize++] = next;
+        }
+      }
+    }
+    if (pixels < minimumPixels) continue;
+    components.push({
+      width: maxX - minX + 1,
+      height: maxY - minY + 1,
+      pixels,
+      edgeClearance: Math.min(
+        minX,
+        minY,
+        mask.width - 1 - maxX,
+        mask.height - 1 - maxY
+      ),
+      centreX: (minX + maxX) * 0.5,
+      centreY: (minY + maxY) * 0.5
+    });
+  }
+  return components.sort((left, right) => right.pixels - left.pixels);
 }
 
 /**
@@ -228,7 +308,14 @@ function maskBounds(mask: CssMask, accepted: readonly number[]): Component {
     maxY = Math.max(maxY, y);
   }
   if (pixels === 0) {
-    return { width: 0, height: 0, pixels: 0, edgeClearance: 0 };
+    return {
+      width: 0,
+      height: 0,
+      pixels: 0,
+      edgeClearance: 0,
+      centreX: 0,
+      centreY: 0
+    };
   }
   return {
     width: maxX - minX + 1,
@@ -239,7 +326,9 @@ function maskBounds(mask: CssMask, accepted: readonly number[]): Component {
       minY,
       mask.width - 1 - maxX,
       mask.height - 1 - maxY
-    )
+    ),
+    centreX: (minX + maxX) * 0.5,
+    centreY: (minY + maxY) * 0.5
   };
 }
 
@@ -259,7 +348,9 @@ function componentEvidence(
     visiblePixels: shown.pixels,
     isolatedPixels: whole.pixels,
     occlusionFraction,
-    edgeClearancePixels: shown.edgeClearance
+    edgeClearancePixels: shown.edgeClearance,
+    centreXPixels: shown.centreX,
+    centreYPixels: shown.centreY
   };
 }
 
@@ -279,45 +370,244 @@ function silhouetteEvidence(
     visiblePixels: shown.pixels,
     isolatedPixels: whole.pixels,
     occlusionFraction,
-    edgeClearancePixels: shown.edgeClearance
+    edgeClearancePixels: shown.edgeClearance,
+    centreXPixels: shown.centreX,
+    centreYPixels: shown.centreY
   };
+}
+
+function componentListEvidence(
+  visible: CssMask,
+  isolated: CssMask,
+  accepted: readonly number[],
+  minimumPixels = 8
+): MerfolkMaskComponentEvidence[] {
+  const shown = connectedComponents(visible, accepted, minimumPixels);
+  const whole = connectedComponents(isolated, accepted, minimumPixels);
+  return shown.map((component) => {
+    const baseline = [...whole].sort((left, right) => {
+      const leftDistance = Math.hypot(
+        left.centreX - component.centreX,
+        left.centreY - component.centreY
+      );
+      const rightDistance = Math.hypot(
+        right.centreX - component.centreX,
+        right.centreY - component.centreY
+      );
+      return leftDistance - rightDistance;
+    })[0] ?? component;
+    return {
+      widthPixels: component.width,
+      heightPixels: component.height,
+      visiblePixels: component.pixels,
+      isolatedPixels: baseline.pixels,
+      occlusionFraction: baseline.pixels <= 0
+        ? 1
+        : Math.max(0, Math.min(1, 1 - component.pixels / baseline.pixels)),
+      edgeClearancePixels: component.edgeClearance,
+      centreXPixels: component.centreX,
+      centreYPixels: component.centreY
+    };
+  });
+}
+
+function byHorizontalPosition(
+  components: MerfolkMaskComponentEvidence[],
+  count = components.length
+): MerfolkMaskComponentEvidence[] {
+  return [...components]
+    .sort((left, right) => left.centreXPixels - right.centreXPixels)
+    .slice(0, count);
+}
+
+function componentTravel(
+  start: MerfolkMaskComponentEvidence[],
+  end: MerfolkMaskComponentEvidence[]
+): number[] {
+  const orderedStart = byHorizontalPosition(start);
+  const orderedEnd = byHorizontalPosition(end);
+  return orderedStart.map((component, index) => {
+    const later = orderedEnd[index];
+    if (!later) return 0;
+    return Math.hypot(
+      later.centreXPixels - component.centreXPixels,
+      later.centreYPixels - component.centreYPixels
+    );
+  });
+}
+
+function centreSeparation(
+  components: MerfolkMaskComponentEvidence[]
+): number {
+  const ordered = byHorizontalPosition(components, 2);
+  const first = ordered[0];
+  const second = ordered[1];
+  if (!first || !second) return 0;
+  return Math.hypot(
+    second.centreXPixels - first.centreXPixels,
+    second.centreYPixels - first.centreYPixels
+  );
+}
+
+function boxOverlapFraction(
+  components: MerfolkMaskComponentEvidence[]
+): number {
+  const ordered = byHorizontalPosition(components, 2);
+  const first = ordered[0];
+  const second = ordered[1];
+  if (!first || !second) return 1;
+  const firstLeft = first.centreXPixels - first.widthPixels * 0.5;
+  const firstRight = first.centreXPixels + first.widthPixels * 0.5;
+  const firstTop = first.centreYPixels - first.heightPixels * 0.5;
+  const firstBottom = first.centreYPixels + first.heightPixels * 0.5;
+  const secondLeft = second.centreXPixels - second.widthPixels * 0.5;
+  const secondRight = second.centreXPixels + second.widthPixels * 0.5;
+  const secondTop = second.centreYPixels - second.heightPixels * 0.5;
+  const secondBottom = second.centreYPixels + second.heightPixels * 0.5;
+  const overlapWidth = Math.max(
+    0,
+    Math.min(firstRight, secondRight) - Math.max(firstLeft, secondLeft)
+  );
+  const overlapHeight = Math.max(
+    0,
+    Math.min(firstBottom, secondBottom) - Math.max(firstTop, secondTop)
+  );
+  const overlapArea = overlapWidth * overlapHeight;
+  const smallerArea = Math.max(1, Math.min(
+    first.widthPixels * first.heightPixels,
+    second.widthPixels * second.heightPixels
+  ));
+  return overlapArea / smallerArea;
 }
 
 function analyseMerfolkReview(
   role: string,
   visiblePixels: Uint8Array,
   isolatedPixels: Uint8Array,
+  motionVisiblePixels: Uint8Array,
+  motionIsolatedPixels: Uint8Array,
   width: number,
   height: number,
-  pixelRatio: number
+  pixelRatio: number,
+  motionSampleIntervalSec: number
 ): MerfolkVisualReviewEvidence {
   const visible = toCssMask(visiblePixels, width, height, pixelRatio);
   const isolated = toCssMask(isolatedPixels, width, height, pixelRatio);
+  const motionVisible = toCssMask(
+    motionVisiblePixels,
+    width,
+    height,
+    pixelRatio
+  );
+  const motionIsolated = toCssMask(
+    motionIsolatedPixels,
+    width,
+    height,
+    pixelRatio
+  );
+  const population = (
+    populationRole: string,
+    body: number,
+    face: number,
+    eyes: number
+  ) => ({
+    role: populationRole,
+    component: componentEvidence(visible, isolated, [body, face, eyes]),
+    face: componentEvidence(visible, isolated, [face]),
+    eyes: componentEvidence(visible, isolated, [eyes]),
+    instances: componentListEvidence(
+      visible,
+      isolated,
+      [body, face, eyes],
+      8
+    ).slice(0, populationRole === "reef-citizen" ? 3 : 2)
+  });
+  const swimmerMasks = [
+    MERFOLK_MASK.swimmerBody.id,
+    MERFOLK_MASK.swimmerFace.id,
+    MERFOLK_MASK.swimmerEyes.id
+  ];
+  const heraldMasks = [
+    MERFOLK_MASK.heraldBody.id,
+    MERFOLK_MASK.heraldFace.id,
+    MERFOLK_MASK.heraldEyes.id
+  ];
+  const swimmerStart = componentListEvidence(
+    visible,
+    isolated,
+    swimmerMasks,
+    8
+  );
+  const swimmerEnd = componentListEvidence(
+    motionVisible,
+    motionIsolated,
+    swimmerMasks,
+    8
+  );
+  const heraldStart = componentListEvidence(
+    visible,
+    isolated,
+    heraldMasks,
+    8
+  );
+  const heraldEnd = componentListEvidence(
+    motionVisible,
+    motionIsolated,
+    heraldMasks,
+    8
+  );
   return {
     guardianRole: role,
     guardian: componentEvidence(visible, isolated, [
-      MASK.guardianBody,
-      MASK.guardianIdentity,
-      MASK.guardianFace,
-      MASK.guardianEyes
+      MERFOLK_MASK.guardianBody.id,
+      MERFOLK_MASK.guardianIdentity.id,
+      MERFOLK_MASK.guardianFace.id,
+      MERFOLK_MASK.guardianEyes.id
     ]),
-    identity: silhouetteEvidence(visible, isolated, [MASK.guardianIdentity]),
-    face: componentEvidence(visible, isolated, [MASK.guardianFace]),
-    eyes: componentEvidence(visible, isolated, [MASK.guardianEyes]),
+    identity: silhouetteEvidence(visible, isolated, [
+      MERFOLK_MASK.guardianIdentity.id
+    ]),
+    face: componentEvidence(visible, isolated, [
+      MERFOLK_MASK.guardianFace.id
+    ]),
+    eyes: componentEvidence(visible, isolated, [
+      MERFOLK_MASK.guardianEyes.id
+    ]),
     population: [
-      {
-        role: "reef-citizen",
-        component: componentEvidence(visible, isolated, [MASK.citizen])
-      },
-      {
-        role: "current-swimmer",
-        component: componentEvidence(visible, isolated, [MASK.swimmer])
-      },
-      {
-        role: "conch-herald",
-        component: componentEvidence(visible, isolated, [MASK.herald])
-      }
-    ]
+      population(
+        "reef-citizen",
+        MERFOLK_MASK.citizenBody.id,
+        MERFOLK_MASK.citizenFace.id,
+        MERFOLK_MASK.citizenEyes.id
+      ),
+      population(
+        "current-swimmer",
+        MERFOLK_MASK.swimmerBody.id,
+        MERFOLK_MASK.swimmerFace.id,
+        MERFOLK_MASK.swimmerEyes.id
+      ),
+      population(
+        "conch-herald",
+        MERFOLK_MASK.heraldBody.id,
+        MERFOLK_MASK.heraldFace.id,
+        MERFOLK_MASK.heraldEyes.id
+      )
+    ],
+    motion: {
+      sampleIntervalSec: motionSampleIntervalSec,
+      swimmerStart: byHorizontalPosition(swimmerStart, 2),
+      swimmerEnd: byHorizontalPosition(swimmerEnd, 2),
+      swimmerTravelPixels: componentTravel(swimmerStart, swimmerEnd).slice(0, 2),
+      swimmerCentreSeparationPixels: [
+        centreSeparation(swimmerStart),
+        centreSeparation(swimmerEnd)
+      ],
+      swimmerBoxOverlapFraction: [
+        boxOverlapFraction(swimmerStart),
+        boxOverlapFraction(swimmerEnd)
+      ],
+      heraldTravelPixels: componentTravel(heraldStart, heraldEnd).slice(0, 2)
+    }
   };
 }
 
@@ -509,13 +799,35 @@ export function runArtGateCapture(
       view.renderMerfolkMask();
       const isolatedMerfolk = view.capturePixels();
       view.setMerfolkMaskMode(false);
+
+      const motionSampleIntervalSec =
+        MERFOLK_CITY_CONTRACT.visualReview.motionSampleIntervalSec;
+      view.render(
+        sim,
+        [gate],
+        1,
+        sim.elapsedSec + motionSampleIntervalSec,
+        FIXED_DT_SEC
+      );
+      view.setMerfolkMaskMode(true, false);
+      view.renderMerfolkMask();
+      const motionVisibleMerfolk = view.capturePixels();
+      view.setMerfolkMaskMode(false);
+
+      view.setMerfolkMaskMode(true, true);
+      view.renderMerfolkMask();
+      const motionIsolatedMerfolk = view.capturePixels();
+      view.setMerfolkMaskMode(false);
       merfolkVisualReview = analyseMerfolkReview(
         view.activeHeroMerfolkRole(),
         visibleMerfolk.pixels,
         isolatedMerfolk.pixels,
+        motionVisibleMerfolk.pixels,
+        motionIsolatedMerfolk.pixels,
         visibleMerfolk.width,
         visibleMerfolk.height,
-        view.capturePixelRatio()
+        view.capturePixelRatio(),
+        motionSampleIntervalSec
       );
     }
 

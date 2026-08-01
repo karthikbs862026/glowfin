@@ -460,3 +460,21 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Make the owner's phone review authoritative over automated evidence. CI may
   prove that a role is visible; it may not call code-native art premium or
   semantically approved.
+
+## 2026-08-01 — Replace rotated mannequins with lane-safe merfolk choreography
+
+- Owner Android screenshots rejected the static horizontal swimmer stack and
+  the grey, mask-like population faces even after rendered role visibility
+  passed.
+- Adopt ADR-0025. Keep citizens and conch heralds upright and anchored; author
+  a genuine horizontal swimmer whose face/eyes remain level instead of
+  rotating the upright mesh by 90 degrees.
+- Place the two swimmers on opposite galleries with different height, depth,
+  speed, phase and amplitude. Seed every variation from the active gate and
+  simulation time so replay remains deterministic.
+- Split instanced population body, face and eyes into independently measurable
+  draws. Require warm faces, separated eyes, correct vertical/horizontal pose,
+  two visible instances per role and a 3.25-second motion sample.
+- Reject swimmer stacking, overlap, frozen/synchronized motion, upright-role
+  drift or any choreography sample entering the gameplay route. Owner phone
+  review remains the final visual authority.

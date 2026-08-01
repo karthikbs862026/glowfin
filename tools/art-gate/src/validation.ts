@@ -117,6 +117,17 @@ export function validateGateConfig(raw: unknown): Finding[] {
     "merfolk.minimumSwimmerVisiblePixels",
     "merfolk.minimumHeraldHeightPixels",
     "merfolk.minimumHeraldVisiblePixels",
+    "merfolk.minimumPopulationFaceHeightPixels",
+    "merfolk.minimumPopulationEyeHeightPixels",
+    "merfolk.minimumPopulationInstancesPerRole",
+    "merfolk.minimumUprightAspectRatio",
+    "merfolk.minimumSwimmerHorizontalAspectRatio",
+    "merfolk.minimumSwimmerCentreSeparationPixels",
+    "merfolk.maximumSwimmerBoxOverlapFraction",
+    "merfolk.motionSampleIntervalSec",
+    "merfolk.minimumSwimmerTravelPixels",
+    "merfolk.maximumAnchoredTravelPixels",
+    "merfolk.minimumSwimmerTravelDifferencePixels",
     "merfolk.maximumGuardianOcclusionFraction",
     "merfolk.maximumPopulationOcclusionFraction",
     "merfolk.minimumGuardianEdgeClearancePixels",
@@ -476,7 +487,9 @@ export function validateCapture(raw: unknown): Finding[] {
       "visiblePixels",
       "isolatedPixels",
       "occlusionFraction",
-      "edgeClearancePixels"
+      "edgeClearancePixels",
+      "centreXPixels",
+      "centreYPixels"
     ];
     const validComponent = (value: unknown): boolean => {
       const component = record(value);
@@ -496,8 +509,33 @@ export function validateCapture(raw: unknown): Finding[] {
       !Array.isArray(review.population) ||
       !review.population.every((entry) => {
         const item = record(entry);
-        return item && nonEmptyString(item.role) && validComponent(item.component);
-      })
+        return item &&
+          nonEmptyString(item.role) &&
+          validComponent(item.component) &&
+          validComponent(item.face) &&
+          validComponent(item.eyes) &&
+          Array.isArray(item.instances) &&
+          item.instances.every(validComponent);
+      }) ||
+      !(() => {
+        const motion = record(review.motion);
+        return motion &&
+          finite(motion.sampleIntervalSec) &&
+          Array.isArray(motion.swimmerStart) &&
+          motion.swimmerStart.every(validComponent) &&
+          Array.isArray(motion.swimmerEnd) &&
+          motion.swimmerEnd.every(validComponent) &&
+          Array.isArray(motion.swimmerTravelPixels) &&
+          motion.swimmerTravelPixels.every(finite) &&
+          Array.isArray(motion.swimmerCentreSeparationPixels) &&
+          motion.swimmerCentreSeparationPixels.length === 2 &&
+          motion.swimmerCentreSeparationPixels.every(finite) &&
+          Array.isArray(motion.swimmerBoxOverlapFraction) &&
+          motion.swimmerBoxOverlapFraction.length === 2 &&
+          motion.swimmerBoxOverlapFraction.every(finite) &&
+          Array.isArray(motion.heraldTravelPixels) &&
+          motion.heraldTravelPixels.every(finite);
+      })()
     ) {
       fail("Merfolk pixel-mask review is incomplete or malformed.");
     }
