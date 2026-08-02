@@ -68,10 +68,14 @@ try {
       await page.waitForFunction(
         () => {
           const button = document.querySelector("#hud-audio-toggle");
+          const nativeMedia = document.querySelector("audio");
           return (
             button?.getAttribute("data-audio-state") === "active" &&
             button.getAttribute("data-audio-native") === "playing" &&
-            button.getAttribute("data-audio-signal") === "generated"
+            button.getAttribute("data-audio-signal") === "generated" &&
+            nativeMedia instanceof HTMLMediaElement &&
+            !nativeMedia.paused &&
+            nativeMedia.currentTime > 0
           );
         },
         undefined,
