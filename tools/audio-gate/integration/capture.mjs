@@ -63,24 +63,33 @@ try {
     };
   });
 
+  const readinessProofs = {};
   const waitForAudioReady = async (stage) => {
     try {
-      await page.waitForFunction(
+      const proof = await page.waitForFunction(
         () => {
           const button = document.querySelector("#hud-audio-toggle");
           const nativeMedia = document.querySelector("audio");
-          return (
+          const ready =
             button?.getAttribute("data-audio-state") === "active" &&
             button.getAttribute("data-audio-native") === "playing" &&
             button.getAttribute("data-audio-signal") === "generated" &&
             nativeMedia instanceof HTMLMediaElement &&
             !nativeMedia.paused &&
-            nativeMedia.currentTime > 0
-          );
+            nativeMedia.currentTime > 0;
+          if (!ready) return null;
+          return {
+            nativeMediaTime: nativeMedia.currentTime,
+            nativeReadyState: nativeMedia.readyState,
+            nativePaused: nativeMedia.paused,
+            signalRms: Number(button.getAttribute("data-audio-rms") ?? 0),
+            gesture: button.getAttribute("data-audio-gesture")
+          };
         },
         undefined,
         { timeout: 8_000 }
       );
+      readinessProofs[stage] = await proof.jsonValue();
     } catch (error) {
       const state = await snapshot();
       throw new Error(
@@ -174,9 +183,15 @@ try {
       .some((state) =>
         state.native !== "playing" ||
         state.signal !== "generated" ||
-        Number(state.rms) <= 0 ||
-        state.nativeMediaTime <= 0
+        Number(state.rms) <= 0
       ) ||
+    Object.keys(readinessProofs).length !== 4 ||
+    Object.values(readinessProofs).some((proof) =>
+      !proof ||
+      proof.nativeMediaTime <= 0 ||
+      proof.nativePaused ||
+      proof.signalRms <= 0
+    ) ||
     [beforeGesture, afterButtonActivation, afterMute, afterReload, afterUnmute, beforeCanvasGesture, afterCanvasGesture, afterCanvasThenButton]
       .some((state) => state.startupError)
   ) {
@@ -189,7 +204,8 @@ try {
         afterUnmute,
         beforeCanvasGesture,
         afterCanvasGesture,
-        afterCanvasThenButton
+        afterCanvasThenButton,
+        readinessProofs
       })}`
     );
   }
@@ -208,6 +224,7 @@ try {
     beforeCanvasGesture,
     afterCanvasGesture,
     afterCanvasThenButton,
+    readinessProofs,
     errors
   }, null, 2)}\n`, "utf8");
   console.log(`wrote ${output}`);
