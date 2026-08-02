@@ -298,7 +298,11 @@ export class GlowfinAudio {
         this.setMasterGain(this.cfg.audio.masterGain);
         this.applyAmbientMix(true);
         this.deferWaterLayer(this.context);
-        this.beginSignalVerification();
+        // Reconfirming an already-active native stream must not transiently
+        // downgrade a proven Web Audio graph from generated back to pending.
+        if (this.button.dataset.audioSignal !== "generated") {
+          this.beginSignalVerification();
+        }
       }
       this.setUiState(nativeStarted ? "active" : "blocked");
     } catch {

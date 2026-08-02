@@ -147,11 +147,7 @@ try {
   // explicit sound-button tap must confirm/replay sound, not mute the audio that
   // the canvas gesture just started.
   await page.locator("#hud-audio-toggle").tap();
-  await page.waitForFunction(
-    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-state") === "active",
-    undefined,
-    { timeout: 8_000 }
-  );
+  await waitForAudioReady("canvas-then-button confirmation");
   const afterCanvasThenButton = await snapshot();
   await page.locator("#hud-audio-toggle").tap();
   await page.waitForFunction(
@@ -180,7 +176,18 @@ try {
     [beforeGesture, afterButtonActivation, afterMute, afterReload, afterUnmute, beforeCanvasGesture, afterCanvasGesture, afterCanvasThenButton]
       .some((state) => state.startupError)
   ) {
-    throw new Error("Audio signal, accessibility state, or startup-failure contract was violated.");
+    throw new Error(
+      `Audio signal, accessibility state, or startup-failure contract was violated: ${JSON.stringify({
+        beforeGesture,
+        afterButtonActivation,
+        afterMute,
+        afterReload,
+        afterUnmute,
+        beforeCanvasGesture,
+        afterCanvasGesture,
+        afterCanvasThenButton
+      })}`
+    );
   }
   if (errors.length > 0) {
     throw new Error(`Browser audio smoke reported failures: ${errors.join("; ")}`);
