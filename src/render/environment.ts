@@ -45,6 +45,11 @@ import {
   sampleMerfolkChoreography,
   type MerfolkPopulationRole
 } from "../art/merfolkChoreography";
+import {
+  buildLivingDistrictStage,
+  LIVING_DISTRICT_CONTRACT
+} from "../art/livingDistrict";
+import type { GateFacadeVariant } from "../art/premiumWorld";
 
 function hash01(a: number, salt: number): number {
   let h = Math.imul(a ^ salt, 0x27d4eb2d);
@@ -193,6 +198,7 @@ interface HeroStage {
   anchor: number;
   side: -1 | 1;
   role: MerfolkGuardianRole;
+  gateFamily: GateFacadeVariant;
 }
 
 export class Environment {
@@ -276,7 +282,11 @@ export class Environment {
         this.disposables
       )
     );
-    const lifeCaps = [48, 14, 8];
+    const lifeCaps = [
+      LIVING_DISTRICT_CONTRACT.life.fishPool,
+      LIVING_DISTRICT_CONTRACT.life.jellyPool,
+      LIVING_DISTRICT_CONTRACT.life.rayPool
+    ];
     const lifeGeometry = [
       createProductionMinnow(),
       createProductionJelly(),
@@ -489,7 +499,7 @@ export class Environment {
       momentumFraction
     );
     const heroStage = this.resolveHeroStage(forwardDistance, gates);
-    this.updateArchitecture(forwardDistance);
+    this.updateArchitecture(forwardDistance, heroStage);
     this.updateSkyline(forwardDistance);
     this.updateReef(
       forwardDistance,
@@ -503,7 +513,10 @@ export class Environment {
     this.updateGodRays(forwardDistance, momentumFraction);
   }
 
-  private updateArchitecture(forwardDistance: number): void {
+  private updateArchitecture(
+    forwardDistance: number,
+    heroStage: HeroStage
+  ): void {
     const env = this.cfg.environment;
     const count = Math.min(
       12,
@@ -572,6 +585,42 @@ export class Environment {
         );
         family.add(this.matrix, this.colour);
       }
+    }
+
+    // The random city bands create depth, but they cannot guarantee that the
+    // next gate reads as the entrance to a real district. Four deterministic
+    // existing-family instances now form a bright, tall court behind every
+    // encounter. Actual geometry bounds still determine the safe inner edge.
+    const stage = buildLivingDistrictStage(
+      heroStage.gateFamily,
+      heroStage.side
+    );
+    for (const placement of stage.architecture) {
+      const family = this.architecture[placement.familyIndex];
+      if (!family) continue;
+      const unitScale = placement.desiredHeight / family.height;
+      const safeInnerEdge =
+        this.cfg.lane.halfWidth +
+        family.halfWidth * unitScale * placement.widthStretch +
+        placement.outerMargin;
+      this.position.set(
+        placement.side * safeInnerEdge,
+        -1.02,
+        -(heroStage.anchor + placement.depthOffset)
+      );
+      this.quaternion.setFromEuler(new THREE.Euler(
+        0,
+        -placement.side * 0.075,
+        placement.side * 0.012
+      ));
+      this.scale.set(
+        placement.side * unitScale * placement.widthStretch,
+        unitScale,
+        unitScale * placement.depthStretch
+      );
+      this.matrix.compose(this.position, this.quaternion, this.scale);
+      this.colour.setRGB(...placement.tint);
+      family.add(this.matrix, this.colour);
     }
     for (const family of this.architecture) family.finish();
   }
@@ -645,16 +694,16 @@ export class Environment {
         const localOffset = [0, 0.88, 2.05][clusterMember] ?? 0;
         const zDistance = clusterStart + localOffset +
           (hash01(band, salt + 2) - 0.5) * 0.58;
-        const isHero = variant < 2 && positiveMod(band, 6) === 0;
+        const isHero = variant < 2 && positiveMod(band, 4) === 0;
         const desiredHeight = lerp(
-          variant === 4 ? 1.02 : 1.22,
-          variant === 5 ? 2.9 : variant < 2 ? 2.35 : 2.72,
+          variant === 4 ? 1.16 : 1.34,
+          variant === 5 ? 3.15 : variant < 2 ? 2.62 : 2.96,
           hash01(band, salt + 1)
-        ) * (isHero ? 1.24 : 1);
+        ) * (isHero ? 1.34 : 1);
         const unitScale = desiredHeight / family.height;
         const widthStretch = lerp(
-          variant === 5 ? 1.0 : variant < 2 ? 1.08 : 1.16,
-          variant === 5 ? 1.32 : variant < 2 ? 1.36 : 1.58,
+          variant === 5 ? 1.08 : variant < 2 ? 1.18 : 1.26,
+          variant === 5 ? 1.46 : variant < 2 ? 1.56 : 1.78,
           hash01(band, salt + 5)
         );
         const depthStretch = [0.88, 0.78, 1.05, 0.92, 0.96, 0.72][variant] ?? 0.9;
@@ -672,7 +721,9 @@ export class Environment {
           1
         );
         let lateral = side * lerp(
-          halfWidth + halfVisualWidth + 0.12,
+          halfWidth +
+            halfVisualWidth +
+            LIVING_DISTRICT_CONTRACT.reef.laneSafetyWorldUnits,
           halfWidth + halfVisualWidth + 3.6,
           depthIntoBank
         );
@@ -725,6 +776,36 @@ export class Environment {
     heroStage: HeroStage
   ): void {
     for (const family of this.props) family.begin();
+    const stage = buildLivingDistrictStage(
+      heroStage.gateFamily,
+      heroStage.side
+    );
+    for (const placement of stage.props) {
+      const family = this.props[placement.familyIndex];
+      if (!family) continue;
+      const safeInnerEdge =
+        this.cfg.lane.halfWidth +
+        family.halfWidth * placement.scale +
+        placement.outerMargin;
+      this.position.set(
+        placement.side * safeInnerEdge,
+        -0.98,
+        -(heroStage.anchor + placement.depthOffset)
+      );
+      this.quaternion.setFromEuler(new THREE.Euler(
+        0,
+        -placement.side * 0.16,
+        placement.side * 0.018
+      ));
+      this.scale.set(
+        placement.side * placement.scale,
+        placement.scale,
+        placement.scale
+      );
+      this.matrix.compose(this.position, this.quaternion, this.scale);
+      this.colour.setRGB(...placement.tint);
+      family.add(this.matrix, this.colour);
+    }
     const spacing = 31;
     const count = Math.max(5, Math.round(8 * this.density));
     const firstBand = Math.ceil((forwardDistance + 10) / spacing);
@@ -775,8 +856,13 @@ export class Environment {
     for (const family of this.life) family.begin();
     for (const family of this.merfolkPopulation) family.begin();
 
-    const schoolCount = Math.max(3, Math.round(5 * this.density));
-    const fishPerSchool = 7;
+    const schoolCount = Math.max(
+      3,
+      Math.round(
+        LIVING_DISTRICT_CONTRACT.life.maximumFishSchools * this.density
+      )
+    );
+    const fishPerSchool = LIVING_DISTRICT_CONTRACT.life.fishPerSchool;
     const schoolSpacing = 24;
     const firstSchool = Math.ceil((forwardDistance + 12) / schoolSpacing);
     for (let school = 0; school < schoolCount; school++) {
@@ -785,7 +871,11 @@ export class Environment {
       const direction = hash01(band, 811) < 0.5 ? -1 : 1;
       const schoolSide = hash01(band, 813) < 0.5 ? -1 : 1;
       const schoolX = schoolSide *
-        lerp(4.8, 8.4, hash01(band, 812)) +
+        lerp(
+          this.cfg.lane.halfWidth + 2.2,
+          this.cfg.lane.halfWidth + 5.6,
+          hash01(band, 812)
+        ) +
         Math.sin(phase) * 0.65;
       const schoolY = lerp(4.6, 10.6, hash01(band, 815));
       for (let member = 0; member < fishPerSchool; member++) {
@@ -801,7 +891,7 @@ export class Environment {
           direction > 0 ? 0 : Math.PI,
           Math.sin(phase + member) * 0.035
         ));
-        const size = lerp(0.42, 0.62, hash01(band + member, 814));
+        const size = lerp(0.5, 0.74, hash01(band + member, 814));
         this.scale.set(size * 1.24, size, 1);
         this.matrix.compose(this.position, this.quaternion, this.scale);
         this.colour.setRGB(0.72, 0.86, 1);
@@ -809,7 +899,10 @@ export class Environment {
       }
     }
 
-    const jellyCount = Math.max(2, Math.round(8 * this.density));
+    const jellyCount = Math.max(
+      3,
+      Math.round(LIVING_DISTRICT_CONTRACT.life.maximumJellies * this.density)
+    );
     const jellySpacing = 32;
     const jellyFirst = Math.ceil((forwardDistance + 16) / jellySpacing);
     for (let index = 0; index < jellyCount; index++) {
@@ -817,21 +910,28 @@ export class Environment {
       const side = hash01(band, 821) < 0.5 ? -1 : 1;
       const rise = positiveMod(time * 0.48 + hash01(band, 822) * 9, 9);
       this.position.set(
-        side * lerp(6.2, 10.8, hash01(band, 823)) +
+        side * lerp(
+          this.cfg.lane.halfWidth + 2.4,
+          this.cfg.lane.halfWidth + 6.8,
+          hash01(band, 823)
+        ) +
           Math.sin(time * 0.45 + band) * 0.65,
         1.2 + rise,
         -(band * jellySpacing + 6)
       );
       this.quaternion.identity();
       const pulse = 1 + Math.sin(time * 2 + band) * 0.06;
-      const size = lerp(0.64, 1.04, hash01(band, 824)) * pulse;
+      const size = lerp(0.82, 1.28, hash01(band, 824)) * pulse;
       this.scale.set(size, size, 1);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.72, 0.82, 1);
       this.life[1]?.add(this.matrix, this.colour);
     }
 
-    const rayCount = Math.max(1, Math.round(5 * this.density));
+    const rayCount = Math.max(
+      2,
+      Math.round(LIVING_DISTRICT_CONTRACT.life.maximumRays * this.density)
+    );
     const raySpacing = 48;
     const rayFirst = Math.ceil((forwardDistance + 24) / raySpacing);
     for (let index = 0; index < rayCount; index++) {
@@ -839,14 +939,23 @@ export class Environment {
       const phase = time * 0.28 + band * 2.4;
       const side = hash01(band, 832) < 0.5 ? -1 : 1;
       this.position.set(
-        side * lerp(5.2, 8.2, hash01(band, 834)) +
+        side * lerp(
+          this.cfg.lane.halfWidth + 2.1,
+          this.cfg.lane.halfWidth + 5.4,
+          hash01(band, 834)
+        ) +
           Math.sin(phase) * 0.9,
         7.6 + Math.sin(phase * 1.4) * 1.45,
         -(band * raySpacing + 16)
       );
       this.quaternion.setFromEuler(new THREE.Euler(0, 0, Math.cos(phase) * 0.08));
-      const size = lerp(1.3, 1.92, hash01(band, 833));
-      this.scale.set(Math.cos(phase) >= 0 ? size : -size, size, 1);
+      const size = lerp(1.72, 2.46, hash01(band, 833));
+      const wingBeat = 1 + Math.sin(phase * 3.2) * 0.09;
+      this.scale.set(
+        (Math.cos(phase) >= 0 ? size : -size) * wingBeat,
+        size,
+        1
+      );
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.colour.setRGB(0.58, 0.72, 0.92);
       this.life[2]?.add(this.matrix, this.colour);
@@ -929,22 +1038,25 @@ export class Environment {
       // Match gateArt's stable fallback exactly so the guardian's identity is
       // always native to the visible district, including hand-authored/test
       // gates that predate the explicit artVariant field.
-      const gateFamily = gate.artVariant ?? positiveMod(
+      const gateFamily = (gate.artVariant ?? positiveMod(
         Math.abs(Math.round(gate.distance * 10)),
         5
-      );
+      )) as GateFacadeVariant;
       return {
         anchor: gate.distance,
         side: gateFamily % 2 === 0 ? 1 : -1,
-        role: guardianRoleForGateFamily(gateFamily)
+        role: guardianRoleForGateFamily(gateFamily),
+        gateFamily
       };
     }
 
     const band = Math.floor((forwardDistance + 30) / 64);
+    const gateFamily = positiveMod(band, 5) as GateFacadeVariant;
     return {
       anchor: band * 64 + 27,
       side: band % 2 === 0 ? 1 : -1,
-      role: guardianRoleForGateFamily(positiveMod(band, 5))
+      role: guardianRoleForGateFamily(gateFamily),
+      gateFamily
     };
   }
 

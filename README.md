@@ -7,8 +7,9 @@ this README covers local setup only.
 
 ## Status
 
-**Phase 3 — Moon-Garden visual checkpoint accepted for continued development;
-real-device mobile-audio repair awaiting owner revalidation.**
+**Phase 3 — Moon-Garden vertical slice in active owner review. The version-22
+score and version-25 current-swimmer faces are approved; the gate-linked living
+district pass is the current checkpoint.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
@@ -41,19 +42,21 @@ includes:
   explicit sound-button tap confirms output instead of muting a canvas-started
   graph, generated samples are distinguished from native playback, and mute
   preference remains device-local with background suspension
+- a deterministic living-district court behind the next gate: two prominent
+  architecture layers per side, guaranteed monuments/tide-spears/conch
+  fountains, larger bounded fish/jelly/ray activity, wider swaying reef banks
+  and travelling bioluminescent coral waves
 - an in-camera Art-Bible acceptance target at
   `docs/art/phase3b-moon-garden-acceptance-target.webp`
 
-The owner has accepted the corrected upright-resident, conch-herald and
-asynchronous-swimmer composition as the working checkpoint. Horizontal-swimmer
-facial refinement remains deferred to the authored character pass. This does
-not approve Phase 3 for merge: the code-native integration meshes are not final
-premium DCC art, optimized production GLBs/PBR assets remain required, and the
-soundscape first failed two physical-phone playback reviews and was then
-rejected as ghostly once it became audible. ADR-0028 keeps a top-level native
-media stream as the phone-output authority; ADR-0029 replaces its four-second
-tone loop with Moon-Current while retaining Web Audio gameplay cues. The new
-score still needs Android/iOS
+The owner has accepted the corrected upright-resident/conch-herald composition,
+the asynchronous current-swimmer choreography, the version-25 swimmer faces
+and the version-22 Moon-Current score. This does not approve Phase 3 for merge:
+the code-native integration meshes are not final premium DCC art and optimized
+production GLBs/PBR assets remain required. ADR-0028 keeps a top-level native
+media stream as the phone-output authority; ADR-0029 records the approved
+64-second replacement score; ADR-0031 advances the surrounding living-district
+composition without reopening those systems. The score still needs Android/iOS
 speaker, headphone, interruption, performance and thermal review. Technical CI
 evidence cannot replace those visual and real-device approvals.
 
@@ -98,6 +101,8 @@ scripts/        repo/CI and production bundle checks
 - [x] Full 36-state emulated art matrix required on pull requests
 - [x] Deterministic 30-minute simulated-time Chromium renderer soak
 - [x] Momentum-layered Moon-Current score, gameplay cues, top-level native-media fallback, gesture-safe source startup, mute persistence and dual-path playback gate
-- [ ] Refine horizontal-swimmer faces during the authored DCC/PBR character pass without changing approved choreography
+- [x] Phone-readable horizontal-swimmer face/expression checkpoint approved
+- [ ] Replace the approved swimmer prototype with final UV/PBR DCC topology without changing its face or choreography
+- [ ] Gate-linked living-district and reef-current pass approved on physical phones
 - [ ] Android and iOS Safari performance, contrast and real-time 30-minute soak sign-off
 - [ ] Final Android/iOS sound mix and interruption sign-off, production deployment and store-wrapper pipeline

@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { LIVING_DISTRICT_CONTRACT } from "../art/livingDistrict";
 
 const VERTEX = /* glsl */ `
   attribute float glowWeight;
@@ -15,8 +16,8 @@ const VERTEX = /* glsl */ `
   void main() {
     vec3 transformed = position;
     float phase = uTime * 0.85 + position.y * 1.45;
-    transformed.x += sin(phase) * 0.19 * swayWeight;
-    transformed.z += cos(phase * 0.73) * 0.07 * swayWeight;
+    transformed.x += sin(phase) * ${LIVING_DISTRICT_CONTRACT.reef.maximumSwayWorldUnits} * swayWeight;
+    transformed.z += cos(phase * 0.73) * ${LIVING_DISTRICT_CONTRACT.reef.maximumSwayWorldUnits * 0.42} * swayWeight;
 
     vec4 localPosition = vec4(transformed, 1.0);
     #ifdef USE_INSTANCING
@@ -217,23 +218,42 @@ const FRAGMENT = /* glsl */ `
     // One shared shader, six authored material responses. Role-specific
     // roughness, colour travel and restrained emission keep a district from
     // reading as one uniformly painted procedural mesh.
-    colour = mix(colour, colour * vec3(1.04, 1.0, 0.92), limestoneRole * 0.16);
+    colour = mix(
+      colour,
+      colour * vec3(1.09, 1.04, 0.9) + vec3(0.012, 0.016, 0.012),
+      limestoneRole * 0.24
+    );
     vec3 nacreShift = mix(
       vec3(0.28, 0.52, 0.62),
       vec3(0.5, 0.29, 0.58),
       clamp(viewDirection.y * 0.5 + moonRim, 0.0, 1.0)
     );
-    colour += nacreShift * nacreRole * (0.035 + moonRim * 0.11);
-    colour = mix(colour, colour * vec3(1.18, 0.86, 0.48), bronzeRole * 0.34);
-    colour += vec3(0.2, 0.1, 0.025) * wetSpecular * bronzeRole * 0.24;
-    colour = mix(colour, colour * vec3(0.58, 0.72, 1.14), lapisRole * 0.46);
-    colour += vec3(0.05, 0.18, 0.3) * crystalRole * (0.18 + moonRim * 0.28);
-    float tideWave = smoothstep(
+    colour += nacreShift * nacreRole * (0.055 + moonRim * 0.15);
+    colour = mix(colour, colour * vec3(1.28, 0.82, 0.42), bronzeRole * 0.46);
+    colour += vec3(0.24, 0.11, 0.02) * wetSpecular * bronzeRole * 0.32;
+    colour = mix(colour, colour * vec3(0.48, 0.66, 1.25), lapisRole * 0.58);
+    colour += vec3(0.045, 0.23, 0.36) * crystalRole * (0.24 + moonRim * 0.34);
+    float tideWaveA = smoothstep(
       0.72,
       0.98,
-      sin(vWorldPos.z * 0.23 - uTime * 1.35 + vWorldPos.x * 0.11) * 0.5 + 0.5
+      sin(
+        vWorldPos.z * 0.23 -
+        uTime * ${LIVING_DISTRICT_CONTRACT.reef.travellingWaveSpeed} +
+        vWorldPos.x * 0.11
+      ) * 0.5 + 0.5
     );
-    colour += awakened * coralRole * tideWave * (0.045 + uMomentum * 0.055);
+    float tideWaveB = smoothstep(
+      0.78,
+      0.99,
+      sin(
+        vWorldPos.z * 0.39 -
+        uTime * ${LIVING_DISTRICT_CONTRACT.reef.travellingWaveSpeed * 1.37} -
+        vWorldPos.x * 0.17 + 1.8
+      ) * 0.5 + 0.5
+    );
+    float travellingWave = max(tideWaveA, tideWaveB * 0.72);
+    colour += awakened * coralRole * travellingWave *
+      (0.095 + uMomentum * 0.085);
 
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
     colour = mix(colour, uFogColor, fog);
@@ -490,17 +510,17 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     colour += vec3(0.46, 0.72, 0.82) * wetSpecular * 0.12;
     colour += uCausticColor * pattern * uIntensity * facing;
     colour += vColour * vGlowWeight * 0.035;
-    colour += mix(vec3(0.04, 0.16, 0.2), vec3(0.18, 0.05, 0.16), moonRim) *
-      nacreRole * (0.04 + moonRim * 0.08);
-    colour = mix(colour, colour * vec3(1.2, 0.82, 0.46), bronzeRole * 0.32);
-    colour = mix(colour, colour * vec3(0.56, 0.7, 1.12), lapisRole * 0.44);
-    colour += vec3(0.04, 0.2, 0.28) * crystalRole * (0.13 + moonRim * 0.18);
+    colour += mix(vec3(0.04, 0.18, 0.23), vec3(0.22, 0.06, 0.2), moonRim) *
+      nacreRole * (0.055 + moonRim * 0.11);
+    colour = mix(colour, colour * vec3(1.27, 0.78, 0.4), bronzeRole * 0.42);
+    colour = mix(colour, colour * vec3(0.47, 0.63, 1.24), lapisRole * 0.56);
+    colour += vec3(0.035, 0.24, 0.36) * crystalRole * (0.18 + moonRim * 0.24);
     float tideWave = smoothstep(
       0.74,
       0.98,
       sin(vWorldPos.z * 0.21 - uTime * 1.25 + vWorldPos.y * 0.13) * 0.5 + 0.5
     );
-    colour += vec3(0.16, 0.08, 0.2) * coralRole * tideWave * 0.1;
+    colour += vec3(0.22, 0.07, 0.24) * coralRole * tideWave * 0.16;
 
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
     colour = mix(colour, uFogColor, fog);

@@ -550,3 +550,21 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   and a separate `merfolk-current-swimmer-v2.glb` PBR handoff export.
 - Keep owner phone screenshots authoritative; automation may reject regression
   but cannot approve character appeal.
+
+## 2026-08-03 — Attach every gate to a living palace district
+
+- Owner approved version 25's horizontal-swimmer facial structure and asked to
+  proceed to the next milestone. Record that human approval in issue #9 while
+  retaining its separate real-device screenshot requirement.
+- Adopt ADR-0031. Guarantee two prominent architecture layers on both sides of
+  the next gate, keyed to its district family, rather than relying on unrelated
+  random city bands to compose the gameplay encounter.
+- Guarantee one merfolk monument, paired tide-spears and one conch fountain
+  around the same encounter. Reuse the existing instanced draw families and
+  preserve the hero's outer alcove plus the authoritative gameplay lane.
+- Enlarge the bounded fish schools, jellies and rays; add a ray wing beat;
+  widen the reef banks while reserving more than the full coral-sway envelope
+  outside the lane; and add two travelling bioluminescent reef waves.
+- Strengthen the six approved material responses without changing collider
+  contours, camera, controls, scoring, replay determinism, approved characters
+  or the Moon-Current audio implementation.
