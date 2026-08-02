@@ -50,6 +50,11 @@ import {
   LIVING_DISTRICT_CONTRACT
 } from "../art/livingDistrict";
 import type { GateFacadeVariant } from "../art/premiumWorld";
+import {
+  RUNTIME_PRODUCTION_ASSETS,
+  type RuntimeReefFamily
+} from "../art/runtimeAssetContract";
+import type { RuntimeReefGeometrySet } from "./runtimeProductionAssets";
 
 function hash01(a: number, salt: number): number {
   let h = Math.imul(a ^ salt, 0x27d4eb2d);
@@ -69,32 +74,54 @@ function positiveMod(value: number, modulus: number): number {
 
 class InstancedVolumeFamily {
   readonly object: THREE.InstancedMesh;
-  readonly halfWidth: number;
-  readonly height: number;
+  halfWidth: number;
+  height: number;
   private count = 0;
 
   constructor(
     geometry: THREE.BufferGeometry,
     material: THREE.Material,
     maxCount: number,
-    disposables: Array<{ dispose(): void }>,
-    grounded = true
+    private readonly disposables: Array<{ dispose(): void }>,
+    private readonly grounded = true
   ) {
-    geometry.computeBoundingBox();
-    const bounds = geometry.boundingBox;
-    if (!bounds) throw new Error("Moon-Garden volume is missing bounds.");
-    if (grounded) geometry.translate(0, -bounds.min.y, 0);
-    geometry.computeBoundingBox();
-    const groundedBounds = geometry.boundingBox;
-    if (!groundedBounds) throw new Error("Moon-Garden volume could not be grounded.");
-    this.halfWidth = (groundedBounds.max.x - groundedBounds.min.x) * 0.5;
-    this.height = Math.max(0.01, groundedBounds.max.y - groundedBounds.min.y);
+    const bounds = this.prepareGeometry(geometry);
+    this.halfWidth = bounds.halfWidth;
+    this.height = bounds.height;
 
     this.object = new THREE.InstancedMesh(geometry, material, maxCount);
     this.object.count = 0;
     this.object.frustumCulled = false;
     this.object.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     disposables.push(geometry);
+  }
+
+  private prepareGeometry(geometry: THREE.BufferGeometry): {
+    halfWidth: number;
+    height: number;
+  } {
+    geometry.computeBoundingBox();
+    const bounds = geometry.boundingBox;
+    if (!bounds) throw new Error("Moon-Garden volume is missing bounds.");
+    if (this.grounded) geometry.translate(0, -bounds.min.y, 0);
+    geometry.computeBoundingBox();
+    const groundedBounds = geometry.boundingBox;
+    if (!groundedBounds) throw new Error("Moon-Garden volume could not be grounded.");
+    return {
+      halfWidth: (groundedBounds.max.x - groundedBounds.min.x) * 0.5,
+      height: Math.max(0.01, groundedBounds.max.y - groundedBounds.min.y)
+    };
+  }
+
+  replaceGeometry(geometry: THREE.BufferGeometry): void {
+    const bounds = this.prepareGeometry(geometry);
+    const previous = this.object.geometry;
+    this.object.geometry = geometry;
+    this.halfWidth = bounds.halfWidth;
+    this.height = bounds.height;
+    this.object.userData["runtimeProductionAsset"] = true;
+    previous.dispose();
+    this.disposables.push(geometry);
   }
 
   begin(): void {
@@ -448,6 +475,28 @@ export class Environment {
     this.moonAndMotes.frustumCulled = false;
     this.objects.push(this.moonAndMotes);
     this.disposables.push(pointGeometry, pointMaterial);
+  }
+
+  /** Replace only the six reef families selected for the Phase 3C slice. */
+  installRuntimeReefGeometry(assets: RuntimeReefGeometrySet): void {
+    const expectedOrder: readonly RuntimeReefFamily[] = [
+      "BrainCoral",
+      "TableCoral",
+      "Staghorn",
+      "SeaFan",
+      "Anemone",
+      "Kelp"
+    ];
+    if (
+      expectedOrder.length !== RUNTIME_PRODUCTION_ASSETS.reefFamilies.length
+    ) {
+      throw new Error("Runtime reef family contract and renderer order diverged.");
+    }
+    expectedOrder.forEach((family, index) => {
+      const target = this.reef[index];
+      if (!target) throw new Error(`Renderer is missing reef slot ${index}.`);
+      target.replaceGeometry(assets[family]);
+    });
   }
 
   setDensity(fraction: number): void {

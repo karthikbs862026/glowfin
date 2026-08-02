@@ -1,6 +1,7 @@
 # Moon-Garden production GLB brief
 
-**Status:** active production transition on Draft PR #7  
+**Status:** version-28 runtime gate/reef delivery implemented on Draft PR #7;
+final DCC/PBR production remains active
 **Visual authority:** Glowfin Phase 3 Concept-First Art Bible v1  
 **Gameplay authority:** `src/sim/gateGeometry.ts`
 
@@ -30,21 +31,27 @@ viewer must identify the following by silhouette and value grouping alone:
 | --- | --- | --- |
 | `glowfin-v1.glb` | One skinned body primitive, one combined high-lateral eye primitive, 10–18 bones, calm/propulsion/collision/recovery clips | Forward axis is negative Z; side-set eyes remain crown-visible; simulation selects and blends clips; two materials maximum |
 | `hero-merfolk-v1.glb`, `hero-merfolk-coral-warden-v1.glb`, `hero-merfolk-astral-oracle-v1.glb` | Shared guardian hierarchy with face, eyes, hair, hands, shell cuirass, pendant, three-joint tail, caudal/side fins and district regalia; hover/swim/turn/patrol/greeting clips | Exactly one gate-side hero visible; never collidable; one material and no more than 17 draws; at the tested phone view require ≥72 px overall, ≥22 px face and ≥4.5 px eyes |
-| `moon-gate-v1.glb` | Three asymmetric wall-fragment variants, mirrored-safe inner pier, broken voussoirs, dark channel and rubble base across LOD0–2 | Inner cyan edge remains a separate collider-derived runtime mesh |
+| `moon-gate-v1.glb` | Five asymmetric wall-fragment/canopy identities, mirrored-safe inner pier, broken voussoirs, dark channel and rubble base across LOD0–2 | Inner cyan edge remains a separate collider-derived runtime mesh |
 | `ruin-kit-v1.glb` | Broken tower, collapsed arch and forked spire across LOD0–2 | Outside-lane instancing only |
-| `reef-kit-v1.glb` | Staghorn, sea fan, anemone and kelp families across approved LODs | Bounds drive lane-safe placement |
+| `reef-kit-v1.glb` | Brain coral, table coral, staghorn, sea fan, anemone and kelp families across approved LODs | Bounds drive lane-safe placement |
 | `merfolk-current-swimmer-v2.glb` | Three named meshes sharing one PBR material: horizontal body/hair/tail/ear fins, sculpted face, and level almond-eye stack with turquoise iris, pupil and catchlight | Non-collidable; source-authored horizontally; mirrors only as a complete travel-facing figure; dedicated phone-face crop must remain readable |
 | `moon-life-v1.glb` | Minnow, lantern jelly, ribbon ray, garden spirit, reef citizen, current swimmer and conch herald | Deterministic, non-collidable animation; heralds stage in pairs at gate shoulders |
 | `drowned-skyline-v1.glb` | Centre-open far-field cluster with seven varied silhouettes | Far-field instancing; never a camera-facing plate |
 
 ## Deterministic handoff export
 
-Run `npm run art:export-glbs` to write the current validated mesh, skeleton,
-animation, LOD and naming baseline to `build/production-glbs/`. PR art-gate
-runs upload that directory as the `moon-garden-production-glb-handoff`
-artifact, including a SHA-256 manifest.
+Run `npm run art:build-runtime-glbs` to write the current validated mesh, LOD
+and naming baseline to `build/production-glbs/`, then weld, prune and
+Meshopt-compress the gate/reef runtime subset into `build/runtime-glbs/`. Run
+`npm run art:verify-runtime-glbs` to compare those files byte-for-byte with the
+build-staged payloads under `public/art/moon-garden/models/`. The generated
+transition package is not committed. PR art-gate runs perform both operations
+and upload the raw and runtime packages with SHA-256 manifests.
 
-These files are the production handoff baseline, not final sculpt approval.
+The gate and reef subset is now decoded and installed by the version-28 runtime,
+with the version-27 geometry retained only as a delivery-failure fallback. Art
+evidence rejects that fallback. These files remain the production handoff
+baseline, not final sculpt approval.
 The dedicated swimmer-v2 export is the first character-specific face checkpoint:
 it preserves separate body, face and eye meshes under one PBR material so a DCC
 author can refine topology and UVs without losing semantic-mask evidence.
@@ -53,7 +60,9 @@ so a DCC author can replace the source forms without reconstructing gameplay
 constraints. Final LFS-tracked GLBs still require authored sculpting, UVs,
 normal/roughness/emissive maps, optimization and the full device render matrix.
 
-Binary GLBs remain Git LFS assets. Production source files must include scale,
+Final authored DCC GLBs remain Git LFS assets. The version-28 gate/reef
+transition GLBs are reproducibly generated from checked-in geometry during
+development and production builds. Production source files must include scale,
 orientation, pivot and export presets so a later revision is reproducible.
 
 ## Material set
@@ -113,5 +122,6 @@ orientation, pivot and export presets so a later revision is reproducible.
 5. Ambient creatures: volumetric motion replacing the final atlas dependency.
 6. PBR/light polish, texture compression, full render matrix and device soak.
 
-The code-native production-transition meshes on PR #7 are the measurable
-silhouette/layout contract for these GLBs. They are not the final sculpt source.
+Version 28 loads the gate/reef production-transition meshes from the published
+GLBs. Their semantic names, bounds and collider alignment are the measurable
+replacement contract; their current topology is not the final sculpt source.

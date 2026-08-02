@@ -7,8 +7,10 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { createGlowfinRigGeometry } from "../../src/render/glowfinGeometry.ts";
 import { HeroMerfolkGuardian } from "../../src/render/merfolkGuardian.ts";
 import { MERFOLK_GUARDIAN_ROLES } from "../../src/art/merfolkCharacter.ts";
+import { GATE_FAMILIES } from "../../src/art/premiumWorld.ts";
 import {
   createProductionAnemone,
+  createProductionBrainCoral,
   createProductionBranchCoral,
   createProductionCollapsedArch,
   createProductionFanCoral,
@@ -24,6 +26,7 @@ import {
   createProductionSkyline,
   createProductionSpire,
   createProductionSpirit,
+  createProductionTableCoral,
   createProductionTower,
   createProductionWallGeometry
 } from "../../src/render/productionGeometry.ts";
@@ -396,9 +399,9 @@ function createGateAsset() {
   const root = new THREE.Group();
   root.name = "MoonGate";
   for (const lod of [0, 1, 2]) {
-    for (const variant of [0, 1, 2]) {
+    for (const { id: variant } of GATE_FAMILIES) {
       root.add(productionMesh(
-        createProductionGateCanopyGeometry(lod),
+        createProductionGateCanopyGeometry(lod, variant),
         `MoonGate_Canopy_Variant${variant}_LOD${lod}`,
         stoneMaterial,
         {
@@ -467,6 +470,8 @@ await writeGlb("ruin-kit-v1.glb", createKit("RuinKit", [
   { name: "ForkedSpire", create: createProductionSpire, lods: [0, 1, 2] }
 ], stoneMaterial));
 await writeGlb("reef-kit-v1.glb", createKit("ReefKit", [
+  { name: "BrainCoral", create: createProductionBrainCoral, lods: [0, 1, 2] },
+  { name: "TableCoral", create: createProductionTableCoral, lods: [0, 1, 2] },
   { name: "Staghorn", create: createProductionBranchCoral, lods: [0, 1, 2] },
   { name: "SeaFan", create: createProductionFanCoral, lods: [0, 1, 2] },
   { name: "Anemone", create: createProductionAnemone, lods: [0, 1, 2] },
@@ -492,9 +497,9 @@ await writeGlb("drowned-skyline-v1.glb", createKit("DrownedSkyline", [
 await writeFile(
   resolve(outputDirectory, "manifest.json"),
   `${JSON.stringify({
-    version: 3,
+    version: 4,
     source: "validated Phase 3B runtime production-transition meshes",
-    status: "swimmer-v2 authored-face checkpoint; remaining families still require final DCC sign-off",
+    status: "Phase 3C gate/reef runtime handoff; final DCC sculpt sign-off remains required",
     assets: manifest
   }, null, 2)}\n`,
   "utf8"

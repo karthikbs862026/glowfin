@@ -2,9 +2,12 @@
 
 These assets were generated from the approved Concept-First Art Bible during
 the owner-requested PR #7 visual reset. All character, gate, architecture,
-reef, skyline and ambient-life cards are now retired from the runtime. Only
-shared material sources remain here while the production GLB/PBR library is
-authored.
+reef, skyline and ambient-life cards are now retired from the runtime. Shared
+material sources remain here while the final production GLB/PBR library is
+authored. Version 28 also generates the validated runtime gate and reef
+transition packages into `models/` during development and production builds;
+these establish the delivery contract but do not constitute final DCC sculpt
+approval.
 
 | Asset | Runtime role | Production replacement |
 | --- | --- | --- |
@@ -24,7 +27,7 @@ approved rear-view axolotl-puffer Glowfin. They explicitly prohibited generic
 Atlantis architecture, paved roads, repeated mandalas, cone coral, detached
 neon bars, white plastic character materials, text, logos and watermarks.
 
-Obstacle proportions cycle through three stable variants stored on generated
-gates. Volumetric reef and ambient-life families use world-band indices so
+Obstacle proportions cycle through five stable variants stored in the runtime
+gate GLB. Volumetric reef and ambient-life families use world-band indices so
 adjacent segments do not repeat and recycling cannot make an asset pop to
 another variant.

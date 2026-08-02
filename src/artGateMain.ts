@@ -30,6 +30,16 @@ const view = new GameView(canvas, tuning);
 
 async function capture(): Promise<void> {
   await view.ready;
+  const productionAssets = view.productionAssetStatus();
+  if (
+    productionAssets.gate !== "glb" ||
+    productionAssets.reef !== "glb"
+  ) {
+    throw new Error(
+      `Art gate requires runtime GLBs; fallback was active: ` +
+      `${productionAssets.error ?? "unknown asset error"}`
+    );
+  }
   if (requestedTier === "soak") {
     const renderFps = Number(parameters.get("renderFps") ?? "30");
     const minutes = Number(parameters.get("minutes") ?? "30");

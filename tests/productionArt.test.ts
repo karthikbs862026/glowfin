@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { tuning } from "../src/core/config";
 import { PRODUCTION_ART } from "../src/art/productionManifest";
 import {
+  expectedRuntimeGateNodes,
+  expectedRuntimeReefNodes,
+  RUNTIME_PRODUCTION_ASSETS
+} from "../src/art/runtimeAssetContract";
+import {
   classifyMerfolkMaskPixel,
   MERFOLK_MASK_ENTRIES,
   merfolkMaskColourChannels
@@ -40,6 +45,18 @@ import { createGlowfinRigGeometry } from "../src/render/glowfinGeometry";
 import { contourWorldWidth, MoonGardenGates } from "../src/render/gateArt";
 
 describe("Phase 3B art geometry inventory", () => {
+  it("requires all five gate identities and all six reef families in runtime GLBs", () => {
+    const gateNodes = expectedRuntimeGateNodes();
+    const reefNodes = expectedRuntimeReefNodes();
+    expect(RUNTIME_PRODUCTION_ASSETS.gateVariants).toEqual([0, 1, 2, 3, 4]);
+    expect(gateNodes).toHaveLength(45);
+    expect(gateNodes).toContain("MoonGate_Canopy_Variant4_LOD2");
+    expect(gateNodes).toContain("MoonGate_Left_Variant3_LOD0");
+    expect(reefNodes).toHaveLength(17);
+    expect(reefNodes).toContain("BrainCoral_LOD1");
+    expect(reefNodes).toContain("TableCoral_LOD1");
+  });
+
   it("round-trips every merfolk feature through raw semantic mask bytes", () => {
     for (const entry of MERFOLK_MASK_ENTRIES) {
       const channels = merfolkMaskColourChannels(entry.colour).map((value) =>

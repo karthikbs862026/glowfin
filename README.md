@@ -7,16 +7,17 @@ this README covers local setup only.
 
 ## Status
 
-**Phase 3 — Moon-Garden vertical slice in active owner review. The version-22
-score and version-25 current-swimmer faces are approved; the gate-linked living
-district pass is the current checkpoint.**
+**Phase 3C — Moon-Garden production-asset transition in active owner review.
+The version-22 score, version-25 current-swimmer faces and version-27 living
+district composition are approved; the runtime GLB gate/reef slice is the
+version-28 checkpoint.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
 trail, contrast probe and hardened art gate are in place. Draft PR #7 is an
 explicit visual reset after the first evidence frame failed owner Art-Bible
-review. It must not be merged in its current state. The integrated draft now
-includes:
+review. It remains draft until the production-art and physical-device release
+gates below are complete. The integrated draft now includes:
 
 - a ten-bone volumetric Glowfin with an explicit negative-Z forward axis; the
   chase camera sees its cute round back, manta fins and central tail while its
@@ -46,19 +47,25 @@ includes:
   architecture layers per side, guaranteed monuments/tide-spears/conch
   fountains, larger bounded fish/jelly/ray activity, wider swaying reef banks
   and travelling bioluminescent coral waves
+- a real runtime GLB delivery path for all five gate identities and all six reef
+  families: semantic nodes are deterministically Meshopt-compressed at build,
+  validated
+  against collider planes and installed atomically into the approved fixed
+  instance pools
 - an in-camera Art-Bible acceptance target at
   `docs/art/phase3b-moon-garden-acceptance-target.webp`
 
 The owner has accepted the corrected upright-resident/conch-herald composition,
-the asynchronous current-swimmer choreography, the version-25 swimmer faces
-and the version-22 Moon-Current score. This does not approve Phase 3 for merge:
-the code-native integration meshes are not final premium DCC art and optimized
-production GLBs/PBR assets remain required. ADR-0028 keeps a top-level native
-media stream as the phone-output authority; ADR-0029 records the approved
-64-second replacement score; ADR-0031 advances the surrounding living-district
-composition without reopening those systems. The score still needs Android/iOS
-speaker, headphone, interruption, performance and thermal review. Technical CI
-evidence cannot replace those visual and real-device approvals.
+the asynchronous current-swimmer choreography, the version-25 swimmer faces,
+the version-27 living districts and the version-22 Moon-Current score. This does
+not yet approve Phase 3 for merge: version 28 proves the optimized GLB delivery
+and replacement architecture, but its transition topology is not final premium
+DCC/PBR art. ADR-0028 keeps a top-level native media stream as the phone-output
+authority; ADR-0029 records the approved 64-second replacement score; ADR-0031
+records the accepted living-district composition; ADR-0032 establishes the
+runtime GLB gate/reef contract. The score still needs Android/iOS speaker,
+headphone, interruption, performance and thermal review. Technical CI evidence
+cannot replace those visual and real-device approvals.
 
 ## Local setup
 
@@ -98,11 +105,13 @@ scripts/        repo/CI and production bundle checks
       with optimized authored GLB/PBR assets
 - [ ] Replace the rejected code-native Glowfin and gate treatment with approved
       authored models while preserving collider truth
+- [x] Load all five gate families and six reef families from validated,
+      Meshopt-compressed runtime GLBs with an explicit recovery fallback
 - [x] Full 36-state emulated art matrix required on pull requests
 - [x] Deterministic 30-minute simulated-time Chromium renderer soak
 - [x] Momentum-layered Moon-Current score, gameplay cues, top-level native-media fallback, gesture-safe source startup, mute persistence and dual-path playback gate
 - [x] Phone-readable horizontal-swimmer face/expression checkpoint approved
 - [ ] Replace the approved swimmer prototype with final UV/PBR DCC topology without changing its face or choreography
-- [ ] Gate-linked living-district and reef-current pass approved on physical phones
+- [x] Owner visual approval for the gate-linked living-district and reef-current pass
 - [ ] Android and iOS Safari performance, contrast and real-time 30-minute soak sign-off
 - [ ] Final Android/iOS sound mix and interruption sign-off, production deployment and store-wrapper pipeline

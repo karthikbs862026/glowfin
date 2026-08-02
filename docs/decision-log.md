@@ -589,3 +589,20 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - The corrected local 30-minute gate completed with 0.5 MB heap growth,
   unchanged 103 geometries/18 textures and zero context losses. Require the
   authoritative GitHub rerun to pass before marking issue #10 stable.
+
+## 2026-08-03 — Load the gate and reef production handoff at runtime
+
+- Owner approved version 27's living-district richness and activity, closing
+  issue #10 and opening Phase 3C's production-asset transition.
+- Adopt ADR-0032. Correct the handoff before integration: export all five gate
+  identities and add the missing maze-ridged brain and scalloped table coral.
+- Preserve semantic nodes while welding and Meshopt-compressing the two GLBs.
+  Require exact post-compression node, attribute and collider-plane validation,
+  plus byte-for-byte comparison with the build-staged files. Keep final DCC
+  replacements under the repository's LFS policy.
+- Load both assets atomically into the existing fixed instance pools. Keep the
+  version-27 geometry as a delivery-failure fallback, but make every art/soak
+  evidence entry point reject fallback mode.
+- Treat this as the runtime production path, not final DCC approval. The next
+  art work refines topology, UV/PBR maps and silhouettes behind the now-stable
+  asset contract.

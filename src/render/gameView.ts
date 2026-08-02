@@ -27,6 +27,7 @@ import { MERFOLK_MASK_ENTRIES } from "../art/merfolkMask";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { loadRuntimeProductionGeometry } from "./runtimeProductionAssets";
 
 /** Hard caps. Part 4.6 requires pool sizes be part of the performance budget. */
 const MAX_POOLED_STRIPES = 40;
@@ -39,7 +40,7 @@ function lerp(a: number, b: number, t: number): number {
 export class GameView {
   readonly scene = new THREE.Scene();
   readonly camera: THREE.PerspectiveCamera;
-  /** Resolves only after authored visual-reset textures are GPU-ready. */
+  /** Resolves after required textures and the GLB install-or-fallback decision. */
   readonly ready: Promise<void>;
   private readonly renderer: THREE.WebGLRenderer;
 
@@ -145,6 +146,17 @@ export class GameView {
   private readonly speedInlays: THREE.InstancedMesh;
   private readonly speedInlayMatrix = new THREE.Matrix4();
   private readonly disposables: Array<{ dispose(): void }> = [];
+  private runtimeProductionStatus: {
+    gate: "fallback" | "glb";
+    reef: "fallback" | "glb";
+    build: string | null;
+    error: string | null;
+  } = {
+    gate: "fallback",
+    reef: "fallback",
+    build: null,
+    error: null
+  };
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -168,7 +180,7 @@ export class GameView {
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
 
     const loadingManager = new THREE.LoadingManager();
-    this.ready = new Promise<void>((resolve, reject) => {
+    const textureReady = new Promise<void>((resolve, reject) => {
       loadingManager.onLoad = resolve;
       loadingManager.onError = (url) => {
         reject(new Error(`Moon-Garden art asset failed to load: ${url}`));
@@ -393,6 +405,36 @@ export class GameView {
       livingMap: livingReefSurface
     });
     for (const object of this.environment.objects) this.scene.add(object);
+
+    // Production GLBs are an atomic visual upgrade. Gameplay can still start
+    // from the already-validated code-native kit if a CDN/cache request fails;
+    // CI separately requires this status to be "glb" so the fallback cannot
+    // masquerade as production evidence.
+    const productionGeometryReady = loadRuntimeProductionGeometry()
+      .then((assets) => {
+        this.environment.installRuntimeReefGeometry(assets.reef);
+        this.gates.installRuntimeGeometry(assets.gates);
+        this.runtimeProductionStatus = {
+          gate: "glb",
+          reef: "glb",
+          build: assets.build,
+          error: null
+        };
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        this.runtimeProductionStatus = {
+          gate: "fallback",
+          reef: "fallback",
+          build: null,
+          error: message
+        };
+        console.warn(`Glowfin production GLB fallback: ${message}`);
+      });
+    this.ready = Promise.all([
+      textureReady,
+      productionGeometryReady
+    ]).then(() => undefined);
 
     // --- trail ribbon (Part 3.2 priority 2) ---
     this.trail = new TrailRibbon(cfg);
@@ -668,6 +710,15 @@ export class GameView {
 
   activeHeroMerfolkRole(): string {
     return this.environment.heroMerfolkRole();
+  }
+
+  productionAssetStatus(): Readonly<{
+    gate: "fallback" | "glb";
+    reef: "fallback" | "glb";
+    build: string | null;
+    error: string | null;
+  }> {
+    return this.runtimeProductionStatus;
   }
 
   /** Live draw-call and triangle counts, for the Part 4.6 budget check. */

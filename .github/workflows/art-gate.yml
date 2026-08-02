@@ -26,12 +26,16 @@ jobs:
         run: npm run art-gate:test
       - name: Current production-art structure
         run: npm run art-gate:structural
-      - name: Export production GLB handoff
-        run: npm run art:export-glbs
+      - name: Export and pack production GLB handoff
+        run: npm run art:build-runtime-glbs
+      - name: Verify published runtime GLBs
+        run: npm run art:verify-runtime-glbs
       - uses: actions/upload-artifact@v4
         with:
           name: moon-garden-production-glb-handoff
-          path: build/production-glbs
+          path: |
+            build/production-glbs
+            build/runtime-glbs
 
   fast:
     name: fast-render

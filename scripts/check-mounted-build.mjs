@@ -40,4 +40,19 @@ for (const texture of [
   }
 }
 
+for (const model of ["moon-gate-v1.glb", "reef-kit-v1.glb", "manifest.json"]) {
+  const relativePath = `art/moon-garden/models/${model}`;
+  if (model.endsWith(".glb") && !source.includes(relativePath)) {
+    throw new Error(`Production bundle omits ${relativePath}.`);
+  }
+  if (source.includes(`\"/${relativePath}`)) {
+    throw new Error(`${relativePath} is incorrectly pinned to the site root.`);
+  }
+  const modelPath = new URL(relativePath, root);
+  const info = await stat(modelPath);
+  if (!info.isFile() || info.size === 0) {
+    throw new Error(`${relativePath} is missing or empty.`);
+  }
+}
+
 console.log("Mounted production build paths are valid.");

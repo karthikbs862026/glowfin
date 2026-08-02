@@ -17,6 +17,7 @@ import {
   createProductionGateCanopyGeometry,
   createProductionWallGeometry
 } from "./productionGeometry";
+import type { RuntimeGateGeometrySet } from "./runtimeProductionAssets";
 import { createMoonstoneObstacleMaterial } from "./moonGardenMaterial";
 
 const MAX_GATE_PARTS = 32;
@@ -234,6 +235,36 @@ export class MoonGardenGates {
       contourGeometry,
       contourMaterial
     );
+  }
+
+  /**
+   * Atomically replace the code-native transition geometry with the validated
+   * compressed GLB kit. Instance pools, transforms, materials and the separate
+   * collider-derived cyan contour remain untouched.
+   */
+  installRuntimeGeometry(assets: RuntimeGateGeometrySet): void {
+    for (const lod of [0, 1, 2] as const) {
+      for (const variant of GATE_FAMILIES.map((family) => family.id)) {
+        const target = this.lods[lod][variant];
+        const source = assets.walls[lod][variant];
+        const oldLeft = target.left.geometry;
+        const oldRight = target.right.geometry;
+        target.left.geometry = source.left;
+        target.right.geometry = source.right;
+        target.left.userData["runtimeProductionAsset"] = true;
+        target.right.userData["runtimeProductionAsset"] = true;
+        oldLeft.dispose();
+        oldRight.dispose();
+        this.disposables.push(source.left, source.right);
+
+        const canopy = this.canopies[lod][variant];
+        const oldCanopy = canopy.geometry;
+        canopy.geometry = assets.canopies[lod][variant];
+        canopy.userData["runtimeProductionAsset"] = true;
+        oldCanopy.dispose();
+        this.disposables.push(canopy.geometry);
+      }
+    }
   }
 
   update(
