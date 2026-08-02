@@ -177,13 +177,17 @@ export class GlowfinAudio {
           // autoplay contract rather than deferring creation to a timer.
           this.context = new AudioContextClass();
         }
-        this.createAmbientGraph(this.context);
         this.context.addEventListener("statechange", () => {
           if (this.muted) return;
           this.setUiState(this.context?.state === "running" ? "active" : "locked");
         });
       }
+      // Invoke resume from the real gesture, but yield before building the
+      // procedural graph. This lets the canvas steering listener consume that
+      // same pointer event before we allocate/fill the deterministic water
+      // buffer on slower phones.
       if (this.context.state !== "running") await this.context.resume();
+      if (!this.masterGain) this.createAmbientGraph(this.context);
       if (this.muted) {
         this.setMasterGain(0);
         this.setUiState("muted");
