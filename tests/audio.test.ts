@@ -6,7 +6,6 @@ import {
 } from "../src/audio/audioDirector";
 import {
   createAmbientSamples,
-  createConfirmationSamples,
   encodeMonoPcm16Wav
 } from "../src/audio/nativeMobileAudio";
 import { isPointerActivationTrigger } from "../src/audio/audioEngine";
@@ -68,7 +67,7 @@ describe("native mobile media fallback", () => {
   });
 
   it("encodes a standards-shaped PCM WAV for the phone media pipeline", () => {
-    const samples = createConfirmationSamples(8_000, 0.1);
+    const samples = createAmbientSamples(8_000, 0.1);
     const wav = encodeMonoPcm16Wav(samples, 8_000);
     const bytes = new Uint8Array(wav);
     expect(new TextDecoder().decode(bytes.slice(0, 4))).toBe("RIFF");
@@ -77,14 +76,13 @@ describe("native mobile media fallback", () => {
     expect(wav.byteLength).toBe(44 + samples.length * 2);
   });
 
-  it("keeps the native bed and confirmation materially non-silent", () => {
+  it("keeps the native bed materially non-silent", () => {
     const rms = (samples: Float32Array) =>
       Math.sqrt(
         samples.reduce((sum, sample) => sum + sample * sample, 0) /
           samples.length
       );
     expect(rms(createAmbientSamples())).toBeGreaterThan(0.12);
-    expect(rms(createConfirmationSamples())).toBeGreaterThan(0.2);
   });
 });
 

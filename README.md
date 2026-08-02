@@ -34,8 +34,8 @@ includes:
   instanced material system
 - fork-crowned spires and shader-sway ribbon kelp retained as interim depth
 - three hard-capped god-ray meshes
-- a gesture-gated underwater soundscape with an independent native-media calm
-  bed and confirmation plus Web Audio current/harmonic momentum layers,
+- a gesture-gated underwater soundscape with an independent single-stream
+  native-media calm bed plus Web Audio confirmation, current/harmonic layers,
   near-miss, multiplier, collision, recovery and run-end cues; the first
   explicit sound-button tap confirms output instead of muting a canvas-started
   graph, generated samples are distinguished from native playback, and mute

@@ -20,12 +20,13 @@ condition.
 
 1. Serve the game document directly as the top-level page with an explicit
    same-origin autoplay policy and `no-store` document caching.
-2. Add an independent `HTMLAudioElement` path that plays a clearly audible
-   confirmation chime and calm underwater bed through the browser's native
-   media pipeline. Its PCM WAV data is generated once at startup into bounded
-   Blob URLs; no network fetch, binary repository asset, or LFS payload is
-   introduced.
-3. Invoke both native `play()` calls and `AudioContext.resume()` synchronously
+2. Add one independent `HTMLAudioElement` that plays a clearly audible calm
+   underwater bed through the browser's native media pipeline. Its PCM WAV data
+   is generated once at startup into one bounded Blob URL; no network fetch,
+   binary repository asset, or LFS payload is introduced. Keep the confirmation
+   cue in Web Audio instead of requiring two concurrent native `play()` promises,
+   which mobile engines can serialize or leave pending.
+3. Invoke the native `play()` call and `AudioContext.resume()` synchronously
    within the platform's activation-triggering turn: `pointerdown` for a mouse,
    `pointerup` for touch/pen, `touchend` for older WebViews, or the sound
    button's `click`. Web Audio remains responsible for momentum layers and
@@ -41,8 +42,8 @@ condition.
 ## Consequences
 
 - Physical phones have two independent output implementations: a native calm
-  bed/confirmation and Web Audio momentum/event layers.
-- The native fallback uses two hidden media elements and about 148 KB of
+  bed and Web Audio confirmation/momentum/event layers.
+- The native fallback uses one hidden media element and about 128 KB of
   generated PCM in memory. It adds no draw calls, textures, geometry, network
   requests, or production-bundle bytes beyond its encoder code.
 - Browser CI must prove both advancing native-media playback time and generated

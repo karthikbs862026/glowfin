@@ -1,6 +1,5 @@
 const SAMPLE_RATE = 16_000;
 const AMBIENT_DURATION_SEC = 4;
-const CONFIRMATION_DURATION_SEC = 0.62;
 
 export type NativeMediaState =
   | "idle"
@@ -78,27 +77,6 @@ export function createAmbientSamples(
   return samples;
 }
 
-export function createConfirmationSamples(
-  sampleRate = SAMPLE_RATE,
-  durationSec = CONFIRMATION_DURATION_SEC
-): Float32Array {
-  const length = Math.max(1, Math.floor(sampleRate * durationSec));
-  const samples = new Float32Array(length);
-  for (let index = 0; index < length; index++) {
-    const time = index / sampleRate;
-    const progress = index / Math.max(1, length - 1);
-    const attack = Math.min(1, time / 0.018);
-    const release = Math.min(1, (durationSec - time) / 0.07);
-    const envelope = attack * release;
-    const first = Math.sin(Math.PI * 2 * 659.25 * time);
-    const second = Math.sin(Math.PI * 2 * 783.99 * time);
-    const crossfade = Math.min(1, Math.max(0, (progress - 0.38) / 0.16));
-    samples[index] =
-      envelope * 0.72 * (first * (1 - crossfade) + second * crossfade);
-  }
-  return samples;
-}
-
 function createAudioElement(
   root: Document,
   url: string,
@@ -165,40 +143,32 @@ function settleWithin(result: Promise<boolean>, timeoutMs: number): Promise<bool
  * Native-media base layer for physical phones.
  *
  * Web Audio remains responsible for momentum layers and gameplay cues. This
- * independent HTMLMediaElement path supplies a clearly audible calm bed and a
- * confirmation chime through the mobile media pipeline, which is meaningfully
- * different from measuring samples upstream of AudioContext.destination.
+ * independent HTMLMediaElement path supplies a clearly audible calm bed through
+ * the mobile media pipeline, which is meaningfully different from measuring
+ * samples upstream of AudioContext.destination. One native stream avoids
+ * mobile engines serializing or indefinitely pending concurrent play() calls.
  */
 export class NativeMobileAudio {
   private readonly ambient: HTMLAudioElement;
-  private readonly confirmation: HTMLAudioElement;
-  private readonly urls: readonly string[];
+  private readonly url: string;
   private state: NativeMediaState = "idle";
 
   constructor(root: Document = document) {
-    const ambientUrl = URL.createObjectURL(
+    this.url = URL.createObjectURL(
       new Blob([encodeMonoPcm16Wav(createAmbientSamples())], { type: "audio/wav" })
     );
-    const confirmationUrl = URL.createObjectURL(
-      new Blob([encodeMonoPcm16Wav(createConfirmationSamples())], {
-        type: "audio/wav"
-      })
-    );
-    this.urls = [ambientUrl, confirmationUrl];
-    this.ambient = createAudioElement(root, ambientUrl, true, "Glowfin underwater ambience");
-    this.confirmation = createAudioElement(
+    this.ambient = createAudioElement(
       root,
-      confirmationUrl,
-      false,
-      "Glowfin sound confirmation"
+      this.url,
+      true,
+      "Glowfin underwater ambience"
     );
     this.ambient.volume = 0.48;
-    this.confirmation.volume = 0.9;
     window.addEventListener(
       "pagehide",
       (event) => {
         if (event.persisted) return;
-        for (const url of this.urls) URL.revokeObjectURL(url);
+        URL.revokeObjectURL(this.url);
       },
       { once: true }
     );
@@ -212,15 +182,12 @@ export class NativeMobileAudio {
     return this.ambient.currentTime;
   }
 
-  /** Both play() calls happen before returning, inside the trusted gesture. */
+  /** The one authoritative play() call happens inside the trusted gesture. */
   activate(): Promise<boolean> {
     this.state = "starting";
-    const confirmationStarted = playImmediately(this.confirmation, true);
     const ambientStarted = playImmediately(this.ambient, false);
     return settleWithin(
-      Promise.all([ambientStarted, confirmationStarted]).then(
-        ([ambient]) => ambient && !this.ambient.paused
-      ),
+      ambientStarted.then((started) => started && !this.ambient.paused),
       2_000
     ).then((started) => {
       this.state = started ? "playing" : "blocked";
@@ -238,7 +205,6 @@ export class NativeMobileAudio {
 
   pause(): void {
     this.ambient.pause();
-    this.confirmation.pause();
     this.state = "paused";
   }
 

@@ -46,6 +46,14 @@ try {
       gesture: button?.getAttribute("data-audio-gesture") ?? null,
       context: button?.getAttribute("data-audio-context") ?? null,
       rms: button?.getAttribute("data-audio-rms") ?? null,
+      nativeMedia: Array.from(document.querySelectorAll("audio")).map((audio) => ({
+        label: audio.getAttribute("aria-label"),
+        currentTime: audio.currentTime,
+        paused: audio.paused,
+        ended: audio.ended,
+        readyState: audio.readyState,
+        errorCode: audio.error?.code ?? null
+      })),
       nativeMediaTime: Array.from(document.querySelectorAll("audio"))
         .map((audio) => audio.currentTime)
         .sort((a, b) => b - a)[0] ?? 0,
