@@ -52,6 +52,16 @@ export interface TuningConfig {
     regenPerSec: number;
     regenDelayAfterCollisionSec: number;
   };
+  audio: {
+    masterGain: number;
+    ambientGain: number;
+    cueGain: number;
+    momentumResponseSec: number;
+    currentLayerStartMomentum: number;
+    shimmerLayerStartMomentum: number;
+    maxVoices: number;
+    updateRateHz: number;
+  };
   visual: {
     causticScaleFloor: number;
     causticScaleWall: number;
@@ -190,6 +200,15 @@ const RULES: Record<string, Rule> = {
   "light.regenPerSec": { min: 0, max: 100, note: "light regained per second while clean" },
   "light.regenDelayAfterCollisionSec": { min: 0, max: 30, note: "pause before regen resumes" },
 
+  "audio.masterGain": { min: 0, max: 1, note: "final Web Audio output gain" },
+  "audio.ambientGain": { min: 0, max: 1, note: "shared gain budget for the persistent underwater layers" },
+  "audio.cueGain": { min: 0, max: 1, note: "shared gain for near-miss, collision, milestone and recovery cues" },
+  "audio.momentumResponseSec": { min: 0.01, max: 2, note: "smoothing time for momentum-driven audio layers" },
+  "audio.currentLayerStartMomentum": { min: 0, max: 1, note: "normalized momentum where the moving-current layer begins" },
+  "audio.shimmerLayerStartMomentum": { min: 0, max: 1, note: "normalized momentum where the harmonic shimmer begins" },
+  "audio.maxVoices": { min: 4, max: 32, note: "hard cap for transient Web Audio sources" },
+  "audio.updateRateHz": { min: 4, max: 30, note: "maximum continuous-mix automation updates per second" },
+
   "visual.causticScaleFloor": { min: 0.05, max: 8, note: "caustic cycles per world unit on the floor" },
   "visual.causticScaleWall": { min: 0.05, max: 8, note: "caustic cycles per world unit on obstacle faces" },
   "visual.causticIntensityFloor": { min: 0, max: 6, note: "floor caustic brightness" },
@@ -326,6 +345,23 @@ export function validateTuning(raw: unknown): TuningConfig {
   const lightMax = valueAt(raw, "light.max");
   if (typeof lightCost === "number" && typeof lightMax === "number" && lightCost > lightMax) {
     problems.push("light.costPerCollision must not exceed light.max (one hit would end the run)");
+  }
+
+  const currentLayerStart = valueAt(raw, "audio.currentLayerStartMomentum");
+  const shimmerLayerStart = valueAt(raw, "audio.shimmerLayerStartMomentum");
+  if (
+    typeof currentLayerStart === "number" &&
+    typeof shimmerLayerStart === "number" &&
+    currentLayerStart >= shimmerLayerStart
+  ) {
+    problems.push(
+      "audio.currentLayerStartMomentum must be below audio.shimmerLayerStartMomentum"
+    );
+  }
+
+  const maxVoices = valueAt(raw, "audio.maxVoices");
+  if (typeof maxVoices === "number" && !Number.isInteger(maxVoices)) {
+    problems.push("audio.maxVoices must be a whole number");
   }
 
   if (problems.length > 0) {

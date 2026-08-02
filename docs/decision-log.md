@@ -501,3 +501,20 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   sample, leaving fin fragments that could be mistaken for a stacked pair.
 - Reduce repeated residents to one upright citizen per side; preserve paired
   heralds as the deliberate ceremonial anchors.
+
+## 2026-08-02 — Add momentum-layered audio without touching gameplay
+
+- Owner review accepted the corrected mix of upright residents, anchored
+  heralds and asynchronous horizontal swimmers as materially better. Defer
+  further horizontal-swimmer facial sculpting to the authored DCC/PBR pass;
+  preserve the accepted choreography and lane clearance.
+- Adopt ADR-0026. Drive a fixed underwater Web Audio graph from the same
+  normalized momentum/light state as the visuals and add distinct near-miss,
+  multiplier, collision, recovery and run-end cues.
+- Keep all mix values in `config/tuning.json`, cap transient sources, disconnect
+  completed cue graphs, and suspend audio while muted/backgrounded.
+- Create or resume audio only from a real user gesture. Failure remains an
+  audio-only degradation and may not trigger a game startup error.
+- Require unit evidence plus a real mobile Chromium gesture/mute/reload gate.
+  Android and iOS speaker/headphone/interruption review remains a Phase 3 sign-
+  off requirement; CI emulation cannot waive it.

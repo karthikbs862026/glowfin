@@ -35,7 +35,12 @@
         flex-direction: column;
         gap: 10px;
       }
-      #hud-top { display: flex; align-items: baseline; gap: 12px; }
+      #hud-top {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        padding-right: 52px;
+      }
       #hud-score {
         font-size: 34px;
         font-weight: 650;
@@ -77,6 +82,49 @@
         border-radius: 999px;
         background: linear-gradient(90deg, #35d0ff, #8a7bff);
         transition: width 90ms linear;
+      }
+
+      #hud-audio-toggle {
+        position: absolute;
+        top: max(10px, env(safe-area-inset-top));
+        right: max(12px, env(safe-area-inset-right));
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        padding: 0;
+        border: 1px solid rgba(180, 236, 255, 0.38);
+        border-radius: 50%;
+        background: rgba(5, 23, 42, 0.58);
+        color: #bcefff;
+        box-shadow: 0 0 16px rgba(53, 208, 255, 0.14);
+        backdrop-filter: blur(4px);
+        pointer-events: auto;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      #hud-audio-toggle svg { width: 23px; height: 23px; }
+      #hud-audio-toggle .audio-wave,
+      #hud-audio-toggle .audio-slash { transition: opacity 120ms linear; }
+      #hud-audio-toggle .audio-slash { opacity: 0; }
+      #hud-audio-toggle[data-audio-state="muted"] .audio-wave { opacity: 0.16; }
+      #hud-audio-toggle[data-audio-state="muted"] .audio-slash { opacity: 1; }
+      #hud-audio-toggle[data-audio-state="locked"] { opacity: 0.82; }
+      #hud-audio-toggle:focus-visible {
+        outline: 2px solid #fff4c9;
+        outline-offset: 3px;
+      }
+      #hud-audio-toggle:disabled { opacity: 0.34; cursor: default; }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
 
       #hud-gameover {
@@ -154,6 +202,20 @@
     <canvas id="glowfin-canvas"></canvas>
 
     <div id="hud">
+      <button
+        id="hud-audio-toggle"
+        type="button"
+        data-audio-state="locked"
+        aria-label="Mute sound"
+        aria-pressed="true"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 9v6h4l5 4V5L9 9H5Z" />
+          <path class="audio-wave" d="M17 9.2c1.1 1.5 1.1 4.1 0 5.6M19.5 6.8c2.7 2.8 2.7 7.6 0 10.4" />
+          <path class="audio-slash" d="M4 4l16 16" />
+        </svg>
+      </button>
+      <span id="hud-audio-status" class="sr-only" aria-live="polite">Sound on — starts with your first touch</span>
       <div id="hud-top">
         <div id="hud-score">0</div>
         <div id="hud-multiplier">x1.0</div>

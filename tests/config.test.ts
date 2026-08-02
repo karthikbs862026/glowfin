@@ -99,6 +99,21 @@ describe("tuning config", () => {
       bad.speed.forwardAtMaxMomentum = 20;
       expect(() => validateTuning(bad)).toThrow(/must not exceed/);
     });
+
+    it("rejects audio layers that enter in the wrong order", () => {
+      const bad = cloneTuning();
+      bad.audio.currentLayerStartMomentum = 0.7;
+      bad.audio.shimmerLayerStartMomentum = 0.6;
+      expect(() => validateTuning(bad)).toThrow(
+        /currentLayerStartMomentum must be below/
+      );
+    });
+
+    it("rejects a fractional transient voice cap", () => {
+      const bad = cloneTuning();
+      bad.audio.maxVoices = 10.5;
+      expect(() => validateTuning(bad)).toThrow(/maxVoices must be a whole number/);
+    });
   });
 
   describe("Core Design Principle guardrails (Part 1.3 / 4.5)", () => {

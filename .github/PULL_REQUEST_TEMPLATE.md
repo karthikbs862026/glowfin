@@ -41,6 +41,15 @@
 - [ ] Guardian is in front of architecture, unclipped and outside the lane
 - [ ] Owner phone review attached; a green CI mask is not semantic approval
 
+## Audio acceptance (required when sound or event routing changes)
+
+- [ ] Page remains silent and AudioContext stays locked before the first real gesture
+- [ ] First canvas touch unlocks sound without delaying steering or showing startup error
+- [ ] Low/mid/max momentum audibly add layers from the same simulation value
+- [ ] Near-miss, multiplier, collision and recovery cues are distinct at phone-speaker volume
+- [ ] Mute is keyboard/touch accessible, persists across reload and suspends background work
+- [ ] Android/iOS device evidence attached, or explicitly listed as still outstanding
+
 ## Self-review checklist (required for solo merges — Part 5.2)
 
 - [ ] Read the diff top to bottom as if reviewing someone else's code

@@ -1,6 +1,6 @@
 {
   "$comment": "Glowfin tuning data. Edited by designers, not programmers. Every value here is range-validated at load (src/core/config.ts) — a bad edit fails loudly at startup rather than producing subtly unfair gameplay. See docs/tuning-guide.md for what each value does.",
-  "version": 1,
+  "version": 2,
 
   "momentum": {
     "gainRate": 0.12,
@@ -49,6 +49,18 @@
     "costPerCollision": 34.0,
     "regenPerSec": 2.2,
     "regenDelayAfterCollisionSec": 2.0
+  },
+
+  "audio": {
+    "$comment": "Part 3.5. One persistent allocation-bounded Web Audio graph: a calm bed is always present, moving-current and harmonic-shimmer layers enter from the same normalized momentum that drives speed/glow/trail, and transient sources are hard-capped. The AudioContext is created only by a real user gesture for iOS Safari.",
+    "masterGain": 0.32,
+    "ambientGain": 0.38,
+    "cueGain": 0.64,
+    "momentumResponseSec": 0.12,
+    "currentLayerStartMomentum": 0.18,
+    "shimmerLayerStartMomentum": 0.58,
+    "maxVoices": 18,
+    "updateRateHz": 15
   },
 
   "visual": {

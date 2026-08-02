@@ -1,7 +1,9 @@
 # Device Support Matrix (Part 4.7)
 
-**Android: validated. iOS: untested.** Recorded plainly rather than left blank,
-per the project's standing honesty requirement.
+**Phase 2 Android rendering: validated. Current Phase 3B world/audio:
+real-device sign-off outstanding. iOS: untested.** Recorded plainly rather
+than allowing older device evidence to masquerade as approval of the much
+richer current scene.
 
 ## Reference devices
 
@@ -75,3 +77,26 @@ Its exit criterion names both platforms.
 
 Worth noting the contrast probe is the kind of test that would work well over
 remote device services: it reports numbers, not frame timing.
+
+## Phase 3 audio device checklist — NOT YET EXECUTED
+
+The clean-room Chromium audio gate validates integration and gesture policy;
+it cannot certify phone-speaker quality, Safari interruption behavior, battery
+or thermals. Run this checklist on the S22 Ultra, OPPO Reno3 Pro and the future
+reference iPhone before Phase 3 sign-off:
+
+1. Fresh load remains silent; the first canvas touch both steers immediately
+   and starts sound without a freeze, startup-error panel or delayed input.
+2. Calm, cruise and maximum momentum clearly add current/shimmer intensity
+   without masking visual or tactile gameplay cues.
+3. Near-miss, multiplier milestone, collision and recovery are distinguishable
+   on the built-in speaker at ordinary volume and through headphones.
+4. Sound button is reachable one-handed, does not steer Glowfin, and retains
+   mute state after reload.
+5. Background for 30 seconds, return, then continue the same run. Audio must
+   resume once, with no doubled ambience, burst, desynchronization or crash.
+6. Repeat interruption through lock/unlock, notification/call interruption and
+   wired/Bluetooth route change where the device supports them.
+7. Compare frame time, battery and temperature with sound on versus muted over
+   a real-time 30-minute run. Any monotonic memory growth or meaningful breach
+   of the 30 fps floor blocks sign-off.
