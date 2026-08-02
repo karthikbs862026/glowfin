@@ -69,6 +69,8 @@ cannot replace those visual and real-device approvals.
 
 ## Local setup
 
+Node.js 22 or newer is required for the deterministic TypeScript art exporter.
+
 ```bash
 npm install
 npm run dev        # local dev server

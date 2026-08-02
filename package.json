@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Glowfin — one-swipe endless bioluminescent surf game (Three.js)",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "predev": "npm run art:build-runtime-glbs",
     "dev": "vite",
