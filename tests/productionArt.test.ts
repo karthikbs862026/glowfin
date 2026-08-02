@@ -223,10 +223,22 @@ describe("Phase 3B art geometry inventory", () => {
     ] as const;
     for (const [geometry, role] of roles) {
       expect(geometry.userData["populationRole"]).toBe(role);
-      expect(geometry.userData["facialFeatures"]).toBe(
-        "warm-face-eye-white-pupil-highlight-smile-cheeks"
-      );
-      expect(geometry.userData["faceOrientation"]).toBe("screen-upright");
+      if (role === "current-swimmer") {
+        expect(geometry.userData["facialFeatures"]).toBe(
+          "sculpted-face-almond-eye-iris-pupil-highlight-smile-cheeks-ear-fins"
+        );
+        expect(geometry.userData["faceOrientation"]).toBe(
+          "screen-upright-level-forward-gaze"
+        );
+        expect(geometry.userData["authoredCharacterVersion"]).toBe(
+          "moon-current-swimmer-v2"
+        );
+      } else {
+        expect(geometry.userData["facialFeatures"]).toBe(
+          "warm-face-eye-white-pupil-highlight-smile-cheeks"
+        );
+        expect(geometry.userData["faceOrientation"]).toBe("screen-upright");
+      }
       if (role === "conch-herald") {
         expect(geometry.userData["ceremonialProp"]).toBe("spiral-conch");
       }
@@ -244,6 +256,21 @@ describe("Phase 3B art geometry inventory", () => {
       expect(parts.body.userData["populationRole"]).toBe(role);
       expect(parts.face.userData["populationFeature"]).toBe("friendly-face");
       expect(parts.eyes.userData["populationFeature"]).toBe("expressive-eyes");
+      if (role === "current-swimmer") {
+        expect(parts.face.userData["faceStyle"]).toBe(
+          "sculpted-oval-cheeks-tapered-jaw-open-hairline"
+        );
+        expect(parts.eyes.userData["eyeLine"]).toBe("level");
+        expect(parts.eyes.userData["gazeDirection"]).toBe("travel-forward");
+        expect(parts.eyes.userData["eyeStyle"]).toBe(
+          "almond-white-turquoise-iris-dark-pupil-catchlight"
+        );
+        for (const geometry of [parts.body, parts.face, parts.eyes]) {
+          expect(geometry.userData["authoredCharacterVersion"]).toBe(
+            "moon-current-swimmer-v2"
+          );
+        }
+      }
       for (const geometry of [parts.body, parts.face, parts.eyes]) {
         expect(geometry.hasAttribute("materialRole")).toBe(true);
         expect(productionTriangles(geometry)).toBeGreaterThan(0);

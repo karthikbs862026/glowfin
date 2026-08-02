@@ -365,6 +365,8 @@ export interface GateConfig {
     minimumCitizenVisiblePixels: number;
     minimumSwimmerWidthPixels: number;
     minimumSwimmerVisiblePixels: number;
+    minimumSwimmerFaceHeightPixels: number;
+    minimumSwimmerEyeHeightPixels: number;
     minimumHeraldHeightPixels: number;
     minimumHeraldVisiblePixels: number;
     minimumPopulationFaceHeightPixels: number;

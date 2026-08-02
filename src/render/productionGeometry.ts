@@ -19,6 +19,7 @@ const VIOLET = new THREE.Color(0x56357b);
 const ROSE = new THREE.Color(0x873c70);
 const FACE_WHITE = new THREE.Color(0xfff4df);
 const EYE_DARK = new THREE.Color(0x11173d);
+const EYE_IRIS = new THREE.Color(0x2bbccc);
 const MERFOLK_SKIN = new THREE.Color(0xd6bdc9);
 const MERFOLK_SKIN_LIGHT = new THREE.Color(0xf1dfe1);
 const MERFOLK_HAIR = new THREE.Color(0x25205d);
@@ -1816,6 +1817,267 @@ const HERALD_PALETTE: PopulationPalette = {
   accent: new THREE.Color(0xc45c83)
 };
 
+/**
+ * A small hand-shaped face shell for the current swimmers.  The old swimmer
+ * inherited the same round population head as the upright residents, which
+ * made it read as a white ball with eyes when reduced to phone scale.  This
+ * keeps one continuous surface while introducing fuller cheeks, a tapered
+ * jaw, a softer forehead and a shallow muzzle plane.
+ */
+function sculptedSwimmerFaceGeometry(radius: number): THREE.BufferGeometry {
+  const geometry = new THREE.SphereGeometry(radius, 18, 12);
+  const positions = geometry.getAttribute("position");
+  const vertex = new THREE.Vector3();
+  for (let index = 0; index < positions.count; index++) {
+    vertex.fromBufferAttribute(positions, index);
+    const normalY = vertex.y / radius;
+    const cheek = 1 + 0.105 * Math.exp(
+      -Math.pow((normalY + 0.12) / 0.34, 2)
+    );
+    const chinProgress = THREE.MathUtils.clamp(
+      (-normalY - 0.18) / 0.82,
+      0,
+      1
+    );
+    const jaw = 1 - 0.24 * chinProgress * chinProgress;
+    vertex.x *= 0.94 * cheek * jaw;
+    vertex.y *= 1.08;
+    vertex.z *= 0.8;
+    if (vertex.z > 0) {
+      const centreWeight = THREE.MathUtils.clamp(
+        1 - Math.pow(vertex.x / radius, 2) - Math.pow(vertex.y / radius, 2),
+        0,
+        1
+      );
+      vertex.z += centreWeight * radius * 0.045;
+    }
+    positions.setXYZ(index, vertex.x, vertex.y, vertex.z);
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+/** A shallow almond rather than another protruding eyeball primitive. */
+function almondGeometry(
+  width: number,
+  height: number,
+  depth: number
+): THREE.BufferGeometry {
+  const halfWidth = width * 0.5;
+  const halfHeight = height * 0.5;
+  const shape = new THREE.Shape();
+  shape.moveTo(-halfWidth, 0);
+  shape.bezierCurveTo(
+    -halfWidth * 0.46,
+    halfHeight,
+    halfWidth * 0.46,
+    halfHeight,
+    halfWidth,
+    0
+  );
+  shape.bezierCurveTo(
+    halfWidth * 0.46,
+    -halfHeight,
+    -halfWidth * 0.46,
+    -halfHeight,
+    -halfWidth,
+    0
+  );
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    steps: 1,
+    curveSegments: 4,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: depth * 0.22,
+    bevelThickness: depth * 0.18
+  });
+  geometry.translate(0, 0, -depth * 0.5);
+  return geometry;
+}
+
+/** Side-fin silhouette that frames the face without becoming a hair ring. */
+function swimmerEarFinGeometry(): THREE.BufferGeometry {
+  const shape = new THREE.Shape([
+    new THREE.Vector2(0, 0),
+    new THREE.Vector2(0.105, 0.095),
+    new THREE.Vector2(0.17, 0.025),
+    new THREE.Vector2(0.145, -0.085),
+    new THREE.Vector2(0.045, -0.055)
+  ]);
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.028,
+    steps: 1,
+    curveSegments: 2,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: 0.006,
+    bevelThickness: 0.005
+  });
+  geometry.translate(0, 0, -0.014);
+  return geometry;
+}
+
+function sculptedSwimmerPopulationHead(
+  centre: THREE.Vector3,
+  palette: PopulationPalette
+): {
+  body: THREE.BufferGeometry[];
+  face: THREE.BufferGeometry[];
+  eyes: THREE.BufferGeometry[];
+} {
+  const body: THREE.BufferGeometry[] = [];
+  const face: THREE.BufferGeometry[] = [];
+  const eyes: THREE.BufferGeometry[] = [];
+  const radius = 0.265;
+
+  face.push(styled(sculptedSwimmerFaceGeometry(radius), {
+    position: centre,
+    colour: palette.skinLight,
+    glow: 0.13,
+    materialRole: MATERIAL_ROLE.nacre
+  }));
+
+  // A high side-swept cap and two separated ribbons keep the face open.  The
+  // hair trails behind the direction of travel instead of encircling the head.
+  body.push(styled(new THREE.SphereGeometry(
+    radius * 1.018,
+    16,
+    9,
+    0,
+    Math.PI * 2,
+    0,
+    Math.PI * 0.46
+  ), {
+    position: centre.clone().add(new THREE.Vector3(-0.012, 0.092, -0.03)),
+    scale: new THREE.Vector3(1.01, 0.9, 1),
+    colour: palette.hair,
+    glow: 0.08,
+    materialRole: MATERIAL_ROLE.lapis
+  }));
+  for (const [index, offset] of [-0.092, 0.088].entries()) {
+    body.push(styled(curvedTube([
+      centre.clone().add(new THREE.Vector3(-0.16, offset, -0.055)),
+      centre.clone().add(new THREE.Vector3(-0.35, offset + 0.045, -0.07)),
+      centre.clone().add(new THREE.Vector3(-0.58, offset - 0.055, -0.04))
+    ], 8, index === 0 ? 0.031 : 0.027, 5), {
+      colour: index === 0 ? palette.hair : palette.hairTip,
+      glow: 0.12,
+      sway: 0.36,
+      materialRole: MATERIAL_ROLE.lapis
+    }));
+  }
+
+  // Paired nacre fins make the head read as merfolk before the tiny facial
+  // details resolve. They sit behind the facial plane and remain asymmetric
+  // after the whole swimmer mirrors to follow its travel direction.
+  for (const side of [-1, 1]) {
+    body.push(styled(swimmerEarFinGeometry(), {
+      position: centre.clone().add(new THREE.Vector3(side * 0.225, -0.005, 0.005)),
+      scale: new THREE.Vector3(side, 1, 1),
+      rotation: new THREE.Euler(0, 0, side * 0.18),
+      colour: palette.tailLight,
+      glow: 0.21,
+      sway: 0.2,
+      materialRole: MATERIAL_ROLE.crystal
+    }));
+  }
+
+  const eyeY = centre.y + 0.038;
+  for (const side of [-1, 1]) {
+    const eyeX = centre.x + side * 0.086;
+    const gazeX = eyeX + 0.012;
+    eyes.push(
+      styled(almondGeometry(0.128, 0.088, 0.018), {
+        position: new THREE.Vector3(eyeX, eyeY, centre.z + 0.219),
+        colour: FACE_WHITE,
+        glow: 0.2,
+        materialRole: MATERIAL_ROLE.nacre
+      }),
+      styled(new THREE.CircleGeometry(0.031, 10), {
+        position: new THREE.Vector3(gazeX, eyeY - 0.001, centre.z + 0.232),
+        scale: new THREE.Vector3(0.92, 1, 1),
+        colour: EYE_IRIS,
+        glow: 0.24,
+        materialRole: MATERIAL_ROLE.crystal
+      }),
+      styled(new THREE.CircleGeometry(0.017, 9), {
+        position: new THREE.Vector3(gazeX + 0.003, eyeY - 0.002, centre.z + 0.235),
+        scale: new THREE.Vector3(0.9, 1, 1),
+        colour: EYE_DARK,
+        glow: 0.04,
+        materialRole: MATERIAL_ROLE.lapis
+      }),
+      styled(new THREE.CircleGeometry(0.0075, 7), {
+        position: new THREE.Vector3(
+          gazeX - 0.006,
+          eyeY + 0.011,
+          centre.z + 0.238
+        ),
+        colour: FACE_WHITE,
+        glow: 0.48,
+        materialRole: MATERIAL_ROLE.crystal
+      })
+    );
+
+    // The outer brow rises slightly while the inner edge stays relaxed. This
+    // reads as alert and friendly rather than wide-eyed or startled.
+    face.push(styled(curvedTube([
+      new THREE.Vector3(eyeX - side * 0.052, eyeY + 0.078, centre.z + 0.221),
+      new THREE.Vector3(eyeX, eyeY + 0.094, centre.z + 0.226),
+      new THREE.Vector3(eyeX + side * 0.052, eyeY + 0.086, centre.z + 0.221)
+    ], 6, 0.0095, 4), {
+      colour: palette.hair,
+      glow: 0.05,
+      materialRole: MATERIAL_ROLE.lapis
+    }));
+  }
+
+  face.push(
+    styled(new THREE.SphereGeometry(0.023, 7, 5), {
+      position: centre.clone().add(new THREE.Vector3(0.014, -0.018, 0.236)),
+      scale: new THREE.Vector3(0.78, 1.12, 0.42),
+      colour: palette.skin,
+      glow: 0.07,
+      materialRole: MATERIAL_ROLE.nacre
+    }),
+    styled(curvedTube([
+      centre.clone().add(new THREE.Vector3(-0.061, -0.078, 0.224)),
+      centre.clone().add(new THREE.Vector3(-0.03, -0.098, 0.232)),
+      centre.clone().add(new THREE.Vector3(0.012, -0.103, 0.235)),
+      centre.clone().add(new THREE.Vector3(0.061, -0.075, 0.224))
+    ], 8, 0.009, 5), {
+      colour: palette.accent,
+      glow: 0.15,
+      materialRole: MATERIAL_ROLE.livingCoral
+    }),
+    styled(new THREE.SphereGeometry(0.027, 7, 5), {
+      position: centre.clone().add(new THREE.Vector3(-0.139, -0.046, 0.205)),
+      scale: new THREE.Vector3(1.35, 0.56, 0.3),
+      colour: palette.accent,
+      glow: 0.08,
+      materialRole: MATERIAL_ROLE.livingCoral
+    }),
+    styled(new THREE.SphereGeometry(0.027, 7, 5), {
+      position: centre.clone().add(new THREE.Vector3(0.139, -0.046, 0.205)),
+      scale: new THREE.Vector3(1.35, 0.56, 0.3),
+      colour: palette.accent,
+      glow: 0.08,
+      materialRole: MATERIAL_ROLE.livingCoral
+    }),
+    styled(new THREE.OctahedronGeometry(0.037, 0), {
+      position: centre.clone().add(new THREE.Vector3(0, 0.205, 0.208)),
+      scale: new THREE.Vector3(0.82, 1.18, 0.55),
+      colour: palette.tailLight,
+      glow: 0.38,
+      materialRole: MATERIAL_ROLE.crystal
+    })
+  );
+
+  return { body, face, eyes };
+}
+
 function friendlyPopulationHead(
   centre: THREE.Vector3,
   palette: PopulationPalette,
@@ -1825,6 +2087,9 @@ function friendlyPopulationHead(
   face: THREE.BufferGeometry[];
   eyes: THREE.BufferGeometry[];
 } {
+  if (pose === "swim") {
+    return sculptedSwimmerPopulationHead(centre, palette);
+  }
   const body: THREE.BufferGeometry[] = [];
   const face: THREE.BufferGeometry[] = [];
   const eyes: THREE.BufferGeometry[] = [];
@@ -1855,32 +2120,17 @@ function friendlyPopulationHead(
     materialRole: MATERIAL_ROLE.lapis
   }));
 
-  if (pose === "upright") {
-    for (const side of [-1, 1]) {
-      body.push(styled(curvedTube([
-        centre.clone().add(new THREE.Vector3(side * 0.17, 0.08, -0.045)),
-        centre.clone().add(new THREE.Vector3(side * 0.225, -0.08, -0.055)),
-        centre.clone().add(new THREE.Vector3(side * 0.19, -0.245, -0.035))
-      ], 6, 0.027, 5), {
-        colour: side < 0 ? palette.hair : palette.hairTip,
-        glow: 0.11,
-        sway: 0.26,
-        materialRole: MATERIAL_ROLE.lapis
-      }));
-    }
-  } else {
-    for (const offset of [-0.075, 0.085]) {
-      body.push(styled(curvedTube([
-        centre.clone().add(new THREE.Vector3(-0.14, offset, -0.04)),
-        centre.clone().add(new THREE.Vector3(-0.34, offset + 0.035, -0.06)),
-        centre.clone().add(new THREE.Vector3(-0.49, offset - 0.045, -0.035))
-      ], 7, 0.026, 5), {
-        colour: offset < 0 ? palette.hair : palette.hairTip,
-        glow: 0.12,
-        sway: 0.34,
-        materialRole: MATERIAL_ROLE.lapis
-      }));
-    }
+  for (const side of [-1, 1]) {
+    body.push(styled(curvedTube([
+      centre.clone().add(new THREE.Vector3(side * 0.17, 0.08, -0.045)),
+      centre.clone().add(new THREE.Vector3(side * 0.225, -0.08, -0.055)),
+      centre.clone().add(new THREE.Vector3(side * 0.19, -0.245, -0.035))
+    ], 6, 0.027, 5), {
+      colour: side < 0 ? palette.hair : palette.hairTip,
+      glow: 0.11,
+      sway: 0.26,
+      materialRole: MATERIAL_ROLE.lapis
+    }));
   }
 
   for (const side of [-1, 1]) {
@@ -2147,6 +2397,18 @@ function tagPopulationParts(
   parts.face.userData["populationFeature"] = "friendly-face";
   parts.eyes.userData["populationRole"] = role;
   parts.eyes.userData["populationFeature"] = "expressive-eyes";
+  if (role === "current-swimmer") {
+    for (const geometry of [parts.body, parts.face, parts.eyes]) {
+      geometry.userData["authoredCharacterVersion"] =
+        "moon-current-swimmer-v2";
+    }
+    parts.face.userData["faceStyle"] =
+      "sculpted-oval-cheeks-tapered-jaw-open-hairline";
+    parts.eyes.userData["eyeLine"] = "level";
+    parts.eyes.userData["gazeDirection"] = "travel-forward";
+    parts.eyes.userData["eyeStyle"] =
+      "almond-white-turquoise-iris-dark-pupil-catchlight";
+  }
   return parts;
 }
 
@@ -2156,9 +2418,16 @@ function mergePopulationParts(
 ): THREE.BufferGeometry {
   const geometry = merged([parts.body, parts.face, parts.eyes]);
   geometry.userData["populationRole"] = role;
-  geometry.userData["facialFeatures"] =
-    "warm-face-eye-white-pupil-highlight-smile-cheeks";
-  geometry.userData["faceOrientation"] = "screen-upright";
+  geometry.userData["facialFeatures"] = role === "current-swimmer"
+    ? "sculpted-face-almond-eye-iris-pupil-highlight-smile-cheeks-ear-fins"
+    : "warm-face-eye-white-pupil-highlight-smile-cheeks";
+  geometry.userData["faceOrientation"] = role === "current-swimmer"
+    ? "screen-upright-level-forward-gaze"
+    : "screen-upright";
+  if (role === "current-swimmer") {
+    geometry.userData["authoredCharacterVersion"] =
+      "moon-current-swimmer-v2";
+  }
   return geometry;
 }
 

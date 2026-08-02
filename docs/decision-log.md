@@ -534,3 +534,19 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Require structural audio tests to reject a return to the former four-second
   cadence. Real-phone musical quality and balance remain owner acceptance gates;
   automated playback or waveform evidence cannot approve taste.
+
+## 2026-08-02 — Refine horizontal-swimmer faces after soundtrack approval
+
+- Owner approved the version-22 Moon-Current soundtrack and advanced the next
+  recorded milestone: issue #9's horizontal-swimmer facial enhancement.
+- Adopt ADR-0030. Replace only the current swimmer's generic round head with a
+  sculpted oval face, level almond eyes, forward gaze, open hairline, friendly
+  smile and nacre ear fins. Preserve residents, heralds and the hero guardian.
+- Preserve the accepted two-gallery asynchronous choreography, at least 0.55
+  world units of lane clearance, route/collider truth, controls, camera,
+  scoring, replay determinism and the approved audio path.
+- Require a dedicated labelled face crop, at least an 11 px swimmer facial
+  plane, at least a 3 px eye stack, one material, a 2,190-triangle prototype
+  and a separate `merfolk-current-swimmer-v2.glb` PBR handoff export.
+- Keep owner phone screenshots authoritative; automation may reject regression
+  but cannot approve character appeal.

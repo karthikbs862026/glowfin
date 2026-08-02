@@ -761,20 +761,26 @@ export function checkMerfolkVisualReviews(
           cfg.maximumPopulationOcclusionFraction
         );
       }
-      if (population.face.heightPixels < cfg.minimumPopulationFaceHeightPixels) {
+      const minimumFaceHeight = role === "current-swimmer"
+        ? cfg.minimumSwimmerFaceHeightPixels
+        : cfg.minimumPopulationFaceHeightPixels;
+      const minimumEyeHeight = role === "current-swimmer"
+        ? cfg.minimumSwimmerEyeHeightPixels
+        : cfg.minimumPopulationEyeHeightPixels;
+      if (population.face.heightPixels < minimumFaceHeight) {
         fail(
           "MERFOLK_POPULATION_FACE_BELOW_FLOOR",
           `${role} still has no phone-readable facial plane in the ${label} frame.`,
           population.face.heightPixels,
-          cfg.minimumPopulationFaceHeightPixels
+          minimumFaceHeight
         );
       }
-      if (population.eyes.heightPixels < cfg.minimumPopulationEyeHeightPixels) {
+      if (population.eyes.heightPixels < minimumEyeHeight) {
         fail(
           "MERFOLK_POPULATION_EYES_BELOW_FLOOR",
           `${role} eyes disappear or merge into the face in the ${label} frame.`,
           population.eyes.heightPixels,
-          cfg.minimumPopulationEyeHeightPixels
+          minimumEyeHeight
         );
       }
       if (

@@ -33,6 +33,7 @@ viewer must identify the following by silhouette and value grouping alone:
 | `moon-gate-v1.glb` | Three asymmetric wall-fragment variants, mirrored-safe inner pier, broken voussoirs, dark channel and rubble base across LOD0–2 | Inner cyan edge remains a separate collider-derived runtime mesh |
 | `ruin-kit-v1.glb` | Broken tower, collapsed arch and forked spire across LOD0–2 | Outside-lane instancing only |
 | `reef-kit-v1.glb` | Staghorn, sea fan, anemone and kelp families across approved LODs | Bounds drive lane-safe placement |
+| `merfolk-current-swimmer-v2.glb` | Three named meshes sharing one PBR material: horizontal body/hair/tail/ear fins, sculpted face, and level almond-eye stack with turquoise iris, pupil and catchlight | Non-collidable; source-authored horizontally; mirrors only as a complete travel-facing figure; dedicated phone-face crop must remain readable |
 | `moon-life-v1.glb` | Minnow, lantern jelly, ribbon ray, garden spirit, reef citizen, current swimmer and conch herald | Deterministic, non-collidable animation; heralds stage in pairs at gate shoulders |
 | `drowned-skyline-v1.glb` | Centre-open far-field cluster with seven varied silhouettes | Far-field instancing; never a camera-facing plate |
 
@@ -44,6 +45,9 @@ runs upload that directory as the `moon-garden-production-glb-handoff`
 artifact, including a SHA-256 manifest.
 
 These files are the production handoff baseline, not final sculpt approval.
+The dedicated swimmer-v2 export is the first character-specific face checkpoint:
+it preserves separate body, face and eye meshes under one PBR material so a DCC
+author can refine topology and UVs without losing semantic-mask evidence.
 They preserve the tested hierarchy, budgets, node names and collider metadata
 so a DCC author can replace the source forms without reconstructing gameplay
 constraints. Final LFS-tracked GLBs still require authored sculpting, UVs,

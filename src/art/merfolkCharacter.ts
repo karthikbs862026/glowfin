@@ -59,6 +59,8 @@ export const MERFOLK_CITY_CONTRACT = {
     citizenVisiblePixels: 90,
     swimmerWidthPixels: 32,
     swimmerVisiblePixels: 90,
+    swimmerFaceHeightPixels: 11,
+    swimmerEyeHeightPixels: 3,
     heraldHeightPixels: 31,
     heraldVisiblePixels: 120,
     populationFaceHeightPixels: 8,

@@ -62,6 +62,6 @@ The cast now reads as a composed city population: vertical residents and
 ceremonial anchors contrast with true moving swimmers. The population increases
 from three merged instanced draws to nine split instanced draws so faces and
 eyes remain measurable, while staying within the existing scene and bundle
-budgets. Citizen, swimmer and herald prototypes measure 1,836, 1,896 and 2,188
+budgets. Citizen, swimmer and herald prototypes measure 1,836, 2,190 and 2,188
 triangles. Gameplay course generation, collider truth and swipe route are
 unchanged.

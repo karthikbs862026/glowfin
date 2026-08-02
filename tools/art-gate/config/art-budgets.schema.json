@@ -59,6 +59,8 @@
         "minimumCitizenVisiblePixels",
         "minimumSwimmerWidthPixels",
         "minimumSwimmerVisiblePixels",
+        "minimumSwimmerFaceHeightPixels",
+        "minimumSwimmerEyeHeightPixels",
         "minimumHeraldHeightPixels",
         "minimumHeraldVisiblePixels",
         "minimumPopulationFaceHeightPixels",

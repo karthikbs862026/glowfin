@@ -708,9 +708,10 @@ function castReviewAtlas(
   const panelWidth = 390;
   const panelHeight = 844;
   const labelHeight = 44;
+  const swimmerDetailHeight = 200;
   const atlas = document.createElement("canvas");
   atlas.width = panelWidth * frames.length;
-  atlas.height = panelHeight + labelHeight;
+  atlas.height = panelHeight + labelHeight + swimmerDetailHeight;
   const atlasContext = atlas.getContext("2d");
   if (!atlasContext) return "";
   const labels = ["TIDEKEEPER", "CORAL WARDEN", "ASTRAL ORACLE"];
@@ -752,6 +753,50 @@ function castReviewAtlas(
       labels[panel] ?? "MERFOLK",
       panel * panelWidth + panelWidth / 2,
       29
+    );
+
+    // A labelled, enlarged phone crop keeps the two horizontal faces in the
+    // human review surface. The previous atlas technically contained them,
+    // but at native gameplay scale reviewers had to zoom the entire 1170 px
+    // strip and could easily approve body presence without judging expression.
+    const detailTop = labelHeight + panelHeight;
+    atlasContext.fillStyle = "#06152d";
+    atlasContext.fillRect(
+      panel * panelWidth,
+      detailTop,
+      panelWidth,
+      swimmerDetailHeight
+    );
+    const cropWidth = Math.round(frame.width * 0.24);
+    const cropHeight = Math.round(frame.height * 0.082);
+    const cropY = Math.round(frame.height * 0.265);
+    const detailGap = 6;
+    const detailWidth = Math.floor((panelWidth - detailGap * 3) / 2);
+    const detailImageTop = detailTop + 34;
+    const detailImageHeight = swimmerDetailHeight - 42;
+    for (const [sideIndex, cropX] of [
+      0,
+      frame.width - cropWidth
+    ].entries()) {
+      atlasContext.drawImage(
+        source,
+        cropX,
+        cropY,
+        cropWidth,
+        cropHeight,
+        panel * panelWidth + detailGap + sideIndex * (detailWidth + detailGap),
+        detailImageTop,
+        detailWidth,
+        detailImageHeight
+      );
+    }
+    atlasContext.fillStyle = "#9cecf4";
+    atlasContext.font = "700 13px system-ui, sans-serif";
+    atlasContext.textAlign = "center";
+    atlasContext.fillText(
+      "CURRENT SWIMMERS · PHONE FACE CROP",
+      panel * panelWidth + panelWidth / 2,
+      detailTop + 22
     );
   });
   return atlas.toDataURL("image/png");

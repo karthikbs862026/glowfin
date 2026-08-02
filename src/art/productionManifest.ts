@@ -118,7 +118,7 @@ export const PRODUCTION_ART = {
     materials: 1
   },
   moonfolkSwimmer: {
-    lod0: 1896,
+    lod0: 2190,
     materials: 1
   },
   merfolkConchHerald: {

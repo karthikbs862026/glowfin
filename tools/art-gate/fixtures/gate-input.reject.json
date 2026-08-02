@@ -611,7 +611,7 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 1896
+          "triangles": 2190
         }
       ]
     },
@@ -928,11 +928,11 @@
               "centreYPixels": 422
             },
             "face": {
-              "widthPixels": 10,
-              "heightPixels": 10,
-              "visiblePixels": 40,
-              "isolatedPixels": 43,
-              "occlusionFraction": 0.06976744186046513,
+              "widthPixels": 12,
+              "heightPixels": 11,
+              "visiblePixels": 52,
+              "isolatedPixels": 56,
+              "occlusionFraction": 0.0714285714285714,
               "edgeClearancePixels": 12,
               "centreXPixels": 195,
               "centreYPixels": 422
@@ -1274,11 +1274,11 @@
               "centreYPixels": 422
             },
             "face": {
-              "widthPixels": 10,
-              "heightPixels": 10,
-              "visiblePixels": 40,
-              "isolatedPixels": 43,
-              "occlusionFraction": 0.06976744186046513,
+              "widthPixels": 12,
+              "heightPixels": 11,
+              "visiblePixels": 52,
+              "isolatedPixels": 56,
+              "occlusionFraction": 0.0714285714285714,
               "edgeClearancePixels": 12,
               "centreXPixels": 195,
               "centreYPixels": 422
@@ -1620,11 +1620,11 @@
               "centreYPixels": 422
             },
             "face": {
-              "widthPixels": 10,
-              "heightPixels": 10,
-              "visiblePixels": 40,
-              "isolatedPixels": 43,
-              "occlusionFraction": 0.06976744186046513,
+              "widthPixels": 12,
+              "heightPixels": 11,
+              "visiblePixels": 52,
+              "isolatedPixels": 56,
+              "occlusionFraction": 0.0714285714285714,
               "edgeClearancePixels": 12,
               "centreXPixels": 195,
               "centreYPixels": 422

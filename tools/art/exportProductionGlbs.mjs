@@ -18,6 +18,7 @@ import {
   createProductionMerfolkCitizen,
   createProductionMerfolkConchHerald,
   createProductionMerfolkSwimmer,
+  createProductionMerfolkSwimmerParts,
   createProductionMinnow,
   createProductionRay,
   createProductionSkyline,
@@ -358,6 +359,39 @@ function createHeroMerfolkAsset(role = "tidekeeper") {
   return guardian.object;
 }
 
+function createCurrentSwimmerAsset() {
+  const parts = createProductionMerfolkSwimmerParts();
+  const root = new THREE.Group();
+  root.name = "MoonCurrentSwimmerV2";
+  root.userData = {
+    role: "current-swimmer",
+    authoredCharacterVersion: "moon-current-swimmer-v2",
+    pose: "horizontal-from-source",
+    eyeLine: "level",
+    gazeDirection: "travel-forward",
+    collidable: false,
+    materialCount: 1
+  };
+  root.add(
+    productionMesh(parts.body, "CurrentSwimmer_Body", merfolkMaterial, {
+      feature: "body-hair-tail-ear-fins",
+      lod: 0,
+      collidable: false
+    }),
+    productionMesh(parts.face, "CurrentSwimmer_Face", merfolkMaterial, {
+      feature: "sculpted-friendly-face",
+      lod: 0,
+      collidable: false
+    }),
+    productionMesh(parts.eyes, "CurrentSwimmer_Eyes", merfolkMaterial, {
+      feature: "level-forward-gaze",
+      lod: 0,
+      collidable: false
+    })
+  );
+  return root;
+}
+
 function createGateAsset() {
   const root = new THREE.Group();
   root.name = "MoonGate";
@@ -438,6 +472,10 @@ await writeGlb("reef-kit-v1.glb", createKit("ReefKit", [
   { name: "Anemone", create: createProductionAnemone, lods: [0, 1, 2] },
   { name: "Kelp", create: createProductionKelp, lods: [0, 1] }
 ], livingMaterial));
+await writeGlb(
+  "merfolk-current-swimmer-v2.glb",
+  createCurrentSwimmerAsset()
+);
 await writeGlb("moon-life-v1.glb", createKit("MoonLife", [
   { name: "MoonMinnow", create: createProductionMinnow, lods: [0] },
   { name: "LanternJelly", create: createProductionJelly, lods: [0] },
@@ -454,9 +492,9 @@ await writeGlb("drowned-skyline-v1.glb", createKit("DrownedSkyline", [
 await writeFile(
   resolve(outputDirectory, "manifest.json"),
   `${JSON.stringify({
-    version: 2,
+    version: 3,
     source: "validated Phase 3B runtime production-transition meshes",
-    status: "handoff baseline; requires sculpt/material authoring before runtime sign-off",
+    status: "swimmer-v2 authored-face checkpoint; remaining families still require final DCC sign-off",
     assets: manifest
   }, null, 2)}\n`,
   "utf8"

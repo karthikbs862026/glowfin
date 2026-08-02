@@ -883,8 +883,17 @@ export class Environment {
       this.matrix.compose(this.position, this.quaternion, this.scale);
       // Preserve the authored warm skin/teal-tail vertex palette. Small role
       // tints remain subtle enough that eye whites do not collapse into grey.
+      // The swimmer keeps one instanced mesh, but inherits the active district
+      // colour temperature so it belongs to the Tidekeeper, Coral Warden or
+      // Astral Oracle court instead of reading as a pasted generic citizen.
       if (pose.role === "current-swimmer") {
-        this.colour.setRGB(0.94, 0.99, 1);
+        if (heroStage.role === "coral-warden") {
+          this.colour.setRGB(1, 0.935, 0.965);
+        } else if (heroStage.role === "astral-oracle") {
+          this.colour.setRGB(0.91, 0.94, 1);
+        } else {
+          this.colour.setRGB(0.94, 0.99, 1);
+        }
       } else if (pose.role === "conch-herald") {
         this.colour.setRGB(1, 0.94, 0.98);
       } else {

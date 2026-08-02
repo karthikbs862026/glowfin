@@ -115,6 +115,8 @@ export function validateGateConfig(raw: unknown): Finding[] {
     "merfolk.minimumCitizenVisiblePixels",
     "merfolk.minimumSwimmerWidthPixels",
     "merfolk.minimumSwimmerVisiblePixels",
+    "merfolk.minimumSwimmerFaceHeightPixels",
+    "merfolk.minimumSwimmerEyeHeightPixels",
     "merfolk.minimumHeraldHeightPixels",
     "merfolk.minimumHeraldVisiblePixels",
     "merfolk.minimumPopulationFaceHeightPixels",

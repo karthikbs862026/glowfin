@@ -76,7 +76,7 @@ function captures(lowContrast = false): SceneCapture[] {
           {
             role: "current-swimmer",
             component: component(45, 20, 150),
-            face: component(10, 10, 40),
+            face: component(12, 11, 52),
             eyes: component(7, 3, 12),
             instances: [
               component(45, 20, 150, 158, 12, 74, 340),
