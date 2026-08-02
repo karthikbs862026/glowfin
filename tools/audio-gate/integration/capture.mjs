@@ -42,7 +42,12 @@ try {
     return {
       state: button?.getAttribute("data-audio-state") ?? null,
       signal: button?.getAttribute("data-audio-signal") ?? null,
+      native: button?.getAttribute("data-audio-native") ?? null,
+      context: button?.getAttribute("data-audio-context") ?? null,
       rms: button?.getAttribute("data-audio-rms") ?? null,
+      nativeMediaTime: Array.from(document.querySelectorAll("audio"))
+        .map((audio) => audio.currentTime)
+        .sort((a, b) => b - a)[0] ?? 0,
       pressed: button?.getAttribute("aria-pressed") ?? null,
       label: button?.getAttribute("aria-label") ?? null,
       startupError: document.body.dataset.startupError === "true"
@@ -57,6 +62,7 @@ try {
   if (
     beforeGesture.state !== "locked" ||
     beforeGesture.signal !== "idle" ||
+    beforeGesture.native !== "idle" ||
     beforeGesture.pressed !== "false" ||
     beforeGesture.label !== "Turn sound on"
   ) {
@@ -75,10 +81,16 @@ try {
     { timeout: 8_000 }
   );
   await page.waitForFunction(
-    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-signal") === "audible",
+    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-native") === "playing",
     undefined,
     { timeout: 8_000 }
   );
+  await page.waitForFunction(
+    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-signal") === "generated",
+    undefined,
+    { timeout: 8_000 }
+  );
+  await page.waitForTimeout(280);
   const afterButtonActivation = await snapshot();
 
   await page.locator("#hud-audio-toggle").tap();
@@ -103,10 +115,16 @@ try {
     { timeout: 8_000 }
   );
   await page.waitForFunction(
-    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-signal") === "audible",
+    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-native") === "playing",
     undefined,
     { timeout: 8_000 }
   );
+  await page.waitForFunction(
+    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-signal") === "generated",
+    undefined,
+    { timeout: 8_000 }
+  );
+  await page.waitForTimeout(280);
   const afterUnmute = await snapshot();
 
   // Also retain the original game-surface gesture path. Start from a clean,
@@ -124,11 +142,34 @@ try {
     { timeout: 8_000 }
   );
   await page.waitForFunction(
-    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-signal") === "audible",
+    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-native") === "playing",
     undefined,
     { timeout: 8_000 }
   );
+  await page.waitForFunction(
+    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-signal") === "generated",
+    undefined,
+    { timeout: 8_000 }
+  );
+  await page.waitForTimeout(280);
   const afterCanvasGesture = await snapshot();
+
+  // A common phone flow is canvas first, sound button second. The first
+  // explicit sound-button tap must confirm/replay sound, not mute the audio that
+  // the canvas gesture just started.
+  await page.locator("#hud-audio-toggle").tap();
+  await page.waitForFunction(
+    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-state") === "active",
+    undefined,
+    { timeout: 8_000 }
+  );
+  const afterCanvasThenButton = await snapshot();
+  await page.locator("#hud-audio-toggle").tap();
+  await page.waitForFunction(
+    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-state") === "muted",
+    undefined,
+    { timeout: 8_000 }
+  );
 
   if (
     afterButtonActivation.pressed !== "true" ||
@@ -138,9 +179,16 @@ try {
     beforeCanvasGesture.state !== "locked" ||
     beforeCanvasGesture.pressed !== "false" ||
     afterCanvasGesture.pressed !== "true" ||
-    [afterButtonActivation, afterUnmute, afterCanvasGesture]
-      .some((state) => state.signal !== "audible" || Number(state.rms) <= 0) ||
-    [beforeGesture, afterButtonActivation, afterMute, afterReload, afterUnmute, beforeCanvasGesture, afterCanvasGesture]
+    afterCanvasThenButton.state !== "active" ||
+    afterCanvasThenButton.pressed !== "true" ||
+    [afterButtonActivation, afterUnmute, afterCanvasGesture, afterCanvasThenButton]
+      .some((state) =>
+        state.native !== "playing" ||
+        state.signal !== "generated" ||
+        Number(state.rms) <= 0 ||
+        state.nativeMediaTime <= 0
+      ) ||
+    [beforeGesture, afterButtonActivation, afterMute, afterReload, afterUnmute, beforeCanvasGesture, afterCanvasGesture, afterCanvasThenButton]
       .some((state) => state.startupError)
   ) {
     throw new Error("Audio signal, accessibility state, or startup-failure contract was violated.");
@@ -151,7 +199,7 @@ try {
 
   mkdirSync(dirname(output), { recursive: true });
   writeFileSync(output, `${JSON.stringify({
-    source: "ci-chromium-real-gesture-and-signal",
+    source: "ci-chromium-native-media-plus-web-audio-signal",
     beforeGesture,
     afterButtonActivation,
     afterMute,
@@ -159,6 +207,7 @@ try {
     afterUnmute,
     beforeCanvasGesture,
     afterCanvasGesture,
+    afterCanvasThenButton,
     errors
   }, null, 2)}\n`, "utf8");
   console.log(`wrote ${output}`);

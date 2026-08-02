@@ -4,6 +4,11 @@ import {
   GameplayAudioDirector,
   ambientMixForState
 } from "../src/audio/audioDirector";
+import {
+  createAmbientSamples,
+  createConfirmationSamples,
+  encodeMonoPcm16Wav
+} from "../src/audio/nativeMobileAudio";
 import type { StepEvents } from "../src/sim/run";
 
 const noEvents = (): StepEvents => ({
@@ -49,6 +54,28 @@ describe("momentum-layered ambience", () => {
     expect(ambientMixForState(20, -10, tuning)).toEqual(
       ambientMixForState(1, 0, tuning)
     );
+  });
+});
+
+describe("native mobile media fallback", () => {
+  it("encodes a standards-shaped PCM WAV for the phone media pipeline", () => {
+    const samples = createConfirmationSamples(8_000, 0.1);
+    const wav = encodeMonoPcm16Wav(samples, 8_000);
+    const bytes = new Uint8Array(wav);
+    expect(new TextDecoder().decode(bytes.slice(0, 4))).toBe("RIFF");
+    expect(new TextDecoder().decode(bytes.slice(8, 12))).toBe("WAVE");
+    expect(new DataView(wav).getUint32(24, true)).toBe(8_000);
+    expect(wav.byteLength).toBe(44 + samples.length * 2);
+  });
+
+  it("keeps the native bed and confirmation materially non-silent", () => {
+    const rms = (samples: Float32Array) =>
+      Math.sqrt(
+        samples.reduce((sum, sample) => sum + sample * sample, 0) /
+          samples.length
+      );
+    expect(rms(createAmbientSamples())).toBeGreaterThan(0.12);
+    expect(rms(createConfirmationSamples())).toBeGreaterThan(0.2);
   });
 });
 

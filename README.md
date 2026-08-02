@@ -34,12 +34,12 @@ includes:
   instanced material system
 - fork-crowned spires and shader-sway ribbon kelp retained as interim depth
 - three hard-capped god-ray meshes
-- a gesture-gated procedural underwater soundscape whose current and harmonic
-  layers rise with momentum, plus near-miss, multiplier, collision, recovery
-  and run-end cues; its lightweight sources now start synchronously inside the
-  activation gesture, emit a phone-speaker-safe confirmation cue, and expose a
-  measured-signal gate; mute preference is device-local and the context
-  suspends while muted or backgrounded
+- a gesture-gated underwater soundscape with an independent native-media calm
+  bed and confirmation plus Web Audio current/harmonic momentum layers,
+  near-miss, multiplier, collision, recovery and run-end cues; the first
+  explicit sound-button tap confirms output instead of muting a canvas-started
+  graph, generated samples are distinguished from native playback, and mute
+  preference remains device-local with background suspension
 - an in-camera Art-Bible acceptance target at
   `docs/art/phase3b-moon-garden-acceptance-target.webp`
 
@@ -48,9 +48,10 @@ asynchronous-swimmer composition as the working checkpoint. Horizontal-swimmer
 facial refinement remains deferred to the authored character pass. This does
 not approve Phase 3 for merge: the code-native integration meshes are not final
 premium DCC art, optimized production GLBs/PBR assets remain required, and the
-soundscape failed its first physical-phone review despite a green state-only
-browser check. ADR-0027 records the repaired activation, button, spectrum and
-signal-measurement contract; the replacement build still needs Android/iOS
+soundscape failed two physical-phone reviews despite green context-state and
+generated-signal browser checks. ADR-0028 therefore makes a top-level native
+media bed/confirmation the phone-output authority while retaining Web Audio for
+momentum and gameplay cues; the replacement build still needs Android/iOS
 speaker, headphone, interruption, performance and thermal review. Technical CI
 evidence cannot replace those visual and real-device approvals.
 
@@ -94,7 +95,7 @@ scripts/        repo/CI and production bundle checks
       authored models while preserving collider truth
 - [x] Full 36-state emulated art matrix required on pull requests
 - [x] Deterministic 30-minute simulated-time Chromium renderer soak
-- [x] Momentum-layered soundscape, gameplay cues, gesture-safe source startup, mute persistence and generated-signal gate
+- [x] Momentum-layered soundscape, gameplay cues, top-level native-media fallback, gesture-safe source startup, mute persistence and dual-path playback gate
 - [ ] Refine horizontal-swimmer faces during the authored DCC/PBR character pass without changing approved choreography
 - [ ] Android and iOS Safari performance, contrast and real-time 30-minute soak sign-off
 - [ ] Final Android/iOS sound mix and interruption sign-off, production deployment and store-wrapper pipeline

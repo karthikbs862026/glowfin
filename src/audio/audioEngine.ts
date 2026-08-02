@@ -5,11 +5,18 @@ import {
   ambientMixForState,
   type GameplayAudioCue
 } from "./audioDirector";
+import { NativeMobileAudio } from "./nativeMobileAudio";
 
 const AUDIO_PREFERENCE_KEY = "glowfin-audio-muted-v1";
 
-export type AudioUiState = "locked" | "active" | "muted" | "unavailable";
-export type AudioSignalState = "idle" | "pending" | "audible" | "silent";
+export type AudioUiState =
+  | "locked"
+  | "starting"
+  | "active"
+  | "muted"
+  | "blocked"
+  | "unavailable";
+export type AudioSignalState = "idle" | "pending" | "generated" | "silent";
 
 const SIGNAL_PROBE_INTERVAL_MS = 80;
 const SIGNAL_PROBE_MAX_ATTEMPTS = 12;
@@ -60,7 +67,9 @@ export class GlowfinAudio {
   private readonly director: GameplayAudioDirector;
   private readonly button: HTMLButtonElement;
   private readonly statusText: HTMLElement;
+  private readonly feedbackText: HTMLElement;
   private readonly storage: Storage | null;
+  private readonly nativeAudio: NativeMobileAudio;
   private muted: boolean;
   private uiState: AudioUiState;
   private context: AudioContext | null = null;
@@ -82,6 +91,7 @@ export class GlowfinAudio {
   private signalProbeAttempts = 0;
   private signalSamples: Uint8Array<ArrayBuffer> | null = null;
   private activationCueScheduled = false;
+  private buttonHasConfirmedSound = false;
   private readonly ambientSources: AudioScheduledSourceNode[] = [];
   private readonly activeCueSources = new Set<AudioScheduledSourceNode>();
   private momentumFraction = 0;
@@ -95,7 +105,9 @@ export class GlowfinAudio {
     this.director = new GameplayAudioDirector(cfg);
     this.button = GlowfinAudio.requireButton(root, "hud-audio-toggle");
     this.statusText = GlowfinAudio.requireElement(root, "hud-audio-status");
+    this.feedbackText = GlowfinAudio.requireElement(root, "hud-audio-feedback");
     this.storage = GlowfinAudio.localStorageOrNull();
+    this.nativeAudio = new NativeMobileAudio(root);
     this.muted = safeReadMuted(this.storage);
     this.uiState = this.muted ? "muted" : "locked";
     this.renderUiState();
@@ -149,6 +161,7 @@ export class GlowfinAudio {
   update(momentumFraction: number, lightFraction: number): void {
     this.momentumFraction = Math.max(0, Math.min(1, momentumFraction));
     this.lightFraction = Math.max(0, Math.min(1, lightFraction));
+    this.nativeAudio.update(this.momentumFraction, this.lightFraction);
     this.applyAmbientMix(false);
   }
 
@@ -190,9 +203,19 @@ export class GlowfinAudio {
   }
 
   private async unlockInternal(): Promise<void> {
+    // Physical-phone authority: call HTMLMediaElement.play() synchronously in
+    // the genuine gesture before any await. This uses the native media pipeline
+    // and does not confuse upstream Web Audio samples with speaker output.
+    this.setUiState("starting");
+    this.button.dataset.audioNative = "starting";
+    const nativeStart = this.nativeAudio.activate();
+
     const AudioContextClass = this.audioContextConstructor();
     if (!AudioContextClass) {
-      this.setUiState("unavailable");
+      const nativeStarted = await nativeStart;
+      this.button.dataset.audioNative = this.nativeAudio.currentState;
+      this.button.dataset.audioContext = "unavailable";
+      this.setUiState(nativeStarted ? "active" : "blocked");
       return;
     }
 
@@ -207,13 +230,7 @@ export class GlowfinAudio {
           this.context = new AudioContextClass();
         }
         this.context.addEventListener("statechange", () => {
-          if (this.muted) return;
-          if (this.context?.state === "running") {
-            this.setUiState("active");
-            this.beginSignalVerification();
-          } else {
-            this.setUiState("locked");
-          }
+          this.button.dataset.audioContext = this.context?.state ?? "missing";
         });
       }
 
@@ -227,7 +244,7 @@ export class GlowfinAudio {
         this.playActivationCue();
       } else if (
         !this.activationCueScheduled &&
-        this.button.dataset.audioSignal !== "audible"
+        this.button.dataset.audioSignal !== "generated"
       ) {
         this.playActivationCue();
       }
@@ -235,8 +252,18 @@ export class GlowfinAudio {
       // resume() is also invoked from the same gesture. The expensive four-
       // second deterministic water buffer remains deferred until after pointer
       // propagation, preserving first-touch steering responsiveness.
-      if (this.context.state !== "running") await this.context.resume();
+      const contextResume =
+        this.context.state === "running"
+          ? Promise.resolve()
+          : this.context.resume();
+      const [nativeStarted] = await Promise.all([
+        nativeStart,
+        contextResume.then(() => true)
+      ]);
+      this.button.dataset.audioNative = this.nativeAudio.currentState;
+      this.button.dataset.audioContext = this.context.state;
       if (this.muted) {
+        this.nativeAudio.pause();
         this.setMasterGain(0);
         this.setUiState("muted");
         if (this.context.state === "running") await this.context.suspend();
@@ -246,16 +273,16 @@ export class GlowfinAudio {
         this.setMasterGain(this.cfg.audio.masterGain);
         this.applyAmbientMix(true);
         this.deferWaterLayer(this.context);
-        this.setUiState("active");
         this.beginSignalVerification();
-      } else {
-        this.setUiState("locked");
       }
+      this.setUiState(nativeStarted ? "active" : "blocked");
     } catch {
-      // A rejected resume is not a game startup failure. Keep the audio locked
-      // so the next real gesture can retry; the simulation/render loop remains
-      // fully playable without sound.
-      this.setUiState("locked");
+      // Web Audio may fail independently. Keep the native mobile path active if
+      // it started; otherwise expose a visible retry instead of a false success.
+      const nativeStarted = await nativeStart;
+      this.button.dataset.audioNative = this.nativeAudio.currentState;
+      this.button.dataset.audioContext = this.context?.state ?? "unavailable";
+      this.setUiState(nativeStarted ? "active" : "blocked");
     }
   }
 
@@ -560,11 +587,25 @@ export class GlowfinAudio {
 
   private async handleAudioButton(): Promise<void> {
     // Locked means "not sounding yet", not "already on". The first button
-    // press must activate audio; it must never invert into mute.
-    if (!this.muted && this.uiState === "locked") {
+    // press must activate audio; it must never invert into mute. This also
+    // covers a player who first touched the canvas and then tapped the sound
+    // button expecting a test: that first explicit button tap replays the native
+    // confirmation and remains on.
+    if (this.muted) {
+      this.buttonHasConfirmedSound = true;
+      await this.toggleMuted();
+      return;
+    }
+    if (
+      this.uiState === "locked" ||
+      this.uiState === "blocked" ||
+      (this.uiState === "active" && !this.buttonHasConfirmedSound)
+    ) {
+      this.buttonHasConfirmedSound = true;
       await this.unlock();
       return;
     }
+    if (this.uiState === "starting") return;
     await this.toggleMuted();
   }
 
@@ -574,6 +615,8 @@ export class GlowfinAudio {
     if (this.muted) {
       this.clearSignalProbe();
       this.setSignalState("idle");
+      this.nativeAudio.pause();
+      this.button.dataset.audioNative = this.nativeAudio.currentState;
       this.setMasterGain(0);
       this.setUiState("muted");
       const context = this.context;
@@ -590,23 +633,26 @@ export class GlowfinAudio {
 
   private async handleVisibilityChange(hidden: boolean): Promise<void> {
     const context = this.context;
-    if (!context) return;
     if (hidden) {
-      if (context.state === "running") await context.suspend();
+      this.nativeAudio.pause();
+      this.button.dataset.audioNative = this.nativeAudio.currentState;
+      if (context?.state === "running") await context.suspend();
       return;
     }
     if (!this.muted) {
       try {
-        await context.resume();
-        if (context.state === "running") {
+        const nativeStarted = await this.nativeAudio.resumeAmbient();
+        this.button.dataset.audioNative = this.nativeAudio.currentState;
+        if (context) await context.resume();
+        if (context?.state === "running") {
           this.setMasterGain(this.cfg.audio.masterGain);
           this.applyAmbientMix(true);
           this.deferWaterLayer(context);
-          this.setUiState("active");
           this.beginSignalVerification();
         }
+        this.setUiState(nativeStarted ? "active" : "blocked");
       } catch {
-        this.setUiState("locked");
+        this.setUiState("blocked");
       }
     }
   }
@@ -657,7 +703,9 @@ export class GlowfinAudio {
       const rms = Math.sqrt(sumSquares / samples.length);
       this.button.dataset.audioRms = rms.toFixed(4);
       if (rms >= SIGNAL_RMS_FLOOR) {
-        this.setSignalState("audible");
+        // This proves only that the graph generated samples upstream of the
+        // destination. It must never again be labelled audible speaker output.
+        this.setSignalState("generated");
         return;
       }
 
@@ -675,7 +723,9 @@ export class GlowfinAudio {
       // so the next genuine gesture can attempt activation again.
       this.setSignalState("silent");
       this.activationCueScheduled = false;
-      this.setUiState("locked");
+      this.setUiState(
+        this.nativeAudio.currentState === "playing" ? "active" : "blocked"
+      );
     };
 
     this.signalProbeTimer = window.setTimeout(
@@ -708,18 +758,31 @@ export class GlowfinAudio {
 
     const messages: Record<AudioUiState, string> = {
       locked: "Tap once for sound",
+      starting: "Starting sound",
       active: "Sound on",
       muted: "Sound off",
+      blocked: "Sound was blocked — tap again",
       unavailable: "Sound is unavailable on this browser"
     };
     this.statusText.textContent = messages[this.uiState];
     this.button.title = messages[this.uiState];
     const labels: Record<AudioUiState, string> = {
       locked: "Turn sound on",
+      starting: "Starting sound",
       active: "Mute sound",
       muted: "Turn sound on",
+      blocked: "Retry sound",
       unavailable: "Sound unavailable"
     };
     this.button.setAttribute("aria-label", labels[this.uiState]);
+    const feedback: Record<AudioUiState, string> = {
+      locked: "Tap for sound",
+      starting: "Starting sound…",
+      active: "Sound on",
+      muted: "Sound off",
+      blocked: "Sound blocked — tap again",
+      unavailable: "Sound unavailable"
+    };
+    this.feedbackText.textContent = feedback[this.uiState];
   }
 }

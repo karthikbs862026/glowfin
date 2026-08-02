@@ -113,6 +113,14 @@
         opacity: 0.92;
         animation: audio-ready 1.8s ease-in-out infinite;
       }
+      #hud-audio-toggle[data-audio-state="starting"] {
+        opacity: 0.78;
+      }
+      #hud-audio-toggle[data-audio-state="blocked"] {
+        border-color: rgba(255, 196, 120, 0.9);
+        color: #ffd6a0;
+        animation: audio-ready 1.1s ease-in-out infinite;
+      }
       #hud-audio-toggle[data-audio-signal="silent"] {
         border-color: rgba(255, 244, 201, 0.78);
         color: #fff4c9;
@@ -129,6 +137,28 @@
         outline-offset: 3px;
       }
       #hud-audio-toggle:disabled { opacity: 0.34; cursor: default; }
+      #hud-audio-feedback {
+        position: absolute;
+        top: max(58px, calc(env(safe-area-inset-top) + 48px));
+        right: max(10px, env(safe-area-inset-right));
+        max-width: min(190px, 54vw);
+        padding: 5px 9px;
+        border: 1px solid rgba(180, 236, 255, 0.24);
+        border-radius: 999px;
+        background: rgba(5, 23, 42, 0.72);
+        color: #d8f4ff;
+        font-size: 11px;
+        font-weight: 650;
+        letter-spacing: 0.01em;
+        line-height: 1.2;
+        text-align: center;
+        pointer-events: none;
+        backdrop-filter: blur(4px);
+      }
+      #hud-audio-toggle[data-audio-state="blocked"] + #hud-audio-feedback {
+        border-color: rgba(255, 196, 120, 0.55);
+        color: #ffd6a0;
+      }
       .sr-only {
         position: absolute;
         width: 1px;
@@ -221,6 +251,8 @@
         type="button"
         data-audio-state="locked"
         data-audio-signal="idle"
+        data-audio-native="idle"
+        data-audio-context="missing"
         aria-label="Turn sound on"
         aria-pressed="false"
       >
@@ -230,6 +262,7 @@
           <path class="audio-slash" d="M4 4l16 16" />
         </svg>
       </button>
+      <span id="hud-audio-feedback">Tap for sound</span>
       <span id="hud-audio-status" class="sr-only" aria-live="polite">Tap once for sound</span>
       <div id="hud-top">
         <div id="hud-score">0</div>
