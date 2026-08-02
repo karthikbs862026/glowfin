@@ -52,7 +52,7 @@
   },
 
   "audio": {
-    "$comment": "Part 3.5. One persistent allocation-bounded Web Audio graph: a calm phone-speaker-safe bed is always present, moving-current and harmonic-shimmer layers enter from the same normalized momentum that drives speed/glow/trail, and transient sources are hard-capped. The AudioContext and core sources are created synchronously inside a real user gesture for iOS Safari.",
+    "$comment": "Part 3.5. The native phone-media stream carries the 64-second Moon-Current score. One persistent allocation-bounded Web Audio graph adds quiet beat-pulsed current and harmonic-shimmer support from the same normalized momentum that drives speed/glow/trail; transient sources are hard-capped. The AudioContext and core sources are created synchronously inside a real user gesture for iOS Safari.",
     "masterGain": 0.46,
     "ambientGain": 0.52,
     "cueGain": 0.78,

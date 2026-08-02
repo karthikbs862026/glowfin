@@ -344,8 +344,8 @@ export class GlowfinAudio {
     this.cueBus = cueBus;
 
     const bed = context.createOscillator();
-    bed.type = "triangle";
-    bed.frequency.value = 164.81;
+    bed.type = "sine";
+    bed.frequency.value = 146.83;
     const bedFilter = context.createBiquadFilter();
     bedFilter.type = "lowpass";
     bedFilter.frequency.value = 1_100;
@@ -358,26 +358,52 @@ export class GlowfinAudio {
 
     const current = context.createOscillator();
     current.type = "sine";
-    current.frequency.value = 220;
+    current.frequency.value = 293.66;
     const currentFilter = context.createBiquadFilter();
     currentFilter.type = "bandpass";
-    currentFilter.frequency.value = 650;
-    currentFilter.Q.value = 0.4;
+    currentFilter.frequency.value = 420;
+    currentFilter.Q.value = 0.55;
     const currentGain = context.createGain();
     currentGain.gain.value = 0;
-    current.connect(currentFilter).connect(currentGain).connect(ambientBus);
+    const currentPulse = context.createGain();
+    currentPulse.gain.value = 0.62;
+    const currentPulseOscillator = context.createOscillator();
+    currentPulseOscillator.type = "sine";
+    currentPulseOscillator.frequency.value = 2;
+    const currentPulseDepth = context.createGain();
+    currentPulseDepth.gain.value = 0.28;
+    currentPulseOscillator.connect(currentPulseDepth).connect(currentPulse.gain);
+    current
+      .connect(currentFilter)
+      .connect(currentGain)
+      .connect(currentPulse)
+      .connect(ambientBus);
     this.currentOscillator = current;
     this.currentGain = currentGain;
 
     const shimmer = context.createOscillator();
     shimmer.type = "sine";
-    shimmer.frequency.value = 329.63;
+    shimmer.frequency.value = 880;
     const shimmerFilter = context.createBiquadFilter();
     shimmerFilter.type = "highpass";
     shimmerFilter.frequency.value = 250;
     const shimmerGain = context.createGain();
     shimmerGain.gain.value = 0;
-    shimmer.connect(shimmerFilter).connect(shimmerGain).connect(ambientBus);
+    const shimmerPulse = context.createGain();
+    shimmerPulse.gain.value = 0.48;
+    const shimmerPulseOscillator = context.createOscillator();
+    shimmerPulseOscillator.type = "sine";
+    shimmerPulseOscillator.frequency.value = 4;
+    const shimmerPulseDepth = context.createGain();
+    shimmerPulseDepth.gain.value = 0.38;
+    shimmerPulseOscillator
+      .connect(shimmerPulseDepth)
+      .connect(shimmerPulse.gain);
+    shimmer
+      .connect(shimmerFilter)
+      .connect(shimmerGain)
+      .connect(shimmerPulse)
+      .connect(ambientBus);
     this.shimmerOscillator = shimmer;
     this.shimmerGain = shimmerGain;
 
@@ -393,7 +419,13 @@ export class GlowfinAudio {
     current.frequency.value = initialMix.currentFrequencyHz;
     shimmer.frequency.value = initialMix.shimmerFrequencyHz;
 
-    this.ambientSources.push(bed, current, shimmer);
+    this.ambientSources.push(
+      bed,
+      current,
+      shimmer,
+      currentPulseOscillator,
+      shimmerPulseOscillator
+    );
     for (const source of this.ambientSources) source.start(context.currentTime);
   }
 
@@ -487,14 +519,14 @@ export class GlowfinAudio {
     switch (cue.type) {
       case "near-miss":
         if (!this.hasCueCapacity(2)) return;
-        this.tone(330, 740, 0.24, 0.18 * cue.intensity, "sine", pan);
-        this.tone(495, 990, 0.29, 0.09 * cue.intensity, "triangle", -pan, 0.025);
+        this.tone(587.33, 880, 0.17, 0.16 * cue.intensity, "sine", pan);
+        this.tone(1174.66, 1174.66, 0.2, 0.07 * cue.intensity, "triangle", -pan, 0.045);
         return;
       case "multiplier":
         if (!this.hasCueCapacity(3)) return;
-        this.tone(440, 440, 0.38, 0.12 * cue.intensity, "sine", -0.18);
-        this.tone(554.37, 554.37, 0.42, 0.1 * cue.intensity, "sine", 0, 0.055);
-        this.tone(659.25, 659.25, 0.48, 0.09 * cue.intensity, "sine", 0.18, 0.11);
+        this.tone(587.33, 587.33, 0.28, 0.12 * cue.intensity, "sine", -0.18);
+        this.tone(739.99, 739.99, 0.31, 0.1 * cue.intensity, "sine", 0, 0.07);
+        this.tone(880, 880, 0.35, 0.09 * cue.intensity, "sine", 0.18, 0.14);
         return;
       case "collision":
         if (!this.hasCueCapacity(2)) return;
@@ -503,13 +535,13 @@ export class GlowfinAudio {
         return;
       case "recovery":
         if (!this.hasCueCapacity(2)) return;
-        this.tone(196, 293.66, 0.54, 0.12, "sine", -0.14);
-        this.tone(246.94, 369.99, 0.58, 0.09, "sine", 0.14, 0.05);
+        this.tone(220, 293.66, 0.42, 0.12, "sine", -0.14);
+        this.tone(293.66, 369.99, 0.46, 0.09, "sine", 0.14, 0.06);
         return;
       case "run-end":
         if (!this.hasCueCapacity(2)) return;
-        this.tone(330, 165, 0.72, 0.16, "sine", -0.12);
-        this.tone(246.94, 123.47, 0.82, 0.12, "triangle", 0.12, 0.08);
+        this.tone(293.66, 293.66, 0.42, 0.14, "sine", -0.12);
+        this.tone(246.94, 220, 0.52, 0.11, "triangle", 0.12, 0.1);
         return;
     }
   }
@@ -520,8 +552,8 @@ export class GlowfinAudio {
     // A short, gentle rising pair gives the player immediate confirmation that
     // sound really started. Both notes sit in the reliable band of phone
     // speakers and are scheduled while the user-activation turn is still live.
-    this.tone(523.25, 659.25, 0.2, 0.16, "sine", -0.08, 0.025);
-    this.tone(659.25, 783.99, 0.24, 0.1, "triangle", 0.08, 0.075);
+    this.tone(587.33, 739.99, 0.18, 0.15, "sine", -0.08, 0.025);
+    this.tone(739.99, 880, 0.22, 0.095, "triangle", 0.08, 0.075);
   }
 
   private hasCueCapacity(requiredSources: number): boolean {

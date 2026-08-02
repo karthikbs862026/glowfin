@@ -201,7 +201,7 @@ const RULES: Record<string, Rule> = {
   "light.regenDelayAfterCollisionSec": { min: 0, max: 30, note: "pause before regen resumes" },
 
   "audio.masterGain": { min: 0, max: 1, note: "final Web Audio output gain" },
-  "audio.ambientGain": { min: 0, max: 1, note: "shared gain budget for the persistent underwater layers" },
+  "audio.ambientGain": { min: 0, max: 1, note: "shared gain budget for rhythmic support behind the native score" },
   "audio.cueGain": { min: 0, max: 1, note: "shared gain for near-miss, collision, milestone and recovery cues" },
   "audio.momentumResponseSec": { min: 0.01, max: 2, note: "smoothing time for momentum-driven audio layers" },
   "audio.currentLayerStartMomentum": { min: 0, max: 1, note: "normalized momentum where the moving-current layer begins" },
@@ -369,10 +369,10 @@ export function validateTuning(raw: unknown): TuningConfig {
   if (
     typeof audioMasterGain === "number" &&
     typeof audioAmbientGain === "number" &&
-    audioMasterGain * audioAmbientGain * 0.46 < 0.075
+    audioMasterGain * audioAmbientGain * 0.075 < 0.01
   ) {
     problems.push(
-      "audio masterGain × ambientGain is below the phone-speaker calm-bed floor"
+      "audio masterGain × ambientGain is below the rhythmic-support floor"
     );
   }
 

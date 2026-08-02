@@ -119,7 +119,7 @@ describe("tuning config", () => {
       const quietAmbient = cloneTuning();
       quietAmbient.audio.masterGain = 0.2;
       quietAmbient.audio.ambientGain = 0.2;
-      expect(() => validateTuning(quietAmbient)).toThrow(/calm-bed floor/);
+      expect(() => validateTuning(quietAmbient)).toThrow(/rhythmic-support floor/);
 
       const quietCues = cloneTuning();
       quietCues.audio.masterGain = 0.2;

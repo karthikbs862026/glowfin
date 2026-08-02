@@ -83,13 +83,13 @@ which reads better than a hard strike counter and fits the cute framing.
 
 The audio engine reads the same normalized momentum and light fractions used
 by speed, glow, trail and damage presentation. It never writes to simulation
-state. The calm bed remains present throughout a run; the current layer enters
-first and the harmonic shimmer enters later as momentum builds.
+state. The 64-second Moon-Current score is the musical foreground; quiet
+beat-pulsed current and harmonic-shimmer support enters as momentum builds.
 
 | Key | Meaning |
 |---|---|
 | `masterGain` | Final output ceiling for the complete Web Audio graph. |
-| `ambientGain` | Shared budget for the four fixed ambient sources. |
+| `ambientGain` | Shared budget for the fixed Web Audio support layers behind the native score. |
 | `cueGain` | Shared level for near-miss, multiplier, collision, recovery and run-end cues. |
 | `momentumResponseSec` | Smoothing time for momentum-driven gain/filter changes. It affects sound only, never input. |
 | `currentLayerStartMomentum` | Normalized momentum where the moving-current layer begins. |
@@ -97,11 +97,11 @@ first and the harmonic shimmer enters later as momentum builds.
 | `maxVoices` | Hard cap for transient sources. Must be a whole number. |
 | `updateRateHz` | Maximum rate for continuous AudioParam automation, capped below render frequency to avoid needless work. |
 
-The browser AudioContext is not created during page load. A real pointer
-gesture unlocks it, satisfying iOS Safari's autoplay policy. Muting
-suspends the context and the choice is stored only on the device. Audio failure
-must leave the game fully playable and must never trigger the startup-error
-surface.
+One native media stream carries Moon-Current through the physical phone media
+pipeline. The Web Audio graph is not created until a real pointer gesture,
+satisfying iOS Safari's autoplay policy. Muting suspends both paths and the
+choice is stored only on the device. Audio failure must leave the game fully
+playable and must never trigger the startup-error surface.
 
 ## input
 

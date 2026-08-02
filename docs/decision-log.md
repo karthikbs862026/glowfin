@@ -518,3 +518,19 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Require unit evidence plus a real mobile Chromium gesture/mute/reload gate.
   Android and iOS speaker/headphone/interruption review remains a Phase 3 sign-
   off requirement; CI emulation cannot waive it.
+
+## 2026-08-02 — Replace the ghostly four-second loop with Moon-Current
+
+- Physical-phone review confirmed that version 21 finally plays sound, then
+  rejected its sustained sine-tone character as ghostly, unsuitable and too
+  short. Treat that creative failure as authoritative even though playback CI
+  is green.
+- Adopt ADR-0029. Preserve the single native stream and proven touch activation
+  path, but replace the content with a 64-second, 32-bar, four-movement original
+  D-major underwater-adventure score.
+- Use pearl-marimba melody, kalimba arpeggios, hand percussion, bright shakers
+  and bubble answers. Remove continuously gliding tonal identity; keep only
+  quiet, beat-pulsed D/A momentum support behind the musical track.
+- Require structural audio tests to reject a return to the former four-second
+  cadence. Real-phone musical quality and balance remain owner acceptance gates;
+  automated playback or waveform evidence cannot approve taste.

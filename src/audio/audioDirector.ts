@@ -59,20 +59,22 @@ export function ambientMixForState(
     momentum
   );
   // Collision dimming must be audible without making the world fall silent.
-  const vitality = 0.38 + light * 0.62;
+  const vitality = 0.46 + light * 0.54;
   const ambient = cfg.audio.ambientGain;
 
   return {
-    bedGain: ambient * (0.46 + momentum * 0.12) * vitality,
-    currentGain: ambient * 0.38 * current * vitality,
-    shimmerGain: ambient * 0.22 * shimmer * vitality,
-    waterGain: ambient * (0.11 + current * 0.05) * vitality,
-    // Keep the persistent spectrum above the bass roll-off of small phone
-    // speakers. The previous 82–175 Hz emphasis was measurable in Chromium,
-    // but was effectively inaudible on the owner's physical phones.
-    filterFrequencyHz: 1_100 + momentum * 1_700,
-    currentFrequencyHz: 220 + momentum * 55,
-    shimmerFrequencyHz: 329.63 + momentum * 164.82
+    // The native 64-second score now owns musical identity. These fixed-graph
+    // Web Audio voices sit behind it as beat-pulsed momentum texture instead of
+    // the former loud, continuously gliding drone.
+    bedGain: ambient * (0.075 + momentum * 0.02) * vitality,
+    currentGain: ambient * 0.12 * current * vitality,
+    shimmerGain: ambient * 0.065 * shimmer * vitality,
+    waterGain: ambient * (0.052 + current * 0.024) * vitality,
+    filterFrequencyHz: 920 + momentum * 580,
+    // D and A remain consonant with every chord in the Moon-Current score.
+    // Momentum changes level and texture, never pitch-slides between notes.
+    currentFrequencyHz: 293.66,
+    shimmerFrequencyHz: 880
   };
 }
 

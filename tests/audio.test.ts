@@ -5,6 +5,9 @@ import {
   ambientMixForState
 } from "../src/audio/audioDirector";
 import {
+  GLOWFIN_SOUNDTRACK_BARS,
+  GLOWFIN_SOUNDTRACK_DURATION_SEC,
+  GLOWFIN_SOUNDTRACK_SECTIONS,
   createAmbientSamples,
   encodeMonoPcm16Wav
 } from "../src/audio/nativeMobileAudio";
@@ -17,14 +20,33 @@ const noEvents = (): StepEvents => ({
   justEnded: false
 });
 
+const soundtrack = createAmbientSamples();
+
+function sampleRms(samples: Float32Array): number {
+  return Math.sqrt(
+    samples.reduce((sum, sample) => sum + sample * sample, 0) /
+      samples.length
+  );
+}
+
+function sampleBounds(samples: Float32Array): { min: number; max: number } {
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
+  for (const sample of samples) {
+    min = Math.min(min, sample);
+    max = Math.max(max, sample);
+  }
+  return { min, max };
+}
+
 describe("momentum-layered ambience", () => {
-  it("keeps a calm audible bed at zero momentum", () => {
+  it("keeps subtle musical support at zero momentum", () => {
     const mix = ambientMixForState(0, 1, tuning);
     expect(mix.bedGain).toBeGreaterThan(0);
     expect(mix.currentGain).toBe(0);
     expect(mix.shimmerGain).toBe(0);
-    expect(mix.filterFrequencyHz).toBeGreaterThanOrEqual(1_000);
-    expect(tuning.audio.masterGain * mix.bedGain).toBeGreaterThanOrEqual(0.075);
+    expect(mix.filterFrequencyHz).toBeGreaterThanOrEqual(800);
+    expect(tuning.audio.masterGain * mix.bedGain).toBeLessThan(0.04);
   });
 
   it("adds current and shimmer only as momentum rises", () => {
@@ -37,6 +59,8 @@ describe("momentum-layered ambience", () => {
     expect(max.filterFrequencyHz).toBeGreaterThan(calm.filterFrequencyHz);
     expect(calm.currentFrequencyHz).toBeGreaterThanOrEqual(200);
     expect(calm.shimmerFrequencyHz).toBeGreaterThanOrEqual(300);
+    expect(max.currentFrequencyHz).toBe(calm.currentFrequencyHz);
+    expect(max.shimmerFrequencyHz).toBe(calm.shimmerFrequencyHz);
   });
 
   it("dims after damage without silencing the world", () => {
@@ -76,13 +100,53 @@ describe("native mobile media fallback", () => {
     expect(wav.byteLength).toBe(44 + samples.length * 2);
   });
 
-  it("keeps the native bed materially non-silent", () => {
-    const rms = (samples: Float32Array) =>
-      Math.sqrt(
-        samples.reduce((sum, sample) => sum + sample * sample, 0) /
-          samples.length
+  it("keeps the native score materially non-silent without clipping", () => {
+    const bounds = sampleBounds(soundtrack);
+    expect(sampleRms(soundtrack)).toBeGreaterThan(0.1);
+    expect(bounds.max).toBeLessThan(0.95);
+    expect(bounds.min).toBeGreaterThan(-0.95);
+  });
+
+  it("provides a genuinely long four-movement loop", () => {
+    expect(GLOWFIN_SOUNDTRACK_DURATION_SEC).toBeGreaterThanOrEqual(60);
+    expect(GLOWFIN_SOUNDTRACK_BARS).toBeGreaterThanOrEqual(32);
+    expect(GLOWFIN_SOUNDTRACK_SECTIONS).toBe(4);
+    expect(soundtrack.length).toBe(16_000 * GLOWFIN_SOUNDTRACK_DURATION_SEC);
+  });
+
+  it("wraps without an audible waveform click", () => {
+    const first = soundtrack[0] ?? 0;
+    const last = soundtrack[soundtrack.length - 1] ?? 0;
+    expect(Math.abs(first - last)).toBeLessThan(0.001);
+  });
+
+  it("does not repeat at the rejected four-second cadence", () => {
+    const lag = 16_000 * 4;
+    let difference = 0;
+    for (let index = 0; index < soundtrack.length - lag; index++) {
+      difference += Math.abs(
+        (soundtrack[index] ?? 0) - (soundtrack[index + lag] ?? 0)
       );
-    expect(rms(createAmbientSamples())).toBeGreaterThan(0.12);
+    }
+    const meanDifference = difference / (soundtrack.length - lag);
+    expect(meanDifference).toBeGreaterThan(0.04);
+  });
+
+  it("contains rhythmic attacks and evolving section energy", () => {
+    const windowSize = 16_000 / 8;
+    const windows: number[] = [];
+    for (let start = 0; start < soundtrack.length; start += windowSize) {
+      const slice = soundtrack.slice(start, start + windowSize);
+      windows.push(sampleRms(slice));
+    }
+    let onsets = 0;
+    for (let index = 1; index < windows.length; index++) {
+      if ((windows[index] ?? 0) - (windows[index - 1] ?? 0) > 0.025) {
+        onsets++;
+      }
+    }
+    expect(onsets).toBeGreaterThan(80);
+    expect(Math.max(...windows) - Math.min(...windows)).toBeGreaterThan(0.25);
   });
 });
 
