@@ -1990,10 +1990,10 @@ function sculptedSwimmerPopulationHead(
     const gazeX = eyeX + 0.012;
     eyes.push(
       // At the native 390 px review width the original 0.088-high almond
-      // rasterised to a two-pixel line.  The slightly taller white preserves
-      // the authored almond silhouette while keeping iris and pupil separation
-      // readable at phone scale.
-      styled(almondGeometry(0.132, 0.12, 0.018), {
+      // rasterised to a two-pixel line.  This taller white preserves the
+      // authored almond silhouette while keeping iris and pupil separation
+      // readable through the least-favourable district camera framing.
+      styled(almondGeometry(0.138, 0.148, 0.018), {
         position: new THREE.Vector3(eyeX, eyeY, centre.z + 0.219),
         colour: FACE_WHITE,
         glow: 0.2,
