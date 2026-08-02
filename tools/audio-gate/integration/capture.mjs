@@ -41,6 +41,8 @@ try {
     const button = document.querySelector("#hud-audio-toggle");
     return {
       state: button?.getAttribute("data-audio-state") ?? null,
+      signal: button?.getAttribute("data-audio-signal") ?? null,
+      rms: button?.getAttribute("data-audio-rms") ?? null,
       pressed: button?.getAttribute("aria-pressed") ?? null,
       label: button?.getAttribute("aria-label") ?? null,
       startupError: document.body.dataset.startupError === "true"
@@ -52,19 +54,32 @@ try {
   await page.locator("#hud-audio-toggle").waitFor({ state: "visible" });
   await page.waitForTimeout(250);
   const beforeGesture = await snapshot();
-  if (beforeGesture.state !== "locked" || beforeGesture.pressed !== "true") {
+  if (
+    beforeGesture.state !== "locked" ||
+    beforeGesture.signal !== "idle" ||
+    beforeGesture.pressed !== "false" ||
+    beforeGesture.label !== "Turn sound on"
+  ) {
     throw new Error(
-      `Audio must remain enabled-but-locked before gesture; got ${JSON.stringify(beforeGesture)}`
+      `Audio must remain explicitly inactive before gesture; got ${JSON.stringify(beforeGesture)}`
     );
   }
 
-  await page.locator("#glowfin-canvas").tap({ position: { x: 195, y: 640 } });
+  // Regression for the real-device failure: pressing the visible sound button
+  // while locked must activate audio, not race the capture-phase unlock and
+  // immediately mute it again.
+  await page.locator("#hud-audio-toggle").tap();
   await page.waitForFunction(
     () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-state") === "active",
     undefined,
     { timeout: 8_000 }
   );
-  const afterGesture = await snapshot();
+  await page.waitForFunction(
+    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-signal") === "audible",
+    undefined,
+    { timeout: 8_000 }
+  );
+  const afterButtonActivation = await snapshot();
 
   await page.locator("#hud-audio-toggle").tap();
   await page.waitForFunction(
@@ -87,16 +102,48 @@ try {
     undefined,
     { timeout: 8_000 }
   );
+  await page.waitForFunction(
+    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-signal") === "audible",
+    undefined,
+    { timeout: 8_000 }
+  );
   const afterUnmute = await snapshot();
 
+  // Also retain the original game-surface gesture path. Start from a clean,
+  // unlocked preference so a canvas touch must create/resume sources and emit
+  // measurable signal without delaying the steering listener.
+  await page.locator("#hud-audio-toggle").tap();
+  await page.evaluate(() => localStorage.removeItem("glowfin-audio-muted-v1"));
+  await page.reload({ waitUntil: "load" });
+  await page.locator("#glowfin-canvas").waitFor({ state: "visible" });
+  const beforeCanvasGesture = await snapshot();
+  await page.locator("#glowfin-canvas").tap({ position: { x: 195, y: 640 } });
+  await page.waitForFunction(
+    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-state") === "active",
+    undefined,
+    { timeout: 8_000 }
+  );
+  await page.waitForFunction(
+    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-signal") === "audible",
+    undefined,
+    { timeout: 8_000 }
+  );
+  const afterCanvasGesture = await snapshot();
+
   if (
-    afterGesture.pressed !== "true" ||
+    afterButtonActivation.pressed !== "true" ||
+    afterButtonActivation.label !== "Mute sound" ||
     afterMute.pressed !== "false" ||
     afterUnmute.pressed !== "true" ||
-    [beforeGesture, afterGesture, afterMute, afterReload, afterUnmute]
+    beforeCanvasGesture.state !== "locked" ||
+    beforeCanvasGesture.pressed !== "false" ||
+    afterCanvasGesture.pressed !== "true" ||
+    [afterButtonActivation, afterUnmute, afterCanvasGesture]
+      .some((state) => state.signal !== "audible" || Number(state.rms) <= 0) ||
+    [beforeGesture, afterButtonActivation, afterMute, afterReload, afterUnmute, beforeCanvasGesture, afterCanvasGesture]
       .some((state) => state.startupError)
   ) {
-    throw new Error("Audio accessibility state or startup-failure contract was violated.");
+    throw new Error("Audio signal, accessibility state, or startup-failure contract was violated.");
   }
   if (errors.length > 0) {
     throw new Error(`Browser audio smoke reported failures: ${errors.join("; ")}`);
@@ -104,12 +151,14 @@ try {
 
   mkdirSync(dirname(output), { recursive: true });
   writeFileSync(output, `${JSON.stringify({
-    source: "ci-chromium-real-gesture",
+    source: "ci-chromium-real-gesture-and-signal",
     beforeGesture,
-    afterGesture,
+    afterButtonActivation,
     afterMute,
     afterReload,
     afterUnmute,
+    beforeCanvasGesture,
+    afterCanvasGesture,
     errors
   }, null, 2)}\n`, "utf8");
   console.log(`wrote ${output}`);

@@ -364,6 +364,29 @@ export function validateTuning(raw: unknown): TuningConfig {
     problems.push("audio.maxVoices must be a whole number");
   }
 
+  const audioMasterGain = valueAt(raw, "audio.masterGain");
+  const audioAmbientGain = valueAt(raw, "audio.ambientGain");
+  if (
+    typeof audioMasterGain === "number" &&
+    typeof audioAmbientGain === "number" &&
+    audioMasterGain * audioAmbientGain * 0.46 < 0.075
+  ) {
+    problems.push(
+      "audio masterGain × ambientGain is below the phone-speaker calm-bed floor"
+    );
+  }
+
+  const audioCueGain = valueAt(raw, "audio.cueGain");
+  if (
+    typeof audioMasterGain === "number" &&
+    typeof audioCueGain === "number" &&
+    audioMasterGain * audioCueGain < 0.22
+  ) {
+    problems.push(
+      "audio masterGain × cueGain is below the phone-speaker cue floor"
+    );
+  }
+
   if (problems.length > 0) {
     throw new Error(
       `Invalid tuning config (${problems.length} problem${problems.length === 1 ? "" : "s"}):\n  - ` +

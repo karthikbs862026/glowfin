@@ -67,9 +67,12 @@ export function ambientMixForState(
     currentGain: ambient * 0.38 * current * vitality,
     shimmerGain: ambient * 0.22 * shimmer * vitality,
     waterGain: ambient * (0.11 + current * 0.05) * vitality,
-    filterFrequencyHz: 620 + momentum * 1_580,
-    currentFrequencyHz: 146.83 + momentum * 27.5,
-    shimmerFrequencyHz: 293.66 + momentum * 73.4
+    // Keep the persistent spectrum above the bass roll-off of small phone
+    // speakers. The previous 82–175 Hz emphasis was measurable in Chromium,
+    // but was effectively inaudible on the owner's physical phones.
+    filterFrequencyHz: 1_100 + momentum * 1_700,
+    currentFrequencyHz: 220 + momentum * 55,
+    shimmerFrequencyHz: 329.63 + momentum * 164.82
   };
 }
 

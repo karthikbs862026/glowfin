@@ -18,6 +18,8 @@ describe("momentum-layered ambience", () => {
     expect(mix.bedGain).toBeGreaterThan(0);
     expect(mix.currentGain).toBe(0);
     expect(mix.shimmerGain).toBe(0);
+    expect(mix.filterFrequencyHz).toBeGreaterThanOrEqual(1_000);
+    expect(tuning.audio.masterGain * mix.bedGain).toBeGreaterThanOrEqual(0.075);
   });
 
   it("adds current and shimmer only as momentum rises", () => {
@@ -28,6 +30,8 @@ describe("momentum-layered ambience", () => {
     expect(max.currentGain).toBeGreaterThan(cruise.currentGain);
     expect(max.shimmerGain).toBeGreaterThan(cruise.shimmerGain);
     expect(max.filterFrequencyHz).toBeGreaterThan(calm.filterFrequencyHz);
+    expect(calm.currentFrequencyHz).toBeGreaterThanOrEqual(200);
+    expect(calm.shimmerFrequencyHz).toBeGreaterThanOrEqual(300);
   });
 
   it("dims after damage without silencing the world", () => {

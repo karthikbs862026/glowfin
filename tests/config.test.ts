@@ -114,6 +114,18 @@ describe("tuning config", () => {
       bad.audio.maxVoices = 10.5;
       expect(() => validateTuning(bad)).toThrow(/maxVoices must be a whole number/);
     });
+
+    it("rejects a mix that falls below the phone-speaker audibility floors", () => {
+      const quietAmbient = cloneTuning();
+      quietAmbient.audio.masterGain = 0.2;
+      quietAmbient.audio.ambientGain = 0.2;
+      expect(() => validateTuning(quietAmbient)).toThrow(/calm-bed floor/);
+
+      const quietCues = cloneTuning();
+      quietCues.audio.masterGain = 0.2;
+      quietCues.audio.cueGain = 0.2;
+      expect(() => validateTuning(quietCues)).toThrow(/cue floor/);
+    });
   });
 
   describe("Core Design Principle guardrails (Part 1.3 / 4.5)", () => {

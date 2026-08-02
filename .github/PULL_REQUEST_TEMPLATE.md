@@ -44,7 +44,8 @@
 ## Audio acceptance (required when sound or event routing changes)
 
 - [ ] Page remains silent and AudioContext stays locked before the first real gesture
-- [ ] First canvas touch unlocks sound without delaying steering or showing startup error
+- [ ] First sound-button press activates (does not race into mute); first canvas touch also unlocks without delaying steering
+- [ ] Browser analyser records non-zero signal after both activation paths; `AudioContext.state === "running"` alone does not pass
 - [ ] Low/mid/max momentum audibly add layers from the same simulation value
 - [ ] Near-miss, multiplier, collision and recovery cues are distinct at phone-speaker volume
 - [ ] Mute is keyboard/touch accessible, persists across reload and suspends background work

@@ -8,7 +8,7 @@ this README covers local setup only.
 ## Status
 
 **Phase 3 — Moon-Garden visual checkpoint accepted for continued development;
-momentum-audio integration under review.**
+real-device mobile-audio repair awaiting owner revalidation.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
@@ -36,8 +36,10 @@ includes:
 - three hard-capped god-ray meshes
 - a gesture-gated procedural underwater soundscape whose current and harmonic
   layers rise with momentum, plus near-miss, multiplier, collision, recovery
-  and run-end cues; mute preference is device-local and the context suspends
-  while muted or backgrounded
+  and run-end cues; its lightweight sources now start synchronously inside the
+  activation gesture, emit a phone-speaker-safe confirmation cue, and expose a
+  measured-signal gate; mute preference is device-local and the context
+  suspends while muted or backgrounded
 - an in-camera Art-Bible acceptance target at
   `docs/art/phase3b-moon-garden-acceptance-target.webp`
 
@@ -46,9 +48,11 @@ asynchronous-swimmer composition as the working checkpoint. Horizontal-swimmer
 facial refinement remains deferred to the authored character pass. This does
 not approve Phase 3 for merge: the code-native integration meshes are not final
 premium DCC art, optimized production GLBs/PBR assets remain required, and the
-new soundscape still needs real Android/iOS speaker, headphone, interruption,
-performance and thermal review. Technical CI evidence cannot replace those
-visual and real-device approvals.
+soundscape failed its first physical-phone review despite a green state-only
+browser check. ADR-0027 records the repaired activation, button, spectrum and
+signal-measurement contract; the replacement build still needs Android/iOS
+speaker, headphone, interruption, performance and thermal review. Technical CI
+evidence cannot replace those visual and real-device approvals.
 
 ## Local setup
 
@@ -90,7 +94,7 @@ scripts/        repo/CI and production bundle checks
       authored models while preserving collider truth
 - [x] Full 36-state emulated art matrix required on pull requests
 - [x] Deterministic 30-minute simulated-time Chromium renderer soak
-- [x] Momentum-layered soundscape, gameplay cues, iOS-safe gesture unlock and mute persistence
+- [x] Momentum-layered soundscape, gameplay cues, gesture-safe source startup, mute persistence and generated-signal gate
 - [ ] Refine horizontal-swimmer faces during the authored DCC/PBR character pass without changing approved choreography
 - [ ] Android and iOS Safari performance, contrast and real-time 30-minute soak sign-off
 - [ ] Final Android/iOS sound mix and interruption sign-off, production deployment and store-wrapper pipeline
