@@ -132,14 +132,26 @@ const FRAGMENT = /* glsl */ `
     );
     vec3 blend = pow(abs(normalize(vNormalW)), vec3(4.0));
     blend /= max(0.0001, blend.x + blend.y + blend.z);
-    vec3 surface =
-      texture2D(uSurfaceMap, vWorldPos.zy * uSurfaceScale).rgb * blend.x +
-      texture2D(uSurfaceMap, vWorldPos.xz * uSurfaceScale).rgb * blend.y +
-      texture2D(uSurfaceMap, vWorldPos.xy * uSurfaceScale).rgb * blend.z;
-    vec3 livingSurface =
-      texture2D(uLivingMap, vWorldPos.zy * uSurfaceScale * 0.82).rgb * blend.x +
-      texture2D(uLivingMap, vWorldPos.xz * uSurfaceScale * 0.82).rgb * blend.y +
-      texture2D(uLivingMap, vWorldPos.xy * uSurfaceScale * 0.82).rgb * blend.z;
+    // A stone fragment previously paid for both triplanar texture families,
+    // even though livingWeight made the coral sample contribute zero (and the
+    // inverse was true for fully living surfaces). The branches are coherent
+    // within each authored draw family, so real phones and CI SwiftShader can
+    // skip three texture fetches across the large district silhouettes while
+    // preserving the exact blended result on transition vertices.
+    vec3 surface = vec3(0.24, 0.31, 0.36);
+    if (livingWeight < 0.995) {
+      surface =
+        texture2D(uSurfaceMap, vWorldPos.zy * uSurfaceScale).rgb * blend.x +
+        texture2D(uSurfaceMap, vWorldPos.xz * uSurfaceScale).rgb * blend.y +
+        texture2D(uSurfaceMap, vWorldPos.xy * uSurfaceScale).rgb * blend.z;
+    }
+    vec3 livingSurface = vec3(0.12, 0.18, 0.24);
+    if (livingWeight > 0.005) {
+      livingSurface =
+        texture2D(uLivingMap, vWorldPos.zy * uSurfaceScale * 0.82).rgb * blend.x +
+        texture2D(uLivingMap, vWorldPos.xz * uSurfaceScale * 0.82).rgb * blend.y +
+        texture2D(uLivingMap, vWorldPos.xy * uSurfaceScale * 0.82).rgb * blend.z;
+    }
     float surfaceHeight = dot(
       mix(surface, livingSurface, livingWeight),
       vec3(0.2126, 0.7152, 0.0722)
@@ -233,25 +245,28 @@ const FRAGMENT = /* glsl */ `
     colour += vec3(0.24, 0.11, 0.02) * wetSpecular * bronzeRole * 0.32;
     colour = mix(colour, colour * vec3(0.48, 0.66, 1.25), lapisRole * 0.58);
     colour += vec3(0.045, 0.23, 0.36) * crystalRole * (0.24 + moonRim * 0.34);
-    float tideWaveA = smoothstep(
-      0.72,
-      0.98,
-      sin(
-        vWorldPos.z * 0.23 -
-        uTime * ${LIVING_DISTRICT_CONTRACT.reef.travellingWaveSpeed} +
-        vWorldPos.x * 0.11
-      ) * 0.5 + 0.5
-    );
-    float tideWaveB = smoothstep(
-      0.78,
-      0.99,
-      sin(
-        vWorldPos.z * 0.39 -
-        uTime * ${LIVING_DISTRICT_CONTRACT.reef.travellingWaveSpeed * 1.37} -
-        vWorldPos.x * 0.17 + 1.8
-      ) * 0.5 + 0.5
-    );
-    float travellingWave = max(tideWaveA, tideWaveB * 0.72);
+    float travellingWave = 0.0;
+    if (coralRole > 0.05) {
+      float tideWaveA = smoothstep(
+        0.72,
+        0.98,
+        sin(
+          vWorldPos.z * 0.23 -
+          uTime * ${LIVING_DISTRICT_CONTRACT.reef.travellingWaveSpeed} +
+          vWorldPos.x * 0.11
+        ) * 0.5 + 0.5
+      );
+      float tideWaveB = smoothstep(
+        0.78,
+        0.99,
+        sin(
+          vWorldPos.z * 0.39 -
+          uTime * ${LIVING_DISTRICT_CONTRACT.reef.travellingWaveSpeed * 1.37} -
+          vWorldPos.x * 0.17 + 1.8
+        ) * 0.5 + 0.5
+      );
+      travellingWave = max(tideWaveA, tideWaveB * 0.72);
+    }
     colour += awakened * coralRole * travellingWave *
       (0.095 + uMomentum * 0.085);
 

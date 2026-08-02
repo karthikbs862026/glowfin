@@ -568,3 +568,24 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Strengthen the six approved material responses without changing collider
   contours, camera, controls, scoring, replay determinism, approved characters
   or the Moon-Current audio implementation.
+
+## 2026-08-03 — Separate phone-scale visual truth from lifecycle raster cost
+
+- Version 26 passed core CI, touch/audio regression and the complete 390x844
+  matrix, but the first renderer soak was cancelled by the job's 45-minute
+  ceiling after only 900 of 5,400 frames. Logs and a timed local probe showed
+  no resource error: virtually all elapsed time was software fragment shading.
+- Optimize the production Moon-Garden shader so stone and fully living
+  fragments skip the texture family that contributes zero, and only coral
+  evaluates the two travelling-wave functions. Preserve the blended result on
+  transition vertices and rerun the complete 390x844 matrix as the visual gate.
+- Keep lifecycle truth distinct from phone-scale image truth. Run all 5,400
+  high-bloom/caustic WebGL frames, the full deterministic simulation and the
+  same heap/GPU/context-loss ceilings at a 128x277 phone-aspect raster. Scene
+  graph, shaders, pools, geometry, texture count and simulated duration remain
+  unchanged; only fragment fill-rate is reduced to fit the bounded runner.
+- Retain cumulative simulation/course/render/metrics timing in soak progress
+  logs so a future cancellation can be diagnosed without weakening the gate.
+- The corrected local 30-minute gate completed with 0.5 MB heap growth,
+  unchanged 103 geometries/18 textures and zero context losses. Require the
+  authoritative GitHub rerun to pass before marking issue #10 stable.

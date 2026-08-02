@@ -27,7 +27,12 @@ function cleanEvidence(): RendererSoakEvidence {
     source: {
       kind: "ci-emulated",
       browser: "Chromium fixture",
-      platform: "linux"
+      platform: "linux",
+      viewport: {
+        widthPixels: 128,
+        heightPixels: 277,
+        deviceScaleFactor: 1
+      }
     },
     simulatedMinutes: 30,
     renderFps: 3,
@@ -79,6 +84,12 @@ describe("deterministic renderer soak gate", () => {
     const skipped = cleanEvidence();
     skipped.renderedFrames = 5_399;
     assert.ok(codes(skipped).includes("SOAK_RENDER_COVERAGE_INCOMPLETE"));
+  });
+
+  test("rejects a lifecycle raster below the audited floor", () => {
+    const undersized = cleanEvidence();
+    undersized.source.viewport.widthPixels = 127;
+    assert.ok(codes(undersized).includes("SOAK_VIEWPORT_TOO_SMALL"));
   });
 
   test("rejects heap and GPU resource growth", () => {

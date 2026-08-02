@@ -1,5 +1,8 @@
 import type { Finding } from "./types.ts";
 
+const MIN_SOAK_VIEWPORT_WIDTH = 128;
+const MIN_SOAK_VIEWPORT_HEIGHT = 277;
+
 export interface RendererResourceEvidence {
   geometries: number;
   textures: number;
@@ -12,6 +15,11 @@ export interface RendererSoakEvidence {
     kind: "ci-emulated";
     browser: string;
     platform: string;
+    viewport: {
+      widthPixels: number;
+      heightPixels: number;
+      deviceScaleFactor: number;
+    };
   };
   simulatedMinutes: number;
   renderFps: number;
@@ -100,6 +108,9 @@ export function checkRendererSoak(
     evidence.renderer.peakResources.textures,
     evidence.renderer.endResources.geometries,
     evidence.renderer.endResources.textures,
+    evidence.source.viewport.widthPixels,
+    evidence.source.viewport.heightPixels,
+    evidence.source.viewport.deviceScaleFactor,
     ...Object.values(evidence.peakPools)
   ];
   if (!numeric.every(finite)) {
@@ -110,6 +121,22 @@ export function checkRendererSoak(
     findings.push(blocker(
       "SOAK_SOURCE_MALFORMED",
       "The deterministic desktop soak must identify itself as CI-emulated evidence."
+    ));
+  }
+  if (
+    evidence.source.viewport.widthPixels < MIN_SOAK_VIEWPORT_WIDTH ||
+    evidence.source.viewport.heightPixels < MIN_SOAK_VIEWPORT_HEIGHT ||
+    evidence.source.viewport.deviceScaleFactor < 1
+  ) {
+    findings.push(blocker(
+      "SOAK_VIEWPORT_TOO_SMALL",
+      "The renderer soak raster is below the audited lifecycle floor.",
+      Math.min(
+        evidence.source.viewport.widthPixels / MIN_SOAK_VIEWPORT_WIDTH,
+        evidence.source.viewport.heightPixels / MIN_SOAK_VIEWPORT_HEIGHT,
+        evidence.source.viewport.deviceScaleFactor
+      ),
+      1
     ));
   }
   if (evidence.simulatedMinutes < limits.minimumSimulatedMinutes) {

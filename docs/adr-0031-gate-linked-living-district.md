@@ -50,4 +50,7 @@ ceremonial court, while fish, jellies, rays and reef movement remain bounded by
 the existing instance pools. The pass adds no draw family or active material.
 The complete 36-state phone matrix, contrast floor, lane/collider overlays,
 bundle cap and 5,400-frame resource soak remain mandatory before acceptance.
-
+Phone-scale visual truth stays in the independent 390x844 matrix. The
+lifecycle soak uses a 128x277 raster while retaining the identical scene graph,
+high-quality bloom, caustics, shaders, pools and resource ceilings so software
+fill-rate cannot hide heap or GPU growth behind the bounded runner timeout.

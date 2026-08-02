@@ -31,6 +31,12 @@ export interface RendererSoakSnapshot {
   peakResources: RendererResourceStats;
   resources: RendererResourceStats;
   gpu: string;
+  timingMs: {
+    simulation: number;
+    course: number;
+    render: number;
+    metrics: number;
+  };
 }
 
 export class RendererSoakHarness {
@@ -43,6 +49,12 @@ export class RendererSoakHarness {
   private peakGates = 0;
   private peakResources: RendererResourceStats;
   private nextTrailResetSec = 300;
+  private readonly timingMs = {
+    simulation: 0,
+    course: 0,
+    render: 0,
+    metrics: 0
+  };
 
   constructor(
     private readonly view: GameView,
@@ -79,17 +91,21 @@ export class RendererSoakHarness {
     const renderDtSec = stepsPerFrame * FIXED_DT_SEC;
 
     for (let frame = 0; frame < frameCount; frame++) {
+      let timingStart = performance.now();
       for (let step = 0; step < stepsPerFrame; step++) {
         const steering =
           Math.sin(this.sim.elapsedSec * 0.31) * 0.72 +
           Math.sin(this.sim.elapsedSec * 0.071) * 0.18;
         stepSim(this.sim, steering, FIXED_DT_SEC, this.cfg);
       }
+      this.timingMs.simulation += performance.now() - timingStart;
 
+      timingStart = performance.now();
       this.course.ensureGeneratedTo(
         this.sim.forwardDistance + this.cfg.readability.visibleAheadUnits * 3
       );
       this.course.prune(this.sim.forwardDistance - KEEP_BEHIND_UNITS);
+      this.timingMs.course += performance.now() - timingStart;
 
       if (this.sim.elapsedSec >= this.nextTrailResetSec) {
         this.view.resetTrail();
@@ -98,6 +114,7 @@ export class RendererSoakHarness {
 
       const lightFraction =
         0.68 + Math.sin(this.sim.elapsedSec * 0.023) * 0.22;
+      timingStart = performance.now();
       this.view.render(
         this.sim,
         this.course.gates,
@@ -105,8 +122,10 @@ export class RendererSoakHarness {
         this.sim.elapsedSec,
         renderDtSec
       );
+      this.timingMs.render += performance.now() - timingStart;
       this.renderedFrames += 1;
 
+      timingStart = performance.now();
       const render = this.view.stats();
       this.maxDrawCalls = Math.max(this.maxDrawCalls, render.drawCalls);
       this.maxTriangles = Math.max(this.maxTriangles, render.triangles);
@@ -121,6 +140,7 @@ export class RendererSoakHarness {
         this.peakResources.textures,
         resources.textures
       );
+      this.timingMs.metrics += performance.now() - timingStart;
     }
 
     return this.snapshot();
@@ -138,7 +158,8 @@ export class RendererSoakHarness {
       peakGates: this.peakGates,
       peakResources: { ...this.peakResources },
       resources: this.view.resourceStats(),
-      gpu: this.view.gpuName
+      gpu: this.view.gpuName,
+      timingMs: { ...this.timingMs }
     };
   }
 }

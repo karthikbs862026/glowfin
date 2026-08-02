@@ -20,8 +20,18 @@ function positiveNumber(name, fallback) {
   return parsed;
 }
 
+function positiveInteger(name, fallback) {
+  const parsed = positiveNumber(name, fallback);
+  if (!Number.isInteger(parsed)) {
+    throw new Error(`--${name} must be an integer.`);
+  }
+  return parsed;
+}
+
 const minutes = positiveNumber("minutes", 30);
 const renderFps = positiveNumber("render-fps", 3);
+const viewportWidth = positiveInteger("viewport-width", 128);
+const viewportHeight = positiveInteger("viewport-height", 277);
 const output = resolve(option("output") ?? "build/art-gate-soak.json");
 const reportOutput = resolve(
   option("report") ?? "build/art-gate-soak-report.txt"
@@ -56,7 +66,13 @@ const browser = await chromium.launch({
 
 try {
   const context = await browser.newContext({
-    viewport: { width: 390, height: 844 },
+    // Phone-scale visual truth is already certified by the independent
+    // 390x844 matrix. The long soak owns lifecycle truth: 5,400 real WebGL
+    // renders through the same scene, high-quality bloom, caustics, shaders,
+    // pools and simulation. A reduced raster keeps that invariant inside the
+    // bounded runner without turning fragment fill-rate into a false resource
+    // lifecycle failure. The aspect ratio remains the same as the phone gate.
+    viewport: { width: viewportWidth, height: viewportHeight },
     deviceScaleFactor: 1,
     isMobile: true,
     hasTouch: true
@@ -127,7 +143,8 @@ try {
     if (completedFrames >= nextProgressFrame) {
       const completedMinutes = completedFrames / renderFps / 60;
       console.log(
-        `soak progress ${completedMinutes.toFixed(1)}/${minutes.toFixed(1)} simulated minutes`
+        `soak progress ${completedMinutes.toFixed(1)}/${minutes.toFixed(1)} simulated minutes ` +
+        JSON.stringify(snapshot.timingMs)
       );
       nextProgressFrame += progressIntervalFrames;
     }
@@ -150,7 +167,12 @@ try {
     source: {
       kind: "ci-emulated",
       browser: `Chromium ${browserVersion}`,
-      platform: await page.evaluate(() => navigator.platform)
+      platform: await page.evaluate(() => navigator.platform),
+      viewport: {
+        widthPixels: viewportWidth,
+        heightPixels: viewportHeight,
+        deviceScaleFactor: 1
+      }
     },
     // Derive the contractual duration from completed render calls so binary
     // floating-point accumulation in the fixed-step clock cannot turn an exact
