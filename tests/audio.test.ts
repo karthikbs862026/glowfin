@@ -9,6 +9,7 @@ import {
   createConfirmationSamples,
   encodeMonoPcm16Wav
 } from "../src/audio/nativeMobileAudio";
+import { isPointerActivationTrigger } from "../src/audio/audioEngine";
 import type { StepEvents } from "../src/sim/run";
 
 const noEvents = (): StepEvents => ({
@@ -58,6 +59,14 @@ describe("momentum-layered ambience", () => {
 });
 
 describe("native mobile media fallback", () => {
+  it("uses the activation-triggering pointer phase for each device class", () => {
+    expect(isPointerActivationTrigger("pointerdown", "mouse")).toBe(true);
+    expect(isPointerActivationTrigger("pointerup", "mouse")).toBe(false);
+    expect(isPointerActivationTrigger("pointerdown", "touch")).toBe(false);
+    expect(isPointerActivationTrigger("pointerup", "touch")).toBe(true);
+    expect(isPointerActivationTrigger("pointerup", "pen")).toBe(true);
+  });
+
   it("encodes a standards-shaped PCM WAV for the phone media pipeline", () => {
     const samples = createConfirmationSamples(8_000, 0.1);
     const wav = encodeMonoPcm16Wav(samples, 8_000);

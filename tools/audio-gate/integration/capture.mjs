@@ -43,6 +43,7 @@ try {
       state: button?.getAttribute("data-audio-state") ?? null,
       signal: button?.getAttribute("data-audio-signal") ?? null,
       native: button?.getAttribute("data-audio-native") ?? null,
+      gesture: button?.getAttribute("data-audio-gesture") ?? null,
       context: button?.getAttribute("data-audio-context") ?? null,
       rms: button?.getAttribute("data-audio-rms") ?? null,
       nativeMediaTime: Array.from(document.querySelectorAll("audio"))
@@ -53,6 +54,28 @@ try {
       startupError: document.body.dataset.startupError === "true"
     };
   });
+
+  const waitForAudioReady = async (stage) => {
+    try {
+      await page.waitForFunction(
+        () => {
+          const button = document.querySelector("#hud-audio-toggle");
+          return (
+            button?.getAttribute("data-audio-state") === "active" &&
+            button.getAttribute("data-audio-native") === "playing" &&
+            button.getAttribute("data-audio-signal") === "generated"
+          );
+        },
+        undefined,
+        { timeout: 8_000 }
+      );
+    } catch (error) {
+      const state = await snapshot();
+      throw new Error(
+        `${stage} did not reach dual-path playback; state=${JSON.stringify(state)}; cause=${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  };
 
   await page.goto(baseUrl, { waitUntil: "load" });
   await page.locator("#glowfin-canvas").waitFor({ state: "visible" });
@@ -75,21 +98,7 @@ try {
   // while locked must activate audio, not race the capture-phase unlock and
   // immediately mute it again.
   await page.locator("#hud-audio-toggle").tap();
-  await page.waitForFunction(
-    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-state") === "active",
-    undefined,
-    { timeout: 8_000 }
-  );
-  await page.waitForFunction(
-    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-native") === "playing",
-    undefined,
-    { timeout: 8_000 }
-  );
-  await page.waitForFunction(
-    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-signal") === "generated",
-    undefined,
-    { timeout: 8_000 }
-  );
+  await waitForAudioReady("sound-button activation");
   await page.waitForTimeout(280);
   const afterButtonActivation = await snapshot();
 
@@ -109,21 +118,7 @@ try {
   }
 
   await page.locator("#hud-audio-toggle").tap();
-  await page.waitForFunction(
-    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-state") === "active",
-    undefined,
-    { timeout: 8_000 }
-  );
-  await page.waitForFunction(
-    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-native") === "playing",
-    undefined,
-    { timeout: 8_000 }
-  );
-  await page.waitForFunction(
-    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-signal") === "generated",
-    undefined,
-    { timeout: 8_000 }
-  );
+  await waitForAudioReady("unmute activation");
   await page.waitForTimeout(280);
   const afterUnmute = await snapshot();
 
@@ -136,21 +131,7 @@ try {
   await page.locator("#glowfin-canvas").waitFor({ state: "visible" });
   const beforeCanvasGesture = await snapshot();
   await page.locator("#glowfin-canvas").tap({ position: { x: 195, y: 640 } });
-  await page.waitForFunction(
-    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-state") === "active",
-    undefined,
-    { timeout: 8_000 }
-  );
-  await page.waitForFunction(
-    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-native") === "playing",
-    undefined,
-    { timeout: 8_000 }
-  );
-  await page.waitForFunction(
-    () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-signal") === "generated",
-    undefined,
-    { timeout: 8_000 }
-  );
+  await waitForAudioReady("touch-canvas activation");
   await page.waitForTimeout(280);
   const afterCanvasGesture = await snapshot();
 

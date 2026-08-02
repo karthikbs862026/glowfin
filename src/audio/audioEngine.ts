@@ -26,6 +26,16 @@ interface WebkitAudioWindow extends Window {
   webkitAudioContext?: typeof AudioContext;
 }
 
+/** Match the HTML user-activation event split for mouse versus touch/pen. */
+export function isPointerActivationTrigger(
+  eventType: string,
+  pointerType: string
+): boolean {
+  return pointerType === "mouse"
+    ? eventType === "pointerdown"
+    : eventType === "pointerup";
+}
+
 function safeReadMuted(storage: Storage | null): boolean {
   try {
     return storage?.getItem(AUDIO_PREFERENCE_KEY) === "true";
@@ -124,17 +134,32 @@ export class GlowfinAudio {
       // toggle the freshly started graph back to muted on fast phones.
       const target = event.target;
       if (target instanceof Node && this.button.contains(target)) return;
+      this.button.dataset.audioGesture =
+        event instanceof PointerEvent
+          ? `${event.type}:${event.pointerType || "unknown"}`
+          : event.type;
       if (!this.muted && this.uiState !== "active") void this.unlock();
     };
     if ("PointerEvent" in window) {
-      document.addEventListener("pointerdown", unlockFromGesture, {
+      const unlockFromPointerGesture = (event: PointerEvent) => {
+        // HTML grants transient activation on pointerdown for a mouse, but on
+        // pointerup for touch and pen. A touch pointerdown can therefore make
+        // play() look correctly wired while the browser rejects it as autoplay.
+        if (!isPointerActivationTrigger(event.type, event.pointerType)) return;
+        unlockFromGesture(event);
+      };
+      document.addEventListener("pointerdown", unlockFromPointerGesture, {
+        capture: true,
+        passive: true
+      });
+      document.addEventListener("pointerup", unlockFromPointerGesture, {
         capture: true,
         passive: true
       });
     } else {
       // Older iOS WebViews did not expose PointerEvent. Keep the unlock inside
-      // their genuine touch gesture rather than falling through to a timer.
-      document.addEventListener("touchstart", unlockFromGesture, {
+      // their touchend activation turn rather than falling through to a timer.
+      document.addEventListener("touchend", unlockFromGesture, {
         capture: true,
         passive: true
       });

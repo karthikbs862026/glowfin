@@ -26,8 +26,10 @@ condition.
    Blob URLs; no network fetch, binary repository asset, or LFS payload is
    introduced.
 3. Invoke both native `play()` calls and `AudioContext.resume()` synchronously
-   within the trusted pointer/touch/click turn. Web Audio remains responsible
-   for momentum layers and semantic gameplay cues.
+   within the platform's activation-triggering turn: `pointerdown` for a mouse,
+   `pointerup` for touch/pen, `touchend` for older WebViews, or the sound
+   button's `click`. Web Audio remains responsible for momentum layers and
+   semantic gameplay cues.
 4. Treat native-media playback as the user-facing active-state authority.
    Web Audio RMS is renamed `generated`, while a blocked native play promise
    produces a visible “Sound blocked — tap again” state.
