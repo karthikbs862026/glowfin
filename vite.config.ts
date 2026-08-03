@@ -3,15 +3,32 @@ import releaseConfig from "./config/release.json";
 
 type ProcessEnvironment = Record<string, string | undefined>;
 
+interface ReleaseMetadata extends Record<string, unknown> {
+  version: number;
+  environment: string;
+  sourceCommit: string;
+}
+
 function environmentVariables(): ProcessEnvironment {
   return (globalThis as typeof globalThis & {
     process?: { env?: ProcessEnvironment };
   }).process?.env ?? {};
 }
 
-function releaseMetadataPlugin(metadata: Record<string, unknown>): Plugin {
+function releaseLabel(metadata: ReleaseMetadata): string {
+  const commit = metadata.sourceCommit === "local"
+    ? "local"
+    : metadata.sourceCommit.slice(0, 7);
+  return `V${metadata.version} · ${metadata.environment.toUpperCase()} · ${commit}`;
+}
+
+function releaseMetadataPlugin(metadata: ReleaseMetadata): Plugin {
+  const label = releaseLabel(metadata);
   return {
     name: "glowfin-release-metadata",
+    transformIndexHtml(html) {
+      return html.replace("V31 · LOCAL · local", label);
+    },
     generateBundle() {
       this.emitFile({
         type: "asset",

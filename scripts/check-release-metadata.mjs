@@ -43,6 +43,15 @@ if (release.sourceCommit !== expectedCommit) {
 if (!index.includes('id="hud-build"')) {
   throw new Error("Production HTML omits the visible Version 31 release badge.");
 }
+const shortCommit = expectedCommit === "local"
+  ? "local"
+  : expectedCommit.slice(0, 7);
+const expectedLabel = `V${release.version} · ${expectedEnvironment.toUpperCase()} · ${shortCommit}`;
+if (!index.includes(`id="hud-build" role="status">${expectedLabel}</div>`)) {
+  throw new Error(
+    `Production HTML initial release badge does not identify ${expectedLabel}.`
+  );
+}
 if (!index.includes("Glowfin — Version 31")) {
   throw new Error("Production HTML title does not identify Version 31.");
 }
