@@ -48,4 +48,7 @@ floor, while the reef-citizen and conch-herald facial planes each measured
 `7 px` against the existing `8 px` floor. The correction enlarges only the
 swimmer's almond/iris stack and the upright characters' vertical facial shell.
 Whole-character scale, depth choreography, camera and evidence floors remain
-unchanged.
+unchanged. The first correction cleared the swimmer floor at `4 px`, but the
+most distant Astral citizen and herald remained `7 px`; their second correction
+sets only the upright facial shell to a measured `0.60`-world-unit vertical
+span, leaving head width/depth and all presentation transforms intact.

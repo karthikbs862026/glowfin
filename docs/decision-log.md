@@ -630,3 +630,7 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   pixel below their existing floors. Enlarge only those local facial features
   and add source-geometry floor assertions; do not restore oversized bodies,
   move the cast toward the camera or weaken the rendered evidence thresholds.
+- The authoritative rerun raised the swimmer eye stack to `4 px`, clearing its
+  existing floor, but both most-distant upright faces remained `7 px`. Raise
+  only their vertical facial-shell contract to `0.60` world units; keep head
+  width/depth, character transforms, choreography and the `8 px` floor fixed.

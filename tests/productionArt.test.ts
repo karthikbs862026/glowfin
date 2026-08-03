@@ -327,7 +327,7 @@ describe("Phase 3B art geometry inventory", () => {
           );
         }
       } else {
-        expect(faceHeight).toBeGreaterThanOrEqual(0.52);
+        expect(faceHeight).toBeGreaterThanOrEqual(0.6);
       }
       for (const geometry of [parts.body, parts.face, parts.eyes]) {
         expect(geometry.hasAttribute("materialRole")).toBe(true);

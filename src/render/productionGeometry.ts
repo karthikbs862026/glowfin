@@ -2175,7 +2175,7 @@ function friendlyPopulationHead(
     position: centre,
     // Preserve the reduced head width/depth while giving the semantic facial
     // plane enough vertical area to survive the smallest approved capture.
-    scale: new THREE.Vector3(0.96, 1.12, 0.82),
+    scale: new THREE.Vector3(0.96, 1.28, 0.82),
     colour: palette.skinLight,
     glow: 0.13,
     materialRole: MATERIAL_ROLE.nacre
