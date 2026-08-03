@@ -181,6 +181,8 @@ describe("Phase 3B art geometry inventory", () => {
   it("gives the hero arch a continuous supported silhouette", () => {
     expect(GATE_PRESENTATION_CONTRACT.maximumSimultaneousCeremonialCanopies)
       .toBe(1);
+    expect(GATE_PRESENTATION_CONTRACT.contourDeepRgb).toEqual([0.08, 0.64, 0.72]);
+    expect(GATE_PRESENTATION_CONTRACT.contourMoonRgb).toEqual([0.18, 0.84, 0.88]);
     for (const lod of [0, 1, 2] as const) {
       for (const variant of [0, 1, 2, 3] as const) {
         const canopy = createProductionGateCanopyGeometry(lod, variant);

@@ -621,3 +621,7 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Treat the build as an owner-review cohesion candidate. Full DCC sculpt/UV/PBR
   source replacement and Android/iOS release certification remain independent
   gates.
+- The first full matrix exposed a `2.9986:1` p10 contrast near-miss in one
+  plain/caustic state. Raise only the collider-contour's minimum cyan luminance
+  and rerun the exact matrix; do not round the result, widen the collider or
+  weaken the `3:1` floor.

@@ -23,7 +23,9 @@ import { createMoonstoneObstacleMaterial } from "./moonGardenMaterial";
 const MAX_GATE_PARTS = 32;
 
 export const GATE_PRESENTATION_CONTRACT = {
-  maximumSimultaneousCeremonialCanopies: 1
+  maximumSimultaneousCeremonialCanopies: 1,
+  contourDeepRgb: [0.08, 0.64, 0.72],
+  contourMoonRgb: [0.18, 0.84, 0.88]
 } as const;
 
 export type { GateFacadeVariant } from "../art/premiumWorld";
@@ -193,6 +195,22 @@ export class MoonGardenGates {
       // it, but contextual faces must never erase it in one camera/bloom state.
       depthTest: false,
       depthWrite: false,
+      uniforms: {
+        uDeepCyan: {
+          value: new THREE.Color().setRGB(
+            GATE_PRESENTATION_CONTRACT.contourDeepRgb[0],
+            GATE_PRESENTATION_CONTRACT.contourDeepRgb[1],
+            GATE_PRESENTATION_CONTRACT.contourDeepRgb[2]
+          )
+        },
+        uMoonCyan: {
+          value: new THREE.Color().setRGB(
+            GATE_PRESENTATION_CONTRACT.contourMoonRgb[0],
+            GATE_PRESENTATION_CONTRACT.contourMoonRgb[1],
+            GATE_PRESENTATION_CONTRACT.contourMoonRgb[2]
+          )
+        }
+      },
       vertexShader: /* glsl */ `
         varying vec3 vLocalPosition;
         void main() {
@@ -206,15 +224,18 @@ export class MoonGardenGates {
       `,
       fragmentShader: /* glsl */ `
         precision mediump float;
+        uniform vec3 uDeepCyan;
+        uniform vec3 uMoonCyan;
         varying vec3 vLocalPosition;
         void main() {
           float endFade = smoothstep(-0.5, -0.42, vLocalPosition.y) *
             (1.0 - smoothstep(0.42, 0.5, vLocalPosition.y));
           float waterFlow = 0.94 + 0.06 *
             sin(vLocalPosition.y * 31.0 + vLocalPosition.z * 4.0);
-          vec3 deepCyan = vec3(0.05, 0.55, 0.64);
-          vec3 moonCyan = vec3(0.18, 0.84, 0.88);
-          gl_FragColor = vec4(mix(deepCyan, moonCyan, endFade) * waterFlow, 1.0);
+          gl_FragColor = vec4(
+            mix(uDeepCyan, uMoonCyan, endFade) * waterFlow,
+            1.0
+          );
         }
       `,
       toneMapped: true

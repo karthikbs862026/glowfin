@@ -36,3 +36,8 @@ authoritative for visual cohesion; automated evidence must still prove five
 gate identities, six reef identities, collider alignment within 0.05 world
 units, obstacle contrast, reaction windows, the 90-draw/150k-triangle/48 MB
 limits and a 5,400-frame resource soak.
+
+The first authoritative Version 29 matrix measured `2.9986:1` p10 contrast in
+one plain/caustic state. The correction raises only the dim endpoint of the
+existing collider-derived cyan contour; its position, screen-pixel width and
+the `3:1` threshold remain unchanged.
