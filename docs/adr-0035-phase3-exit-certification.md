@@ -26,8 +26,11 @@ that still called approved work a candidate.
   staging or production artifact with an ambiguous source fingerprint fails
   certification.
 - Make the normal build validate release metadata, mount safety, bundle size
-  and debug stripping. Keep the structural, full phone matrix, touch-audio and
-  5,400-frame lifecycle gates as independent release evidence.
+  and debug stripping. Clear only the ignored, reproducible `dist` directory
+  before Vite runs and reject more than one hashed main/probe bundle so stale
+  output cannot masquerade as a current checkpoint. Keep the structural, full
+  phone matrix, touch-audio and 5,400-frame lifecycle gates as independent
+  release evidence.
 - On `main`, repeat the full render and soak gates and emit an immutable staging
   artifact. The external owner-only Sites checkpoint consumes the same exact
   source fingerprint and is verified with the repository's post-deploy smoke

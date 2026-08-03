@@ -694,6 +694,10 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Require the production build, mounted-path check and hosted smoke test to
   agree on Version 31, environment, full source commit, Version 30 baseline and
   art-build identity.
+- Clear the ignored `dist` directory before every production build and reject
+  duplicate hashed bundles. The Version 31 exact-source rebuild caught a stale
+  prior bundle that would otherwise inflate the package and undermine cache
+  fingerprinting even though the new HTML referenced only the latest file.
 - Repeat the full phone matrix and 5,400-frame soak on `main`, then emit an
   immutable staging artifact. Deploy through the existing owner-only managed
   checkpoint because its credentials may not be copied into GitHub Actions.

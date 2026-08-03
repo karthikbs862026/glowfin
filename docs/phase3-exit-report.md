@@ -19,6 +19,7 @@ a release blocker and requires a separate owner-reviewed build.
 | Release manifest | Deterministic `release.json`, frozen V30 baseline | Implemented; remote evidence pending |
 | Core CI | lint, types, all tests, production build | Pending PR run |
 | Release guards | mounted paths, bundle ceiling, debug stripped | Pending PR run |
+| Clean artifact | exactly one main and one contrast hashed bundle | Pending PR run |
 | Asset contract | deterministic export/pack/publish verification | Pending PR run |
 | Structural art | all semantic assets, colliders and budgets | Pending PR run |
 | Phone rendering | complete 36-state 390×844 matrix | Pending PR run |

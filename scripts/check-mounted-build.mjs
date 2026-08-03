@@ -22,6 +22,13 @@ if (release.version !== 31 || release.phase !== "phase-3-exit") {
 
 const assetsUrl = new URL("assets/", root);
 const files = await readdir(assetsUrl);
+const mainBundles = files.filter((file) => /^index-[^.]+\.js$/.test(file));
+const contrastBundles = files.filter((file) => /^contrastProbe-[^.]+\.js$/.test(file));
+if (mainBundles.length !== 1 || contrastBundles.length !== 1) {
+  throw new Error(
+    `Production assets contain stale hashed bundles: ${mainBundles.length} main, ${contrastBundles.length} contrast.`
+  );
+}
 const bundles = await Promise.all(
   files
     .filter((file) => file.endsWith(".js"))

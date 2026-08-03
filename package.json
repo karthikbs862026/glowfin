@@ -10,7 +10,7 @@
   "scripts": {
     "predev": "npm run art:build-runtime-glbs",
     "dev": "vite",
-    "prebuild": "npm run art:build-runtime-glbs",
+    "prebuild": "node scripts/clean-dist.mjs && npm run art:build-runtime-glbs",
     "build": "tsc --noEmit && vite build --emptyOutDir",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings=0",
