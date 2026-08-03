@@ -6,7 +6,10 @@ import { describe, test } from "node:test";
 import {
   checkCapture,
   checkCreature,
+  checkMerfolk,
+  checkMerfolkVisualReviews,
   checkTrail,
+  checkWorldQuality,
   percentile
 } from "../src/checks.ts";
 import { checkAssetColliderTruth } from "../src/colliderTruth.ts";
@@ -36,7 +39,7 @@ const codes = (items: { code: string }[]) => items.map((item) => item.code);
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 describe("integrated gate fixtures", () => {
-  test("current procedural baseline passes the structural tier", () => {
+  test("current production vertical slice passes the structural tier", () => {
     const result = runGate(load("gate-input.pass.json"), config, "structural");
     assert.equal(result.passed, true);
     assert.equal(result.counts.blocker, 0);
@@ -60,8 +63,128 @@ describe("integrated gate fixtures", () => {
   });
 
   test("procedural baseline cannot masquerade as release art", () => {
-    const result = runGate(load("gate-input.pass.json"), config, "signoff");
+    const input = load("gate-input.pass.json");
+    input.assets[0]!.baselineProcedural = true;
+    const result = runGate(input, config, "signoff");
     assert.ok(codes(result.findings).includes("PROCEDURAL_BASELINE_NOT_RELEASEABLE"));
+  });
+
+  test("missing hero, cast role or reef species cannot masquerade as a premium world", () => {
+    const input = load("gate-input.pass.json");
+    input.worldQuality.life = input.worldQuality.life.filter(
+      (signature) => ![
+        "hero-merfolk-guardian",
+        "merfolk-conch-herald"
+      ].includes(signature)
+    );
+    input.worldQuality.reef = input.worldQuality.reef.slice(0, 4);
+    const findings = checkWorldQuality(input, config.worldQuality);
+    const found = new Set(codes(findings));
+    assert.ok(found.has("PREMIUM_WORLD_FAMILY_MISSING"));
+    assert.ok(found.has("PREMIUM_WORLD_DIVERSITY_BELOW_FLOOR"));
+  });
+
+  test("a faceless or static merfolk asset cannot pass the character gate", () => {
+    const input = load("gate-input.pass.json");
+    const hero = input.assets.find((asset) => asset.family === "heroMerfolk");
+    assert.ok(hero);
+    hero.parts = hero.parts?.filter((part) => part !== "readable-face");
+    hero.clips = hero.clips?.filter((clip) => clip !== "greeting");
+    hero.castRoles = hero.castRoles?.filter((role) => role !== "coral-warden");
+    hero.populationRoles = hero.populationRoles?.filter(
+      (role) => role !== "conch-herald"
+    );
+    hero.readableHeightPixels = 32;
+    hero.readableFaceHeightPixels = 11;
+    hero.readableEyeDiameterPixels = 2;
+    const found = new Set(codes(checkMerfolk(hero, config.merfolk)));
+    assert.ok(found.has("MERFOLK_CHARACTER_PARTS_MISSING"));
+    assert.ok(found.has("MERFOLK_ANIMATION_CLIPS_MISSING"));
+    assert.ok(found.has("MERFOLK_GUARDIAN_ROLES_MISSING"));
+    assert.ok(found.has("MERFOLK_POPULATION_ROLES_MISSING"));
+    assert.ok(found.has("MERFOLK_PHONE_HEIGHT_BELOW_FLOOR"));
+    assert.ok(found.has("MERFOLK_FACE_HEIGHT_BELOW_FLOOR"));
+    assert.ok(found.has("MERFOLK_EYE_SIZE_BELOW_FLOOR"));
+  });
+
+  test("declared cast roles cannot pass when the rendered identities are tiny or hidden", () => {
+    const input = load("gate-input.pass.json");
+    const reviews = input.captures
+      .map((capture) => capture.merfolkVisualReview)
+      .filter((review) => review !== undefined);
+    assert.equal(reviews.length, 3);
+    reviews[0]!.guardian.heightPixels = 44;
+    reviews[0]!.face.heightPixels = 9;
+    reviews[0]!.eyes.heightPixels = 2;
+    reviews[0]!.identity.widthPixels = 8;
+    reviews[0]!.identity.heightPixels = 8;
+    reviews[0]!.guardian.occlusionFraction = 0.62;
+    const citizen = reviews[1]!.population.find(
+      (entry) => entry.role === "reef-citizen"
+    );
+    assert.ok(citizen);
+    citizen.component.visiblePixels = 12;
+    reviews[2]!.population = reviews[2]!.population.filter(
+      (entry) => entry.role !== "conch-herald"
+    );
+    const found = new Set(codes(checkMerfolkVisualReviews(
+      input.captures,
+      config.merfolk,
+      true
+    )));
+    for (const expected of [
+      "MERFOLK_RENDERED_HEIGHT_BELOW_FLOOR",
+      "MERFOLK_RENDERED_FACE_BELOW_FLOOR",
+      "MERFOLK_RENDERED_EYES_BELOW_FLOOR",
+      "MERFOLK_IDENTITY_REGALIA_BELOW_FLOOR",
+      "MERFOLK_GUARDIAN_OCCLUDED",
+      "MERFOLK_POPULATION_AREA_BELOW_FLOOR",
+      "MERFOLK_POPULATION_NOT_RENDERED"
+    ]) assert.ok(found.has(expected), `missing ${expected}`);
+  });
+
+  test("faceless, stacked, frozen or horizontal residents fail rendered choreography", () => {
+    const input = load("gate-input.pass.json");
+    const reviews = input.captures
+      .map((capture) => capture.merfolkVisualReview)
+      .filter((review) => review !== undefined);
+    assert.equal(reviews.length, 3);
+    for (const review of reviews) {
+      const citizen = review.population.find((entry) =>
+        entry.role === "reef-citizen"
+      );
+      const swimmer = review.population.find((entry) =>
+        entry.role === "current-swimmer"
+      );
+      assert.ok(citizen);
+      assert.ok(swimmer);
+      citizen.face.heightPixels = 3;
+      citizen.eyes.heightPixels = 0;
+      citizen.instances[0]!.widthPixels = 40;
+      citizen.instances[0]!.heightPixels = 18;
+      swimmer.instances[0]!.widthPixels = 18;
+      swimmer.instances[0]!.heightPixels = 42;
+      review.motion.swimmerCentreSeparationPixels = [18, 22];
+      review.motion.swimmerBoxOverlapFraction = [0.72, 0.64];
+      review.motion.swimmerTravelPixels = [0.5, 0.5];
+      review.motion.heraldTravelPixels = [14, 11];
+    }
+    const found = new Set(codes(checkMerfolkVisualReviews(
+      input.captures,
+      config.merfolk,
+      true
+    )));
+    for (const expected of [
+      "MERFOLK_POPULATION_FACE_BELOW_FLOOR",
+      "MERFOLK_POPULATION_EYES_BELOW_FLOOR",
+      "MERFOLK_RESIDENT_POSE_NOT_UPRIGHT",
+      "MERFOLK_SWIMMER_POSE_NOT_HORIZONTAL",
+      "MERFOLK_SWIMMERS_STACKED",
+      "MERFOLK_SWIMMERS_OVERLAP",
+      "MERFOLK_SWIMMER_FROZEN",
+      "MERFOLK_SWIMMER_MOTION_SYNCHRONIZED",
+      "MERFOLK_UPRIGHT_RESIDENT_DRIFT"
+    ]) assert.ok(found.has(expected), `missing ${expected}`);
   });
 });
 
@@ -174,7 +297,7 @@ describe("manifest completeness", () => {
     observedStates: ["calm", "mid", "max", "collision", "recovery"],
     animationDriver: "simulation",
     viewportWidthFraction: 0.09,
-    eyeGlowPixels: 5,
+    eyeGlowPixels: 10,
     lods: [
       { level: 0, triangles: 7000 },
       { level: 1, triangles: 3500 }
@@ -211,7 +334,9 @@ describe("manifest completeness", () => {
 
   test("production family must include every budgeted LOD", () => {
     const input = load("gate-input.pass.json");
-    input.assets[0]!.baselineProcedural = false;
+    input.assets[0]!.lods = input.assets[0]!.lods.filter(
+      (lod) => lod.level !== 2
+    );
     const result = runGate(input, config, "structural");
     assert.ok(codes(result.findings).includes("LOD_REQUIRED_MISSING"));
   });
@@ -241,6 +366,21 @@ describe("capture evidence cannot pass by omission", () => {
       .includes("DUPLICATE_CAPTURE_STATE"));
   });
 
+  test("unapproved state blocks even when required coverage is present", () => {
+    const input = load("gate-input.pass.json");
+    const extra = clone(input.captures[0]!);
+    extra.state = {
+      momentum: "low",
+      bloom: true,
+      caustics: true,
+      quality: "high"
+    };
+    extra.source.evidenceId = "unexpected-extra-state";
+    input.captures.push(extra);
+    assert.ok(codes(runGate(input, config, "fast").findings)
+      .includes("UNEXPECTED_CAPTURE_STATE"));
+  });
+
   test("no obstacle samples are a blocker", () => {
     const capture = baseCapture();
     capture.obstacles = [];
@@ -253,6 +393,15 @@ describe("capture evidence cannot pass by omission", () => {
     assert.ok(codes(checkCapture(capture, config)).includes("CONTRAST_NOT_SAMPLED"));
   });
 
+  test("sparse contrast evidence cannot pass percentile interpolation", () => {
+    const capture = baseCapture();
+    capture.frameContrastRatios = [9];
+    capture.obstacles[0]!.ratios = [9];
+    const found = codes(checkCapture(capture, config));
+    assert.ok(found.includes("CONTRAST_SAMPLE_COVERAGE_INSUFFICIENT"));
+    assert.ok(found.includes("OBSTACLE_SAMPLE_COVERAGE_INSUFFICIENT"));
+  });
+
   test("one low-contrast obstacle fails inside passing frame", () => {
     const capture = baseCapture();
     capture.frameContrastRatios = Array.from({ length: 20 }, () => 5);
@@ -260,6 +409,19 @@ describe("capture evidence cannot pass by omission", () => {
     const found = codes(checkCapture(capture, config));
     assert.ok(!found.includes("FRAME_CONTRAST_BELOW_FLOOR"));
     assert.ok(found.includes("OBSTACLE_CONTRAST_BELOW_FLOOR"));
+  });
+
+  test("a hero merfolk that shrinks below phone readability blocks capture", () => {
+    const capture = baseCapture();
+    capture.heroMerfolkHeightPixels = 40;
+    capture.heroMerfolkFaceHeightPixels = 12;
+    capture.heroMerfolkEyeDiameterPixels = 2;
+    assert.ok(codes(checkCapture(capture, config))
+      .includes("MERFOLK_PHONE_HEIGHT_BELOW_FLOOR"));
+    assert.ok(codes(checkCapture(capture, config))
+      .includes("MERFOLK_FACE_HEIGHT_BELOW_FLOOR"));
+    assert.ok(codes(checkCapture(capture, config))
+      .includes("MERFOLK_EYE_SIZE_BELOW_FLOOR"));
   });
 
   test("CI emulation cannot satisfy sign-off source policy", () => {
@@ -301,6 +463,13 @@ describe("config validation", () => {
     const scene = bad.scene as Record<string, unknown>;
     const drawCalls = scene.drawCalls as Record<string, unknown>;
     delete drawCalls.hard;
+    assert.ok(codes(validateGateConfig(bad)).includes("CONFIG_MALFORMED"));
+  });
+
+  test("missing beauty threshold blocks a falsely green visual review", () => {
+    const bad = clone(config) as unknown as Record<string, unknown>;
+    const beauty = bad.beauty as Record<string, unknown>;
+    delete beauty.nearBlackFractionMax;
     assert.ok(codes(validateGateConfig(bad)).includes("CONFIG_MALFORMED"));
   });
 });

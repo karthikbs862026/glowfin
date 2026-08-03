@@ -1,21 +1,13 @@
 /**
- * Primitive-shape renderer for Phase 1 (Part 9: "primitives only").
+ * Production renderer for the Phase 3B Moon-Garden vertical slice.
  *
- * No shaders, no art — the point is to make the simulation playable and
- * readable so the tuning can be judged by hand instead of only by synthetic
- * pilots. Caustics, trail ribbon and the rest arrive in Phase 2.
- *
- * Everything repeated is pooled and hard-capped (Part 3.3, 4.3). Nothing here
- * allocates per frame.
+ * Gameplay remains bound to deterministic simulation data. Repeated art is
+ * instanced, LOD-bucketed and hard-capped; no art collection grows per frame.
  */
 import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
 import type { Gate } from "../sim/course";
-import type { SimState } from "../sim/state";
-import {
-  gateWallGeometry,
-  PROCEDURAL_GATE_VISUAL
-} from "../sim/gateGeometry";
+import { forwardSpeed, type SimState } from "../sim/state";
 import {
   createCausticMaterial,
   setCausticOctaves,
@@ -30,12 +22,14 @@ import { readGpuName } from "../perf/metrics";
 import { TrailRibbon } from "./trail";
 import { Creature } from "./creature";
 import { Environment } from "./environment";
+import { MoonGardenGates } from "./gateArt";
+import { MERFOLK_MASK_ENTRIES } from "../art/merfolkMask";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { loadRuntimeProductionGeometry } from "./runtimeProductionAssets";
 
 /** Hard caps. Part 4.6 requires pool sizes be part of the performance budget. */
-const MAX_POOLED_GATES = 16;
 const MAX_POOLED_STRIPES = 40;
 const STRIPE_SPACING_UNITS = 14;
 
@@ -43,18 +37,16 @@ function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
-interface GateVisual {
-  left: THREE.Mesh;
-  right: THREE.Mesh;
-}
-
 export class GameView {
   readonly scene = new THREE.Scene();
   readonly camera: THREE.PerspectiveCamera;
+  /** Resolves after required textures and the GLB install-or-fallback decision. */
+  readonly ready: Promise<void>;
   private readonly renderer: THREE.WebGLRenderer;
 
   private readonly creature: Creature;
   private readonly environment: Environment;
+  private readonly gates: MoonGardenGates;
   private readonly floorMaterial: THREE.ShaderMaterial;
   private readonly wallMaterial: THREE.ShaderMaterial;
   private readonly trail: TrailRibbon;
@@ -75,10 +67,20 @@ export class GameView {
    */
   private readonly maskObstacle = new THREE.ShaderMaterial({
     uniforms: { uMaxDepth: { value: 1e9 } },
+    // The mask represents authoritative collision truth, not what happened to
+    // win the beauty render's depth test. Drawing it through depth makes a
+    // visually occluded seam disappear from the evidence instead of producing
+    // the low-contrast samples that should block release.
+    depthTest: false,
+    depthWrite: false,
     vertexShader: `
       varying float vDepth;
       void main() {
-        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vec4 localPosition = vec4(position, 1.0);
+        #ifdef USE_INSTANCING
+          localPosition = instanceMatrix * localPosition;
+        #endif
+        vec4 mv = modelViewMatrix * localPosition;
         vDepth = -mv.z;
         gl_Position = projectionMatrix * mv;
       }
@@ -102,19 +104,71 @@ export class GameView {
       }
     `
   });
-  private readonly maskOther = new THREE.MeshBasicMaterial({ color: 0x000000 });
+  /**
+   * Mask replacements must preserve double-sided depth occlusion from the
+   * beauty materials. Front-sided replacements culled broken-wall back faces,
+   * exposing hidden contour pixels in the mask that the player never saw.
+   */
+  private readonly maskObstacleContext = new THREE.MeshBasicMaterial({
+    color: 0x808080,
+    side: THREE.DoubleSide
+  });
+  private readonly maskOther = new THREE.MeshBasicMaterial({
+    color: 0x000000,
+    side: THREE.DoubleSide
+  });
   private readonly savedMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
+  private readonly savedVisibility = new Map<THREE.Object3D, boolean>();
   private maskMode = false;
+  private readonly merfolkMaskMaterials = new Map<
+    string,
+    THREE.MeshBasicMaterial
+  >(MERFOLK_MASK_ENTRIES.map((entry) => [
+    entry.role,
+    new THREE.MeshBasicMaterial({
+      color: entry.colour,
+      side: THREE.DoubleSide,
+      vertexColors: false,
+      toneMapped: false,
+      fog: false
+    })
+  ]));
+  private readonly merfolkSavedMaterials = new Map<
+    THREE.Mesh,
+    THREE.Material | THREE.Material[]
+  >();
+  private readonly merfolkSavedVisibility = new Map<THREE.Object3D, boolean>();
+  private readonly merfolkMaskBackground = new THREE.Color(0x000000);
+  private merfolkMaskMode = false;
+  private merfolkMaskBackgroundBefore: THREE.Scene["background"] = null;
+  private merfolkMaskFogBefore: THREE.Scene["fog"] = null;
   readonly gpuName: string;
-  private readonly gatePool: GateVisual[] = [];
-  private readonly stripePool: THREE.Mesh[] = [];
+  private readonly speedInlays: THREE.InstancedMesh;
+  private readonly speedInlayMatrix = new THREE.Matrix4();
   private readonly disposables: Array<{ dispose(): void }> = [];
+  private runtimeProductionStatus: {
+    gate: "fallback" | "glb";
+    reef: "fallback" | "glb";
+    build: string | null;
+    error: string | null;
+  } = {
+    gate: "fallback",
+    reef: "fallback",
+    build: null,
+    error: null
+  };
 
   constructor(
     canvas: HTMLCanvasElement,
     private readonly cfg: TuningConfig
   ) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    // The deeper directional material pass intentionally removed broad
+    // caustic wash. A small filmic exposure lift keeps midtones above the
+    // Art-Bible floor without flattening stone cavities or clipping bloom.
+    this.renderer.toneMappingExposure = 0.96;
     // EffectComposer runs several passes and renderer.info auto-resets on each
     // one, so by the time stats() reads it, it describes bloom's final
     // fullscreen quad rather than the scene — the overlay showed "draws 1
@@ -125,7 +179,110 @@ export class GameView {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
 
-    this.scene.background = new THREE.Color(0x04060f);
+    const loadingManager = new THREE.LoadingManager();
+    const textureReady = new Promise<void>((resolve, reject) => {
+      loadingManager.onLoad = resolve;
+      loadingManager.onError = (url) => {
+        reject(new Error(`Moon-Garden art asset failed to load: ${url}`));
+      };
+    });
+    const textureLoader = new THREE.TextureLoader(loadingManager);
+    const maxAnisotropy = Math.min(
+      8,
+      this.renderer.capabilities.getMaxAnisotropy()
+    );
+    const moonstoneSurface = textureLoader.load(
+      "art/moon-garden/moonstone-seabed.webp"
+    );
+    moonstoneSurface.colorSpace = THREE.SRGBColorSpace;
+    moonstoneSurface.wrapS = THREE.RepeatWrapping;
+    moonstoneSurface.wrapT = THREE.RepeatWrapping;
+    moonstoneSurface.repeat.set(72 / 25, 4000 / 25);
+    moonstoneSurface.anisotropy = maxAnisotropy;
+    // The grounded seabed uses mesh UVs, but the caustic floor shader samples
+    // in world space. Sharing the 72×4000 mesh repeat with that shader made
+    // the texture about 55 times denser forward than laterally, creating
+    // racetrack-like horizontal bands. A clone keeps world sampling isotropic.
+    const moonstoneFloorSurface = moonstoneSurface.clone();
+    moonstoneFloorSurface.repeat.set(1, 1);
+    moonstoneFloorSurface.anisotropy = maxAnisotropy;
+    const moonstoneVolumeSurface = textureLoader.load(
+      "art/moon-garden/moonstone-surface.webp"
+    );
+    moonstoneVolumeSurface.colorSpace = THREE.SRGBColorSpace;
+    moonstoneVolumeSurface.wrapS = THREE.MirroredRepeatWrapping;
+    moonstoneVolumeSurface.wrapT = THREE.MirroredRepeatWrapping;
+    moonstoneVolumeSurface.anisotropy = maxAnisotropy;
+    const livingReefSurface = textureLoader.load(
+      "art/moon-garden/living-reef-surface.webp"
+    );
+    livingReefSurface.colorSpace = THREE.SRGBColorSpace;
+    livingReefSurface.wrapS = THREE.MirroredRepeatWrapping;
+    livingReefSurface.wrapT = THREE.MirroredRepeatWrapping;
+    livingReefSurface.anisotropy = maxAnisotropy;
+    const glowfinSurface = textureLoader.load(
+      "art/moon-garden/glowfin-surface.webp"
+    );
+    glowfinSurface.colorSpace = THREE.SRGBColorSpace;
+    glowfinSurface.wrapS = THREE.MirroredRepeatWrapping;
+    glowfinSurface.wrapT = THREE.MirroredRepeatWrapping;
+    glowfinSurface.anisotropy = maxAnisotropy;
+
+    this.disposables.push(
+      moonstoneSurface,
+      moonstoneFloorSurface,
+      moonstoneVolumeSurface,
+      livingReefSurface,
+      glowfinSurface
+    );
+
+    const backgroundCanvas = document.createElement("canvas");
+    backgroundCanvas.width = 128;
+    backgroundCanvas.height = 256;
+    const backgroundContext = backgroundCanvas.getContext("2d");
+    if (!backgroundContext) {
+      throw new Error("2D canvas is required for the Moon-Garden water gradient.");
+    }
+    const backgroundGradient = backgroundContext.createLinearGradient(
+      0,
+      0,
+      0,
+      backgroundCanvas.height
+    );
+    backgroundGradient.addColorStop(0, "#071329");
+    backgroundGradient.addColorStop(0.3, "#102746");
+    backgroundGradient.addColorStop(0.62, "#12455f");
+    backgroundGradient.addColorStop(0.84, "#17576d");
+    backgroundGradient.addColorStop(1, "#0a3349");
+    backgroundContext.fillStyle = backgroundGradient;
+    backgroundContext.fillRect(
+      0,
+      0,
+      backgroundCanvas.width,
+      backgroundCanvas.height
+    );
+    const moonHaze = backgroundContext.createRadialGradient(
+      backgroundCanvas.width * 0.5,
+      backgroundCanvas.height * 0.14,
+      2,
+      backgroundCanvas.width * 0.5,
+      backgroundCanvas.height * 0.14,
+      backgroundCanvas.width * 0.72
+    );
+    moonHaze.addColorStop(0, "rgba(128, 218, 241, 0.27)");
+    moonHaze.addColorStop(0.38, "rgba(76, 166, 207, 0.13)");
+    moonHaze.addColorStop(1, "rgba(18, 66, 99, 0)");
+    backgroundContext.fillStyle = moonHaze;
+    backgroundContext.fillRect(
+      0,
+      0,
+      backgroundCanvas.width,
+      backgroundCanvas.height
+    );
+    const backgroundTexture = new THREE.CanvasTexture(backgroundCanvas);
+    backgroundTexture.colorSpace = THREE.SRGBColorSpace;
+    this.scene.background = backgroundTexture;
+    this.disposables.push(backgroundTexture);
     // Fog starts well beyond the sight distance so it never eats an obstacle
     // the player is supposed to be reading (Part 3.4).
     // Fog must begin BEYOND the reaction window, not at its edge.
@@ -136,7 +293,7 @@ export class GameView {
     // out at exactly the distance Part 4.5 requires them to stay readable, and
     // the probe caught it as near-black obstacles on a near-black background.
     this.scene.fog = new THREE.Fog(
-      0x04060f,
+      0x12364c,
       cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier,
       cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier
     );
@@ -148,29 +305,55 @@ export class GameView {
       cfg.readability.visibleAheadUnits * (cfg.visual.fogFarMultiplier + 0.4)
     );
 
-    this.scene.add(new THREE.AmbientLight(0x4488cc, 1.1));
-    const key = new THREE.DirectionalLight(0xaaddff, 1.0);
-    key.position.set(0.4, 1, 0.6);
+    this.scene.add(new THREE.HemisphereLight(0x78c5e8, 0x050d1b, 1.08));
+    this.scene.add(new THREE.AmbientLight(0x285877, 0.38));
+    const key = new THREE.DirectionalLight(0xb9edff, 1.65);
+    key.position.set(-0.5, 1, 0.55);
     this.scene.add(key);
-
-    const halfWidth = cfg.lane.halfWidth;
+    const coralBounce = new THREE.DirectionalLight(0xff6bba, 0.28);
+    coralBounce.position.set(0.65, -0.15, -0.8);
+    this.scene.add(coralBounce);
 
     const fogNear = cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier;
     const fogFar = cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier;
 
-    // --- floor, with caustics (Part 3.2 priority 1) ---
-    const floorGeo = new THREE.PlaneGeometry(halfWidth * 2, 4000);
+    // --- grounded seabed and readable Moon-Garden route ---
+    //
+    // The old floor ended exactly at the lane boundary, leaving coral and
+    // ruins floating against black. A broad seabed now grounds the ecology,
+    // while the narrower route keeps the playable corridor legible.
+    const seabedGeo = new THREE.PlaneGeometry(72, 4000);
+    const seabedMaterial = new THREE.MeshStandardMaterial({
+      color: 0x7693a1,
+      map: moonstoneSurface,
+      roughness: 1,
+      metalness: 0
+    });
+    const seabed = new THREE.Mesh(seabedGeo, seabedMaterial);
+    seabed.rotation.x = -Math.PI / 2;
+    seabed.position.y = -1.08;
+    this.scene.add(seabed);
+    this.disposables.push(seabedGeo, seabedMaterial);
+
+    // One continuous garden floor replaces the bright rectangular "road"
+    // bounded by raised rails. Gates and reef placement communicate the safe
+    // corridor; the seabed should remain a world surface, not a racetrack.
+    const floorGeo = new THREE.PlaneGeometry(72, 4000);
     this.floorMaterial = createCausticMaterial({
-      baseColor: 0x081426,
+      baseColor: 0x20364a,
       causticColor: 0x2ea8d8,
       scale: cfg.visual.causticScaleFloor,
       intensity: cfg.visual.causticIntensityFloor,
       sharpness: cfg.visual.causticSharpness,
       speed: cfg.visual.causticSpeed,
-      fogColor: 0x04060f,
+      fogColor: 0x12364c,
       fogNear,
       fogFar,
-      octaves: 3
+      octaves: 3,
+      surfaceMap: moonstoneFloorSurface,
+      surfaceScale: 0.11,
+      surfaceWeight: 0.22,
+      routeHalfWidth: cfg.lane.halfWidth
     });
     const floor = new THREE.Mesh(floorGeo, this.floorMaterial);
     floor.rotation.x = -Math.PI / 2;
@@ -178,79 +361,80 @@ export class GameView {
     this.scene.add(floor);
     this.disposables.push(floorGeo, this.floorMaterial);
 
-    // --- lane edges: the player needs a fixed reference to read lateral position ---
-    const edgeGeo = new THREE.BoxGeometry(0.25, 0.5, 4000);
-    const edgeMat = new THREE.MeshStandardMaterial({
-      color: 0x0d2a3a,
-      emissive: 0x18506b,
-      emissiveIntensity: 0.8
+    // --- submerged crescent inlays: one instanced draw, not forty debug bars ---
+    const inlayGeo = new THREE.TorusGeometry(
+      0.66,
+      0.035,
+      4,
+      22,
+      Math.PI * 1.18
+    );
+    inlayGeo.rotateX(-Math.PI / 2);
+    inlayGeo.rotateZ(-Math.PI * 0.59);
+    inlayGeo.scale(0.95, 1, 0.35);
+    const inlayMaterial = new THREE.MeshBasicMaterial({
+      color: 0x55bdd7,
+      transparent: true,
+      opacity: 0.045,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false
     });
-    for (const sign of [-1, 1]) {
-      const edge = new THREE.Mesh(edgeGeo, edgeMat);
-      edge.position.set(sign * halfWidth, -0.8, 0);
-      this.scene.add(edge);
-    }
-    this.disposables.push(edgeGeo, edgeMat);
+    this.speedInlays = new THREE.InstancedMesh(
+      inlayGeo,
+      inlayMaterial,
+      MAX_POOLED_STRIPES
+    );
+    this.speedInlays.frustumCulled = false;
+    this.speedInlays.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.scene.add(this.speedInlays);
+    this.disposables.push(inlayGeo, inlayMaterial);
 
-    // --- speed stripes: without moving reference objects, speed is invisible ---
-    const stripeGeo = new THREE.BoxGeometry(halfWidth * 2 * 0.9, 0.06, 0.7);
-    const stripeMat = new THREE.MeshStandardMaterial({
-      color: 0x102a3d,
-      emissive: 0x1d4f70,
-      emissiveIntensity: 0.6
-    });
-    for (let i = 0; i < MAX_POOLED_STRIPES; i++) {
-      const stripe = new THREE.Mesh(stripeGeo, stripeMat);
-      stripe.position.y = -0.95;
-      this.scene.add(stripe);
-      this.stripePool.push(stripe);
-    }
-    this.disposables.push(stripeGeo, stripeMat);
-
-    // --- gate walls: one shared unit box, scaled per gate ---
-    const wallGeo = new THREE.BoxGeometry(1, 1, 1);
-    // Caustics contribute *additively* on top of a base colour chosen to sit
-    // well clear of the background. That is deliberate: an additive term can
-    // only brighten an obstacle, never darken it, so no lighting state can push
-    // a silhouette below the Part 3.4 contrast floor. A multiplicative or
-    // shadowing term could, which is why this is not one.
-    this.wallMaterial = createCausticMaterial({
-      baseColor: 0x1b4668,
-      causticColor: 0x63e0ff,
-      scale: cfg.visual.causticScaleWall,
-      intensity: cfg.visual.causticIntensityWall,
-      sharpness: cfg.visual.causticSharpness,
-      speed: cfg.visual.causticSpeed,
-      fogColor: 0x04060f,
-      fogNear,
-      fogFar,
-      octaves: 3,
-      edgeStrength: cfg.visual.obstacleEdgeStrength,
-      edgeWidthPixels: cfg.visual.obstacleEdgeWidthPixels,
-      edgeColor: 0xbdf4ff
-    });
-    const wallMat = this.wallMaterial;
-    for (let i = 0; i < MAX_POOLED_GATES; i++) {
-      const left = new THREE.Mesh(wallGeo, wallMat);
-      const right = new THREE.Mesh(wallGeo, wallMat);
-      // Tagged so the contrast probe can identify obstacle silhouettes without
-      // the renderer keeping a parallel list in sync.
-      left.userData["isObstacle"] = true;
-      right.userData["isObstacle"] = true;
-      left.visible = false;
-      right.visible = false;
-      this.scene.add(left, right);
-      this.gatePool.push({ left, right });
-    }
-    this.disposables.push(wallGeo, this.wallMaterial);
+    // --- game-ready wall-fragment kit with independently truthful contours ---
+    this.gates = new MoonGardenGates(cfg, moonstoneVolumeSurface);
+    this.wallMaterial = this.gates.material;
+    for (const object of this.gates.objects) this.scene.add(object);
 
     // --- creature (Part 3.1) ---
-    this.creature = new Creature(cfg);
+    this.creature = new Creature(cfg, glowfinSurface);
     this.scene.add(this.creature.group);
 
     // --- drowned city, god-rays, responsive coral (Part 3.2 #3 and #5) ---
-    this.environment = new Environment(cfg);
+    this.environment = new Environment(cfg, {
+      surfaceMap: moonstoneVolumeSurface,
+      livingMap: livingReefSurface
+    });
     for (const object of this.environment.objects) this.scene.add(object);
+
+    // Production GLBs are an atomic visual upgrade. Gameplay can still start
+    // from the already-validated code-native kit if a CDN/cache request fails;
+    // CI separately requires this status to be "glb" so the fallback cannot
+    // masquerade as production evidence.
+    const productionGeometryReady = loadRuntimeProductionGeometry()
+      .then((assets) => {
+        this.environment.installRuntimeReefGeometry(assets.reef);
+        this.gates.installRuntimeGeometry(assets.gates);
+        this.runtimeProductionStatus = {
+          gate: "glb",
+          reef: "glb",
+          build: assets.build,
+          error: null
+        };
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        this.runtimeProductionStatus = {
+          gate: "fallback",
+          reef: "fallback",
+          build: null,
+          error: message
+        };
+        console.warn(`Glowfin production GLB fallback: ${message}`);
+      });
+    this.ready = Promise.all([
+      textureReady,
+      productionGeometryReady
+    ]).then(() => undefined);
 
     // --- trail ribbon (Part 3.2 priority 2) ---
     this.trail = new TrailRibbon(cfg);
@@ -292,14 +476,89 @@ export class GameView {
       this.trail.mesh.visible = false;
       this.scene.traverse((object) => {
         if (!(object instanceof THREE.Mesh)) return;
+        if (object.userData["hideInArtMask"]) {
+          this.savedVisibility.set(object, object.visible);
+          object.visible = false;
+          return;
+        }
         this.savedMaterials.set(object, object.material);
-        object.material = object.userData["isObstacle"] ? this.maskObstacle : this.maskOther;
+        object.material = object.userData["isObstacle"]
+          ? this.maskObstacle
+          : object.userData["isObstacleContext"]
+            ? this.maskObstacleContext
+            : this.maskOther;
       });
     } else {
       for (const [mesh, material] of this.savedMaterials) mesh.material = material;
       this.savedMaterials.clear();
+      for (const [object, visible] of this.savedVisibility) {
+        object.visible = visible;
+      }
+      this.savedVisibility.clear();
       this.trail.mesh.visible = true;
     }
+  }
+
+  /**
+   * Render-time semantic mask for phone visibility QA. Unlike the structural
+   * manifest, this proves that each role survives the real chase camera and
+   * architecture depth buffer. Isolated mode supplies the unoccluded baseline
+   * used to calculate how much of a role the city hides.
+   */
+  setMerfolkMaskMode(enabled: boolean, isolated = false): void {
+    if (!enabled && !this.merfolkMaskMode) return;
+    if (enabled && this.merfolkMaskMode) this.setMerfolkMaskMode(false);
+    if (enabled && this.maskMode) {
+      throw new Error("Merfolk and obstacle art masks cannot be active together.");
+    }
+
+    this.merfolkMaskMode = enabled;
+    if (enabled) {
+      this.merfolkMaskBackgroundBefore = this.scene.background;
+      this.merfolkMaskFogBefore = this.scene.fog;
+      this.scene.background = this.merfolkMaskBackground;
+      this.scene.fog = null;
+      this.merfolkSavedVisibility.set(this.trail.mesh, this.trail.mesh.visible);
+      this.trail.mesh.visible = false;
+      this.scene.traverse((object) => {
+        if (object === this.trail.mesh) return;
+        if (object instanceof THREE.Points || object instanceof THREE.Line) {
+          this.merfolkSavedVisibility.set(object, object.visible);
+          object.visible = false;
+          return;
+        }
+        if (!(object instanceof THREE.Mesh)) return;
+        this.merfolkSavedMaterials.set(object, object.material);
+        const role = object.userData["merfolkMaskRole"];
+        const roleMaterial = typeof role === "string"
+          ? this.merfolkMaskMaterials.get(role)
+          : undefined;
+        if (roleMaterial) {
+          object.material = roleMaterial;
+          return;
+        }
+        if (isolated) {
+          this.merfolkSavedVisibility.set(object, object.visible);
+          object.visible = false;
+        } else {
+          object.material = this.maskOther;
+        }
+      });
+      return;
+    }
+
+    for (const [mesh, material] of this.merfolkSavedMaterials) {
+      mesh.material = material;
+    }
+    this.merfolkSavedMaterials.clear();
+    for (const [object, visible] of this.merfolkSavedVisibility) {
+      object.visible = visible;
+    }
+    this.merfolkSavedVisibility.clear();
+    this.scene.background = this.merfolkMaskBackgroundBefore;
+    this.scene.fog = this.merfolkMaskFogBefore;
+    this.merfolkMaskBackgroundBefore = null;
+    this.merfolkMaskFogBefore = null;
   }
 
   /**
@@ -315,6 +574,11 @@ export class GameView {
     return { pixels, width, height };
   }
 
+  /** Current internal-to-CSS pixel scale, used to keep probe offsets resolution-aware. */
+  capturePixelRatio(): number {
+    return this.renderer.getPixelRatio();
+  }
+
   /** Limit which obstacles count as silhouettes, by view depth. */
   setMaskMaxDepth(depth: number): void {
     const uniform = this.maskObstacle.uniforms["uMaxDepth"];
@@ -323,6 +587,10 @@ export class GameView {
 
   /** Render the silhouette mask directly, bypassing post-processing. */
   renderMask(): void {
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  renderMerfolkMask(): void {
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -367,6 +635,7 @@ export class GameView {
     if (wallIntensity) {
       wallIntensity.value = this.cfg.visual.causticIntensityWall * intensityScale;
     }
+    this.environment.setDensity(settings.ambientLifeDensity);
   }
 
   /**
@@ -403,6 +672,9 @@ export class GameView {
     activeMaterials: number;
     godRayMeshes: number;
     textureMemoryMB: number;
+    heroMerfolkHeightPixels: number;
+    heroMerfolkFaceHeightPixels: number;
+    heroMerfolkEyeDiameterPixels: number;
   } {
     const materials = new Set<string>();
     this.scene.traverse((object) => {
@@ -415,9 +687,38 @@ export class GameView {
     return {
       activeMaterials: materials.size,
       godRayMeshes: this.cfg.environment.godRayCount,
-      // Current Phase 3A procedural build has no resident art textures.
-      textureMemoryMB: 0
+      // Two authored moonstone sources plus the independently sampled floor
+      // clone and tiny generated water gradient. Review-character and
+      // skyline/life atlas textures are no longer loaded.
+      textureMemoryMB: 10.3,
+      heroMerfolkHeightPixels: this.environment.heroMerfolkScreenHeightPixels(
+        this.camera,
+        this.renderer.domElement.clientHeight || window.innerHeight
+      ),
+      heroMerfolkFaceHeightPixels:
+        this.environment.heroMerfolkFaceHeightPixels(
+          this.camera,
+          this.renderer.domElement.clientHeight || window.innerHeight
+        ),
+      heroMerfolkEyeDiameterPixels:
+        this.environment.heroMerfolkEyeDiameterPixels(
+          this.camera,
+          this.renderer.domElement.clientHeight || window.innerHeight
+        )
     };
+  }
+
+  activeHeroMerfolkRole(): string {
+    return this.environment.heroMerfolkRole();
+  }
+
+  productionAssetStatus(): Readonly<{
+    gate: "fallback" | "glb";
+    reef: "fallback" | "glb";
+    build: string | null;
+    error: string | null;
+  }> {
+    return this.runtimeProductionStatus;
   }
 
   /** Live draw-call and triangle counts, for the Part 4.6 budget check. */
@@ -425,6 +726,17 @@ export class GameView {
     return {
       drawCalls: this.renderer.info.render.calls,
       triangles: this.renderer.info.render.triangles
+    };
+  }
+
+  /**
+   * Stable renderer allocation counts for the deterministic CI soak.
+   * These are GPU-side Three.js resources, not JavaScript heap estimates.
+   */
+  resourceStats(): { geometries: number; textures: number } {
+    return {
+      geometries: this.renderer.info.memory.geometries,
+      textures: this.renderer.info.memory.textures
     };
   }
 
@@ -455,11 +767,36 @@ export class GameView {
     advanceCausticTime(this.wallMaterial, elapsedSec, cfg.visual.causticSpeed);
     const momentumFraction =
       cfg.momentum.ceiling === 0 ? 0 : sim.momentum / cfg.momentum.ceiling;
+    const speedRange =
+      cfg.speed.forwardAtMaxMomentum - cfg.speed.forwardAtZeroMomentum;
+    const speedFraction = speedRange <= 0
+      ? 0
+      : (forwardSpeed(sim, cfg) - cfg.speed.forwardAtZeroMomentum) / speedRange;
     const worldZ = -sim.forwardDistance;
 
     // --- creature (Part 3.1) ---
     this.creature.group.position.set(sim.lateralPosition, 0, worldZ);
-    this.creature.update(momentumFraction, lightFraction, sim.smoothedSteering, frameSec);
+    const collisionFraction = cfg.momentum.stunDurationSec <= 0
+      ? 0
+      : Math.min(1, sim.stunRemainingSec / cfg.momentum.stunDurationSec);
+    const recoveryFraction =
+      sim.stunRemainingSec <= 0 &&
+      cfg.momentum.invulnerabilityDurationSec > 0
+        ? Math.min(
+          1,
+          sim.invulnerableRemainingSec /
+            cfg.momentum.invulnerabilityDurationSec
+        )
+        : 0;
+    this.creature.update(
+      momentumFraction,
+      speedFraction,
+      lightFraction,
+      sim.smoothedSteering,
+      frameSec,
+      collisionFraction,
+      recoveryFraction
+    );
 
     // --- camera (Part 4.5: readability at speed) ---
     const behind = lerp(
@@ -497,11 +834,17 @@ export class GameView {
       sim.forwardDistance,
       sim.lateralPosition,
       momentumFraction,
-      frameSec
+      elapsedSec,
+      gates
     );
 
     this.updateStripes(sim.forwardDistance);
-    this.updateGates(sim.forwardDistance, gates);
+    this.gates.update(
+      sim.forwardDistance,
+      gates,
+      this.camera,
+      this.renderer.domElement.clientHeight || window.innerHeight
+    );
 
     if (this.bloomEnabled) this.composer.render();
     else this.renderer.render(this.scene, this.camera);
@@ -509,71 +852,15 @@ export class GameView {
 
   private updateStripes(distance: number): void {
     const first = Math.floor((distance - 20) / STRIPE_SPACING_UNITS);
-    for (let i = 0; i < this.stripePool.length; i++) {
-      const stripe = this.stripePool[i];
-      if (!stripe) continue;
-      stripe.position.z = -(first + i) * STRIPE_SPACING_UNITS;
+    for (let i = 0; i < MAX_POOLED_STRIPES; i++) {
+      this.speedInlayMatrix.makeTranslation(
+        0,
+        -0.985,
+        -(first + i) * STRIPE_SPACING_UNITS
+      );
+      this.speedInlays.setMatrixAt(i, this.speedInlayMatrix);
     }
-  }
-
-  private updateGates(distance: number, gates: readonly Gate[]): void {
-    const cfg = this.cfg;
-    const halfWidth = cfg.lane.halfWidth;
-    const near = distance - 25;
-    const far = distance + cfg.readability.visibleAheadUnits * 1.6;
-
-    let slot = 0;
-    for (const gate of gates) {
-      if (gate.distance < near) continue;
-      if (gate.distance > far) break;
-      const visual = this.gatePool[slot];
-      if (!visual) break; // pool exhausted: hard cap, never grow at runtime
-      slot++;
-
-      const z = -gate.distance;
-      const [leftWall, rightWall] = gateWallGeometry(gate, halfWidth);
-
-      if (leftWall.width > 0.01) {
-        visual.left.visible = true;
-        visual.left.scale.set(
-          leftWall.width,
-          PROCEDURAL_GATE_VISUAL.wallHeight,
-          PROCEDURAL_GATE_VISUAL.wallDepth
-        );
-        visual.left.position.set(
-          leftWall.centreX,
-          PROCEDURAL_GATE_VISUAL.wallHeight / 2 +
-            PROCEDURAL_GATE_VISUAL.wallFloorY,
-          z
-        );
-      } else {
-        visual.left.visible = false;
-      }
-
-      if (rightWall.width > 0.01) {
-        visual.right.visible = true;
-        visual.right.scale.set(
-          rightWall.width,
-          PROCEDURAL_GATE_VISUAL.wallHeight,
-          PROCEDURAL_GATE_VISUAL.wallDepth
-        );
-        visual.right.position.set(
-          rightWall.centreX,
-          PROCEDURAL_GATE_VISUAL.wallHeight / 2 +
-            PROCEDURAL_GATE_VISUAL.wallFloorY,
-          z
-        );
-      } else {
-        visual.right.visible = false;
-      }
-    }
-
-    for (let i = slot; i < this.gatePool.length; i++) {
-      const visual = this.gatePool[i];
-      if (!visual) continue;
-      visual.left.visible = false;
-      visual.right.visible = false;
-    }
+    this.speedInlays.instanceMatrix.needsUpdate = true;
   }
 
   /** Release GPU resources. Full context-loss rebuild is Phase 5 (Part 4.3). */
@@ -583,8 +870,13 @@ export class GameView {
     this.trail.dispose();
     this.creature.dispose();
     this.environment.dispose();
+    this.gates.dispose();
     this.maskObstacle.dispose();
+    this.maskObstacleContext.dispose();
     this.maskOther.dispose();
+    for (const material of this.merfolkMaskMaterials.values()) {
+      material.dispose();
+    }
     this.composer.dispose();
     this.renderer.dispose();
   }

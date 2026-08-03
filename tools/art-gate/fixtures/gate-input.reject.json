@@ -3,19 +3,19 @@
   "runtimeRevision": "fixture-runtime-revision",
   "assets": [
     {
-      "name": "procedural-left-wall",
+      "name": "moon-garden-left-wall-fragment",
       "family": "wallFragment",
       "collidable": false,
-      "baselineProcedural": true,
       "runtimeObstacleId": "procedural-gate-left",
       "materials": 1,
-      "textureMemoryMB": 0,
+      "textureMemoryMB": 1.4,
+      "maxTextureSizePx": 512,
       "contour": "collision-cyan",
-      "maxReliefDepth": 0,
+      "maxReliefDepth": 0.07,
       "lods": [
         {
           "level": 0,
-          "triangles": 12,
+          "triangles": 1386,
           "playableEdge": {
             "axis": "x",
             "gapDirection": 1,
@@ -47,23 +47,163 @@
               }
             ]
           }
+        },
+        {
+          "level": 1,
+          "triangles": 838,
+          "playableEdge": {
+            "axis": "x",
+            "gapDirection": 1,
+            "samples": [
+              {
+                "height": -0.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 0.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 1.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 2.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 3,
+                "depth": 0,
+                "visualPlane": -2
+              }
+            ]
+          }
+        },
+        {
+          "level": 2,
+          "triangles": 168,
+          "playableEdge": {
+            "axis": "x",
+            "gapDirection": 1,
+            "samples": [
+              {
+                "height": -0.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 0.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 1.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 2.5,
+                "depth": 0,
+                "visualPlane": -2
+              },
+              {
+                "height": 3,
+                "depth": 0,
+                "visualPlane": -2
+              }
+            ]
+          }
         }
       ]
     },
     {
-      "name": "procedural-right-wall",
+      "name": "moon-garden-right-wall-fragment",
       "family": "wallFragment",
       "collidable": true,
-      "baselineProcedural": true,
       "runtimeObstacleId": "procedural-gate-right",
       "materials": 1,
-      "textureMemoryMB": 0,
+      "textureMemoryMB": 1.4,
+      "maxTextureSizePx": 512,
       "contour": "collision-cyan",
-      "maxReliefDepth": 0,
+      "maxReliefDepth": 0.07,
       "lods": [
         {
           "level": 0,
-          "triangles": 12,
+          "triangles": 1386,
+          "playableEdge": {
+            "axis": "x",
+            "gapDirection": -1,
+            "samples": [
+              {
+                "height": -0.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 0.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 1.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 2.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 3,
+                "depth": 0,
+                "visualPlane": 2
+              }
+            ]
+          }
+        },
+        {
+          "level": 1,
+          "triangles": 838,
+          "playableEdge": {
+            "axis": "x",
+            "gapDirection": -1,
+            "samples": [
+              {
+                "height": -0.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 0.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 1.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 2.5,
+                "depth": 0,
+                "visualPlane": 2
+              },
+              {
+                "height": 3,
+                "depth": 0,
+                "visualPlane": 2
+              }
+            ]
+          }
+        },
+        {
+          "level": 2,
+          "triangles": 168,
           "playableEdge": {
             "axis": "x",
             "gapDirection": -1,
@@ -97,6 +237,510 @@
           }
         }
       ]
+    },
+    {
+      "name": "glowfin-vertical-slice",
+      "family": "glowfin",
+      "collidable": false,
+      "materials": 2,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "bones": 10,
+      "maxTextureSizePx": 0,
+      "clips": [
+        "breathe",
+        "propulsion",
+        "bank",
+        "collisionSquash",
+        "recovery"
+      ],
+      "animationDriver": "simulation",
+      "observedStates": [
+        "calm",
+        "mid",
+        "max",
+        "collision",
+        "recovery"
+      ],
+      "viewportWidthFraction": 0.09,
+      "eyeGlowPixels": 10,
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 6780
+        },
+        {
+          "level": 1,
+          "triangles": 3388
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-volumetric-broken-tower",
+      "family": "brokenTower",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 3520
+        },
+        {
+          "level": 1,
+          "triangles": 1520
+        },
+        {
+          "level": 2,
+          "triangles": 432
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-volumetric-collapsed-arch",
+      "family": "collapsedArchRuin",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 360
+        },
+        {
+          "level": 1,
+          "triangles": 272
+        },
+        {
+          "level": 2,
+          "triangles": 184
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-forked-spire",
+      "family": "spire",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 1568
+        },
+        {
+          "level": 1,
+          "triangles": 688
+        },
+        {
+          "level": 2,
+          "triangles": 244
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-grand-palace-district",
+      "family": "palaceDistrict",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 1132
+        },
+        {
+          "level": 1,
+          "triangles": 654
+        },
+        {
+          "level": 2,
+          "triangles": 390
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-twin-pylon-observatory",
+      "family": "observatory",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 492
+        },
+        {
+          "level": 1,
+          "triangles": 300
+        },
+        {
+          "level": 2,
+          "triangles": 100
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-volumetric-hero-coral",
+      "family": "heroCoral",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 2352
+        },
+        {
+          "level": 1,
+          "triangles": 1198
+        },
+        {
+          "level": 2,
+          "triangles": 300
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-volumetric-medium-coral",
+      "family": "mediumCoral",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 842
+        },
+        {
+          "level": 1,
+          "triangles": 418
+        },
+        {
+          "level": 2,
+          "triangles": 90
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-volumetric-shell-garden",
+      "family": "mediumCoral",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 892
+        },
+        {
+          "level": 1,
+          "triangles": 396
+        },
+        {
+          "level": 2,
+          "triangles": 81
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-maze-ridged-brain-coral",
+      "family": "brainCoral",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 1764
+        },
+        {
+          "level": 1,
+          "triangles": 870
+        },
+        {
+          "level": 2,
+          "triangles": 268
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-scalloped-table-coral",
+      "family": "tableCoral",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 876
+        },
+        {
+          "level": 1,
+          "triangles": 748
+        },
+        {
+          "level": 2,
+          "triangles": 344
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-gate-rubble-foundation",
+      "family": "smallProp",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 336
+        },
+        {
+          "level": 1,
+          "triangles": 156
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-ribbon-kelp",
+      "family": "ribbonKelp",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 396
+        },
+        {
+          "level": 1,
+          "triangles": 244
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-volumetric-skyline-cluster",
+      "family": "distantSkyline",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 388
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-moon-minnow",
+      "family": "ambientCreature",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 94
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-lantern-jelly",
+      "family": "ambientCreature",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 206
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-ribbon-ray",
+      "family": "ambientCreature",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 144
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-merfolk-citizen",
+      "family": "merfolkCreature",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 1836
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-merfolk-current-swimmer",
+      "family": "merfolkCreature",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 2190
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-merfolk-conch-herald",
+      "family": "merfolkCreature",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 2188
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-hero-merfolk-guardian",
+      "family": "heroMerfolk",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "articulatedJoints": 12,
+      "readableHeightPixels": 92,
+      "readableFaceHeightPixels": 24,
+      "readableEyeDiameterPixels": 5.5,
+      "recognitionLabel": "mermaid",
+      "castRoles": [
+        "tidekeeper",
+        "coral-warden",
+        "astral-oracle"
+      ],
+      "populationRoles": [
+        "reef-citizen",
+        "current-swimmer",
+        "conch-herald"
+      ],
+      "parts": [
+        "readable-face",
+        "expressive-eyes",
+        "flowing-hair",
+        "articulated-arms",
+        "readable-hands",
+        "shell-cuirass",
+        "lapis-pendant",
+        "scaled-tail",
+        "broad-caudal-fin",
+        "translucent-side-fins",
+        "tide-spear",
+        "district-regalia"
+      ],
+      "clips": [
+        "hover",
+        "swim",
+        "turn",
+        "patrol",
+        "greeting"
+      ],
+      "animationDriver": "simulation",
+      "observedStates": [
+        "patrol",
+        "approach",
+        "greeting",
+        "turn-away"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 8143
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-merfolk-monument",
+      "family": "heroProp",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 1296
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-tide-spear",
+      "family": "heroProp",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 112
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-conch-fountain",
+      "family": "heroProp",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "decorative",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 688
+        }
+      ]
+    },
+    {
+      "name": "moon-garden-god-ray",
+      "family": "godRayMesh",
+      "collidable": false,
+      "materials": 1,
+      "textureMemoryMB": 0,
+      "contour": "none",
+      "lods": [
+        {
+          "level": 0,
+          "triangles": 12
+        }
+      ]
     }
   ],
   "runtimeObstacles": [
@@ -110,12 +754,12 @@
         "min": [
           -6,
           -1,
-          99.3
+          98.975
         ],
         "max": [
           -2,
-          3,
-          100.7
+          5.35,
+          101.025
         ]
       },
       "source": {
@@ -134,12 +778,12 @@
         "min": [
           2,
           -1,
-          99.3
+          98.975
         ],
         "max": [
           6,
-          3,
-          100.7
+          5.35,
+          101.025
         ]
       },
       "source": {
@@ -170,6 +814,282 @@
       "textureMemoryMB": 0,
       "activeMaterials": 9,
       "godRayMeshes": 3,
+      "heroMerfolkHeightPixels": 104,
+      "heroMerfolkFaceHeightPixels": 27,
+      "heroMerfolkEyeDiameterPixels": 6.5,
+      "merfolkVisualReview": {
+        "guardianRole": "tidekeeper",
+        "guardian": {
+          "widthPixels": 62,
+          "heightPixels": 104,
+          "visiblePixels": 1420,
+          "isolatedPixels": 1534,
+          "occlusionFraction": 0.0743155149934811,
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
+        },
+        "face": {
+          "widthPixels": 24,
+          "heightPixels": 27,
+          "visiblePixels": 420,
+          "isolatedPixels": 454,
+          "occlusionFraction": 0.07488986784140972,
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
+        },
+        "eyes": {
+          "widthPixels": 20,
+          "heightPixels": 7,
+          "visiblePixels": 82,
+          "isolatedPixels": 89,
+          "occlusionFraction": 0.0786516853932584,
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
+        },
+        "identity": {
+          "widthPixels": 38,
+          "heightPixels": 43,
+          "visiblePixels": 260,
+          "isolatedPixels": 281,
+          "occlusionFraction": 0.07473309608540923,
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
+        },
+        "population": [
+          {
+            "role": "reef-citizen",
+            "component": {
+              "widthPixels": 18,
+              "heightPixels": 33,
+              "visiblePixels": 142,
+              "isolatedPixels": 153,
+              "occlusionFraction": 0.07189542483660127,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 10,
+              "heightPixels": 10,
+              "visiblePixels": 42,
+              "isolatedPixels": 45,
+              "occlusionFraction": 0.06666666666666665,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 18,
+                "heightPixels": 33,
+                "visiblePixels": 142,
+                "isolatedPixels": 152,
+                "occlusionFraction": 0.06578947368421051,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 92,
+                "centreYPixels": 390
+              },
+              {
+                "widthPixels": 19,
+                "heightPixels": 35,
+                "visiblePixels": 151,
+                "isolatedPixels": 160,
+                "occlusionFraction": 0.05625000000000002,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 294,
+                "centreYPixels": 404
+              }
+            ]
+          },
+          {
+            "role": "current-swimmer",
+            "component": {
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 162,
+              "occlusionFraction": 0.07407407407407407,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 12,
+              "heightPixels": 11,
+              "visiblePixels": 52,
+              "isolatedPixels": 56,
+              "occlusionFraction": 0.0714285714285714,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 45,
+                "heightPixels": 20,
+                "visiblePixels": 150,
+                "isolatedPixels": 158,
+                "occlusionFraction": 0.05063291139240511,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 74,
+                "centreYPixels": 340
+              },
+              {
+                "widthPixels": 48,
+                "heightPixels": 21,
+                "visiblePixels": 162,
+                "isolatedPixels": 170,
+                "occlusionFraction": 0.04705882352941182,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 312,
+                "centreYPixels": 278
+              }
+            ]
+          },
+          {
+            "role": "conch-herald",
+            "component": {
+              "widthPixels": 23,
+              "heightPixels": 37,
+              "visiblePixels": 176,
+              "isolatedPixels": 190,
+              "occlusionFraction": 0.0736842105263158,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 10,
+              "heightPixels": 10,
+              "visiblePixels": 42,
+              "isolatedPixels": 45,
+              "occlusionFraction": 0.06666666666666665,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 23,
+                "heightPixels": 37,
+                "visiblePixels": 176,
+                "isolatedPixels": 184,
+                "occlusionFraction": 0.04347826086956519,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 114,
+                "centreYPixels": 464
+              },
+              {
+                "widthPixels": 24,
+                "heightPixels": 39,
+                "visiblePixels": 184,
+                "isolatedPixels": 192,
+                "occlusionFraction": 0.04166666666666663,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 276,
+                "centreYPixels": 470
+              }
+            ]
+          }
+        ],
+        "motion": {
+          "sampleIntervalSec": 3.25,
+          "swimmerStart": [
+            {
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 158,
+              "occlusionFraction": 0.05063291139240511,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 74,
+              "centreYPixels": 340
+            },
+            {
+              "widthPixels": 48,
+              "heightPixels": 21,
+              "visiblePixels": 162,
+              "isolatedPixels": 170,
+              "occlusionFraction": 0.04705882352941182,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 312,
+              "centreYPixels": 278
+            }
+          ],
+          "swimmerEnd": [
+            {
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 158,
+              "occlusionFraction": 0.05063291139240511,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 88,
+              "centreYPixels": 344
+            },
+            {
+              "widthPixels": 48,
+              "heightPixels": 21,
+              "visiblePixels": 162,
+              "isolatedPixels": 170,
+              "occlusionFraction": 0.04705882352941182,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 292,
+              "centreYPixels": 285
+            }
+          ],
+          "swimmerTravelPixels": [
+            14.56,
+            21.19
+          ],
+          "swimmerCentreSeparationPixels": [
+            245.94,
+            212.5
+          ],
+          "swimmerBoxOverlapFraction": [
+            0,
+            0
+          ],
+          "heraldTravelPixels": [
+            1.2,
+            1.8
+          ]
+        }
+      },
       "frameContrastRatios": [
         4.2,
         4.2,
@@ -240,6 +1160,282 @@
       "textureMemoryMB": 0,
       "activeMaterials": 9,
       "godRayMeshes": 3,
+      "heroMerfolkHeightPixels": 104,
+      "heroMerfolkFaceHeightPixels": 27,
+      "heroMerfolkEyeDiameterPixels": 6.5,
+      "merfolkVisualReview": {
+        "guardianRole": "coral-warden",
+        "guardian": {
+          "widthPixels": 62,
+          "heightPixels": 104,
+          "visiblePixels": 1420,
+          "isolatedPixels": 1534,
+          "occlusionFraction": 0.0743155149934811,
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
+        },
+        "face": {
+          "widthPixels": 24,
+          "heightPixels": 27,
+          "visiblePixels": 420,
+          "isolatedPixels": 454,
+          "occlusionFraction": 0.07488986784140972,
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
+        },
+        "eyes": {
+          "widthPixels": 20,
+          "heightPixels": 7,
+          "visiblePixels": 82,
+          "isolatedPixels": 89,
+          "occlusionFraction": 0.0786516853932584,
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
+        },
+        "identity": {
+          "widthPixels": 38,
+          "heightPixels": 43,
+          "visiblePixels": 260,
+          "isolatedPixels": 281,
+          "occlusionFraction": 0.07473309608540923,
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
+        },
+        "population": [
+          {
+            "role": "reef-citizen",
+            "component": {
+              "widthPixels": 18,
+              "heightPixels": 33,
+              "visiblePixels": 142,
+              "isolatedPixels": 153,
+              "occlusionFraction": 0.07189542483660127,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 10,
+              "heightPixels": 10,
+              "visiblePixels": 42,
+              "isolatedPixels": 45,
+              "occlusionFraction": 0.06666666666666665,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 18,
+                "heightPixels": 33,
+                "visiblePixels": 142,
+                "isolatedPixels": 152,
+                "occlusionFraction": 0.06578947368421051,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 92,
+                "centreYPixels": 390
+              },
+              {
+                "widthPixels": 19,
+                "heightPixels": 35,
+                "visiblePixels": 151,
+                "isolatedPixels": 160,
+                "occlusionFraction": 0.05625000000000002,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 294,
+                "centreYPixels": 404
+              }
+            ]
+          },
+          {
+            "role": "current-swimmer",
+            "component": {
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 162,
+              "occlusionFraction": 0.07407407407407407,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 12,
+              "heightPixels": 11,
+              "visiblePixels": 52,
+              "isolatedPixels": 56,
+              "occlusionFraction": 0.0714285714285714,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 45,
+                "heightPixels": 20,
+                "visiblePixels": 150,
+                "isolatedPixels": 158,
+                "occlusionFraction": 0.05063291139240511,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 74,
+                "centreYPixels": 340
+              },
+              {
+                "widthPixels": 48,
+                "heightPixels": 21,
+                "visiblePixels": 162,
+                "isolatedPixels": 170,
+                "occlusionFraction": 0.04705882352941182,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 312,
+                "centreYPixels": 278
+              }
+            ]
+          },
+          {
+            "role": "conch-herald",
+            "component": {
+              "widthPixels": 23,
+              "heightPixels": 37,
+              "visiblePixels": 176,
+              "isolatedPixels": 190,
+              "occlusionFraction": 0.0736842105263158,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 10,
+              "heightPixels": 10,
+              "visiblePixels": 42,
+              "isolatedPixels": 45,
+              "occlusionFraction": 0.06666666666666665,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 23,
+                "heightPixels": 37,
+                "visiblePixels": 176,
+                "isolatedPixels": 184,
+                "occlusionFraction": 0.04347826086956519,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 114,
+                "centreYPixels": 464
+              },
+              {
+                "widthPixels": 24,
+                "heightPixels": 39,
+                "visiblePixels": 184,
+                "isolatedPixels": 192,
+                "occlusionFraction": 0.04166666666666663,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 276,
+                "centreYPixels": 470
+              }
+            ]
+          }
+        ],
+        "motion": {
+          "sampleIntervalSec": 3.25,
+          "swimmerStart": [
+            {
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 158,
+              "occlusionFraction": 0.05063291139240511,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 74,
+              "centreYPixels": 340
+            },
+            {
+              "widthPixels": 48,
+              "heightPixels": 21,
+              "visiblePixels": 162,
+              "isolatedPixels": 170,
+              "occlusionFraction": 0.04705882352941182,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 312,
+              "centreYPixels": 278
+            }
+          ],
+          "swimmerEnd": [
+            {
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 158,
+              "occlusionFraction": 0.05063291139240511,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 88,
+              "centreYPixels": 344
+            },
+            {
+              "widthPixels": 48,
+              "heightPixels": 21,
+              "visiblePixels": 162,
+              "isolatedPixels": 170,
+              "occlusionFraction": 0.04705882352941182,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 292,
+              "centreYPixels": 285
+            }
+          ],
+          "swimmerTravelPixels": [
+            14.56,
+            21.19
+          ],
+          "swimmerCentreSeparationPixels": [
+            245.94,
+            212.5
+          ],
+          "swimmerBoxOverlapFraction": [
+            0,
+            0
+          ],
+          "heraldTravelPixels": [
+            1.2,
+            1.8
+          ]
+        }
+      },
       "frameContrastRatios": [
         4.2,
         4.2,
@@ -310,6 +1506,282 @@
       "textureMemoryMB": 0,
       "activeMaterials": 9,
       "godRayMeshes": 3,
+      "heroMerfolkHeightPixels": 104,
+      "heroMerfolkFaceHeightPixels": 27,
+      "heroMerfolkEyeDiameterPixels": 6.5,
+      "merfolkVisualReview": {
+        "guardianRole": "astral-oracle",
+        "guardian": {
+          "widthPixels": 62,
+          "heightPixels": 104,
+          "visiblePixels": 1420,
+          "isolatedPixels": 1534,
+          "occlusionFraction": 0.0743155149934811,
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
+        },
+        "face": {
+          "widthPixels": 24,
+          "heightPixels": 27,
+          "visiblePixels": 420,
+          "isolatedPixels": 454,
+          "occlusionFraction": 0.07488986784140972,
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
+        },
+        "eyes": {
+          "widthPixels": 20,
+          "heightPixels": 7,
+          "visiblePixels": 82,
+          "isolatedPixels": 89,
+          "occlusionFraction": 0.0786516853932584,
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
+        },
+        "identity": {
+          "widthPixels": 38,
+          "heightPixels": 43,
+          "visiblePixels": 260,
+          "isolatedPixels": 281,
+          "occlusionFraction": 0.07473309608540923,
+          "edgeClearancePixels": 12,
+          "centreXPixels": 195,
+          "centreYPixels": 422
+        },
+        "population": [
+          {
+            "role": "reef-citizen",
+            "component": {
+              "widthPixels": 18,
+              "heightPixels": 33,
+              "visiblePixels": 142,
+              "isolatedPixels": 153,
+              "occlusionFraction": 0.07189542483660127,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 10,
+              "heightPixels": 10,
+              "visiblePixels": 42,
+              "isolatedPixels": 45,
+              "occlusionFraction": 0.06666666666666665,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 18,
+                "heightPixels": 33,
+                "visiblePixels": 142,
+                "isolatedPixels": 152,
+                "occlusionFraction": 0.06578947368421051,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 92,
+                "centreYPixels": 390
+              },
+              {
+                "widthPixels": 19,
+                "heightPixels": 35,
+                "visiblePixels": 151,
+                "isolatedPixels": 160,
+                "occlusionFraction": 0.05625000000000002,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 294,
+                "centreYPixels": 404
+              }
+            ]
+          },
+          {
+            "role": "current-swimmer",
+            "component": {
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 162,
+              "occlusionFraction": 0.07407407407407407,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 12,
+              "heightPixels": 11,
+              "visiblePixels": 52,
+              "isolatedPixels": 56,
+              "occlusionFraction": 0.0714285714285714,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 45,
+                "heightPixels": 20,
+                "visiblePixels": 150,
+                "isolatedPixels": 158,
+                "occlusionFraction": 0.05063291139240511,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 74,
+                "centreYPixels": 340
+              },
+              {
+                "widthPixels": 48,
+                "heightPixels": 21,
+                "visiblePixels": 162,
+                "isolatedPixels": 170,
+                "occlusionFraction": 0.04705882352941182,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 312,
+                "centreYPixels": 278
+              }
+            ]
+          },
+          {
+            "role": "conch-herald",
+            "component": {
+              "widthPixels": 23,
+              "heightPixels": 37,
+              "visiblePixels": 176,
+              "isolatedPixels": 190,
+              "occlusionFraction": 0.0736842105263158,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "face": {
+              "widthPixels": 10,
+              "heightPixels": 10,
+              "visiblePixels": 42,
+              "isolatedPixels": 45,
+              "occlusionFraction": 0.06666666666666665,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "eyes": {
+              "widthPixels": 7,
+              "heightPixels": 3,
+              "visiblePixels": 12,
+              "isolatedPixels": 13,
+              "occlusionFraction": 0.07692307692307687,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 195,
+              "centreYPixels": 422
+            },
+            "instances": [
+              {
+                "widthPixels": 23,
+                "heightPixels": 37,
+                "visiblePixels": 176,
+                "isolatedPixels": 184,
+                "occlusionFraction": 0.04347826086956519,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 114,
+                "centreYPixels": 464
+              },
+              {
+                "widthPixels": 24,
+                "heightPixels": 39,
+                "visiblePixels": 184,
+                "isolatedPixels": 192,
+                "occlusionFraction": 0.04166666666666663,
+                "edgeClearancePixels": 12,
+                "centreXPixels": 276,
+                "centreYPixels": 470
+              }
+            ]
+          }
+        ],
+        "motion": {
+          "sampleIntervalSec": 3.25,
+          "swimmerStart": [
+            {
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 158,
+              "occlusionFraction": 0.05063291139240511,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 74,
+              "centreYPixels": 340
+            },
+            {
+              "widthPixels": 48,
+              "heightPixels": 21,
+              "visiblePixels": 162,
+              "isolatedPixels": 170,
+              "occlusionFraction": 0.04705882352941182,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 312,
+              "centreYPixels": 278
+            }
+          ],
+          "swimmerEnd": [
+            {
+              "widthPixels": 45,
+              "heightPixels": 20,
+              "visiblePixels": 150,
+              "isolatedPixels": 158,
+              "occlusionFraction": 0.05063291139240511,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 88,
+              "centreYPixels": 344
+            },
+            {
+              "widthPixels": 48,
+              "heightPixels": 21,
+              "visiblePixels": 162,
+              "isolatedPixels": 170,
+              "occlusionFraction": 0.04705882352941182,
+              "edgeClearancePixels": 12,
+              "centreXPixels": 292,
+              "centreYPixels": 285
+            }
+          ],
+          "swimmerTravelPixels": [
+            14.56,
+            21.19
+          ],
+          "swimmerCentreSeparationPixels": [
+            245.94,
+            212.5
+          ],
+          "swimmerBoxOverlapFraction": [
+            0,
+            0
+          ],
+          "heraldTravelPixels": [
+            1.2,
+            1.8
+          ]
+        }
+      },
       "frameContrastRatios": [
         4.2,
         4.2,
@@ -380,6 +1852,9 @@
       "textureMemoryMB": 0,
       "activeMaterials": 9,
       "godRayMeshes": 3,
+      "heroMerfolkHeightPixels": 104,
+      "heroMerfolkFaceHeightPixels": 27,
+      "heroMerfolkEyeDiameterPixels": 6.5,
       "frameContrastRatios": [
         4.2,
         4.2,
@@ -438,5 +1913,51 @@
       "laneWidthFractionAtMaxMomentum": 0.12083333333333333
     }
   },
-  "compressedArtPayloadMB": 0
+  "worldQuality": {
+    "gateFamilies": [
+      "tide-court",
+      "lapis-archive",
+      "coral-sanctuary",
+      "nacre-palace",
+      "astral-observatory"
+    ],
+    "architecture": [
+      "broken-tower",
+      "collapsed-arch",
+      "forked-spire",
+      "grand-palace-district",
+      "twin-pylon-observatory"
+    ],
+    "reef": [
+      "maze-ridged-brain-coral",
+      "scalloped-table-coral",
+      "staghorn-coral",
+      "sea-fan",
+      "anemone-lantern",
+      "ribbon-kelp"
+    ],
+    "life": [
+      "moon-minnow-school",
+      "lantern-jelly",
+      "ribbon-manta",
+      "merfolk-citizen",
+      "merfolk-current-swimmer",
+      "merfolk-conch-herald",
+      "hero-merfolk-guardian"
+    ],
+    "props": [
+      "merfolk-monument",
+      "tide-spear",
+      "conch-fountain"
+    ],
+    "materials": [
+      "limestone",
+      "nacre",
+      "bronze",
+      "lapis",
+      "crystal",
+      "living-coral"
+    ]
+  },
+  "compressedArtPayloadMB": 0.16
 }

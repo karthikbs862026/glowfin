@@ -4,6 +4,9 @@ import { defineConfig } from "vite";
 // here as plugins in Phase 0/1. Kept minimal until there's real content to
 // pipe through it — an empty pipeline config would just be decoration.
 export default defineConfig({
+  // Keep the production bundle mount-safe. The same immutable build runs at
+  // repository root locally and under /game in the hosted playtest shell.
+  base: "./",
   build: {
     target: "es2020",
     sourcemap: true

@@ -15,6 +15,7 @@ describe("environment must not compete with obstacles (Part 3.4)", () => {
   });
 
   it("ruins stay far dimmer than obstacle edges", () => {
+    expect(tuning.environment.buildingBrightness).toBeGreaterThanOrEqual(0.15);
     expect(tuning.environment.buildingBrightness).toBeLessThan(
       tuning.visual.obstacleEdgeStrength * 0.3
     );
@@ -26,9 +27,12 @@ describe("environment must not compete with obstacles (Part 3.4)", () => {
   });
 
   it("coral sits outside the lane too", () => {
-    // Placement runs from halfWidth + 0.35 outward, so the nearest coral is
-    // clear of the playable lane.
-    expect(tuning.lane.halfWidth + 0.35).toBeGreaterThan(tuning.lane.halfWidth);
+    // Placement adds half the rendered reef width plus this safety margin to
+    // halfWidth, so even the largest cluster stays outside the lane.
+    const reefEdgeSafety = 0.28;
+    expect(tuning.lane.halfWidth + reefEdgeSafety).toBeGreaterThan(
+      tuning.lane.halfWidth
+    );
   });
 
   it("god-rays are sparse, as Part 3.2 asks", () => {
@@ -37,7 +41,11 @@ describe("environment must not compete with obstacles (Part 3.4)", () => {
     expect(tuning.environment.godRayBandSpacing).toBeGreaterThan(
       tuning.readability.visibleAheadUnits * 0.5
     );
-    expect(tuning.environment.godRayCount).toBeLessThan(15);
+    expect(tuning.environment.godRayCount).toBeLessThanOrEqual(3);
+  });
+
+  it("keeps the collision cue restrained rather than turning it into a light bar", () => {
+    expect(tuning.visual.obstacleEdgeWidthPixels).toBeLessThanOrEqual(8);
   });
 });
 
@@ -45,7 +53,7 @@ describe("coral response (Part 3.2 priority 5)", () => {
   it("has a trigger radius that a passing creature actually reaches", () => {
     // Coral sits just outside the lane; the creature can reach the lane edge.
     // If the radius were smaller than that gap, nothing would ever pulse.
-    const nearestApproach = 0.35;
+    const nearestApproach = 0.65;
     expect(tuning.environment.coralPulseRadiusUnits).toBeGreaterThan(nearestApproach);
   });
 
@@ -58,16 +66,28 @@ describe("coral response (Part 3.2 priority 5)", () => {
 });
 
 describe("draw call budget (Part 4.6)", () => {
-  it("the whole environment costs three draws, not dozens", () => {
-    // Instanced: buildings, god-rays and coral are one draw each regardless of
-    // count. Individually they would be 127 objects and blow the budget alone.
-    const environmentDraws = 3;
-    const measuredSceneDraws = 62;
-    expect(measuredSceneDraws + environmentDraws).toBeLessThan(budgets.scene.maxDrawCalls);
-    expect(
+  it("the complete LOD art kit remains instanced and budgeted", () => {
+    // Five architecture districts, one skyline, six reefs, six ambient-life
+    // families, three prop families, god rays and moon/motes remain 23 fixed
+    // draws even as
+    // their represented object count and course distance grow.
+    const environmentDraws = 23;
+    const conservativeSceneWithoutEnvironment = 64;
+    expect(conservativeSceneWithoutEnvironment + environmentDraws).toBeLessThan(
+      budgets.scene.maxDrawCalls
+    );
+    const representedObjects =
       tuning.environment.buildingCount +
         tuning.environment.godRayCount +
-        tuning.environment.coralCount
-    ).toBeGreaterThan(budgets.scene.maxDrawCalls);
+        tuning.environment.coralCount +
+        33 +
+        128;
+    expect(representedObjects).toBeGreaterThan(environmentDraws * 8);
+  });
+
+  it("fills the outside lane without turning reef into collision geometry", () => {
+    expect(tuning.environment.coralCount).toBeGreaterThanOrEqual(88);
+    expect(tuning.environment.coralBandSpacing).toBeLessThanOrEqual(4.5);
+    expect(tuning.lane.halfWidth + 0.28).toBeGreaterThan(tuning.lane.halfWidth);
   });
 });

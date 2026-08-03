@@ -2,8 +2,9 @@
  * Caustics — Part 3.2's first and highest-ROI shader.
  *
  * Animated light-through-water bands projected onto environment geometry.
- * Procedural rather than a scrolling texture: no texture memory, no atlasing,
- * no seams, and the pattern never visibly repeats across a run.
+ * Caustics remain procedural, but the base surface may now come from authored
+ * albedo. The rejected Phase 3B frame proved that a generated paving formula
+ * reads as a modern tiled road even when its lighting is technically correct.
  *
  * TWO BUGS FIXED FROM THE FIRST VERSION, both only visible on a device:
  *
@@ -40,6 +41,14 @@ export interface CausticParams {
   fogNear: number;
   fogFar: number;
   octaves: number;
+  /** Optional authored base-colour surface. Caustics remain procedural. */
+  surfaceMap?: THREE.Texture;
+  /** Texture repetitions per world unit. */
+  surfaceScale?: number;
+  /** Blend from the flat base colour to the authored albedo. */
+  surfaceWeight?: number;
+  /** True gameplay half-width; used only to darken the non-playable seabed. */
+  routeHalfWidth?: number;
   /** Lit border along face edges. Zero disables it (used for the floor). */
   edgeStrength?: number;
   /** Border thickness in screen pixels. */
@@ -77,6 +86,12 @@ const FRAGMENT = /* glsl */ `
   uniform vec3 uFogColor;
   uniform float uFogNear;
   uniform float uFogFar;
+  uniform float uRouteHalfWidth;
+  #ifdef USE_SURFACE_MAP
+    uniform sampler2D uSurfaceMap;
+    uniform float uSurfaceScale;
+    uniform float uSurfaceWeight;
+  #endif
 
   uniform float uEdgeStrength;
   uniform float uEdgeWidthPixels;
@@ -133,7 +148,31 @@ const FRAGMENT = /* glsl */ `
     // stops floor and walls reading as the same flat material.
     float facing = clamp(vNormalW.y * 0.35 + 0.72, 0.0, 1.0);
 
-    vec3 colour = uBaseColor + uCausticColor * pattern * uIntensity * facing;
+    vec3 colour = uBaseColor;
+    #ifdef USE_SURFACE_MAP
+      vec3 authoredAlbedo = texture2D(
+        uSurfaceMap,
+        vWorldPos.xz * uSurfaceScale
+      ).rgb;
+      colour = mix(colour, authoredAlbedo, uSurfaceWeight);
+    #endif
+    colour += uCausticColor * pattern * uIntensity * facing;
+
+    // The route is a moonlit region of the same organic seabed, not a raised
+    // road. Darkening only beyond the authoritative lane half-width preserves
+    // truthful navigation while letting outside-lane reef read as a bank.
+    float route = 1.0 - smoothstep(
+      uRouteHalfWidth * 0.92,
+      uRouteHalfWidth * 1.42,
+      abs(vWorldPos.x)
+    );
+    colour *= mix(0.7, 1.0, route);
+    float moonTrack = exp(-abs(vWorldPos.x) * 1.35) * (
+      0.68 +
+      0.2 * sin(vWorldPos.z * 0.17 + uTime * 0.28) +
+      0.12 * sin(vWorldPos.z * 0.53 - uTime * 0.19)
+    );
+    colour += vec3(0.035, 0.09, 0.11) * moonTrack;
 
     // Lit border along the face edges.
     //
@@ -166,12 +205,19 @@ const FRAGMENT = /* glsl */ `
     colour = mix(colour, uFogColor, fog);
 
     gl_FragColor = vec4(colour, 1.0);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
   }
 `;
 
 export function createCausticMaterial(params: CausticParams): THREE.ShaderMaterial {
+  const defines: Record<string, number> = {
+    CAUSTIC_OCTAVES: Math.max(1, Math.round(params.octaves))
+  };
+  if (params.surfaceMap) defines["USE_SURFACE_MAP"] = 1;
+
   return new THREE.ShaderMaterial({
-    defines: { CAUSTIC_OCTAVES: Math.max(1, Math.round(params.octaves)) },
+    defines,
     uniforms: {
       uTime: { value: 0 },
       uBaseColor: { value: new THREE.Color(params.baseColor) },
@@ -182,6 +228,10 @@ export function createCausticMaterial(params: CausticParams): THREE.ShaderMateri
       uFogColor: { value: new THREE.Color(params.fogColor) },
       uFogNear: { value: params.fogNear },
       uFogFar: { value: params.fogFar },
+      uSurfaceMap: { value: params.surfaceMap ?? null },
+      uSurfaceScale: { value: params.surfaceScale ?? 0.08 },
+      uSurfaceWeight: { value: params.surfaceWeight ?? 0.86 },
+      uRouteHalfWidth: { value: params.routeHalfWidth ?? 6 },
       uEdgeStrength: { value: params.edgeStrength ?? 0 },
       uEdgeWidthPixels: { value: params.edgeWidthPixels ?? 7 },
       uEdgeColor: { value: new THREE.Color(params.edgeColor ?? 0xbdf4ff) }

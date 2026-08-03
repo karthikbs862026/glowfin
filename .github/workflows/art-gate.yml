@@ -21,10 +21,21 @@ jobs:
         with:
           node-version: "22"
           cache: npm
+      - run: npm ci
       - name: Gate self-tests
         run: npm run art-gate:test
-      - name: Current procedural baseline
+      - name: Current production-art structure
         run: npm run art-gate:structural
+      - name: Export and pack production GLB handoff
+        run: npm run art:build-runtime-glbs
+      - name: Verify published runtime GLBs
+        run: npm run art:verify-runtime-glbs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: moon-garden-production-glb-handoff
+          path: |
+            build/production-glbs
+            build/runtime-glbs
 
   fast:
     name: fast-render
@@ -54,9 +65,12 @@ jobs:
           done
           cat /tmp/glowfin-vite.log
           exit 1
+      - name: Validate gesture-gated momentum audio
+        run: npm run audio-gate:browser
       - run: npm run art-gate:capture:fast
       - name: Validate reduced PR matrix
         run: |
+          set -o pipefail
           npm run art-gate:run:fast | tee build/art-gate-fast-report.txt
       - uses: actions/upload-artifact@v4
         if: always()
@@ -65,12 +79,17 @@ jobs:
           path: |
             build/art-gate-fast.json
             build/art-gate-fast.png
+            build/art-gate-fast-merfolk-cast.png
+            build/art-gate-fast-merfolk-mask.png
+            build/art-gate-fast-beauty-review.json
             build/art-gate-fast-report.txt
+            build/audio-gate-browser.json
 
   full:
     name: full-render
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: structural
     steps:
       - uses: actions/checkout@v4
@@ -98,6 +117,7 @@ jobs:
       - run: npm run art-gate:capture:full
       - name: Validate full emulated matrix
         run: |
+          set -o pipefail
           npm run art-gate:run:full | tee build/art-gate-full-report.txt
       - uses: actions/upload-artifact@v4
         if: always()
@@ -106,4 +126,46 @@ jobs:
           path: |
             build/art-gate-full.json
             build/art-gate-full.png
+            build/art-gate-full-merfolk-cast.png
+            build/art-gate-full-merfolk-mask.png
+            build/art-gate-full-beauty-review.json
             build/art-gate-full-report.txt
+
+  soak:
+    name: renderer-soak
+    if: github.event_name == 'pull_request' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: structural
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Start deterministic capture host
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 4173 > /tmp/glowfin-vite.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/glowfin-vite.log
+          exit 1
+      - name: Run deterministic 30-minute simulated-time renderer soak
+        run: npm run art-gate:soak
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: art-gate-soak-evidence
+          path: |
+            build/art-gate-soak.json
+            build/art-gate-soak-report.txt

@@ -225,6 +225,177 @@ export function checkCreature(
   return findings;
 }
 
+/**
+ * Hero-merfolk checks are deliberately separate from generic ambient life.
+ * A triangle-valid silhouette cannot satisfy this contract without a readable
+ * face, articulated character parts and deterministic character behaviours.
+ */
+export function checkMerfolk(
+  asset: AssetManifest,
+  cfg: GateConfig["merfolk"]
+): Finding[] {
+  if (asset.family !== "heroMerfolk") return [];
+  const findings: Finding[] = [];
+  const missing = (code: string, message: string) => findings.push(result(
+    code,
+    "blocker",
+    message,
+    "Phase 3B Merfolk Character Pass",
+    { asset: asset.name }
+  ));
+
+  if (asset.recognitionLabel !== cfg.requiredRecognitionLabel) {
+    missing(
+      "MERFOLK_RECOGNITION_LABEL_MISSING",
+      `Hero must be explicitly recognizable as "${cfg.requiredRecognitionLabel}".`
+    );
+  }
+  const castRoles = asset.castRoles ?? [];
+  const missingCastRoles = cfg.requiredGuardianRoles.filter(
+    (role) => !castRoles.includes(role)
+  );
+  if (missingCastRoles.length > 0) {
+    missing(
+      "MERFOLK_GUARDIAN_ROLES_MISSING",
+      `Missing district guardian roles: ${missingCastRoles.join(", ")}.`
+    );
+  }
+  const populationRoles = asset.populationRoles ?? [];
+  const missingPopulationRoles = cfg.requiredPopulationRoles.filter(
+    (role) => !populationRoles.includes(role)
+  );
+  if (missingPopulationRoles.length > 0) {
+    missing(
+      "MERFOLK_POPULATION_ROLES_MISSING",
+      `Missing inhabited-city roles: ${missingPopulationRoles.join(", ")}.`
+    );
+  }
+  if (asset.readableHeightPixels === undefined) {
+    missing(
+      "MERFOLK_PHONE_HEIGHT_NOT_MEASURED",
+      "Hero manifest omits portrait gameplay height evidence."
+    );
+  } else if (asset.readableHeightPixels < cfg.minimumReadableHeightPixels) {
+    findings.push(result(
+      "MERFOLK_PHONE_HEIGHT_BELOW_FLOOR",
+      "blocker",
+      "Hero is too small to read as a character in portrait gameplay.",
+      "Phase 3B Merfolk Character Pass",
+      {
+        asset: asset.name,
+        observed: asset.readableHeightPixels,
+        limit: cfg.minimumReadableHeightPixels
+      }
+    ));
+  }
+  if (asset.readableFaceHeightPixels === undefined) {
+    missing(
+      "MERFOLK_FACE_HEIGHT_NOT_MEASURED",
+      "Hero manifest omits portrait face-height evidence."
+    );
+  } else if (
+    asset.readableFaceHeightPixels < cfg.minimumFaceHeightPixels
+  ) {
+    findings.push(result(
+      "MERFOLK_FACE_HEIGHT_BELOW_FLOOR",
+      "blocker",
+      "Hero face is too small to remain legible in portrait gameplay.",
+      "Phase 3B Merfolk Character Pass",
+      {
+        asset: asset.name,
+        observed: asset.readableFaceHeightPixels,
+        limit: cfg.minimumFaceHeightPixels
+      }
+    ));
+  }
+  if (asset.readableEyeDiameterPixels === undefined) {
+    missing(
+      "MERFOLK_EYE_SIZE_NOT_MEASURED",
+      "Hero manifest omits portrait eye-size evidence."
+    );
+  } else if (
+    asset.readableEyeDiameterPixels < cfg.minimumEyeDiameterPixels
+  ) {
+    findings.push(result(
+      "MERFOLK_EYE_SIZE_BELOW_FLOOR",
+      "blocker",
+      "Hero eyes are too small to remain distinct from the face and hair.",
+      "Phase 3B Merfolk Character Pass",
+      {
+        asset: asset.name,
+        observed: asset.readableEyeDiameterPixels,
+        limit: cfg.minimumEyeDiameterPixels
+      }
+    ));
+  }
+  if (asset.articulatedJoints === undefined) {
+    missing(
+      "MERFOLK_JOINT_COUNT_NOT_MEASURED",
+      "Hero manifest omits articulated-joint evidence."
+    );
+  } else if (
+    asset.articulatedJoints <= 0 ||
+    asset.articulatedJoints > cfg.maxArticulatedJoints
+  ) {
+    findings.push(result(
+      "MERFOLK_JOINT_COUNT_OUTSIDE_BUDGET",
+      "blocker",
+      "Hero joint count is invalid or exceeds the mobile budget.",
+      "Phase 3B Merfolk Character Pass",
+      {
+        asset: asset.name,
+        observed: asset.articulatedJoints,
+        limit: cfg.maxArticulatedJoints
+      }
+    ));
+  }
+  if (asset.materials > cfg.maxMaterials) {
+    findings.push(result(
+      "MERFOLK_MATERIAL_COUNT_EXCEEDED",
+      "blocker",
+      "Hero uses more materials than the shared Moon-Garden budget allows.",
+      "Phase 3B Merfolk Character Pass",
+      {
+        asset: asset.name,
+        observed: asset.materials,
+        limit: cfg.maxMaterials
+      }
+    ));
+  }
+
+  const parts = asset.parts ?? [];
+  const missingParts = cfg.requiredParts.filter((part) => !parts.includes(part));
+  if (missingParts.length > 0) {
+    missing(
+      "MERFOLK_CHARACTER_PARTS_MISSING",
+      `Missing hero parts: ${missingParts.join(", ")}.`
+    );
+  }
+  const clips = asset.clips ?? [];
+  const missingClips = cfg.requiredClips.filter((clip) => !clips.includes(clip));
+  if (missingClips.length > 0) {
+    missing(
+      "MERFOLK_ANIMATION_CLIPS_MISSING",
+      `Missing hero behaviours: ${missingClips.join(", ")}.`
+    );
+  }
+  const states = asset.observedStates ?? [];
+  const missingStates = cfg.requiredStates.filter((state) => !states.includes(state));
+  if (missingStates.length > 0) {
+    missing(
+      "MERFOLK_ANIMATION_STATES_MISSING",
+      `Missing observed hero states: ${missingStates.join(", ")}.`
+    );
+  }
+  if (asset.animationDriver !== cfg.animationDriver) {
+    missing(
+      "MERFOLK_ANIMATION_DRIVER_MISMATCH",
+      "Hero animation must be driven by deterministic simulation state."
+    );
+  }
+  return findings;
+}
+
 export function checkTrail(
   input: GateInput,
   cfg: GateConfig["trail"]
@@ -255,6 +426,73 @@ export function checkTrail(
         observed: trail.laneWidthFractionAtMaxMomentum,
         limit: cfg.maxLaneWidthFractionAtMaxMomentum
       }
+    ));
+  }
+  return findings;
+}
+
+/**
+ * Structural premium-world gate. Performance can remain green while authored
+ * districts, reef species or inhabitants disappear; this contract makes that
+ * regression a release blocker instead of a subjective review note.
+ */
+export function checkWorldQuality(
+  input: GateInput,
+  cfg: GateConfig["worldQuality"]
+): Finding[] {
+  const findings: Finding[] = [];
+  const categories = [
+    ["gate family", input.worldQuality.gateFamilies, cfg.requiredGateFamilies],
+    ["architecture", input.worldQuality.architecture, cfg.requiredArchitecture],
+    ["reef", input.worldQuality.reef, cfg.requiredReef],
+    ["ambient life", input.worldQuality.life, cfg.requiredLife],
+    ["prop", input.worldQuality.props, cfg.requiredProps],
+    ["material role", input.worldQuality.materials, cfg.requiredMaterials]
+  ] as const;
+  for (const [label, observed, required] of categories) {
+    const available = new Set(observed);
+    for (const signature of required) {
+      if (available.has(signature)) continue;
+      findings.push(result(
+        "PREMIUM_WORLD_FAMILY_MISSING",
+        "blocker",
+        `Required ${label} "${signature}" is absent from production evidence.`,
+        "Phase 3B premium world contract",
+        { observed: observed.length, limit: required.length }
+      ));
+    }
+  }
+
+  const minimums = [
+    [
+      "visible gate families",
+      new Set(input.worldQuality.gateFamilies).size,
+      cfg.minimumDistinctVisibleGateFamilies
+    ],
+    [
+      "reef families",
+      new Set(input.worldQuality.reef).size,
+      cfg.minimumDistinctReefFamilies
+    ],
+    [
+      "ambient-life families",
+      new Set(input.worldQuality.life).size,
+      cfg.minimumAmbientLifeFamilies
+    ],
+    [
+      "prop families",
+      new Set(input.worldQuality.props).size,
+      cfg.minimumPropFamilies
+    ]
+  ] as const;
+  for (const [label, observed, minimum] of minimums) {
+    if (observed >= minimum) continue;
+    findings.push(result(
+      "PREMIUM_WORLD_DIVERSITY_BELOW_FLOOR",
+      "blocker",
+      `${label} provide ${observed} distinct signatures; at least ${minimum} are required.`,
+      "Phase 3B premium world contract",
+      { observed, limit: minimum }
     ));
   }
   return findings;
@@ -344,6 +582,17 @@ export function checkCaptureCoverage(
   }
 
   const expected = expectedStates(tier);
+  const expectedKeys = new Set(expected.map((state) =>
+    stateKey(state.device, state)
+  ));
+  const unexpected = [...seen.keys()].filter((key) => !expectedKeys.has(key));
+  if (unexpected.length > 0) {
+    findings.push(result(
+      "UNEXPECTED_CAPTURE_STATE", "blocker",
+      `${unexpected.length} unapproved render states were supplied. First: ${unexpected[0]}`,
+      "Art Bible §12"
+    ));
+  }
   const missing = expected.filter((state) =>
     !seen.has(stateKey(state.device, state))
   );
@@ -355,6 +604,310 @@ export function checkCaptureCoverage(
       { observed: `${expected.length - missing.length}/${expected.length}`, limit: `${expected.length}/${expected.length}` }
     ));
   }
+  return findings;
+}
+
+export function checkMerfolkVisualReviews(
+  captures: SceneCapture[],
+  cfg: GateConfig["merfolk"],
+  required: boolean
+): Finding[] {
+  if (!required) return [];
+  const findings: Finding[] = [];
+  const reviews = captures
+    .map((capture) => capture.merfolkVisualReview)
+    .filter((review) => review !== undefined);
+  const fail = (
+    code: string,
+    message: string,
+    observed?: number | string,
+    limit?: number | string
+  ) => findings.push(result(
+    code,
+    "blocker",
+    message,
+    "Phase 3B Merfolk rendered-identity contract",
+    { observed, limit }
+  ));
+
+  if (reviews.length === 0) {
+    fail(
+      "MERFOLK_VISUAL_REVIEW_MISSING",
+      "No role-specific pixel-mask evidence was captured from the chase camera."
+    );
+    return findings;
+  }
+
+  for (const role of cfg.requiredGuardianRoles) {
+    if (!reviews.some((review) => review.guardianRole === role)) {
+      fail(
+        "MERFOLK_GUARDIAN_NOT_RENDERED",
+        `${role} never appears in the rendered cast review.`
+      );
+    }
+  }
+
+  for (const review of reviews) {
+    const label = review.guardianRole;
+    const guardian = review.guardian;
+    if (guardian.heightPixels < cfg.minimumReadableHeightPixels) {
+      fail(
+        "MERFOLK_RENDERED_HEIGHT_BELOW_FLOOR",
+        `${label} is only ${guardian.heightPixels}px tall in the visible mask.`,
+        guardian.heightPixels,
+        cfg.minimumReadableHeightPixels
+      );
+    }
+    if (guardian.visiblePixels < cfg.minimumGuardianVisiblePixels) {
+      fail(
+        "MERFOLK_RENDERED_AREA_BELOW_FLOOR",
+        `${label} does not retain enough visible silhouette area on a phone.`,
+        guardian.visiblePixels,
+        cfg.minimumGuardianVisiblePixels
+      );
+    }
+    if (review.face.heightPixels < cfg.minimumFaceHeightPixels) {
+      fail(
+        "MERFOLK_RENDERED_FACE_BELOW_FLOOR",
+        `${label}'s actually visible face is too small.`,
+        review.face.heightPixels,
+        cfg.minimumFaceHeightPixels
+      );
+    }
+    if (review.eyes.heightPixels < cfg.minimumEyeDiameterPixels) {
+      fail(
+        "MERFOLK_RENDERED_EYES_BELOW_FLOOR",
+        `${label}'s eyes disappear in the rendered mask.`,
+        review.eyes.heightPixels,
+        cfg.minimumEyeDiameterPixels
+      );
+    }
+    const identitySpan = Math.max(
+      review.identity.widthPixels,
+      review.identity.heightPixels
+    );
+    if (identitySpan < cfg.minimumGuardianIdentitySpanPixels) {
+      fail(
+        "MERFOLK_IDENTITY_REGALIA_BELOW_FLOOR",
+        `${label}'s district identity feature is not large enough to distinguish.`,
+        identitySpan,
+        cfg.minimumGuardianIdentitySpanPixels
+      );
+    }
+    if (guardian.occlusionFraction > cfg.maximumGuardianOcclusionFraction) {
+      fail(
+        "MERFOLK_GUARDIAN_OCCLUDED",
+        `${label} loses ${(guardian.occlusionFraction * 100).toFixed(1)}% of its silhouette behind the city.`,
+        guardian.occlusionFraction,
+        cfg.maximumGuardianOcclusionFraction
+      );
+    }
+    if (guardian.edgeClearancePixels < cfg.minimumGuardianEdgeClearancePixels) {
+      fail(
+        "MERFOLK_GUARDIAN_FRAME_CLIPPED",
+        `${label} is clipped or too close to the portrait-frame edge.`,
+        guardian.edgeClearancePixels,
+        cfg.minimumGuardianEdgeClearancePixels
+      );
+    }
+
+    for (const role of cfg.requiredPopulationRoles) {
+      const population = review.population.find((entry) => entry.role === role);
+      if (!population) {
+        fail(
+          "MERFOLK_POPULATION_NOT_RENDERED",
+          `${role} has no role-specific rendered evidence beside ${label}.`
+        );
+        continue;
+      }
+      const component = population.component;
+      const minimumSpan = role === "current-swimmer"
+        ? cfg.minimumSwimmerWidthPixels
+        : role === "conch-herald"
+          ? cfg.minimumHeraldHeightPixels
+          : cfg.minimumCitizenHeightPixels;
+      const observedSpan = role === "current-swimmer"
+        ? component.widthPixels
+        : component.heightPixels;
+      const minimumPixels = role === "current-swimmer"
+        ? cfg.minimumSwimmerVisiblePixels
+        : role === "conch-herald"
+          ? cfg.minimumHeraldVisiblePixels
+          : cfg.minimumCitizenVisiblePixels;
+      if (observedSpan < minimumSpan) {
+        fail(
+          "MERFOLK_POPULATION_SPAN_BELOW_FLOOR",
+          `${role} is not large enough to identify in the ${label} frame.`,
+          observedSpan,
+          minimumSpan
+        );
+      }
+      if (component.visiblePixels < minimumPixels) {
+        fail(
+          "MERFOLK_POPULATION_AREA_BELOW_FLOOR",
+          `${role} collapses into a phone-scale speck in the ${label} frame.`,
+          component.visiblePixels,
+          minimumPixels
+        );
+      }
+      if (
+        component.occlusionFraction >
+        cfg.maximumPopulationOcclusionFraction
+      ) {
+        fail(
+          "MERFOLK_POPULATION_OCCLUDED",
+          `${role} is materially hidden by architecture in the ${label} frame.`,
+          component.occlusionFraction,
+          cfg.maximumPopulationOcclusionFraction
+        );
+      }
+      const minimumFaceHeight = role === "current-swimmer"
+        ? cfg.minimumSwimmerFaceHeightPixels
+        : cfg.minimumPopulationFaceHeightPixels;
+      const minimumEyeHeight = role === "current-swimmer"
+        ? cfg.minimumSwimmerEyeHeightPixels
+        : cfg.minimumPopulationEyeHeightPixels;
+      if (population.face.heightPixels < minimumFaceHeight) {
+        fail(
+          "MERFOLK_POPULATION_FACE_BELOW_FLOOR",
+          `${role} still has no phone-readable facial plane in the ${label} frame.`,
+          population.face.heightPixels,
+          minimumFaceHeight
+        );
+      }
+      if (population.eyes.heightPixels < minimumEyeHeight) {
+        fail(
+          "MERFOLK_POPULATION_EYES_BELOW_FLOOR",
+          `${role} eyes disappear or merge into the face in the ${label} frame.`,
+          population.eyes.heightPixels,
+          minimumEyeHeight
+        );
+      }
+      if (
+        population.instances.length <
+        cfg.minimumPopulationInstancesPerRole
+      ) {
+        fail(
+          "MERFOLK_POPULATION_INSTANCE_COUNT_BELOW_FLOOR",
+          `${role} has only ${population.instances.length} separately readable figures beside ${label}.`,
+          population.instances.length,
+          cfg.minimumPopulationInstancesPerRole
+        );
+      }
+      for (const [index, instance] of population.instances.entries()) {
+        const aspect = role === "current-swimmer"
+          ? instance.widthPixels / Math.max(1, instance.heightPixels)
+          : instance.heightPixels / Math.max(1, instance.widthPixels);
+        const aspectFloor = role === "current-swimmer"
+          ? cfg.minimumSwimmerHorizontalAspectRatio
+          : cfg.minimumUprightAspectRatio;
+        if (aspect < aspectFloor) {
+          fail(
+            role === "current-swimmer"
+              ? "MERFOLK_SWIMMER_POSE_NOT_HORIZONTAL"
+              : "MERFOLK_RESIDENT_POSE_NOT_UPRIGHT",
+            `${role} instance ${index + 1} has the wrong portrait pose beside ${label}.`,
+            aspect,
+            aspectFloor
+          );
+        }
+      }
+    }
+
+    const motion = review.motion;
+    if (Math.abs(
+      motion.sampleIntervalSec - cfg.motionSampleIntervalSec
+    ) > 0.001) {
+      fail(
+        "MERFOLK_MOTION_INTERVAL_INVALID",
+        `${label} motion evidence used the wrong sampling interval.`,
+        motion.sampleIntervalSec,
+        cfg.motionSampleIntervalSec
+      );
+    }
+    if (
+      motion.swimmerStart.length < cfg.minimumPopulationInstancesPerRole ||
+      motion.swimmerEnd.length < cfg.minimumPopulationInstancesPerRole
+    ) {
+      fail(
+        "MERFOLK_SWIMMER_TIMELAPSE_INCOMPLETE",
+        `${label} does not retain two identifiable swimmers across the motion sample.`
+      );
+    }
+    for (const separation of motion.swimmerCentreSeparationPixels) {
+      if (separation < cfg.minimumSwimmerCentreSeparationPixels) {
+        fail(
+          "MERFOLK_SWIMMERS_STACKED",
+          `${label} swimmers are staged too close together and read as a body stack.`,
+          separation,
+          cfg.minimumSwimmerCentreSeparationPixels
+        );
+      }
+    }
+    for (const overlap of motion.swimmerBoxOverlapFraction) {
+      if (overlap > cfg.maximumSwimmerBoxOverlapFraction) {
+        fail(
+          "MERFOLK_SWIMMERS_OVERLAP",
+          `${label} swimmers overlap one another in the portrait frame.`,
+          overlap,
+          cfg.maximumSwimmerBoxOverlapFraction
+        );
+      }
+    }
+    if (motion.swimmerTravelPixels.length < 2) {
+      fail(
+        "MERFOLK_SWIMMER_MOTION_MISSING",
+        `${label} lacks two independently tracked swimmer paths.`
+      );
+    } else {
+      for (const [index, travel] of motion.swimmerTravelPixels.entries()) {
+        if (travel < cfg.minimumSwimmerTravelPixels) {
+          fail(
+            "MERFOLK_SWIMMER_FROZEN",
+            `${label} swimmer ${index + 1} moves only ${travel.toFixed(1)}px.`,
+            travel,
+            cfg.minimumSwimmerTravelPixels
+          );
+        }
+      }
+      if (
+        Math.abs(
+          (motion.swimmerTravelPixels[0] ?? 0) -
+          (motion.swimmerTravelPixels[1] ?? 0)
+        ) < cfg.minimumSwimmerTravelDifferencePixels
+      ) {
+        fail(
+          "MERFOLK_SWIMMER_MOTION_SYNCHRONIZED",
+          `${label} swimmers use visibly identical travel rather than independent paths.`,
+          Math.abs(
+            (motion.swimmerTravelPixels[0] ?? 0) -
+            (motion.swimmerTravelPixels[1] ?? 0)
+          ),
+          cfg.minimumSwimmerTravelDifferencePixels
+        );
+      }
+    }
+    if (
+      motion.heraldTravelPixels.length <
+      cfg.minimumPopulationInstancesPerRole
+    ) {
+      fail(
+        "MERFOLK_UPRIGHT_TIMELAPSE_INCOMPLETE",
+        `${label} lacks the paired upright herald anchors.`
+      );
+    }
+    for (const travel of motion.heraldTravelPixels) {
+      if (travel > cfg.maximumAnchoredTravelPixels) {
+        fail(
+          "MERFOLK_UPRIGHT_RESIDENT_DRIFT",
+          `${label} ceremonial residents drift instead of remaining vertically anchored.`,
+          travel,
+          cfg.maximumAnchoredTravelPixels
+        );
+      }
+    }
+  }
+
   return findings;
 }
 
@@ -420,6 +973,51 @@ export function checkCapture(
       { observed: capture.godRayMeshes, limit: cfg.scene.godRayMeshes.hard }
     ));
   }
+  if (
+    capture.heroMerfolkHeightPixels <
+    cfg.merfolk.minimumReadableHeightPixels
+  ) {
+    findings.push(result(
+      "MERFOLK_PHONE_HEIGHT_BELOW_FLOOR",
+      "blocker",
+      `Hero merfolk is ${capture.heroMerfolkHeightPixels.toFixed(1)}px tall at ${where}.`,
+      "Phase 3B Merfolk Character Pass",
+      {
+        observed: capture.heroMerfolkHeightPixels,
+        limit: cfg.merfolk.minimumReadableHeightPixels
+      }
+    ));
+  }
+  if (
+    capture.heroMerfolkFaceHeightPixels <
+    cfg.merfolk.minimumFaceHeightPixels
+  ) {
+    findings.push(result(
+      "MERFOLK_FACE_HEIGHT_BELOW_FLOOR",
+      "blocker",
+      `Hero face is ${capture.heroMerfolkFaceHeightPixels.toFixed(1)}px tall at ${where}.`,
+      "Phase 3B Merfolk Character Pass",
+      {
+        observed: capture.heroMerfolkFaceHeightPixels,
+        limit: cfg.merfolk.minimumFaceHeightPixels
+      }
+    ));
+  }
+  if (
+    capture.heroMerfolkEyeDiameterPixels <
+    cfg.merfolk.minimumEyeDiameterPixels
+  ) {
+    findings.push(result(
+      "MERFOLK_EYE_SIZE_BELOW_FLOOR",
+      "blocker",
+      `Hero eyes are ${capture.heroMerfolkEyeDiameterPixels.toFixed(1)}px tall at ${where}.`,
+      "Phase 3B Merfolk Character Pass",
+      {
+        observed: capture.heroMerfolkEyeDiameterPixels,
+        limit: cfg.merfolk.minimumEyeDiameterPixels
+      }
+    ));
+  }
 
   const frameRatios = capture.frameContrastRatios.filter(Number.isFinite);
   if (frameRatios.length !== capture.frameContrastRatios.length || frameRatios.length === 0) {
@@ -427,6 +1025,13 @@ export function checkCapture(
       "CONTRAST_NOT_SAMPLED", "blocker",
       `Frame contrast evidence is empty or invalid at ${where}.`,
       "Art Bible §12"
+    ));
+  } else if (frameRatios.length < cfg.contrast.minimumFrameSamples) {
+    findings.push(result(
+      "CONTRAST_SAMPLE_COVERAGE_INSUFFICIENT", "blocker",
+      `Frame has only ${frameRatios.length} contrast samples at ${where}.`,
+      "Art Bible §12",
+      { observed: frameRatios.length, limit: cfg.contrast.minimumFrameSamples }
     ));
   } else {
     const value = percentile(frameRatios, cfg.contrast.framePercentile);
@@ -454,6 +1059,15 @@ export function checkCapture(
         "OBSTACLE_CONTRAST_NOT_SAMPLED", "blocker",
         `${obstacle.obstacleId} has empty or invalid contrast evidence at ${where}.`,
         "Art Bible §12"
+      ));
+      continue;
+    }
+    if (ratios.length < cfg.contrast.minimumPerObstacleSamples) {
+      findings.push(result(
+        "OBSTACLE_SAMPLE_COVERAGE_INSUFFICIENT", "blocker",
+        `${obstacle.obstacleId} has only ${ratios.length} contrast samples at ${where}.`,
+        "Art Bible §12",
+        { observed: ratios.length, limit: cfg.contrast.minimumPerObstacleSamples }
       ));
       continue;
     }

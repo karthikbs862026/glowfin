@@ -52,6 +52,16 @@ export interface TuningConfig {
     regenPerSec: number;
     regenDelayAfterCollisionSec: number;
   };
+  audio: {
+    masterGain: number;
+    ambientGain: number;
+    cueGain: number;
+    momentumResponseSec: number;
+    currentLayerStartMomentum: number;
+    shimmerLayerStartMomentum: number;
+    maxVoices: number;
+    updateRateHz: number;
+  };
   visual: {
     causticScaleFloor: number;
     causticScaleWall: number;
@@ -104,7 +114,11 @@ export interface TuningConfig {
     eyeOffsetZ: number;
     eyeRadius: number;
     eyeHueCalm: number;
+    eyeHueCruise: number;
+    eyeHueFast: number;
     eyeHueMax: number;
+    eyeSpeedInfluence: number;
+    eyeResponseHalfLifeSec: number;
     rimStrength: number;
     rimPower: number;
     bodyGlowAtZeroLight: number;
@@ -186,6 +200,15 @@ const RULES: Record<string, Rule> = {
   "light.regenPerSec": { min: 0, max: 100, note: "light regained per second while clean" },
   "light.regenDelayAfterCollisionSec": { min: 0, max: 30, note: "pause before regen resumes" },
 
+  "audio.masterGain": { min: 0, max: 1, note: "final Web Audio output gain" },
+  "audio.ambientGain": { min: 0, max: 1, note: "shared gain budget for rhythmic support behind the native score" },
+  "audio.cueGain": { min: 0, max: 1, note: "shared gain for near-miss, collision, milestone and recovery cues" },
+  "audio.momentumResponseSec": { min: 0.01, max: 2, note: "smoothing time for momentum-driven audio layers" },
+  "audio.currentLayerStartMomentum": { min: 0, max: 1, note: "normalized momentum where the moving-current layer begins" },
+  "audio.shimmerLayerStartMomentum": { min: 0, max: 1, note: "normalized momentum where the harmonic shimmer begins" },
+  "audio.maxVoices": { min: 4, max: 32, note: "hard cap for transient Web Audio sources" },
+  "audio.updateRateHz": { min: 4, max: 30, note: "maximum continuous-mix automation updates per second" },
+
   "visual.causticScaleFloor": { min: 0.05, max: 8, note: "caustic cycles per world unit on the floor" },
   "visual.causticScaleWall": { min: 0.05, max: 8, note: "caustic cycles per world unit on obstacle faces" },
   "visual.causticIntensityFloor": { min: 0, max: 6, note: "floor caustic brightness" },
@@ -228,12 +251,16 @@ const RULES: Record<string, Rule> = {
   "creature.bankSmoothingHalfLifeSec": { min: 0, max: 0.4, note: "bank easing; too high and the creature lags the input the player gave" },
   "creature.breathHz": { min: 0, max: 5, note: "idle squash-and-stretch rate" },
   "creature.breathAmount": { min: 0, max: 0.4, note: "idle squash-and-stretch depth" },
-  "creature.eyeOffsetX": { min: 0, max: 2, note: "eye lateral offset as a multiple of creatureRadius — must exceed ~0.85 or the eye hides inside the body silhouette when viewed from the chase camera" },
-  "creature.eyeOffsetY": { min: -1, max: 2, note: "eye height offset" },
-  "creature.eyeOffsetZ": { min: -2, max: 2, note: "eye forward offset; too negative and the eye sits on the far side of the body" },
+  "creature.eyeOffsetX": { min: 0, max: 2, note: "lateral front-crown eye offset; eyes stay inside the external-gill fans" },
+  "creature.eyeOffsetY": { min: -1, max: 2, note: "front-crown eye height; eyes sit above the body centre and clear of the gills" },
+  "creature.eyeOffsetZ": { min: -2, max: 2, note: "eye depth offset; negative values place the eyes on the obstacle-facing front hemisphere" },
   "creature.eyeRadius": { min: 0.05, max: 1, note: "eye size as a multiple of creatureRadius" },
   "creature.eyeHueCalm": { min: 0, max: 1, note: "eye hue at rest (Part 3.1: calm blue)" },
-  "creature.eyeHueMax": { min: 0, max: 1, note: "eye hue at ceiling (Part 3.1: warm pink/gold)" },
+  "creature.eyeHueCruise": { min: 0, max: 1, note: "eye hue at cruise speed (luminous cyan)" },
+  "creature.eyeHueFast": { min: 0, max: 1, note: "eye hue at high speed (violet)" },
+  "creature.eyeHueMax": { min: 0, max: 1, note: "eye hue at ceiling (Part 3.1: rose-violet)" },
+  "creature.eyeSpeedInfluence": { min: 0, max: 1, note: "share of the eye-colour response driven by normalized forward speed" },
+  "creature.eyeResponseHalfLifeSec": { min: 0, max: 1, note: "eye-colour smoothing half-life; prevents hue flicker without hiding acceleration" },
   "creature.rimStrength": { min: 0, max: 5, note: "fresnel rim; sells glowing from within (Part 3.2 priority 4)" },
   "creature.rimPower": { min: 0.5, max: 8, note: "rim tightness" },
   "creature.bodyGlowAtZeroLight": { min: 0, max: 3, note: "body brightness when light is depleted — dimming IS the danger signal (ADR-0006)" },
@@ -318,6 +345,46 @@ export function validateTuning(raw: unknown): TuningConfig {
   const lightMax = valueAt(raw, "light.max");
   if (typeof lightCost === "number" && typeof lightMax === "number" && lightCost > lightMax) {
     problems.push("light.costPerCollision must not exceed light.max (one hit would end the run)");
+  }
+
+  const currentLayerStart = valueAt(raw, "audio.currentLayerStartMomentum");
+  const shimmerLayerStart = valueAt(raw, "audio.shimmerLayerStartMomentum");
+  if (
+    typeof currentLayerStart === "number" &&
+    typeof shimmerLayerStart === "number" &&
+    currentLayerStart >= shimmerLayerStart
+  ) {
+    problems.push(
+      "audio.currentLayerStartMomentum must be below audio.shimmerLayerStartMomentum"
+    );
+  }
+
+  const maxVoices = valueAt(raw, "audio.maxVoices");
+  if (typeof maxVoices === "number" && !Number.isInteger(maxVoices)) {
+    problems.push("audio.maxVoices must be a whole number");
+  }
+
+  const audioMasterGain = valueAt(raw, "audio.masterGain");
+  const audioAmbientGain = valueAt(raw, "audio.ambientGain");
+  if (
+    typeof audioMasterGain === "number" &&
+    typeof audioAmbientGain === "number" &&
+    audioMasterGain * audioAmbientGain * 0.075 < 0.01
+  ) {
+    problems.push(
+      "audio masterGain × ambientGain is below the rhythmic-support floor"
+    );
+  }
+
+  const audioCueGain = valueAt(raw, "audio.cueGain");
+  if (
+    typeof audioMasterGain === "number" &&
+    typeof audioCueGain === "number" &&
+    audioMasterGain * audioCueGain < 0.22
+  ) {
+    problems.push(
+      "audio masterGain × cueGain is below the phone-speaker cue floor"
+    );
   }
 
   if (problems.length > 0) {

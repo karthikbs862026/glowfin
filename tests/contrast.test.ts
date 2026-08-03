@@ -142,6 +142,35 @@ describe("silhouette analysis", () => {
     // With the seam skipped this should still read as near-maximum contrast.
     expect(report.minRatio).toBeGreaterThan(15);
   });
+
+  it("uses the farthest valid inset on a low-resolution contour", () => {
+    const buffers = makeBuffers(40, 8, [255, 255, 255], [0, 0, 0], 18, 21);
+    const report = analyseContrast(buffers, 3, { rowStride: 1, offsetPx: 3 });
+    expect(report.samplesTaken).toBe(16);
+    expect(report.minRatio).toBeGreaterThan(15);
+  });
+
+  it("measures a one-pixel contour from firmly classified transition pixels", () => {
+    const buffers = makeBuffers(40, 8, [255, 255, 255], [0, 0, 0], 20, 21);
+    const report = analyseContrast(buffers, 3, { rowStride: 1, offsetPx: 3 });
+    expect(report.samplesTaken).toBe(16);
+    expect(report.passed).toBe(true);
+  });
+
+  it("bridges a one-pixel antialias class without accepting wide context", () => {
+    const buffers = makeBuffers(40, 8, [255, 255, 255], [0, 0, 0], 20, 21);
+    for (let y = 0; y < buffers.height; y++) {
+      for (const x of [19, 21]) {
+        const i = (y * buffers.width + x) * 4;
+        buffers.mask[i] = 128;
+        buffers.mask[i + 1] = 128;
+        buffers.mask[i + 2] = 128;
+      }
+    }
+    const report = analyseContrast(buffers, 3, { rowStride: 1, offsetPx: 3 });
+    expect(report.samplesTaken).toBe(16);
+    expect(report.passed).toBe(true);
+  });
 });
 
 describe("three-state mask (distant obstacles)", () => {

@@ -1,0 +1,508 @@
+import { createHash } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import * as THREE from "three";
+import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { createGlowfinRigGeometry } from "../../src/render/glowfinGeometry.ts";
+import { HeroMerfolkGuardian } from "../../src/render/merfolkGuardian.ts";
+import { MERFOLK_GUARDIAN_ROLES } from "../../src/art/merfolkCharacter.ts";
+import { GATE_FAMILIES } from "../../src/art/premiumWorld.ts";
+import {
+  createProductionAnemone,
+  createProductionBrainCoral,
+  createProductionBranchCoral,
+  createProductionCollapsedArch,
+  createProductionFanCoral,
+  createProductionGateCanopyGeometry,
+  createProductionJelly,
+  createProductionKelp,
+  createProductionMerfolkCitizen,
+  createProductionMerfolkConchHerald,
+  createProductionMerfolkSwimmer,
+  createProductionMerfolkSwimmerParts,
+  createProductionMinnow,
+  createProductionRay,
+  createProductionSkyline,
+  createProductionSpire,
+  createProductionSpirit,
+  createProductionTableCoral,
+  createProductionTower,
+  createProductionWallGeometry
+} from "../../src/render/productionGeometry.ts";
+
+/**
+ * Three's GLTFExporter uses the browser FileReader API internally. Node has a
+ * standards-compatible Blob but no FileReader, so this small adapter keeps the
+ * exporter deterministic in CI without adding another asset dependency.
+ */
+class NodeFileReader {
+  result = null;
+  onloadend = null;
+  onerror = null;
+
+  readAsArrayBuffer(blob) {
+    blob.arrayBuffer().then(
+      (value) => {
+        this.result = value;
+        this.onloadend?.({ target: this });
+      },
+      (error) => this.onerror?.(error)
+    );
+  }
+
+  readAsDataURL(blob) {
+    blob.arrayBuffer().then(
+      (value) => {
+        this.result =
+          `data:${blob.type};base64,${Buffer.from(value).toString("base64")}`;
+        this.onloadend?.({ target: this });
+      },
+      (error) => this.onerror?.(error)
+    );
+  }
+}
+
+globalThis.FileReader = NodeFileReader;
+globalThis.ProgressEvent ??= class ProgressEvent {
+  constructor(type, initial = {}) {
+    this.type = type;
+    Object.assign(this, initial);
+  }
+};
+
+const outputDirectory = resolve(
+  process.argv[2] ?? "build/production-glbs"
+);
+const tuning = JSON.parse(await readFile(
+  resolve("config/tuning.json"),
+  "utf8"
+));
+const exporter = new GLTFExporter();
+const manifest = [];
+
+const stoneMaterial = new THREE.MeshStandardMaterial({
+  name: "Moonstone_PBR",
+  color: 0xffffff,
+  vertexColors: true,
+  roughness: 0.78,
+  metalness: 0.02
+});
+const livingMaterial = new THREE.MeshStandardMaterial({
+  name: "LivingReef_PBR",
+  color: 0xffffff,
+  vertexColors: true,
+  roughness: 0.62,
+  metalness: 0
+});
+const glowfinMaterial = new THREE.MeshStandardMaterial({
+  name: "GlowfinSeaGlass_PBR",
+  color: 0x1598c3,
+  vertexColors: true,
+  roughness: 0.38,
+  metalness: 0,
+  emissive: 0x062b42,
+  emissiveIntensity: 0.34
+});
+const eyeMaterial = new THREE.MeshStandardMaterial({
+  name: "GlowfinEyes_PBR",
+  color: 0x09203e,
+  roughness: 0.22,
+  metalness: 0,
+  emissive: 0x388bc4,
+  emissiveIntensity: 0.7
+});
+const merfolkMaterial = new THREE.MeshStandardMaterial({
+  name: "Tidekeeper_PBR",
+  color: 0xffffff,
+  vertexColors: true,
+  roughness: 0.48,
+  metalness: 0.04,
+  emissive: 0x071d35,
+  emissiveIntensity: 0.22
+});
+
+function productionMesh(geometry, name, material, metadata = {}) {
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = name;
+  mesh.userData = metadata;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+async function writeGlb(fileName, root, animations = []) {
+  const scene = new THREE.Scene();
+  scene.name = `${root.name}_Scene`;
+  scene.add(root);
+  const result = await exporter.parseAsync(scene, {
+    animations,
+    binary: true,
+    onlyVisible: true,
+    trs: true,
+    maxTextureSize: 512
+  });
+  if (!(result instanceof ArrayBuffer)) {
+    throw new Error(`${fileName} did not export as a binary glTF.`);
+  }
+  const bytes = Buffer.from(result);
+  const path = resolve(outputDirectory, fileName);
+  await writeFile(path, bytes);
+  const validation = await new GLTFLoader().parseAsync(result.slice(0), "");
+  const exportedAnimations = validation.animations.map((animation) => animation.name);
+  const expectedAnimations = animations.map((animation) => animation.name);
+  if (exportedAnimations.join("\n") !== expectedAnimations.join("\n")) {
+    throw new Error(
+      `${fileName} animation mismatch: ` +
+      `${exportedAnimations.join(", ")} != ${expectedAnimations.join(", ")}`
+    );
+  }
+  let meshes = 0;
+  let bones = 0;
+  validation.scene.traverse((node) => {
+    if (node.isMesh) meshes += 1;
+    if (node.isBone) bones += 1;
+  });
+  manifest.push({
+    file: fileName,
+    bytes: bytes.byteLength,
+    sha256: createHash("sha256").update(bytes).digest("hex"),
+    root: root.name,
+    meshes,
+    bones,
+    animations: exportedAnimations
+  });
+}
+
+function glowfinClips() {
+  const quaternionValues = (axis, angles) => angles.flatMap((angle) => {
+    const quaternion = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+    return [quaternion.x, quaternion.y, quaternion.z, quaternion.w];
+  });
+  const zAxis = new THREE.Vector3(0, 0, 1);
+  const yAxis = new THREE.Vector3(0, 1, 0);
+  const propulsionTimes = [0, 0.2, 0.4, 0.6, 0.8];
+  return [
+    new THREE.AnimationClip("breathe", 2, [
+      new THREE.VectorKeyframeTrack(
+        "GlowfinRoot.scale",
+        [0, 1, 2],
+        [1, 1, 1, 0.96, 1.05, 1, 1, 1, 1]
+      )
+    ]),
+    new THREE.AnimationClip("propulsion", 0.8, [
+      new THREE.QuaternionKeyframeTrack(
+        "FinLeft.quaternion",
+        propulsionTimes,
+        quaternionValues(zAxis, [0, 0.34, 0, -0.34, 0])
+      ),
+      new THREE.QuaternionKeyframeTrack(
+        "FinRight.quaternion",
+        propulsionTimes,
+        quaternionValues(zAxis, [0, -0.34, 0, 0.34, 0])
+      ),
+      new THREE.QuaternionKeyframeTrack(
+        "Tail.quaternion",
+        propulsionTimes,
+        quaternionValues(yAxis, [0, 0.3, 0, -0.3, 0])
+      )
+    ]),
+    new THREE.AnimationClip("bank", 0.8, [
+      new THREE.QuaternionKeyframeTrack(
+        "Glowfin.quaternion",
+        [0, 0.4, 0.8],
+        quaternionValues(zAxis, [-0.35, 0.35, -0.35])
+      )
+    ]),
+    new THREE.AnimationClip("collisionSquash", 0.34, [
+      new THREE.VectorKeyframeTrack(
+        "GlowfinRoot.scale",
+        [0, 0.12, 0.34],
+        [1, 1, 1, 1.14, 0.72, 0.82, 1, 1, 1]
+      )
+    ]),
+    new THREE.AnimationClip("recovery", 0.72, [
+      new THREE.VectorKeyframeTrack(
+        "GlowfinRoot.scale",
+        [0, 0.22, 0.72],
+        [1, 1, 1, 1.08, 1.08, 1.04, 1, 1, 1]
+      )
+    ])
+  ];
+}
+
+function quaternionValues(axis, angles) {
+  return angles.flatMap((angle) => {
+    const quaternion = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+    return [quaternion.x, quaternion.y, quaternion.z, quaternion.w];
+  });
+}
+
+function merfolkClips() {
+  const zAxis = new THREE.Vector3(0, 0, 1);
+  const yAxis = new THREE.Vector3(0, 1, 0);
+  return [
+    new THREE.AnimationClip("hover", 2, [
+      new THREE.VectorKeyframeTrack(
+        "hero-merfolk-guardian.position",
+        [0, 1, 2],
+        [0, 0, 0, 0, 0.08, 0, 0, 0, 0]
+      )
+    ]),
+    new THREE.AnimationClip("swim", 0.8, [
+      new THREE.QuaternionKeyframeTrack(
+        "scaled-tail.quaternion",
+        [0, 0.2, 0.4, 0.6, 0.8],
+        quaternionValues(zAxis, [0, 0.16, 0, -0.16, 0])
+      ),
+      new THREE.QuaternionKeyframeTrack(
+        "MerfolkTailMid.quaternion",
+        [0, 0.2, 0.4, 0.6, 0.8],
+        quaternionValues(zAxis, [0, -0.3, 0, 0.3, 0])
+      )
+    ]),
+    new THREE.AnimationClip("turn", 1.2, [
+      new THREE.QuaternionKeyframeTrack(
+        "hero-merfolk-guardian.quaternion",
+        [0, 0.6, 1.2],
+        quaternionValues(yAxis, [-0.28, 0.28, -0.28])
+      )
+    ]),
+    new THREE.AnimationClip("patrol", 2.4, [
+      new THREE.VectorKeyframeTrack(
+        "hero-merfolk-guardian.position",
+        [0, 1.2, 2.4],
+        [-0.2, 0, 0, 0.2, 0.05, 0, -0.2, 0, 0]
+      )
+    ]),
+    new THREE.AnimationClip("greeting", 1.15, [
+      new THREE.QuaternionKeyframeTrack(
+        "MerfolkLeftUpperArm.quaternion",
+        [0, 0.45, 0.8, 1.15],
+        quaternionValues(zAxis, [-0.32, -1.2, -1.08, -0.32])
+      ),
+      new THREE.QuaternionKeyframeTrack(
+        "MerfolkLeftForearm.quaternion",
+        [0, 0.45, 0.8, 1.15],
+        quaternionValues(zAxis, [-0.18, -0.8, -0.5, -0.18])
+      )
+    ])
+  ];
+}
+
+function createGlowfinAsset() {
+  const rig = createGlowfinRigGeometry(tuning, 0);
+  const group = new THREE.Group();
+  group.name = "Glowfin";
+
+  const root = new THREE.Bone();
+  root.name = "GlowfinRoot";
+  const finLeft = new THREE.Bone();
+  finLeft.name = "FinLeft";
+  finLeft.position.copy(rig.pivots.finLeft);
+  const finRight = new THREE.Bone();
+  finRight.name = "FinRight";
+  finRight.position.copy(rig.pivots.finRight);
+  const tail = new THREE.Bone();
+  tail.name = "Tail";
+  tail.position.copy(rig.pivots.tail);
+  root.add(finLeft, finRight, tail);
+
+  const gills = rig.pivots.gills.map((pivot, index) => {
+    const bone = new THREE.Bone();
+    bone.name = `Gill${index + 1}`;
+    bone.position.copy(pivot);
+    root.add(bone);
+    return bone;
+  });
+
+  const body = new THREE.SkinnedMesh(rig.body, glowfinMaterial);
+  body.name = "GlowfinBody_LOD0";
+  body.add(root);
+  body.bind(new THREE.Skeleton([
+    root,
+    finLeft,
+    finRight,
+    tail,
+    ...gills
+  ]));
+  body.userData = {
+    lod: 0,
+    collidable: false,
+    animationDriver: "simulation"
+  };
+  const eyes = productionMesh(
+    rig.eyes,
+    "GlowfinEyes_LOD0",
+    eyeMaterial,
+    { lod: 0, diegeticMomentumIndicator: true }
+  );
+  group.add(body, eyes);
+  return group;
+}
+
+function createHeroMerfolkAsset(role = "tidekeeper") {
+  const guardian = new HeroMerfolkGuardian(
+    merfolkMaterial,
+    tuning.lane.halfWidth
+  );
+  guardian.update(0, 0, 0, { anchor: 24, side: 1, role });
+  guardian.object.position.set(0, 0, 0);
+  guardian.object.rotation.set(0, 0, 0);
+  guardian.object.scale.setScalar(1);
+  guardian.object.visible = true;
+  guardian.object.userData = {
+    ...guardian.object.userData,
+    triangleCount: guardian.triangleCount,
+    drawCount: guardian.drawCount,
+    laneSafe: true,
+    castRole: role,
+    runtimeAnimationDriver: guardian.animationDriver
+  };
+  return guardian.object;
+}
+
+function createCurrentSwimmerAsset() {
+  const parts = createProductionMerfolkSwimmerParts();
+  const root = new THREE.Group();
+  root.name = "MoonCurrentSwimmerV2";
+  root.userData = {
+    role: "current-swimmer",
+    authoredCharacterVersion: "moon-current-swimmer-v2",
+    pose: "horizontal-from-source",
+    eyeLine: "level",
+    gazeDirection: "travel-forward",
+    collidable: false,
+    materialCount: 1
+  };
+  root.add(
+    productionMesh(parts.body, "CurrentSwimmer_Body", merfolkMaterial, {
+      feature: "body-hair-tail-ear-fins",
+      lod: 0,
+      collidable: false
+    }),
+    productionMesh(parts.face, "CurrentSwimmer_Face", merfolkMaterial, {
+      feature: "sculpted-friendly-face",
+      lod: 0,
+      collidable: false
+    }),
+    productionMesh(parts.eyes, "CurrentSwimmer_Eyes", merfolkMaterial, {
+      feature: "level-forward-gaze",
+      lod: 0,
+      collidable: false
+    })
+  );
+  return root;
+}
+
+function createGateAsset() {
+  const root = new THREE.Group();
+  root.name = "MoonGate";
+  for (const lod of [0, 1, 2]) {
+    for (const { id: variant } of GATE_FAMILIES) {
+      root.add(productionMesh(
+        createProductionGateCanopyGeometry(lod, variant),
+        `MoonGate_Canopy_Variant${variant}_LOD${lod}`,
+        stoneMaterial,
+        {
+          lod,
+          variant,
+          collidable: false,
+          role: "overhead-broken-masonry"
+        }
+      ));
+      for (const gapDirection of [1, -1]) {
+        const side = gapDirection === 1 ? "Left" : "Right";
+        root.add(productionMesh(
+          createProductionWallGeometry(lod, gapDirection, variant),
+          `MoonGate_${side}_Variant${variant}_LOD${lod}`,
+          stoneMaterial,
+          {
+            lod,
+            variant,
+            gapDirection,
+            colliderPlaneLocal: gapDirection * 0.5,
+            playableEdgeMustRemainStraight: true
+          }
+        ));
+      }
+    }
+  }
+  return root;
+}
+
+function createKit(name, families, material) {
+  const root = new THREE.Group();
+  root.name = name;
+  for (const family of families) {
+    for (const lod of family.lods) {
+      root.add(productionMesh(
+        family.create(lod),
+        `${family.name}_LOD${lod}`,
+        material,
+        { lod, collidable: false, family: family.name }
+      ));
+    }
+  }
+  return root;
+}
+
+await mkdir(outputDirectory, { recursive: true });
+await writeGlb("glowfin-v1.glb", createGlowfinAsset(), glowfinClips());
+await writeGlb(
+  "hero-merfolk-v1.glb",
+  createHeroMerfolkAsset("tidekeeper"),
+  merfolkClips()
+);
+for (const role of MERFOLK_GUARDIAN_ROLES.filter(
+  (candidate) => candidate.key !== "tidekeeper"
+)) {
+  await writeGlb(
+    `hero-merfolk-${role.key}-v1.glb`,
+    createHeroMerfolkAsset(role.key),
+    merfolkClips()
+  );
+}
+await writeGlb("moon-gate-v1.glb", createGateAsset());
+await writeGlb("ruin-kit-v1.glb", createKit("RuinKit", [
+  { name: "BrokenTower", create: createProductionTower, lods: [0, 1, 2] },
+  { name: "CollapsedArch", create: createProductionCollapsedArch, lods: [0, 1, 2] },
+  { name: "ForkedSpire", create: createProductionSpire, lods: [0, 1, 2] }
+], stoneMaterial));
+await writeGlb("reef-kit-v1.glb", createKit("ReefKit", [
+  { name: "BrainCoral", create: createProductionBrainCoral, lods: [0, 1, 2] },
+  { name: "TableCoral", create: createProductionTableCoral, lods: [0, 1, 2] },
+  { name: "Staghorn", create: createProductionBranchCoral, lods: [0, 1, 2] },
+  { name: "SeaFan", create: createProductionFanCoral, lods: [0, 1, 2] },
+  { name: "Anemone", create: createProductionAnemone, lods: [0, 1, 2] },
+  { name: "Kelp", create: createProductionKelp, lods: [0, 1] }
+], livingMaterial));
+await writeGlb(
+  "merfolk-current-swimmer-v2.glb",
+  createCurrentSwimmerAsset()
+);
+await writeGlb("moon-life-v1.glb", createKit("MoonLife", [
+  { name: "MoonMinnow", create: createProductionMinnow, lods: [0] },
+  { name: "LanternJelly", create: createProductionJelly, lods: [0] },
+  { name: "RibbonRay", create: createProductionRay, lods: [0] },
+  { name: "GardenSpirit", create: createProductionSpirit, lods: [0] },
+  { name: "ReefCitizen", create: createProductionMerfolkCitizen, lods: [0] },
+  { name: "CurrentSwimmer", create: createProductionMerfolkSwimmer, lods: [0] },
+  { name: "ConchHerald", create: createProductionMerfolkConchHerald, lods: [0] }
+], livingMaterial));
+await writeGlb("drowned-skyline-v1.glb", createKit("DrownedSkyline", [
+  { name: "SkylineCluster", create: createProductionSkyline, lods: [0] }
+], stoneMaterial));
+
+await writeFile(
+  resolve(outputDirectory, "manifest.json"),
+  `${JSON.stringify({
+    version: 4,
+    source: "validated Phase 3B runtime production-transition meshes",
+    status: "Phase 3C gate/reef runtime handoff; final DCC sculpt sign-off remains required",
+    assets: manifest
+  }, null, 2)}\n`,
+  "utf8"
+);
+
+console.log(`Wrote ${manifest.length} GLBs to ${outputDirectory}`);

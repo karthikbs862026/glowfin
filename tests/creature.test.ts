@@ -1,6 +1,16 @@
 import { describe, it, expect } from "vitest";
 import { tuning } from "../src/core/config";
 import budgets from "../config/budgets.json";
+import {
+  createGlowfinRigGeometry,
+  GLOWFIN_FORWARD_AXIS,
+  GLOWFIN_REAR_AXIS
+} from "../src/render/glowfinGeometry";
+import {
+  eyeEnergyTarget,
+  eyeHueForEnergy,
+  smoothEyeEnergy
+} from "../src/render/creature";
 
 /**
  * The creature needs a WebGL context, so its rendering is judged on device.
@@ -19,6 +29,51 @@ describe("creature configuration (Part 3.1)", () => {
     // Part 3.1 makes eye hue the diegetic momentum indicator. If these ever
     // converge, the only momentum readout in the game silently disappears.
     expect(Math.abs(tuning.creature.eyeHueMax - tuning.creature.eyeHueCalm)).toBeGreaterThan(0.2);
+  });
+
+  it("uses both momentum and actual speed for the eye colour signal", () => {
+    const speedOnly = eyeEnergyTarget(0, 1, tuning.creature.eyeSpeedInfluence);
+    const momentumOnly = eyeEnergyTarget(1, 0, tuning.creature.eyeSpeedInfluence);
+    expect(speedOnly).toBeGreaterThan(0);
+    expect(momentumOnly).toBeGreaterThan(0);
+    expect(eyeEnergyTarget(1, 1, tuning.creature.eyeSpeedInfluence)).toBe(1);
+    expect(eyeEnergyTarget(-1, 2, tuning.creature.eyeSpeedInfluence)).toBe(
+      tuning.creature.eyeSpeedInfluence
+    );
+  });
+
+  it("keeps calm, cruise, fast and maximum eye colours distinct", () => {
+    const hue = (energy: number) => eyeHueForEnergy(
+      energy,
+      tuning.creature.eyeHueCalm,
+      tuning.creature.eyeHueCruise,
+      tuning.creature.eyeHueFast,
+      tuning.creature.eyeHueMax
+    );
+    expect(hue(0)).toBeCloseTo(tuning.creature.eyeHueCalm);
+    expect(hue(0.42)).toBeCloseTo(tuning.creature.eyeHueCruise);
+    expect(hue(0.78)).toBeCloseTo(tuning.creature.eyeHueFast);
+    expect(hue(1)).toBeCloseTo(tuning.creature.eyeHueMax);
+    expect(Math.abs(hue(0.5) - hue(1))).toBeGreaterThan(0.3);
+  });
+
+  it("smooths eye colour without making the result frame-rate dependent", () => {
+    const oneFrame = smoothEyeEnergy(
+      0,
+      1,
+      1 / 30,
+      tuning.creature.eyeResponseHalfLifeSec
+    );
+    let twoFrames = 0;
+    for (let frame = 0; frame < 2; frame++) {
+      twoFrames = smoothEyeEnergy(
+        twoFrames,
+        1,
+        1 / 60,
+        tuning.creature.eyeResponseHalfLifeSec
+      );
+    }
+    expect(twoFrames).toBeCloseTo(oneFrame, 8);
   });
 
   it("body dims as light depletes, because dimming is the danger signal", () => {
@@ -49,11 +104,87 @@ describe("creature configuration (Part 3.1)", () => {
     expect(tuning.creature.rimStrength).toBeGreaterThan(0);
   });
 
+  it("keeps both eyes high on the obstacle-facing crown ahead of the gills", () => {
+    expect(GLOWFIN_FORWARD_AXIS).toEqual([0, 0, -1]);
+    expect(GLOWFIN_REAR_AXIS).toEqual([0, 0, 1]);
+    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.51);
+    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.65);
+    expect(tuning.creature.eyeOffsetZ).toBeCloseTo(-0.52);
+    expect(tuning.creature.eyeRadius).toBeGreaterThanOrEqual(0.18);
+
+    const rig = createGlowfinRigGeometry(tuning, 1);
+    rig.eyes.computeBoundingBox();
+    const eyeBounds = rig.eyes.boundingBox;
+    expect(eyeBounds?.min.x).toBeLessThan(
+      -tuning.lane.creatureRadius * 0.53
+    );
+    expect(eyeBounds?.max.x).toBeGreaterThan(
+      tuning.lane.creatureRadius * 0.53
+    );
+    expect(eyeBounds?.max.y).toBeGreaterThan(
+      tuning.lane.creatureRadius * 0.75
+    );
+    expect(eyeBounds?.max.z).toBeLessThan(
+      -tuning.lane.creatureRadius * 0.45
+    );
+    expect(rig.pivots.tail.z).toBeGreaterThan(0);
+    // The gills remain on the side/rear silhouette while the eyes sit farther
+    // forward along the explicit negative-Z swim axis. This makes the eyes
+    // face the obstacles and prevents a camera-facing facial mask.
+    expect(rig.pivots.gills.every((pivot) => pivot.z > 0)).toBe(true);
+    expect(rig.pivots.gills.every((pivot) =>
+      pivot.z > (eyeBounds?.max.z ?? Infinity)
+    )).toBe(true);
+    expect((eyeBounds?.max.x ?? 0) - (eyeBounds?.min.x ?? 0)).toBeGreaterThan(
+      tuning.lane.creatureRadius * 1.25
+    );
+    rig.body.dispose();
+    rig.eyes.dispose();
+  });
+
+  it("buries fin and tail pivots while keeping three external gills per side", () => {
+    const rig = createGlowfinRigGeometry(tuning, 1);
+    const radius = tuning.lane.creatureRadius;
+    const axes = {
+      x: radius * 0.96,
+      y: radius * tuning.creature.bodyHeight,
+      z: radius * tuning.creature.bodyLength
+    };
+    const insideBody = (point: { x: number; y: number; z: number }) =>
+      point.x ** 2 / axes.x ** 2 +
+        point.y ** 2 / axes.y ** 2 +
+        point.z ** 2 / axes.z ** 2 <
+      1;
+
+    expect(insideBody(rig.pivots.finLeft)).toBe(true);
+    expect(insideBody(rig.pivots.finRight)).toBe(true);
+    expect(insideBody(rig.pivots.tail)).toBe(true);
+    expect(rig.pivots.gills).toHaveLength(6);
+    for (const side of [-1, 1]) {
+      const fan = rig.pivots.gills.filter((pivot) =>
+        Math.sign(pivot.x) === side
+      );
+      expect(fan).toHaveLength(3);
+      expect(fan.every((pivot) =>
+        Math.abs(pivot.x) >= radius * 0.79 &&
+        Math.abs(pivot.x) <= radius * 0.93
+      )).toBe(true);
+      const eyeX = radius * tuning.creature.eyeOffsetX;
+      expect(fan.every((pivot) =>
+        Math.abs(pivot.x) - eyeX >= radius * 0.1
+      )).toBe(true);
+    }
+
+    rig.body.dispose();
+    rig.eyes.dispose();
+  });
+
   it("the creature's draw calls fit the budget alongside the scene", () => {
-    // body + 2 eyes + 2 fins + tail + 6 gills = 12 meshes, and the scene was
-    // measured at 48 draws with the old single-sphere creature.
-    const creatureMeshes = 12;
-    const measuredSceneDraws = 48;
-    expect(measuredSceneDraws - 1 + creatureMeshes).toBeLessThan(budgets.scene.maxDrawCalls);
+    // One skinned body mesh plus one combined emissive-eye mesh.
+    const creatureDraws = 2;
+    const conservativeSceneWithoutCreature = 72;
+    expect(conservativeSceneWithoutCreature + creatureDraws).toBeLessThan(
+      budgets.scene.maxDrawCalls
+    );
   });
 });

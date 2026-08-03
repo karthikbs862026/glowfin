@@ -25,6 +25,8 @@ describe("quality tiers", () => {
       expect(settings.pixelRatioCap).toBeGreaterThan(0);
       expect(settings.causticOctaves).toBeGreaterThanOrEqual(1);
       expect(typeof settings.causticsEnabled).toBe("boolean");
+      expect(settings.ambientLifeDensity).toBeGreaterThan(0);
+      expect(settings.ambientLifeDensity).toBeLessThanOrEqual(1);
     }
   });
 
@@ -36,6 +38,8 @@ describe("quality tiers", () => {
     expect(low.pixelRatioCap).toBeLessThan(medium.pixelRatioCap);
     expect(medium.causticOctaves).toBeLessThanOrEqual(high.causticOctaves);
     expect(low.causticOctaves).toBeLessThanOrEqual(medium.causticOctaves);
+    expect(medium.ambientLifeDensity).toBeLessThan(high.ambientLifeDensity);
+    expect(low.ambientLifeDensity).toBeLessThan(medium.ambientLifeDensity);
   });
 });
 

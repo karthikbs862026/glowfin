@@ -85,10 +85,20 @@ export function validateGateConfig(raw: unknown): Finding[] {
     "colliderTruth.edgeAlignmentToleranceWorldUnits",
     "colliderTruth.straightnessToleranceWorldUnits",
     "colliderTruth.minimumSamplesPerEdge",
+    "contrast.minimumFrameSamples",
+    "contrast.minimumPerObstacleSamples",
     "contrast.framePercentile",
     "contrast.frameMinRatio",
     "contrast.perObstaclePercentile",
     "contrast.perObstacleMinRatio",
+    "beauty.meanLuminanceMin",
+    "beauty.nearBlackFractionMax",
+    "beauty.colourfulFractionMin",
+    "beauty.clippedHighlightFractionMax",
+    "worldQuality.minimumDistinctVisibleGateFamilies",
+    "worldQuality.minimumDistinctReefFamilies",
+    "worldQuality.minimumAmbientLifeFamilies",
+    "worldQuality.minimumPropFamilies",
     "creature.viewportWidthFractionMin",
     "creature.viewportWidthFractionMax",
     "creature.eyeGlowPixelsMin",
@@ -96,6 +106,35 @@ export function validateGateConfig(raw: unknown): Finding[] {
     "creature.maxBones",
     "creature.maxMaterials",
     "creature.maxTextureSizePx",
+    "merfolk.minimumReadableHeightPixels",
+    "merfolk.minimumFaceHeightPixels",
+    "merfolk.minimumEyeDiameterPixels",
+    "merfolk.minimumGuardianIdentitySpanPixels",
+    "merfolk.minimumGuardianVisiblePixels",
+    "merfolk.minimumCitizenHeightPixels",
+    "merfolk.minimumCitizenVisiblePixels",
+    "merfolk.minimumSwimmerWidthPixels",
+    "merfolk.minimumSwimmerVisiblePixels",
+    "merfolk.minimumSwimmerFaceHeightPixels",
+    "merfolk.minimumSwimmerEyeHeightPixels",
+    "merfolk.minimumHeraldHeightPixels",
+    "merfolk.minimumHeraldVisiblePixels",
+    "merfolk.minimumPopulationFaceHeightPixels",
+    "merfolk.minimumPopulationEyeHeightPixels",
+    "merfolk.minimumPopulationInstancesPerRole",
+    "merfolk.minimumUprightAspectRatio",
+    "merfolk.minimumSwimmerHorizontalAspectRatio",
+    "merfolk.minimumSwimmerCentreSeparationPixels",
+    "merfolk.maximumSwimmerBoxOverlapFraction",
+    "merfolk.motionSampleIntervalSec",
+    "merfolk.minimumSwimmerTravelPixels",
+    "merfolk.maximumAnchoredTravelPixels",
+    "merfolk.minimumSwimmerTravelDifferencePixels",
+    "merfolk.maximumGuardianOcclusionFraction",
+    "merfolk.maximumPopulationOcclusionFraction",
+    "merfolk.minimumGuardianEdgeClearancePixels",
+    "merfolk.maxArticulatedJoints",
+    "merfolk.maxMaterials",
     "trail.maxLaneWidthFractionAtMaxMomentum"
     ,"performance.minMedianFps"
     ,"performance.maxColdStartMs"
@@ -146,6 +185,62 @@ export function validateGateConfig(raw: unknown): Finding[] {
           `Asset family "${name}" is missing collidable/maxMaterials/strategy.`
         ));
       }
+    }
+  }
+
+  const worldQuality = record(cfg.worldQuality);
+  for (const key of [
+    "requiredGateFamilies",
+    "requiredArchitecture",
+    "requiredReef",
+    "requiredLife",
+    "requiredProps",
+    "requiredMaterials"
+  ]) {
+    const values = worldQuality?.[key];
+    if (
+      !Array.isArray(values) ||
+      values.length === 0 ||
+      !values.every(nonEmptyString)
+    ) {
+      findings.push(blocker(
+        "CONFIG_MALFORMED",
+        `World-quality contract "${key}" must be a non-empty string array.`,
+        "Phase 3B premium world contract"
+      ));
+    }
+  }
+
+  const merfolk = record(cfg.merfolk);
+  if (
+    !merfolk ||
+    !nonEmptyString(merfolk.requiredRecognitionLabel) ||
+    !nonEmptyString(merfolk.animationDriver)
+  ) {
+    findings.push(blocker(
+      "CONFIG_MALFORMED",
+      "Merfolk recognition label and animation driver are required.",
+      "Phase 3B Merfolk Character Pass"
+    ));
+  }
+  for (const key of [
+    "requiredGuardianRoles",
+    "requiredPopulationRoles",
+    "requiredParts",
+    "requiredStates",
+    "requiredClips"
+  ]) {
+    const values = merfolk?.[key];
+    if (
+      !Array.isArray(values) ||
+      values.length === 0 ||
+      !values.every(nonEmptyString)
+    ) {
+      findings.push(blocker(
+        "CONFIG_MALFORMED",
+        `Merfolk contract "${key}" must be a non-empty string array.`,
+        "Phase 3B Merfolk Character Pass"
+      ));
     }
   }
 
@@ -255,6 +350,30 @@ export function validateAssetManifest(
   }
 
   if (!levels.has(0)) fail("No LOD0 entry.", "MANIFEST_NO_LOD0");
+  if (
+    asset.articulatedJoints !== undefined &&
+    (!finite(asset.articulatedJoints) || asset.articulatedJoints < 0)
+  ) fail('Invalid "articulatedJoints".');
+  if (
+    asset.readableHeightPixels !== undefined &&
+    (!finite(asset.readableHeightPixels) || asset.readableHeightPixels < 0)
+  ) fail('Invalid "readableHeightPixels".');
+  if (
+    asset.readableFaceHeightPixels !== undefined &&
+    (!finite(asset.readableFaceHeightPixels) || asset.readableFaceHeightPixels < 0)
+  ) fail('Invalid "readableFaceHeightPixels".');
+  if (
+    asset.readableEyeDiameterPixels !== undefined &&
+    (!finite(asset.readableEyeDiameterPixels) || asset.readableEyeDiameterPixels < 0)
+  ) fail('Invalid "readableEyeDiameterPixels".');
+  if (
+    asset.recognitionLabel !== undefined &&
+    !nonEmptyString(asset.recognitionLabel)
+  ) fail('Invalid "recognitionLabel".');
+  if (
+    asset.parts !== undefined &&
+    (!Array.isArray(asset.parts) || !asset.parts.every(nonEmptyString))
+  ) fail('Invalid "parts".');
   return findings;
 }
 
@@ -333,7 +452,10 @@ export function validateCapture(raw: unknown): Finding[] {
     "triangles",
     "textureMemoryMB",
     "activeMaterials",
-    "godRayMeshes"
+    "godRayMeshes",
+    "heroMerfolkHeightPixels",
+    "heroMerfolkFaceHeightPixels",
+    "heroMerfolkEyeDiameterPixels"
   ]) {
     if (!finite(capture[key]) || (capture[key] as number) < 0) {
       fail(`Capture metric "${key}" is invalid.`);
@@ -356,6 +478,68 @@ export function validateCapture(raw: unknown): Finding[] {
         fail("Obstacle contrast entry is incomplete.");
         break;
       }
+    }
+  }
+
+  if (capture.merfolkVisualReview !== undefined) {
+    const review = record(capture.merfolkVisualReview);
+    const componentKeys = [
+      "widthPixels",
+      "heightPixels",
+      "visiblePixels",
+      "isolatedPixels",
+      "occlusionFraction",
+      "edgeClearancePixels",
+      "centreXPixels",
+      "centreYPixels"
+    ];
+    const validComponent = (value: unknown): boolean => {
+      const component = record(value);
+      if (!component) return false;
+      if (!componentKeys.every((key) =>
+        finite(component[key]) && (component[key] as number) >= 0
+      )) return false;
+      return (component.occlusionFraction as number) <= 1;
+    };
+    if (
+      !review ||
+      !nonEmptyString(review.guardianRole) ||
+      !validComponent(review.guardian) ||
+      !validComponent(review.face) ||
+      !validComponent(review.eyes) ||
+      !validComponent(review.identity) ||
+      !Array.isArray(review.population) ||
+      !review.population.every((entry) => {
+        const item = record(entry);
+        return item &&
+          nonEmptyString(item.role) &&
+          validComponent(item.component) &&
+          validComponent(item.face) &&
+          validComponent(item.eyes) &&
+          Array.isArray(item.instances) &&
+          item.instances.every(validComponent);
+      }) ||
+      !(() => {
+        const motion = record(review.motion);
+        return motion &&
+          finite(motion.sampleIntervalSec) &&
+          Array.isArray(motion.swimmerStart) &&
+          motion.swimmerStart.every(validComponent) &&
+          Array.isArray(motion.swimmerEnd) &&
+          motion.swimmerEnd.every(validComponent) &&
+          Array.isArray(motion.swimmerTravelPixels) &&
+          motion.swimmerTravelPixels.every(finite) &&
+          Array.isArray(motion.swimmerCentreSeparationPixels) &&
+          motion.swimmerCentreSeparationPixels.length === 2 &&
+          motion.swimmerCentreSeparationPixels.every(finite) &&
+          Array.isArray(motion.swimmerBoxOverlapFraction) &&
+          motion.swimmerBoxOverlapFraction.length === 2 &&
+          motion.swimmerBoxOverlapFraction.every(finite) &&
+          Array.isArray(motion.heraldTravelPixels) &&
+          motion.heraldTravelPixels.every(finite);
+      })()
+    ) {
+      fail("Merfolk pixel-mask review is incomplete or malformed.");
     }
   }
 
@@ -430,6 +614,26 @@ export function validateGateInput(
       "Trail implementation, particle use and max-momentum width are required.",
       "Art Bible §8"
     ));
+  }
+
+
+  const worldQuality = record(input.worldQuality);
+  for (const key of [
+    "gateFamilies",
+    "architecture",
+    "reef",
+    "life",
+    "props",
+    "materials"
+  ]) {
+    const values = worldQuality?.[key];
+    if (!Array.isArray(values) || !values.every(nonEmptyString)) {
+      findings.push(blocker(
+        "WORLD_QUALITY_EVIDENCE_MALFORMED",
+        `World-quality evidence "${key}" must be a string array.`,
+        "Phase 3B premium world contract"
+      ));
+    }
   }
 
   if (

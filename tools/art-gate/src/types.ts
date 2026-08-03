@@ -22,12 +22,23 @@ export interface Finding {
 export type AssetFamily =
   | "glowfin"
   | "brokenTower"
+  | "collapsedArchRuin"
   | "collapsedArchPair"
   | "spire"
+  | "palaceDistrict"
+  | "observatory"
   | "wallFragment"
   | "heroCoral"
+  | "brainCoral"
+  | "tableCoral"
   | "mediumCoral"
   | "smallProp"
+  | "distantSkyline"
+  | "ambientCreature"
+  | "merfolkCreature"
+  | "heroMerfolk"
+  | "heroProp"
+  | "artReviewImpostor"
   | "ribbonKelp"
   | "godRayMesh";
 
@@ -64,7 +75,7 @@ export interface AssetManifest {
   family: AssetFamily;
   /** Pipeline declaration; enforced against family config, never trusted. */
   collidable: boolean;
-  /** True only for the current primitive renderer during Phase 3A integration. */
+  /** Legacy marker used only by rejection fixtures and unfinished migrations. */
   baselineProcedural?: boolean;
   /** Required for every family configured as collidable. */
   runtimeObstacleId?: string;
@@ -80,6 +91,14 @@ export interface AssetManifest {
   observedStates?: string[];
   viewportWidthFraction?: number;
   eyeGlowPixels?: number;
+  articulatedJoints?: number;
+  readableHeightPixels?: number;
+  readableFaceHeightPixels?: number;
+  readableEyeDiameterPixels?: number;
+  recognitionLabel?: string;
+  parts?: string[];
+  castRoles?: string[];
+  populationRoles?: string[];
 }
 
 /**
@@ -115,6 +134,45 @@ export interface ObstacleContrast {
   ratios: number[];
 }
 
+export interface MerfolkMaskComponentEvidence {
+  widthPixels: number;
+  heightPixels: number;
+  visiblePixels: number;
+  isolatedPixels: number;
+  occlusionFraction: number;
+  edgeClearancePixels: number;
+  centreXPixels: number;
+  centreYPixels: number;
+}
+
+export interface MerfolkPopulationVisualEvidence {
+  role: string;
+  component: MerfolkMaskComponentEvidence;
+  face: MerfolkMaskComponentEvidence;
+  eyes: MerfolkMaskComponentEvidence;
+  instances: MerfolkMaskComponentEvidence[];
+}
+
+export interface MerfolkMotionReviewEvidence {
+  sampleIntervalSec: number;
+  swimmerStart: MerfolkMaskComponentEvidence[];
+  swimmerEnd: MerfolkMaskComponentEvidence[];
+  swimmerTravelPixels: number[];
+  swimmerCentreSeparationPixels: [number, number];
+  swimmerBoxOverlapFraction: [number, number];
+  heraldTravelPixels: number[];
+}
+
+export interface MerfolkVisualReviewEvidence {
+  guardianRole: string;
+  guardian: MerfolkMaskComponentEvidence;
+  face: MerfolkMaskComponentEvidence;
+  eyes: MerfolkMaskComponentEvidence;
+  identity: MerfolkMaskComponentEvidence;
+  population: MerfolkPopulationVisualEvidence[];
+  motion: MerfolkMotionReviewEvidence;
+}
+
 export type CaptureSourceKind =
   | "ci-emulated"
   | "real-device"
@@ -137,8 +195,28 @@ export interface SceneCapture {
   textureMemoryMB: number;
   activeMaterials: number;
   godRayMeshes: number;
+  heroMerfolkHeightPixels: number;
+  heroMerfolkFaceHeightPixels: number;
+  heroMerfolkEyeDiameterPixels: number;
+  /**
+   * Pixel-mask evidence is emitted for the first three deterministic frames,
+   * one per guardian identity. It measures the rendered/occluded result rather
+   * than trusting declared object names or world-space bounds.
+   */
+  merfolkVisualReview?: MerfolkVisualReviewEvidence;
   frameContrastRatios: number[];
   obstacles: ObstacleContrast[];
+  /** Bounded attribution evidence for failed browser samples. */
+  contrastDiagnostics?: {
+    failureCount: number;
+    lowest: Array<{
+      ratio: number;
+      x: number;
+      y: number;
+      insideLuminance: number;
+      outsideLuminance: number;
+    }>;
+  };
 }
 
 export interface RenderEvidence {
@@ -163,6 +241,15 @@ export interface PerformanceEvidence {
   };
 }
 
+export interface WorldQualityEvidence {
+  gateFamilies: string[];
+  architecture: string[];
+  reef: string[];
+  life: string[];
+  props: string[];
+  materials: string[];
+}
+
 export interface GateInput {
   evidenceVersion: string;
   runtimeRevision: string;
@@ -170,6 +257,7 @@ export interface GateInput {
   runtimeObstacles: RuntimeObstacle[];
   captures: SceneCapture[];
   renderEvidence: RenderEvidence;
+  worldQuality: WorldQualityEvidence;
   performanceEvidence?: PerformanceEvidence;
   compressedArtPayloadMB?: number;
   soakMinutes?: number;
@@ -230,10 +318,30 @@ export interface GateConfig {
     contourReservedForCollidable: boolean;
   };
   contrast: {
+    minimumFrameSamples: number;
+    minimumPerObstacleSamples: number;
     framePercentile: number;
     frameMinRatio: number;
     perObstaclePercentile: number;
     perObstacleMinRatio: number;
+  };
+  beauty: {
+    meanLuminanceMin: number;
+    nearBlackFractionMax: number;
+    colourfulFractionMin: number;
+    clippedHighlightFractionMax: number;
+  };
+  worldQuality: {
+    requiredGateFamilies: string[];
+    requiredArchitecture: string[];
+    requiredReef: string[];
+    requiredLife: string[];
+    requiredProps: string[];
+    requiredMaterials: string[];
+    minimumDistinctVisibleGateFamilies: number;
+    minimumDistinctReefFamilies: number;
+    minimumAmbientLifeFamilies: number;
+    minimumPropFamilies: number;
   };
   creature: {
     viewportWidthFractionMin: number;
@@ -243,6 +351,44 @@ export interface GateConfig {
     maxBones: number;
     maxMaterials: number;
     maxTextureSizePx: number;
+    requiredStates: string[];
+    requiredClips: string[];
+    animationDriver: string;
+  };
+  merfolk: {
+    minimumReadableHeightPixels: number;
+    minimumFaceHeightPixels: number;
+    minimumEyeDiameterPixels: number;
+    minimumGuardianIdentitySpanPixels: number;
+    minimumGuardianVisiblePixels: number;
+    minimumCitizenHeightPixels: number;
+    minimumCitizenVisiblePixels: number;
+    minimumSwimmerWidthPixels: number;
+    minimumSwimmerVisiblePixels: number;
+    minimumSwimmerFaceHeightPixels: number;
+    minimumSwimmerEyeHeightPixels: number;
+    minimumHeraldHeightPixels: number;
+    minimumHeraldVisiblePixels: number;
+    minimumPopulationFaceHeightPixels: number;
+    minimumPopulationEyeHeightPixels: number;
+    minimumPopulationInstancesPerRole: number;
+    minimumUprightAspectRatio: number;
+    minimumSwimmerHorizontalAspectRatio: number;
+    minimumSwimmerCentreSeparationPixels: number;
+    maximumSwimmerBoxOverlapFraction: number;
+    motionSampleIntervalSec: number;
+    minimumSwimmerTravelPixels: number;
+    maximumAnchoredTravelPixels: number;
+    minimumSwimmerTravelDifferencePixels: number;
+    maximumGuardianOcclusionFraction: number;
+    maximumPopulationOcclusionFraction: number;
+    minimumGuardianEdgeClearancePixels: number;
+    maxArticulatedJoints: number;
+    maxMaterials: number;
+    requiredRecognitionLabel: string;
+    requiredGuardianRoles: string[];
+    requiredPopulationRoles: string[];
+    requiredParts: string[];
     requiredStates: string[];
     requiredClips: string[];
     animationDriver: string;

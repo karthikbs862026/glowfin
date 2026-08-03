@@ -1,6 +1,7 @@
 node_modules/
 dist/
 build/
+public/art/moon-garden/models/
 .DS_Store
 *.log
 .env

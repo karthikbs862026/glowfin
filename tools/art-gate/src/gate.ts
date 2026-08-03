@@ -9,10 +9,13 @@ import {
   checkCapture,
   checkCaptureCoverage,
   checkCreature,
+  checkMerfolk,
+  checkMerfolkVisualReviews,
   checkPayload,
   checkReaction,
   checkTierSignoff,
-  checkTrail
+  checkTrail,
+  checkWorldQuality
 } from "./checks.ts";
 import type {
   Finding,
@@ -153,6 +156,7 @@ export function runGate(
     }
     findings.push(...checkAssetBudget(asset, family));
     findings.push(...checkCreature(asset, cfg.creature));
+    findings.push(...checkMerfolk(asset, cfg.merfolk));
     findings.push(...checkAssetColliderTruth(
       asset,
       family,
@@ -162,7 +166,13 @@ export function runGate(
   }
 
   findings.push(...checkTrail(input, cfg.trail));
+  findings.push(...checkWorldQuality(input, cfg.worldQuality));
   findings.push(...checkCaptureCoverage(input.captures, tierName, tier));
+  findings.push(...checkMerfolkVisualReviews(
+    input.captures,
+    cfg.merfolk,
+    tier.requireCaptures
+  ));
   for (const capture of input.captures) {
     findings.push(...checkCapture(capture, cfg));
   }
@@ -181,7 +191,7 @@ const LABEL: Record<Finding["severity"], string> = {
 
 export function formatReport(result: GateResult, cfg: GateConfig): string {
   const lines = [
-    "Glowfin Phase 3A art gate",
+    "Glowfin production art gate",
     `tier ${result.tier} · config ${cfg.configVersion}`,
     "",
     "Reaction window at maximum momentum",

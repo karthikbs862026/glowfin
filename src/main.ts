@@ -1,7 +1,7 @@
 /**
  * Phase 1.5 — the core loop, playable.
  *
- * Wires the deterministic simulation (Run) to the primitive renderer and touch
+ * Wires the deterministic simulation (Run) to the production renderer and touch
  * input. Everything gameplay-relevant lives in src/sim; this file only owns the
  * frame loop, the time scale, and restart.
  */
@@ -15,12 +15,14 @@ import { Hud } from "./render/hud";
 import { DebugOverlay } from "./render/debugOverlay";
 import { QualityController } from "./perf/quality";
 import { PerfMonitor, checkBudgets } from "./perf/metrics";
+import { GlowfinAudio } from "./audio/audioEngine";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
 if (!canvas) throw new Error("Canvas #glowfin-canvas not found");
 
 const view = new GameView(canvas, tuning);
 const hud = new Hud();
+const audio = new GlowfinAudio(tuning);
 const steering = new SteeringSource({
   dragRangeFraction: tuning.input.dragRangeFraction,
   sensitivity: tuning.input.sensitivity,
@@ -44,6 +46,7 @@ function startRun(): void {
   timestep.reset();
   view.resetTrail();
   hud.hideGameOver();
+  audio.resetRun(run.scoring.multiplier);
 }
 
 // Restart on tap once the run has ended. Registered on the document rather than
@@ -79,6 +82,11 @@ function frame(nowMs: number): void {
   // the simulation itself always steps at a fixed dt (ADR-0006).
   timestep.advance(frameSec * run.timeScale, (dt) => {
     const events = run.step(dt, steering.getTarget());
+    audio.consumeStep(
+      events,
+      run.sim.stunRemainingSec,
+      run.scoring.multiplier
+    );
     if (events.justEnded) {
       awaitingRestart = true;
       hud.showGameOver(
@@ -94,12 +102,15 @@ function frame(nowMs: number): void {
   view.render(run.sim, run.gates, lightFraction, run.sim.elapsedSec, frameSec);
   const momentumFraction =
     tuning.momentum.ceiling === 0 ? 0 : run.sim.momentum / tuning.momentum.ceiling;
+  audio.update(momentumFraction, lightFraction);
   hud.update(
     run.scoring.score,
     run.scoring.multiplier,
     lightFraction,
     momentumFraction,
     tuning.creature.eyeHueCalm,
+    tuning.creature.eyeHueCruise,
+    tuning.creature.eyeHueFast,
     tuning.creature.eyeHueMax
   );
 
@@ -141,6 +152,8 @@ function isProbeRequested(): boolean {
 }
 
 async function start(): Promise<void> {
+  await view.ready;
+
   if (isProbeRequested()) {
     const {
       runContrastProbe,

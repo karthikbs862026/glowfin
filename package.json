@@ -4,29 +4,43 @@
   "private": true,
   "type": "module",
   "description": "Glowfin — one-swipe endless bioluminescent surf game (Three.js)",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
+    "predev": "npm run art:build-runtime-glbs",
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "prebuild": "npm run art:build-runtime-glbs",
+    "build": "tsc --noEmit && vite build --emptyOutDir",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "art-gate:fixtures": "node --experimental-strip-types tools/art-gate/fixtures/generate.ts",
-    "art-gate:test": "npm run art-gate:fixtures && node --experimental-strip-types --test tools/art-gate/test/gate.node.ts",
-    "art-gate:baseline": "node --experimental-strip-types tools/art-gate/integration/buildProceduralBaseline.ts --output build/art-gate-structural.json",
-    "art-gate:structural": "npm run art-gate:baseline && node --experimental-strip-types tools/art-gate/src/cli.ts --config tools/art-gate/config/art-budgets.json --input build/art-gate-structural.json --tier structural",
+    "art-gate:test": "npm run art-gate:fixtures && node --experimental-strip-types --test tools/art-gate/test/*.node.ts",
+    "art-gate:evidence": "node --experimental-strip-types tools/art-gate/integration/buildStructuralEvidence.ts --output build/art-gate-structural.json",
+    "art-gate:structural": "npm run art-gate:evidence && node --experimental-strip-types tools/art-gate/src/cli.ts --config tools/art-gate/config/art-budgets.json --input build/art-gate-structural.json --tier structural",
     "art-gate:capture:fast": "node --experimental-strip-types tools/art-gate/integration/capture.mjs --tier fast --output build/art-gate-fast.json --screenshot build/art-gate-fast.png",
     "art-gate:capture:full": "node --experimental-strip-types tools/art-gate/integration/capture.mjs --tier full --output build/art-gate-full.json --screenshot build/art-gate-full.png",
     "art-gate:run:fast": "node --experimental-strip-types tools/art-gate/src/cli.ts --config tools/art-gate/config/art-budgets.json --input build/art-gate-fast.json --tier fast",
     "art-gate:run:full": "node --experimental-strip-types tools/art-gate/src/cli.ts --config tools/art-gate/config/art-budgets.json --input build/art-gate-full.json --tier full",
+    "art-gate:soak": "node --experimental-strip-types tools/art-gate/integration/soak.mjs --minutes 30 --render-fps 3 --output build/art-gate-soak.json --report build/art-gate-soak-report.txt",
+    "audio-gate:browser": "node tools/audio-gate/integration/capture.mjs",
+    "art:export-glbs": "node --experimental-strip-types tools/art/exportProductionGlbs.mjs",
+    "art:pack-runtime-glbs": "node --experimental-strip-types tools/art/packRuntimeGlbs.mjs",
+    "art:publish-runtime-glbs": "node tools/art/publishRuntimeGlbs.mjs",
+    "art:build-runtime-glbs": "npm run art:export-glbs && npm run art:pack-runtime-glbs && npm run art:publish-runtime-glbs && npm run art:verify-runtime-glbs",
+    "art:verify-runtime-glbs": "node tools/art/verifyRuntimeGlbs.mjs",
     "check:bundle-size": "node scripts/check-bundle-size.mjs",
-    "check:no-debug": "node scripts/check-no-debug.mjs"
+    "check:no-debug": "node scripts/check-no-debug.mjs",
+    "check:mounted-build": "node scripts/check-mounted-build.mjs"
   },
   "dependencies": {
     "three": "^0.165.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.0",
+    "@gltf-transform/cli": "^4.4.2",
     "@types/three": "^0.165.0",
     "@typescript-eslint/eslint-plugin": "^8.65.0",
     "@typescript-eslint/parser": "^8.65.0",

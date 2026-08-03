@@ -25,13 +25,16 @@ export interface GateWallGeometry {
   gapDirection: 1 | -1;
   /** Wall width from the lane boundary to the playable edge. */
   width: number;
-  /** World-space centre used by the primitive renderer. */
+  /** World-space centre used by every runtime visual LOD. */
   centreX: number;
 }
 
 export const PROCEDURAL_GATE_VISUAL = {
-  wallHeight: 4,
-  wallDepth: 1.4,
+  // Architectural height is visual only. The collider remains the exact
+  // lateral gap plane below; a taller silhouette lets the broken arch carry
+  // the portrait composition instead of reading as two waist-high slabs.
+  wallHeight: 6.35,
+  wallDepth: 2.05,
   wallFloorY: -1
 } as const;
 

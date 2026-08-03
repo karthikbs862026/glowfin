@@ -94,9 +94,11 @@ function luminanceAt(beauty: Uint8Array, index: number): number {
  * Walk each row looking for mask transitions, and at every one compare the
  * beauty render a short distance either side.
  *
- * `offsetPx` steps away from the exact edge on purpose: the boundary pixel
- * itself is antialiased and blends both sides, which would report a flattering
- * contrast that no player ever sees.
+ * `offsetPx` is the preferred maximum distance from the exact edge. The probe
+ * searches inward from that distance so a lower-resolution but still-visible
+ * contour is measured at its farthest solid pixel rather than discarded. The
+ * final fallback uses the two firmly classified pixels across the transition;
+ * mid-value antialias pixels are excluded by the mask thresholds.
  */
 /**
  * Fraction of boundary samples allowed to fall below the floor.
@@ -117,7 +119,7 @@ export function analyseContrast(
   minimumRatio: number,
   options: { offsetPx?: number; rowStride?: number } = {}
 ): ContrastReport {
-  const offset = options.offsetPx ?? 3;
+  const offset = Math.max(1, Math.round(options.offsetPx ?? 3));
   const rowStride = options.rowStride ?? 4;
   const { beauty, mask, width, height } = buffers;
 
@@ -137,15 +139,33 @@ export function analyseContrast(
       const hereObstacle = isMeasurableObstacle(mask, here);
       const nextObstacle = isMeasurableObstacle(mask, next);
       if (hereObstacle === nextObstacle) continue;
-      if (hereObstacle && !isBackground(mask, next)) continue;
-      if (nextObstacle && !isBackground(mask, here)) continue;
 
-      const insideIndex = rowStart + (hereObstacle ? x - offset : x + 1 + offset) * 4;
-      const outsideIndex = rowStart + (hereObstacle ? x + 1 + offset : x - offset) * 4;
+      let insideIndex = -1;
+      for (let distance = offset; distance >= 0; distance--) {
+        const candidateInside =
+          rowStart + (hereObstacle ? x - distance : x + 1 + distance) * 4;
+        if (isMeasurableObstacle(mask, candidateInside)) {
+          insideIndex = candidateInside;
+          break;
+        }
+      }
 
-      // Both probe points must still be firmly on their own side of the edge.
-      if (!isMeasurableObstacle(mask, insideIndex)) continue;
-      if (!isBackground(mask, outsideIndex)) continue;
+      // At 1x DPR an exact coplanar contour can anti-alias through the mask's
+      // mid-value "ignore" class for one pixel before reaching true background.
+      // Search across only the configured inset, so that narrow raster fringe
+      // is bridged but a real obstacle-to-obstacle/context boundary is not.
+      let outsideIndex = -1;
+      for (let distance = offset; distance >= 0; distance--) {
+        const candidateOutside =
+          rowStart + (hereObstacle ? x + 1 + distance : x - distance) * 4;
+        if (isBackground(mask, candidateOutside)) {
+          outsideIndex = candidateOutside;
+          break;
+        }
+      }
+
+      // No solid pixels exist on both sides of this transition.
+      if (insideIndex < 0 || outsideIndex < 0) continue;
 
       const insideLuminance = luminanceAt(beauty, insideIndex);
       const outsideLuminance = luminanceAt(beauty, outsideIndex);

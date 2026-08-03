@@ -1,0 +1,72 @@
+# ADR-0017: Authored visual sources before production GLBs
+
+## Status
+
+Accepted on draft PR #7 for visual review. Not approved for merge.
+
+## Context
+
+The owner-rejected evidence was not a lighting bug. It exposed a production
+strategy error:
+
+- generated paving read as a flat modern road
+- box/extrusion ruins had no sculpted material or silhouette hierarchy
+- cone-like coral read as neon debug geometry
+- detached white clearance bars overwhelmed the wall masses
+- the pale creature lacked the approved rounded blue body, readable eyes and
+  manta-fin character
+
+Increasing scene luminance made these defects easier to see. It did not bring
+the frame closer to the Concept-First Art Bible.
+
+## Decision
+
+1. Keep PR #7 draft and never merge it solely because technical checks pass.
+2. Treat the approved Art Bible and
+   `art/phase3b-moon-garden-acceptance-target.webp` as the in-camera visual
+   acceptance target.
+3. Remove generated road paving from the active shader and use an authored
+   organic gravel/silt Moon-Garden seabed surface at
+   `public/art/moon-garden/moonstone-seabed.webp`.
+4. Replace the active generated broken-tower and coral silhouettes with
+   authored, instanced review impostors packed into two runtime atlases:
+   - `public/art/moon-garden/gate-variation-atlas.png`
+   - `public/art/moon-garden/world-variation-atlas.png`
+   - full-resolution source plates in `docs/art/`
+5. Overlay the collision gate's generated stone mass with one of three
+   collider-aligned facades from the gate atlas. Every continuous inner edge
+   stays on the runtime collider plane, and the independent cyan contour
+   remains the gameplay truth.
+6. Replace the rejected pale generated creature in the review frame with the
+   approved authored rear silhouette at
+   `public/art/moon-garden/glowfin-rear.webp`, while its final rigged GLB is
+   modeled. The deterministic rig remains the animation-state prototype.
+7. Add four moving ambient-life families, a layered distant skyline, four reef
+   families and moonlit motes. They remain non-collidable and quality-scaled.
+8. Keep those impostors explicitly classified as temporary review assets in
+   the structural gate. Their texture memory and compressed payload are
+   measured; they are not reported as production GLBs.
+9. Preserve deterministic collision planes and the independent straight cyan
+   playable contour.
+10. Require final modeled, UV-authored, optimized GLB replacements before
+   Phase 3B can be called game-ready.
+
+## Acceptance target
+
+![Moon-Garden portrait gameplay acceptance target](art/phase3b-moon-garden-acceptance-target.webp)
+
+The target establishes composition, hierarchy, silhouette, material language
+and atmosphere. It does not change the deterministic collider or authorize
+painted false clearance.
+
+## Consequences
+
+- The live draft can be reviewed against recognizable authored art instead of
+  abstract primitive stand-ins.
+- The branch incurs about 14 MB of decoded texture memory and 0.4 MB of
+  compressed runtime art payload, both below the Phase 3 budgets.
+- Review impostors are camera-dependent and cannot ship as final 3D assets.
+- The next production order is Glowfin, gate/wall fragment, broken tower,
+  reef cluster, then background spire/kelp.
+- A green beauty/contrast artifact remains necessary but is never sufficient
+  without owner visual approval.

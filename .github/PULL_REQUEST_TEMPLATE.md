@@ -30,6 +30,27 @@
 
 <!-- What did you actually click/swipe/run to verify this, and on what device? -->
 
+## Merfolk visual acceptance (required when character or environment staging changes)
+
+- [ ] Tidekeeper is identifiable at normal speed in the 390×844 cast atlas
+- [ ] Coral Warden is identifiable by sea-fan regalia, not only colour
+- [ ] Astral Oracle is identifiable by armillary/star regalia, not only colour
+- [ ] Reef citizens have visible faces
+- [ ] Current swimmers read as lateral swimmers
+- [ ] Both conch heralds and their conches are visible
+- [ ] Guardian is in front of architecture, unclipped and outside the lane
+- [ ] Owner phone review attached; a green CI mask is not semantic approval
+
+## Audio acceptance (required when sound or event routing changes)
+
+- [ ] Page remains silent and AudioContext stays locked before the first real gesture
+- [ ] First sound-button press activates (does not race into mute); first canvas touch also unlocks without delaying steering
+- [ ] Browser analyser records non-zero signal after both activation paths; `AudioContext.state === "running"` alone does not pass
+- [ ] Low/mid/max momentum audibly add layers from the same simulation value
+- [ ] Near-miss, multiplier, collision and recovery cues are distinct at phone-speaker volume
+- [ ] Mute is keyboard/touch accessible, persists across reload and suspends background work
+- [ ] Android/iOS device evidence attached, or explicitly listed as still outstanding
+
 ## Self-review checklist (required for solo merges — Part 5.2)
 
 - [ ] Read the diff top to bottom as if reviewing someone else's code

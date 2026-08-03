@@ -4,6 +4,7 @@ import {
   gateWallGeometry,
   PROCEDURAL_GATE_VISUAL
 } from "../src/sim/gateGeometry";
+import { gateFacadeVariant } from "../src/render/gateArt";
 
 const gate = { distance: 100, gapLeft: -2.25, gapRight: 2.75 };
 
@@ -37,5 +38,18 @@ describe("authoritative gate geometry", () => {
   it("keeps renderer dimensions explicit for manifest generation", () => {
     expect(PROCEDURAL_GATE_VISUAL.wallHeight).toBeGreaterThan(0);
     expect(PROCEDURAL_GATE_VISUAL.wallDepth).toBeGreaterThan(0);
+  });
+
+  it("selects a stable facade without changing collision geometry", () => {
+    for (const artVariant of [0, 1, 2, 3, 4] as const) {
+      const variantGate = {
+        ...gate,
+        templateId: "visual-test",
+        tier: 0,
+        artVariant
+      };
+      expect(gateFacadeVariant(variantGate)).toBe(artVariant);
+      expect(gateWallGeometry(variantGate, 6)).toEqual(gateWallGeometry(gate, 6));
+    }
   });
 });
