@@ -7,19 +7,24 @@ this README covers local setup only.
 
 ## Status
 
-**Phase 3C — Version 29 first-five-gates production-cohesion candidate.
-Version 28 is merged on `main`; the version-22 score, version-25 swimmer faces
-and version-27 living-district composition remain owner-approved.**
+**Phase 3C — Version 30 Glowfin production-character candidate.
+Version 29 is merged on `main`; the version-22 score, version-25 swimmer faces,
+version-27 living-district composition and version-29 cohesion pass remain
+owner-approved.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
-trail, contrast probe and hardened art gate are in place. Version 29 refines
-the merged runtime-GLB foundation without adding districts, gate encounters,
-residents or gameplay systems. The candidate includes:
+trail, contrast probe and hardened art gate are in place. Version 30 extends
+the merged runtime-GLB foundation to Glowfin without adding districts, gate
+encounters, residents or gameplay systems. The candidate includes:
 
-- a ten-bone volumetric Glowfin with an explicit negative-Z forward axis; the
-  chase camera sees its cute round back, manta fins and central tail while its
-  face remains aimed into the obstacle corridor
+- a ten-bone volumetric Glowfin loaded from a deterministic Meshopt-compressed
+  runtime GLB with an explicit negative-Z forward axis; the chase camera sees
+  its organic round back, one continuous manta fin per side, one longer central
+  kelp tail, integrated gill crowns and larger lateral eyes visible immediately
+  inside the gills
+- explicit simulation-selected calm, mid, max, collision and recovery motion
+  languages with no wall-clock animation or gameplay-state changes
 - five truthful LOD gate districts with distinct round, pointed, scalloped,
   domed and archless silhouettes plus independent cyan collider contours
 - an authored Moon-Garden seabed surface in place of generated road paving
@@ -45,11 +50,10 @@ residents or gameplay systems. The candidate includes:
   architecture layers per side, guaranteed monuments/tide-spears/conch
   fountains, larger bounded fish/jelly/ray activity, wider swaying reef banks
   and travelling bioluminescent coral waves
-- a real runtime GLB delivery path for all five gate identities and all six reef
-  families: semantic nodes are deterministically Meshopt-compressed at build,
-  validated
-  against collider planes and installed atomically into the approved fixed
-  instance pools
+- a real runtime GLB delivery path for Glowfin, all five gate identities and all
+  six reef families: semantic nodes and skinning attributes are deterministically
+  Meshopt-compressed at build, validated against the rig/collider contracts and
+  installed atomically into the approved runtime objects
 - a production-cohesion pass with family-specific limestone, nacre, bronze,
   lapis, crystal and living-coral value groups; chipped stepped wall massing;
   one dominant ceremonial canopy; larger family-readable reef signatures; and
@@ -60,15 +64,17 @@ residents or gameplay systems. The candidate includes:
 
 The owner has accepted the corrected upright-resident/conch-herald composition,
 the asynchronous current-swimmer choreography, the version-25 swimmer faces,
-the version-27 living districts and the version-22 Moon-Current score. This does
-not yet approve Version 29 production art: Version 28 is merged and proves the
-optimized GLB delivery and replacement architecture, while Version 29 is the
-phone-review cohesion candidate. Final premium DCC/PBR art remains open.
+the version-27 living districts, the version-29 first-five-gates cohesion pass
+and the version-22 Moon-Current score. This does not yet approve Version 30
+production character art. Version 30 extends the optimized GLB delivery path
+to Glowfin itself and remains the phone-review character candidate. Final
+external DCC/PBR source art remains open.
 ADR-0028 keeps a top-level native media stream as the phone-output
 authority; ADR-0029 records the approved 64-second replacement score; ADR-0031
 records the accepted living-district composition; ADR-0032 establishes the
-runtime GLB gate/reef contract; ADR-0033 records the cohesion scope. The score
-still needs Android/iOS speaker,
+runtime GLB gate/reef contract; ADR-0033 records the cohesion scope; and
+ADR-0034 records the runtime Glowfin character contract. The score still needs
+Android/iOS speaker,
 headphone, interruption, performance and thermal review. Technical CI evidence
 cannot replace those visual and real-device approvals.
 
@@ -110,8 +116,10 @@ scripts/        repo/CI and production bundle checks
 - [ ] `CODEOWNERS` currently points everything at one owner — update if/when the team grows
 - [ ] Replace code-native district, reef, prop and merfolk-cast integration sources
       with optimized authored GLB/PBR assets
-- [ ] Replace the rejected code-native Glowfin and gate treatment with approved
-      authored models while preserving collider truth
+- [x] Load the Version 30 Glowfin sculpt/rig checkpoint from a validated,
+      Meshopt-compressed runtime GLB with an explicit recovery fallback
+- [ ] Replace the Version 30 reproducible Glowfin topology with final external
+      DCC sculpt/UV/PBR source without changing its approved runtime contract
 - [x] Load all five gate families and six reef families from validated,
       Meshopt-compressed runtime GLBs with an explicit recovery fallback
 - [x] Full 36-state emulated art matrix required on pull requests

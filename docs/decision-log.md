@@ -634,3 +634,51 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   existing floor, but both most-distant upright faces remained `7 px`. Raise
   only their vertical facial-shell contract to `0.60` world units; keep head
   width/depth, character transforms, choreography and the `8 px` floor fixed.
+
+## 2026-08-03 — Load and refine Glowfin as the production character
+
+- Owner approved and merged Version 29, freezing the first-five-gates world as
+  the visual foundation for the character pass.
+- Adopt ADR-0034. Export, Meshopt-compress, publish and load `glowfin-v2.glb`
+  alongside the existing gate and reef payloads. Require two semantic meshes,
+  ten bones, all five named clips and preserved UV/colour/skin attributes after
+  compression.
+- Keep the existing code geometry only as an atomic delivery-failure fallback;
+  make art/render/soak evidence reject fallback mode for Glowfin as it already
+  does for gates and reefs.
+- Refine the bounded character topology with organic body volume, buried
+  appendage transitions, integrated gill crowns, a longer central kelp tail and
+  larger forward side-set eyes. Preserve the negative-Z forward axis and the
+  approved two-draw shader/material contract.
+- Resolve calm, mid, max, collision and recovery motion from deterministic
+  simulation values. Preserve course movement, collision radius, controls,
+  camera, scoring, replay and soundtrack.
+
+## 2026-08-03 — Correct the Version 30 appendage and eye regression
+
+- Owner Android screenshots showed two separate character failures: the added
+  fin shoulder collars and tail peduncle read as fixed colour-changing
+  appendages beneath the animated membranes, while both negative-Z eyes were
+  completely occluded by the body.
+- Remove the separate fin collars and tail peduncle. Keep exactly one skinned
+  fin membrane per side and one centered skinned tail paddle, with their roots
+  already buried inside the organic body.
+- The first corrected remote frame proved that removing the fin/tail layers was
+  sufficient for those silhouettes, but the separate purple gill-root collars
+  still covered both eyes. Remove those last static collars as well.
+- The follow-up owner review rejected the `+0.72R` camera-side depth because it
+  physically placed the eyes behind the `+0.56R` gill roots. A later
+  `±0.84R / 0.40R / +0.46R` side-shell attempt remained hidden because its
+  screen-space footprint sat directly underneath the rear gill leaves. The
+  owner reference confirms the approved ordering is the earlier high
+  forward-crown placement: centres at `±0.62R / 0.76R / -0.48R`, with each
+  `0.22R` shell ending at the first `±0.84R` gill root laterally and remaining
+  entirely on the obstacle-facing side of the body. Both shells must clear the
+  body and gills in the 390×844 maximum-momentum rear-chase frame.
+- The eye shell may remain laterally visible, but iris and pupil shading must be
+  locked to Glowfin's local `(0, 0, -1)` obstacle-facing axis. Camera/view-facing
+  lens shading is rejected because it makes Glowfin appear to look backward.
+- Preserve the negative-Z travel axis, ten-bone rig, two draws, collision
+  radius, camera, controls, scoring, route, world and soundtrack. Add source
+  and packed-GLB assertions that reject more than one fin component per side or
+  more than one tail component.

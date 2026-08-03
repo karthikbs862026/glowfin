@@ -11,10 +11,16 @@ export type GlowfinLod = 0 | 1;
  */
 export const GLOWFIN_FORWARD_AXIS = [0, 0, -1] as const;
 export const GLOWFIN_REAR_AXIS = [0, 0, 1] as const;
+export const GLOWFIN_EYE_LOOK_AXIS = GLOWFIN_FORWARD_AXIS;
 
 export interface GlowfinRigGeometry {
   body: THREE.BufferGeometry;
   eyes: THREE.BufferGeometry;
+  appendageComponents: {
+    finLeft: number;
+    finRight: number;
+    tail: number;
+  };
   pivots: {
     finLeft: THREE.Vector3;
     finRight: THREE.Vector3;
@@ -89,6 +95,41 @@ function prepareEye(
   position: THREE.Vector3
 ): THREE.BufferGeometry {
   geometry.translate(position.x, position.y, position.z);
+  return geometry;
+}
+
+function createOrganicBody(radius: number, high: boolean): THREE.BufferGeometry {
+  const geometry = new THREE.SphereGeometry(
+    radius,
+    high ? 52 : 36,
+    high ? 38 : 26
+  );
+  const positions = geometry.getAttribute("position");
+  for (let index = 0; index < positions.count; index++) {
+    const x = positions.getX(index);
+    const y = positions.getY(index);
+    const z = positions.getZ(index);
+    const nx = x / radius;
+    const ny = y / radius;
+    const nz = z / radius;
+    const middle = Math.max(0, 1 - Math.abs(nz));
+    const belly = Math.max(0, -ny) * middle;
+    const rear = THREE.MathUtils.smoothstep(nz, 0.05, 0.94);
+    const front = THREE.MathUtils.smoothstep(-nz, 0.18, 0.96);
+
+    // A round rear/belly and a slightly narrower obstacle-facing muzzle keep
+    // Glowfin pudgy without reading as an undeformed sphere. The deformation
+    // stays well inside the unchanged collision radius contract.
+    positions.setXYZ(
+      index,
+      x * (1 + rear * 0.055 + belly * 0.035 - front * 0.028),
+      y + radius * (belly * 0.026 + middle * 0.018),
+      z + radius * middle * (0.018 - Math.abs(nx) * 0.012)
+    );
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  geometry.normalizeNormals();
   return geometry;
 }
 
@@ -249,38 +290,38 @@ function createTailPaddle(
   high: boolean
 ): THREE.BufferGeometry {
   const shape = new THREE.Shape();
-  shape.moveTo(-radius * 0.13, radius * 0.12);
+  shape.moveTo(-radius * 0.14, radius * 0.16);
   shape.bezierCurveTo(
-    -radius * 0.32,
-    -radius * 0.15,
-    -radius * 0.37,
-    -radius * 0.58,
-    -radius * 0.22,
-    -radius * 0.92
+    -radius * 0.34,
+    -radius * 0.12,
+    -radius * 0.42,
+    -radius * 0.62,
+    -radius * 0.25,
+    -radius * 1.02
   );
   shape.bezierCurveTo(
-    -radius * 0.15,
-    -radius * 1.05,
-    -radius * 0.05,
-    -radius * 0.86,
+    -radius * 0.17,
+    -radius * 1.2,
+    -radius * 0.055,
+    -radius * 1.04,
     0,
-    -radius * 0.82
+    -radius * 1.12
   );
   shape.bezierCurveTo(
-    radius * 0.05,
-    -radius * 0.86,
-    radius * 0.15,
-    -radius * 1.05,
-    radius * 0.22,
-    -radius * 0.92
+    radius * 0.055,
+    -radius * 1.04,
+    radius * 0.17,
+    -radius * 1.2,
+    radius * 0.25,
+    -radius * 1.02
   );
   shape.bezierCurveTo(
-    radius * 0.37,
-    -radius * 0.58,
-    radius * 0.32,
-    -radius * 0.15,
-    radius * 0.13,
-    radius * 0.12
+    radius * 0.42,
+    -radius * 0.62,
+    radius * 0.34,
+    -radius * 0.12,
+    radius * 0.14,
+    radius * 0.16
   );
   shape.closePath();
   const depth = radius * 0.15;
@@ -297,13 +338,13 @@ function createTailPaddle(
   const positions = geometry.getAttribute("position");
   for (let index = 0; index < positions.count; index++) {
     const length = THREE.MathUtils.clamp(
-      (radius * 0.12 - positions.getY(index)) / (radius * 1.17),
+      (radius * 0.16 - positions.getY(index)) / (radius * 1.36),
       0,
       1
     );
     positions.setZ(
       index,
-      positions.getZ(index) + Math.sin(length * Math.PI) * radius * 0.08
+      positions.getZ(index) + Math.sin(length * Math.PI) * radius * 0.11
     );
   }
   positions.needsUpdate = true;
@@ -327,16 +368,12 @@ export function createGlowfinRigGeometry(
   const pivots = {
     finLeft: new THREE.Vector3(-r * 0.34, -r * 0.1, r * 0.12),
     finRight: new THREE.Vector3(r * 0.34, -r * 0.1, r * 0.12),
-    tail: new THREE.Vector3(0, -r * 0.52, r * 0.7),
+    tail: new THREE.Vector3(0, -r * 0.51, r * 0.68),
     gills: [] as THREE.Vector3[]
   };
 
   const bodyParts: RigPart[] = [{
-    geometry: new THREE.SphereGeometry(
-      r,
-      high ? 52 : 36,
-      high ? 38 : 26
-    ),
+    geometry: createOrganicBody(r, high),
     bone: 0,
     colour: (position) => deepCyan.clone().lerp(
       cyan,
@@ -373,9 +410,10 @@ export function createGlowfinRigGeometry(
     });
   }
 
-  // The supplied reference uses one small centered teardrop tail.
+  // Keep one centered kelp-like tail. Its broad paddle begins inside the body,
+  // so a separate peduncle would read as a fixed second tail in rear chase.
   bodyParts.push({
-    geometry: createTailPaddle(r * 0.92, high),
+    geometry: createTailPaddle(r * 0.96, high),
     bone: 3,
     colour: (position) => finRootCyan.clone().lerp(
       finGlowCyan,
@@ -387,7 +425,7 @@ export function createGlowfinRigGeometry(
     ),
     position: pivots.tail.clone(),
     rotation: new THREE.Euler(-0.045, 0, 0),
-    scale: new THREE.Vector3(1.08, 0.94, 1)
+    scale: new THREE.Vector3(1.06, 0.98, 1)
   });
 
   let bone = 4;
@@ -427,6 +465,11 @@ export function createGlowfinRigGeometry(
   }
 
   const prepared = bodyParts.map(preparePart);
+  const appendageComponents = {
+    finLeft: bodyParts.filter((part) => part.bone === 1).length,
+    finRight: bodyParts.filter((part) => part.bone === 2).length,
+    tail: bodyParts.filter((part) => part.bone === 3).length
+  };
   const body = mergeGeometries(prepared, false);
   for (const part of prepared) part.dispose();
   if (!body) throw new Error("Glowfin rig geometry attributes did not match.");
@@ -441,10 +484,12 @@ export function createGlowfinRigGeometry(
       high ? 18 : 12,
       high ? 13 : 8
     );
-    // A broad, shallow lens remains readable at the portrait gameplay scale
-    // without turning back toward the chase camera. Depth stays compressed so
-    // the visible surface still faces the negative-Z obstacle corridor.
-    eye.scale(1, 0.82, 0.36);
+    // Restore the approved high face-edge ordering visible in the owner's
+    // reference: each shallow shell sits inboard and above its external-gill
+    // fan, while the whole lens stays on the obstacle-facing side of the body.
+    // The chase camera sees only the crown-side shell; iris and pupil remain on
+    // the -Z surface looking toward obstacles.
+    eye.scale(1, 0.88, 0.4);
     eyeParts.push(prepareEye(
       eye,
       new THREE.Vector3(
@@ -463,6 +508,7 @@ export function createGlowfinRigGeometry(
   return {
     body,
     eyes,
+    appendageComponents,
     pivots,
     triangles: triangleCount(body) + triangleCount(eyes)
   };

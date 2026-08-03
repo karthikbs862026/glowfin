@@ -8,6 +8,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import {
   expectedRuntimeGateNodes,
+  expectedRuntimeGlowfinNodes,
   expectedRuntimeReefNodes,
   RUNTIME_PRODUCTION_ASSETS,
   RUNTIME_SHADER_ATTRIBUTE_ALIASES
@@ -19,6 +20,11 @@ const outputDirectory = resolve(process.argv[3] ?? "build/runtime-glbs");
 const cli = resolve("node_modules/.bin/gltf-transform");
 
 const assets = [
+  {
+    file: "glowfin-v2.glb",
+    expected: expectedRuntimeGlowfinNodes(),
+    kind: "glowfin"
+  },
   {
     file: "moon-gate-v1.glb",
     expected: expectedRuntimeGateNodes(),
@@ -61,12 +67,17 @@ async function validatePackedAsset(path, descriptor) {
     const mesh = meshes.get(name);
     assert(mesh, `${descriptor.file} is missing required node ${name}.`);
     const geometry = mesh.geometry;
-    for (const attribute of [
-      "position",
-      "normal",
-      "color",
-      ...Object.keys(RUNTIME_SHADER_ATTRIBUTE_ALIASES)
-    ]) {
+    const requiredAttributes = descriptor.kind === "glowfin"
+      ? name === "GlowfinBody_LOD0"
+        ? ["position", "normal", "uv", "color", "skinIndex", "skinWeight"]
+        : ["position", "normal", "uv"]
+      : [
+          "position",
+          "normal",
+          "color",
+          ...Object.keys(RUNTIME_SHADER_ATTRIBUTE_ALIASES)
+        ];
+    for (const attribute of requiredAttributes) {
       assert(
         geometry.hasAttribute(attribute),
         `${descriptor.file}:${name} is missing ${attribute}.`
@@ -92,6 +103,30 @@ async function validatePackedAsset(path, descriptor) {
     }
   }
 
+  if (descriptor.kind === "glowfin") {
+    const glowfinBody = meshes.get("GlowfinBody_LOD0");
+    assert(
+      glowfinBody?.isSkinnedMesh === true,
+      "GlowfinBody_LOD0 must remain skinned after compression."
+    );
+    const appendages = glowfinBody?.userData?.appendageComponents;
+    assert(
+      appendages?.finLeft === 1 &&
+        appendages?.finRight === 1 &&
+        appendages?.tail === 1,
+      "GlowfinBody_LOD0 must contain exactly one visible fin per side and one tail."
+    );
+    const clips = gltf.animations.map((clip) => clip.name);
+    for (const required of RUNTIME_PRODUCTION_ASSETS.glowfinClips) {
+      assert(clips.includes(required), `glowfin-v2.glb is missing clip ${required}.`);
+    }
+    let bones = 0;
+    gltf.scene.traverse((node) => {
+      if (node.isBone) bones += 1;
+    });
+    assert(bones === 10, `glowfin-v2.glb contains ${bones} bones; expected 10.`);
+  }
+
   return {
     file: descriptor.file,
     bytes: bytes.byteLength,
@@ -114,7 +149,7 @@ for (const descriptor of assets) {
     welded,
     pruned,
     "--keep-attributes",
-    "false"
+    descriptor.kind === "glowfin" ? "true" : "false"
   ], { maxBuffer: 16 * 1024 * 1024 });
   await run(cli, ["meshopt", pruned, output, "--level", "high"], {
     maxBuffer: 16 * 1024 * 1024
@@ -133,7 +168,7 @@ assert(
 await writeFile(
   resolve(outputDirectory, "manifest.json"),
   `${JSON.stringify({
-    version: 1,
+    version: 2,
     build: RUNTIME_PRODUCTION_ASSETS.build,
     generatedFrom: "build/production-glbs",
     totalBytes,

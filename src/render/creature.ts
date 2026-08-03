@@ -5,14 +5,20 @@
  * one skinned mesh with ten bones. Both eyes share one mesh and one emissive
  * material, so the complete character costs two draw calls instead of twelve.
  * The authored forward axis is -Z: the portrait chase camera sees Glowfin's
- * round back, broad fins and centered tail. Its high lateral eyes sit on the
- * negative-Z front crown, ahead of the three-leaf external gills, so the face
- * looks into the obstacle corridor rather than back at the camera.
+ * round back, broad fins and centered tail. Its eyes sit high on the forward
+ * face edge, visibly inboard and above the three-leaf external gills while
+ * remaining physically ahead of them. Their irises and pupils face the -Z
+ * obstacle direction; the chase camera sees only the crown-side shells, never
+ * a rear-facing gaze.
  * Animation remains simulation-driven for deterministic replay.
  */
 import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
-import { createGlowfinRigGeometry } from "./glowfinGeometry";
+import {
+  createGlowfinRigGeometry,
+  GLOWFIN_EYE_LOOK_AXIS
+} from "./glowfinGeometry";
+import type { RuntimeGlowfinGeometrySet } from "./runtimeProductionAssets";
 
 const BODY_VERTEX = /* glsl */ `
   #include <common>
@@ -48,6 +54,7 @@ const BODY_FRAGMENT = /* glsl */ `
   uniform float uRimPower;
   uniform float uMomentum;
   uniform float uCollision;
+  uniform float uRecovery;
   uniform sampler2D uSkinMap;
   varying vec3 vNormalV;
   varying vec3 vViewPosition;
@@ -128,6 +135,15 @@ const BODY_FRAGMENT = /* glsl */ `
       vObjectPosition.y * 7.2 + vObjectPosition.x * 2.8
     );
     float membraneGradient = smoothstep(0.28, 0.78, vColour.g);
+    float finRay = appendageMask * smoothstep(
+      0.72,
+      0.98,
+      0.5 + 0.5 * sin(
+        vObjectPosition.x * 12.0 +
+        vObjectPosition.y * 5.4 -
+        vObjectPosition.z * 7.2
+      )
+    );
     float membraneLight = appendageMask *
       (0.055 + 0.12 * livingPulse) *
       mix(0.3, 1.0, membraneGradient) * uGlow;
@@ -137,6 +153,10 @@ const BODY_FRAGMENT = /* glsl */ `
         mix(0.24, 0.5, appendageMask) +
       mix(vec3(0.25, 0.95, 1.0), vec3(0.68, 0.42, 1.0), gillMask) *
         membraneLight +
+      mix(vec3(0.08, 0.8, 0.96), vec3(0.72, 0.42, 1.0), gillMask) *
+        finRay * (0.025 + 0.06 * uMomentum) * uGlow +
+      vec3(0.34, 0.96, 1.0) * uRecovery *
+        smoothstep(-0.72, 0.8, vObjectPosition.y) * 0.11 +
       vec3(0.42, 0.78, 0.94) * seaGlassSpecular;
     // Preserve Glowfin's authored blue/teal identity under ACES. The previous
     // equal-channel lift made the body read as grey plastic in the browser
@@ -162,42 +182,67 @@ const BODY_FRAGMENT = /* glsl */ `
 const EYE_VERTEX = /* glsl */ `
   varying vec3 vNormalV;
   varying vec3 vViewPosition;
+  varying vec3 vObjectNormal;
   void main() {
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
     vNormalV = normalize(normalMatrix * normal);
     vViewPosition = -mvPosition.xyz;
+    vObjectNormal = normalize(normal);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
 
-const EYE_FRAGMENT = /* glsl */ `
+export const GLOWFIN_EYE_FRAGMENT_SHADER = /* glsl */ `
   precision mediump float;
   uniform vec3 uColor;
   uniform float uGlow;
   uniform float uEnergy;
+  uniform float uCollision;
+  uniform float uRecovery;
+  uniform vec3 uLookDirection;
   varying vec3 vNormalV;
   varying vec3 vViewPosition;
+  varying vec3 vObjectNormal;
   void main() {
-    float facing = clamp(
+    float viewFacing = clamp(
       dot(normalize(vNormalV), normalize(vViewPosition)),
       0.0,
       1.0
     );
-    float lens = smoothstep(0.18, 0.86, facing);
-    vec3 socket = vec3(0.003, 0.012, 0.035);
+    // Gaze is authored in Glowfin-local space. It must follow the -Z swim axis,
+    // never the camera vector; otherwise the rear shell becomes a false face.
+    float forwardFacing = clamp(
+      dot(normalize(vObjectNormal), normalize(uLookDirection)),
+      0.0,
+      1.0
+    );
+    float irisMask = smoothstep(0.2, 0.78, forwardFacing);
+    float pupilMask = smoothstep(0.88, 0.985, forwardFacing);
+    vec3 pupil = vec3(0.002, 0.008, 0.022);
+    vec3 shell = mix(
+      vec3(0.18, 0.68, 0.78),
+      uColor,
+      0.24 + uEnergy * 0.1
+    ) * mix(0.84, 1.04, viewFacing) * mix(0.86, 1.0, uGlow);
     vec3 iris = mix(
       vec3(0.018, 0.14, 0.24),
       uColor,
       mix(0.68, 0.9, uEnergy)
     ) * mix(0.86, 1.12, uEnergy) * uGlow;
-    vec3 eye = mix(socket, iris, lens * mix(0.84, 0.94, uEnergy));
-    float edge = pow(1.0 - facing, 2.4);
+    vec3 eye = mix(shell, iris, irisMask * mix(0.84, 0.94, uEnergy));
+    eye = mix(eye, pupil, pupilMask * 0.94);
+    float edge = pow(
+      1.0 - abs(dot(normalize(vNormalV), normalize(vViewPosition))),
+      2.4
+    );
     vec3 edgeColour = mix(
       vec3(0.04, 0.22, 0.34),
       vec3(0.34, 0.12, 0.42),
       uEnergy
     );
     eye += edgeColour * edge * mix(0.12, 0.2, uEnergy);
+    eye = mix(eye, vec3(0.16, 0.055, 0.12), uCollision * 0.54);
+    eye += vec3(0.32, 0.94, 1.0) * uRecovery * irisMask * 0.22;
     gl_FragColor = vec4(eye, 1.0);
   }
 `;
@@ -262,6 +307,30 @@ export function eyeHueForEnergy(
   return lerp(fastHue, maxHue, (value - 0.78) / 0.22);
 }
 
+export type GlowfinAnimationState =
+  | "calm"
+  | "mid"
+  | "max"
+  | "collision"
+  | "recovery";
+
+/**
+ * The production rig exposes five visually distinct states, but simulation
+ * remains the sole authority. Collision and recovery override propulsion;
+ * otherwise momentum selects the calm, mid or maximum swim language.
+ */
+export function resolveGlowfinAnimationState(
+  momentumFraction: number,
+  collisionFraction: number,
+  recoveryFraction: number
+): GlowfinAnimationState {
+  if (clamp01(collisionFraction) > 0.001) return "collision";
+  if (clamp01(recoveryFraction) > 0.001) return "recovery";
+  if (clamp01(momentumFraction) >= 0.78) return "max";
+  if (clamp01(momentumFraction) >= 0.32) return "mid";
+  return "calm";
+}
+
 export class Creature {
   readonly group = new THREE.Group();
 
@@ -280,6 +349,8 @@ export class Creature {
   private breathPhase = 0;
   private bank = 0;
   private eyeEnergy = 0;
+  private activeAnimationState: GlowfinAnimationState = "calm";
+  private animationStateTimeSec = 0;
 
   constructor(
     private readonly cfg: TuningConfig,
@@ -294,6 +365,7 @@ export class Creature {
         uRimPower: { value: cfg.creature.rimPower },
         uMomentum: { value: 0 },
         uCollision: { value: 0 },
+        uRecovery: { value: 0 },
         uSkinMap: { value: skinMap }
       },
       vertexShader: BODY_VERTEX,
@@ -303,10 +375,15 @@ export class Creature {
       uniforms: {
         uColor: { value: new THREE.Color(0x3aa6ff) },
         uGlow: { value: 1 },
-        uEnergy: { value: 0 }
+        uEnergy: { value: 0 },
+        uCollision: { value: 0 },
+        uRecovery: { value: 0 },
+        uLookDirection: {
+          value: new THREE.Vector3(...GLOWFIN_EYE_LOOK_AXIS)
+        }
       },
       vertexShader: EYE_VERTEX,
-      fragmentShader: EYE_FRAGMENT,
+      fragmentShader: GLOWFIN_EYE_FRAGMENT_SHADER,
       toneMapped: false
     });
 
@@ -344,11 +421,29 @@ export class Creature {
     this.eyes = new THREE.Mesh(rig.eyes, this.eyeMaterial);
     this.group.add(this.body, this.eyes);
     this.disposables.push(
-      rig.body,
-      rig.eyes,
       this.bodyMaterial,
       this.eyeMaterial
     );
+  }
+
+  /**
+   * Atomically replace the construction fallback with the validated compressed
+   * GLB geometry. The runtime rig keeps the same ten semantic bones, custom
+   * shaders and simulation driver, so loading production art cannot change
+   * steering, collision or replay behaviour.
+   */
+  installRuntimeGeometry(geometry: RuntimeGlowfinGeometrySet): void {
+    const previousBody = this.body.geometry;
+    const previousEyes = this.eyes.geometry;
+    this.body.geometry = geometry.body;
+    this.eyes.geometry = geometry.eyes;
+    previousBody.dispose();
+    previousEyes.dispose();
+    this.body.geometry.userData = {
+      ...this.body.geometry.userData,
+      runtimeClips: [...geometry.clips],
+      runtimeBones: geometry.bones
+    };
   }
 
   update(
@@ -361,6 +456,17 @@ export class Creature {
     recoveryFraction = 0
   ): void {
     const cfg = this.cfg.creature;
+    const nextState = resolveGlowfinAnimationState(
+      momentumFraction,
+      collisionFraction,
+      recoveryFraction
+    );
+    if (nextState === this.activeAnimationState) {
+      this.animationStateTimeSec += Math.max(0, Math.min(dtSec, 0.25));
+    } else {
+      this.activeAnimationState = nextState;
+      this.animationStateTimeSec = 0;
+    }
     const eyeTarget = eyeEnergyTarget(
       momentumFraction,
       speedFraction,
@@ -372,22 +478,51 @@ export class Creature {
       Math.min(dtSec, 0.25),
       cfg.eyeResponseHalfLifeSec
     );
+    const stateFrequencyScale = this.activeAnimationState === "calm"
+      ? 0.72
+      : this.activeAnimationState === "max"
+        ? 1.12
+        : this.activeAnimationState === "collision"
+          ? 0.42
+          : this.activeAnimationState === "recovery"
+            ? 0.88
+            : 1;
     const flutterHz = lerp(
       cfg.finFlutterHzAtZeroMomentum,
       cfg.finFlutterHzAtMaxMomentum,
       momentumFraction
-    );
+    ) * stateFrequencyScale;
     this.flutterPhase += flutterHz * dtSec * Math.PI * 2;
     this.breathPhase += cfg.breathHz * dtSec * Math.PI * 2;
 
-    const flutter = Math.sin(this.flutterPhase) * cfg.finFlutterAmplitude;
+    const stateAmplitudeScale = this.activeAnimationState === "calm"
+      ? 0.68
+      : this.activeAnimationState === "max"
+        ? 0.86
+        : this.activeAnimationState === "recovery"
+          ? 1.18
+          : 1;
+    const glide = Math.sin(this.breathPhase * 0.54) * 0.075;
+    const flutter = (
+      Math.sin(this.flutterPhase) * cfg.finFlutterAmplitude *
+      stateAmplitudeScale
+    ) + glide;
     const collisionDroop = collisionFraction * 0.46;
-    this.finLeftBone.rotation.z = flutter - collisionDroop;
-    this.finRightBone.rotation.z = -flutter + collisionDroop;
+    const recoveryBeat = recoveryFraction * (
+      0.88 + Math.sin(this.animationStateTimeSec * Math.PI * 4) * 0.12
+    );
+    const recoveryFlare = recoveryBeat * 0.19;
+    this.finLeftBone.rotation.z = flutter - collisionDroop - recoveryFlare;
+    this.finRightBone.rotation.z = -flutter + collisionDroop + recoveryFlare;
+    this.finLeftBone.rotation.x = -0.04 - momentumFraction * 0.08;
+    this.finRightBone.rotation.x = -0.04 - momentumFraction * 0.08;
     this.tailBone.rotation.y =
       Math.sin(this.flutterPhase - Math.PI * 0.5) *
       cfg.tailSwayAmplitude *
+      lerp(0.58, 1.2, momentumFraction) *
       (1 - collisionFraction * 0.7);
+    this.tailBone.rotation.z =
+      -smoothedSteering * 0.16 * (1 - collisionFraction);
     for (const [index, gill] of this.gillBones.entries()) {
       const side = index < 3 ? -1 : 1;
       const localIndex = index % 3;
@@ -396,6 +531,11 @@ export class Creature {
         0.25 *
         (1 - collisionFraction * 0.65);
       gill.rotation.y = side * (0.34 + recoveryFraction * 0.12);
+      gill.rotation.z = side * (
+        Math.sin(this.breathPhase + localIndex * 0.42) * 0.055 -
+        collisionFraction * 0.12 +
+        recoveryBeat * 0.1
+      );
     }
 
     const targetBank = -smoothedSteering * cfg.bankAngleMaxRadians;
@@ -405,18 +545,19 @@ export class Creature {
     this.bank += (targetBank - this.bank) * alpha;
     this.group.rotation.z = this.bank;
     // Lean and yaw into the intended course while preserving the -Z forward
-    // axis. The old camera-side eyes made a correct translation read as
-    // backwards swimming; this heading now reinforces the actual travel.
+    // axis. The high crown-side eye shells remain visible from rear chase, but
+    // their shader-locked irises and pupils continue looking toward obstacles.
     this.group.rotation.x = -momentumFraction * 0.07;
     this.group.rotation.y = -smoothedSteering * 0.12;
 
     const breath = 1 + Math.sin(this.breathPhase) * cfg.breathAmount;
     const collisionSquash = 1 - collisionFraction * 0.26;
     const recoveryExpand = 1 + recoveryFraction * 0.08;
+    const streamline = momentumFraction * 0.035;
     this.rootBone.scale.set(
-      (1 / breath) * recoveryExpand,
-      breath * collisionSquash,
-      (1 + momentumFraction * 0.12) * collisionSquash
+      (1 / breath) * recoveryExpand * (1 - streamline * 0.58),
+      breath * collisionSquash * (1 - streamline),
+      (1 + momentumFraction * 0.14) * collisionSquash
     );
     this.eyes.scale.setScalar(
       lerp(1, 0.86, collisionFraction) *
@@ -433,6 +574,8 @@ export class Creature {
     if (momentum) momentum.value = momentumFraction;
     const collision = this.bodyMaterial.uniforms["uCollision"];
     if (collision) collision.value = collisionFraction;
+    const recovery = this.bodyMaterial.uniforms["uRecovery"];
+    if (recovery) recovery.value = recoveryFraction;
 
     const eyeColour = this.eyeMaterial.uniforms["uColor"];
     if (eyeColour) {
@@ -456,9 +599,19 @@ export class Creature {
     }
     const eyeEnergy = this.eyeMaterial.uniforms["uEnergy"];
     if (eyeEnergy) eyeEnergy.value = this.eyeEnergy;
+    const eyeCollision = this.eyeMaterial.uniforms["uCollision"];
+    if (eyeCollision) eyeCollision.value = collisionFraction;
+    const eyeRecovery = this.eyeMaterial.uniforms["uRecovery"];
+    if (eyeRecovery) eyeRecovery.value = recoveryFraction;
+  }
+
+  animationState(): GlowfinAnimationState {
+    return this.activeAnimationState;
   }
 
   dispose(): void {
+    this.body.geometry.dispose();
+    this.eyes.geometry.dispose();
     for (const item of this.disposables) item.dispose();
   }
 }

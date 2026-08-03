@@ -4,11 +4,11 @@ These assets were generated from the approved Concept-First Art Bible during
 the owner-requested visual reset. All character, gate, architecture, reef,
 skyline and ambient-life cards are retired from the runtime. Shared material
 sources remain here while the final production GLB/PBR library is authored.
-Version 29 generates the validated runtime gate and reef cohesion packages
-into `models/` during development and production builds. They preserve the
-Version 28 delivery contract while establishing stronger family silhouettes,
-material separation and reef signatures; they do not constitute final DCC
-sculpt approval.
+Version 30 generates validated runtime Glowfin, gate and reef packages into
+`models/` during development and production builds. They preserve the Version
+29 world while proving the skinned character, five clips, family silhouettes,
+material separation and reef signatures through the real compressed-GLB path;
+they do not constitute final external DCC sculpt approval.
 
 | Asset | Runtime role | Production replacement |
 | --- | --- | --- |

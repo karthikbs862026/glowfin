@@ -329,7 +329,8 @@ function createGlowfinAsset() {
   body.userData = {
     lod: 0,
     collidable: false,
-    animationDriver: "simulation"
+    animationDriver: "simulation",
+    appendageComponents: rig.appendageComponents
   };
   const eyes = productionMesh(
     rig.eyes,
@@ -448,7 +449,7 @@ function createKit(name, families, material) {
 }
 
 await mkdir(outputDirectory, { recursive: true });
-await writeGlb("glowfin-v1.glb", createGlowfinAsset(), glowfinClips());
+await writeGlb("glowfin-v2.glb", createGlowfinAsset(), glowfinClips());
 await writeGlb(
   "hero-merfolk-v1.glb",
   createHeroMerfolkAsset("tidekeeper"),
@@ -497,9 +498,9 @@ await writeGlb("drowned-skyline-v1.glb", createKit("DrownedSkyline", [
 await writeFile(
   resolve(outputDirectory, "manifest.json"),
   `${JSON.stringify({
-    version: 5,
-    source: "validated Phase 3C first-five-gates production-cohesion meshes",
-    status: "Version 29 gate/reef cohesion candidate; final owner and DCC sculpt sign-off remain required",
+    version: 6,
+    source: "validated Phase 3C Version 30 Glowfin production-character checkpoint",
+    status: "Version 30 runtime Glowfin sculpt/rig candidate; final owner and external DCC sculpt sign-off remain required",
     assets: manifest
   }, null, 2)}\n`,
   "utf8"

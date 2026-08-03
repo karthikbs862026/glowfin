@@ -7,7 +7,12 @@ const generatedDirectory = resolve(
 const publishedDirectory = resolve(
   process.argv[3] ?? "public/art/moon-garden/models"
 );
-const files = ["moon-gate-v1.glb", "reef-kit-v1.glb", "manifest.json"];
+const files = [
+  "glowfin-v2.glb",
+  "moon-gate-v1.glb",
+  "reef-kit-v1.glb",
+  "manifest.json"
+];
 
 await mkdir(publishedDirectory, { recursive: true });
 await Promise.all(files.map((file) => copyFile(

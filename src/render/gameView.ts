@@ -147,11 +147,13 @@ export class GameView {
   private readonly speedInlayMatrix = new THREE.Matrix4();
   private readonly disposables: Array<{ dispose(): void }> = [];
   private runtimeProductionStatus: {
+    glowfin: "fallback" | "glb";
     gate: "fallback" | "glb";
     reef: "fallback" | "glb";
     build: string | null;
     error: string | null;
   } = {
+    glowfin: "fallback",
     gate: "fallback",
     reef: "fallback",
     build: null,
@@ -406,15 +408,17 @@ export class GameView {
     });
     for (const object of this.environment.objects) this.scene.add(object);
 
-    // Production GLBs are an atomic visual upgrade. Gameplay can still start
-    // from the already-validated code-native kit if a CDN/cache request fails;
-    // CI separately requires this status to be "glb" so the fallback cannot
-    // masquerade as production evidence.
+    // Production Glowfin/gate/reef GLBs are one atomic visual upgrade. Gameplay
+    // can still start from the already-validated construction kit if a
+    // CDN/cache request fails; CI separately requires every status to be "glb"
+    // so the fallback cannot masquerade as production evidence.
     const productionGeometryReady = loadRuntimeProductionGeometry()
       .then((assets) => {
+        this.creature.installRuntimeGeometry(assets.glowfin);
         this.environment.installRuntimeReefGeometry(assets.reef);
         this.gates.installRuntimeGeometry(assets.gates);
         this.runtimeProductionStatus = {
+          glowfin: "glb",
           gate: "glb",
           reef: "glb",
           build: assets.build,
@@ -424,6 +428,7 @@ export class GameView {
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
         this.runtimeProductionStatus = {
+          glowfin: "fallback",
           gate: "fallback",
           reef: "fallback",
           build: null,
@@ -713,6 +718,7 @@ export class GameView {
   }
 
   productionAssetStatus(): Readonly<{
+    glowfin: "fallback" | "glb";
     gate: "fallback" | "glb";
     reef: "fallback" | "glb";
     build: string | null;

@@ -32,6 +32,7 @@ async function capture(): Promise<void> {
   await view.ready;
   const productionAssets = view.productionAssetStatus();
   if (
+    productionAssets.glowfin !== "glb" ||
     productionAssets.gate !== "glb" ||
     productionAssets.reef !== "glb"
   ) {

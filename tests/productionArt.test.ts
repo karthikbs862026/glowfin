@@ -3,6 +3,7 @@ import { tuning } from "../src/core/config";
 import { PRODUCTION_ART } from "../src/art/productionManifest";
 import {
   expectedRuntimeGateNodes,
+  expectedRuntimeGlowfinNodes,
   expectedRuntimeReefNodes,
   RUNTIME_PRODUCTION_ASSETS
 } from "../src/art/runtimeAssetContract";
@@ -49,10 +50,19 @@ import {
 } from "../src/render/gateArt";
 
 describe("Phase 3B art geometry inventory", () => {
-  it("requires all five gate identities and all six reef families in runtime GLBs", () => {
+  it("requires Glowfin, all five gate identities and all six reef families in runtime GLBs", () => {
+    const glowfinNodes = expectedRuntimeGlowfinNodes();
     const gateNodes = expectedRuntimeGateNodes();
     const reefNodes = expectedRuntimeReefNodes();
     expect(RUNTIME_PRODUCTION_ASSETS.gateVariants).toEqual([0, 1, 2, 3, 4]);
+    expect(glowfinNodes).toEqual(["GlowfinBody_LOD0", "GlowfinEyes_LOD0"]);
+    expect(RUNTIME_PRODUCTION_ASSETS.glowfinClips).toEqual([
+      "breathe",
+      "propulsion",
+      "bank",
+      "collisionSquash",
+      "recovery"
+    ]);
     expect(gateNodes).toHaveLength(45);
     expect(gateNodes).toContain("MoonGate_Canopy_Variant4_LOD2");
     expect(gateNodes).toContain("MoonGate_Left_Variant3_LOD0");

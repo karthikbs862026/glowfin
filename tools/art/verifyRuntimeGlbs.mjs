@@ -7,7 +7,12 @@ const generatedDirectory = resolve(
 const publishedDirectory = resolve(
   process.argv[3] ?? "public/art/moon-garden/models"
 );
-const files = ["moon-gate-v1.glb", "reef-kit-v1.glb", "manifest.json"];
+const files = [
+  "glowfin-v2.glb",
+  "moon-gate-v1.glb",
+  "reef-kit-v1.glb",
+  "manifest.json"
+];
 
 for (const file of files) {
   const [generated, published] = await Promise.all([
@@ -24,4 +29,4 @@ for (const file of files) {
   }
 }
 
-console.log("Published Version 29 runtime GLBs match the deterministic export.");
+console.log("Published Version 30 runtime GLBs match the deterministic export.");

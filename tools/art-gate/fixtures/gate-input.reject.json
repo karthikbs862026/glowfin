@@ -239,14 +239,14 @@
       ]
     },
     {
-      "name": "glowfin-vertical-slice",
+      "name": "glowfin-v2-runtime-production",
       "family": "glowfin",
       "collidable": false,
       "materials": 2,
-      "textureMemoryMB": 0,
+      "textureMemoryMB": 1,
       "contour": "none",
       "bones": 10,
-      "maxTextureSizePx": 0,
+      "maxTextureSizePx": 512,
       "clips": [
         "breathe",
         "propulsion",

@@ -1,13 +1,22 @@
 /**
  * Immutable names shared by the Phase 3C exporter, browser loader and tests.
  * Runtime art may change topology, but these semantic names are the contract
- * that keeps five gate families and six reef families from collapsing back
- * into cosmetic variants.
+ * that keeps Glowfin, five gate families and six reef families from silently
+ * falling back to code-native transition geometry.
  */
 export const RUNTIME_PRODUCTION_ASSETS = {
-  build: "phase3c-v29-cohesion",
+  build: "phase3c-v30-glowfin-production",
+  glowfinUrl: "art/moon-garden/models/glowfin-v2.glb",
   gateUrl: "art/moon-garden/models/moon-gate-v1.glb",
   reefUrl: "art/moon-garden/models/reef-kit-v1.glb",
+  glowfinMeshes: ["GlowfinBody_LOD0", "GlowfinEyes_LOD0"],
+  glowfinClips: [
+    "breathe",
+    "propulsion",
+    "bank",
+    "collisionSquash",
+    "recovery"
+  ],
   lods: [0, 1, 2],
   gateVariants: [0, 1, 2, 3, 4],
   reefFamilies: [
@@ -28,6 +37,10 @@ export type RuntimeGateVariant =
 export type RuntimeReefFamily =
   typeof RUNTIME_PRODUCTION_ASSETS.reefFamilies[number];
 export type RuntimeGateSide = "Left" | "Right";
+
+export function expectedRuntimeGlowfinNodes(): string[] {
+  return [...RUNTIME_PRODUCTION_ASSETS.glowfinMeshes];
+}
 
 export function runtimeGateWallName(
   side: RuntimeGateSide,
