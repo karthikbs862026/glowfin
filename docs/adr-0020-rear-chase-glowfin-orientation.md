@@ -24,8 +24,8 @@ rejected.
 - The positive-Z chase camera sees one smooth round sea-glass body, two
   scalloped manta fins, one centered teardrop tail, three clean lavender gill
   leaves per side and the back of the high crown—not a camera-facing face.
-- Both eyes sit wide on the outer face edge at `±0.78R`, between the upper and
-  middle gill leaves, with their centres immediately inside the first gill
+- Both eyes sit on the upper outer face edge at `±0.60R`, above the middle gill
+  leaf and inboard of the fan, with their shells immediately inside the first gill
   roots. Their centres sit at `+0.46R` depth; the complete shallow lens remains
   ahead of the nearest `+0.56R` gill root along the negative-Z swim direction.
 - Both irises and pupils use Glowfin's local `(0, 0, -1)` look axis. The eye

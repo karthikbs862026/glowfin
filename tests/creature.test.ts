@@ -112,8 +112,8 @@ describe("creature configuration (Part 3.1)", () => {
     expect(GLOWFIN_REAR_AXIS).toEqual([0, 0, 1]);
     expect(GLOWFIN_EYE_LOOK_AXIS).toEqual(GLOWFIN_FORWARD_AXIS);
     expect(GLOWFIN_EYE_LOOK_AXIS).not.toEqual(GLOWFIN_REAR_AXIS);
-    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.78);
-    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.50);
+    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.60);
+    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.68);
     expect(tuning.creature.eyeOffsetZ).toBeCloseTo(0.46);
     expect(tuning.creature.eyeRadius).toBeGreaterThanOrEqual(0.22);
 
@@ -129,8 +129,16 @@ describe("creature configuration (Part 3.1)", () => {
       (eyeCentreY / (radius * tuning.creature.bodyHeight)) ** 2 +
       (eyeCentreZ / (radius * tuning.creature.bodyLength)) ** 2;
     expect(bodyEllipsoidDistance).toBeGreaterThan(1.05);
-    expect(eyeBounds?.min.x).toBeLessThan(-radius * 0.99);
-    expect(eyeBounds?.max.x).toBeGreaterThan(radius * 0.99);
+    const bodyHalfWidthAtEye = radius * 0.96 * Math.sqrt(
+      1 - (eyeCentreY / (radius * tuning.creature.bodyHeight)) ** 2 -
+        (eyeCentreZ / (radius * tuning.creature.bodyLength)) ** 2
+    );
+    expect(eyeBounds?.min.x).toBeLessThan(
+      -bodyHalfWidthAtEye - radius * 0.15
+    );
+    expect(eyeBounds?.max.x).toBeGreaterThan(
+      bodyHalfWidthAtEye + radius * 0.15
+    );
 
     const nearestGillRootZ = Math.min(...rig.pivots.gills.map((pivot) =>
       pivot.z
@@ -148,10 +156,10 @@ describe("creature configuration (Part 3.1)", () => {
     ));
     expect(innerGillX - eyeCentreX).toBeGreaterThanOrEqual(0);
     expect(innerGillX - eyeCentreX).toBeLessThanOrEqual(
-      radius * 0.08
+      radius * 0.25
     );
     expect((eyeBounds?.max.x ?? 0) - (eyeBounds?.min.x ?? 0)).toBeGreaterThan(
-      radius * 1.98
+      radius * 1.62
     );
     rig.body.dispose();
     rig.eyes.dispose();
