@@ -11,6 +11,14 @@ if (/\b(?:src|href)=["']\/assets\//.test(index)) {
 if (!index.includes('id="startup-error" role="alert"')) {
   throw new Error("Production HTML omits the visible startup recovery state.");
 }
+if (!index.includes('id="hud-build"')) {
+  throw new Error("Production HTML omits the visible release identity.");
+}
+
+const release = JSON.parse(await readFile(new URL("release.json", root), "utf8"));
+if (release.version !== 31 || release.phase !== "phase-3-exit") {
+  throw new Error("Production release metadata does not identify Version 31.");
+}
 
 const assetsUrl = new URL("assets/", root);
 const files = await readdir(assetsUrl);
@@ -40,7 +48,12 @@ for (const texture of [
   }
 }
 
-for (const model of ["moon-gate-v1.glb", "reef-kit-v1.glb", "manifest.json"]) {
+for (const model of [
+  "glowfin-v2.glb",
+  "moon-gate-v1.glb",
+  "reef-kit-v1.glb",
+  "manifest.json"
+]) {
   const relativePath = `art/moon-garden/models/${model}`;
   if (model.endsWith(".glb") && !source.includes(relativePath)) {
     throw new Error(`Production bundle omits ${relativePath}.`);

@@ -33,7 +33,10 @@
     "art:verify-runtime-glbs": "node tools/art/verifyRuntimeGlbs.mjs",
     "check:bundle-size": "node scripts/check-bundle-size.mjs",
     "check:no-debug": "node scripts/check-no-debug.mjs",
-    "check:mounted-build": "node scripts/check-mounted-build.mjs"
+    "check:mounted-build": "node scripts/check-mounted-build.mjs",
+    "check:release-metadata": "node scripts/check-release-metadata.mjs",
+    "smoke:deployment": "node scripts/smoke-deployment.mjs",
+    "certify:phase3": "npm run lint && npm run typecheck && npm run test -- --run && npm run build && npm run check:mounted-build && npm run check:bundle-size && npm run check:no-debug && npm run check:release-metadata && npm run art-gate:test && npm run art-gate:structural"
   },
   "dependencies": {
     "three": "^0.165.0"
