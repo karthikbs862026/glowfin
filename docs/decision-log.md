@@ -668,8 +668,8 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   still covered both eyes. Remove those last static collars as well.
 - The follow-up owner review rejected the `+0.72R` camera-side depth because it
   physically placed the eyes behind the `+0.56R` gill roots. Restore the outer
-  face-edge placement at `±0.83R`, `0.40R` high and `+0.47R` deep. Keep the
-  complete shallow `0.20R` lens ahead of every gill root along the negative-Z
+  face-edge placement at `±0.78R`, `0.50R` high and `+0.46R` deep. Keep the
+  complete shallow `0.22R` shell ahead of every gill root along the negative-Z
   swim direction and visible around the body's edge in every animation state.
 - The eye shell may remain laterally visible, but iris and pupil shading must be
   locked to Glowfin's local `(0, 0, -1)` obstacle-facing axis. Camera/view-facing

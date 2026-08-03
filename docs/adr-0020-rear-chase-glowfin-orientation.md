@@ -24,15 +24,15 @@ rejected.
 - The positive-Z chase camera sees one smooth round sea-glass body, two
   scalloped manta fins, one centered teardrop tail, three clean lavender gill
   leaves per side and the back of the high crown—not a camera-facing face.
-- Both eyes sit wide on the outer face edge at `±0.83R`, between the upper and
+- Both eyes sit wide on the outer face edge at `±0.78R`, between the upper and
   middle gill leaves, with their centres immediately inside the first gill
-  roots. Their centres sit at `+0.47R` depth; the complete shallow lens remains
+  roots. Their centres sit at `+0.46R` depth; the complete shallow lens remains
   ahead of the nearest `+0.56R` gill root along the negative-Z swim direction.
 - Both irises and pupils use Glowfin's local `(0, 0, -1)` look axis. The eye
   shader must never derive gaze from the camera/view vector. From rear chase,
   the player sees the luminous lateral shell at the face edge—not a pupil
   painted onto the back of the eye.
-- Each eye uses a broad, shallow `0.20`-radius lens. It must remain readable at
+- Each eye uses a broad, shallow `0.22`-radius shell. It must remain readable at
   8–12 pixels during calm, maximum momentum, collision and recovery. Collision
   dimming may change colour but may never remove either eye.
 - Eye/gill ordering is a world-space contract, not an impression: every eye's

@@ -219,10 +219,10 @@ export const GLOWFIN_EYE_FRAGMENT_SHADER = /* glsl */ `
     float pupilMask = smoothstep(0.88, 0.985, forwardFacing);
     vec3 pupil = vec3(0.002, 0.008, 0.022);
     vec3 shell = mix(
-      vec3(0.025, 0.24, 0.34),
+      vec3(0.18, 0.68, 0.78),
       uColor,
-      0.34 + uEnergy * 0.12
-    ) * mix(0.72, 0.96, viewFacing) * uGlow;
+      0.24 + uEnergy * 0.1
+    ) * mix(0.84, 1.04, viewFacing) * mix(0.86, 1.0, uGlow);
     vec3 iris = mix(
       vec3(0.018, 0.14, 0.24),
       uColor,
