@@ -3,12 +3,14 @@ import { tuning } from "../src/core/config";
 import budgets from "../config/budgets.json";
 import {
   createGlowfinRigGeometry,
+  GLOWFIN_EYE_LOOK_AXIS,
   GLOWFIN_FORWARD_AXIS,
   GLOWFIN_REAR_AXIS
 } from "../src/render/glowfinGeometry";
 import {
   eyeEnergyTarget,
   eyeHueForEnergy,
+  GLOWFIN_EYE_FRAGMENT_SHADER,
   resolveGlowfinAnimationState,
   smoothEyeEnergy
 } from "../src/render/creature";
@@ -108,6 +110,8 @@ describe("creature configuration (Part 3.1)", () => {
   it("keeps both eyes at the outer face edge physically ahead of the gills", () => {
     expect(GLOWFIN_FORWARD_AXIS).toEqual([0, 0, -1]);
     expect(GLOWFIN_REAR_AXIS).toEqual([0, 0, 1]);
+    expect(GLOWFIN_EYE_LOOK_AXIS).toEqual(GLOWFIN_FORWARD_AXIS);
+    expect(GLOWFIN_EYE_LOOK_AXIS).not.toEqual(GLOWFIN_REAR_AXIS);
     expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.83);
     expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.40);
     expect(tuning.creature.eyeOffsetZ).toBeCloseTo(0.47);
@@ -151,6 +155,25 @@ describe("creature configuration (Part 3.1)", () => {
     );
     rig.body.dispose();
     rig.eyes.dispose();
+  });
+
+  it("locks iris and pupil gaze to the obstacle axis rather than the camera", () => {
+    expect(GLOWFIN_EYE_LOOK_AXIS).toEqual([0, 0, -1]);
+    expect(GLOWFIN_EYE_FRAGMENT_SHADER).toContain(
+      "dot(normalize(vObjectNormal), normalize(uLookDirection))"
+    );
+    expect(GLOWFIN_EYE_FRAGMENT_SHADER).toContain(
+      "float irisMask = smoothstep(0.2, 0.78, forwardFacing)"
+    );
+    expect(GLOWFIN_EYE_FRAGMENT_SHADER).toContain(
+      "float pupilMask = smoothstep(0.88, 0.985, forwardFacing)"
+    );
+    expect(GLOWFIN_EYE_FRAGMENT_SHADER).not.toContain(
+      "irisMask = smoothstep(0.2, 0.78, viewFacing)"
+    );
+    expect(GLOWFIN_EYE_FRAGMENT_SHADER).not.toContain(
+      "pupilMask = smoothstep(0.88, 0.985, viewFacing)"
+    );
   });
 
   it("uses exactly one visible fin per side and one centered tail", () => {

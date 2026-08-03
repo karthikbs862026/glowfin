@@ -28,6 +28,10 @@ rejected.
   middle gill leaves, with their centres immediately inside the first gill
   roots. Their centres sit at `+0.47R` depth; the complete shallow lens remains
   ahead of the nearest `+0.56R` gill root along the negative-Z swim direction.
+- Both irises and pupils use Glowfin's local `(0, 0, -1)` look axis. The eye
+  shader must never derive gaze from the camera/view vector. From rear chase,
+  the player sees the luminous lateral shell at the face edge—not a pupil
+  painted onto the back of the eye.
 - Each eye uses a broad, shallow `0.20`-radius lens. It must remain readable at
   8–12 pixels during calm, maximum momentum, collision and recovery. Collision
   dimming may change colour but may never remove either eye.
@@ -55,12 +59,13 @@ rejected.
 
 ## Verification
 
-The geometry regression suite locks the negative-Z swim axis, forward eye-to-
-gill depth ordering, outer-edge visibility, near-zero screen-space eye-to-gill
-spacing, three gill leaves per side, enlarged lens span, independent momentum/
-speed contributions, frame-rate-independent colour smoothing, buried fin/tail
-pivots and exactly one visible fin component per side plus one tail component.
+The geometry regression suite locks the negative-Z swim and eye-look axes,
+forward eye-to-gill depth ordering, outer-edge visibility, near-zero screen-
+space eye-to-gill spacing, three gill leaves per side, enlarged lens span,
+independent momentum/speed contributions, frame-rate-independent colour
+smoothing, buried fin/tail pivots and exactly one visible fin component per side
+plus one tail component.
 Phone-size browser review must include calm, maximum momentum, collision and
 recovery rear-chase frames. Reject hidden eyes, merged gills, overlapping
-under-fins, a second tail layer, an off-centre tail or a full camera-facing
-facial mask.
+under-fins, a second tail layer, an off-centre tail, camera-facing pupils or a
+full camera-facing facial mask.

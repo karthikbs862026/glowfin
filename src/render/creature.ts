@@ -6,14 +6,17 @@
  * material, so the complete character costs two draw calls instead of twelve.
  * The authored forward axis is -Z: the portrait chase camera sees Glowfin's
  * round back, broad fins and centered tail. Its lateral eyes sit immediately
- * inside the three-leaf external gills and expose a shallow rear-readable cap,
- * so the player can always see them without turning Glowfin into a full
- * camera-facing face.
+ * inside and ahead of the three-leaf external gills. Their irises and pupils
+ * face the -Z obstacle direction; the chase camera sees only the outer eye
+ * shells at the face edge, never a rear-facing gaze.
  * Animation remains simulation-driven for deterministic replay.
  */
 import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
-import { createGlowfinRigGeometry } from "./glowfinGeometry";
+import {
+  createGlowfinRigGeometry,
+  GLOWFIN_EYE_LOOK_AXIS
+} from "./glowfinGeometry";
 import type { RuntimeGlowfinGeometrySet } from "./runtimeProductionAssets";
 
 const BODY_VERTEX = /* glsl */ `
@@ -178,38 +181,59 @@ const BODY_FRAGMENT = /* glsl */ `
 const EYE_VERTEX = /* glsl */ `
   varying vec3 vNormalV;
   varying vec3 vViewPosition;
+  varying vec3 vObjectNormal;
   void main() {
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
     vNormalV = normalize(normalMatrix * normal);
     vViewPosition = -mvPosition.xyz;
+    vObjectNormal = normalize(normal);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
 
-const EYE_FRAGMENT = /* glsl */ `
+export const GLOWFIN_EYE_FRAGMENT_SHADER = /* glsl */ `
   precision mediump float;
   uniform vec3 uColor;
   uniform float uGlow;
   uniform float uEnergy;
   uniform float uCollision;
   uniform float uRecovery;
+  uniform vec3 uLookDirection;
   varying vec3 vNormalV;
   varying vec3 vViewPosition;
+  varying vec3 vObjectNormal;
   void main() {
-    float facing = clamp(
+    float viewFacing = clamp(
       dot(normalize(vNormalV), normalize(vViewPosition)),
       0.0,
       1.0
     );
-    float lens = smoothstep(0.18, 0.86, facing);
-    vec3 socket = vec3(0.003, 0.012, 0.035);
+    // Gaze is authored in Glowfin-local space. It must follow the -Z swim axis,
+    // never the camera vector; otherwise the rear shell becomes a false face.
+    float forwardFacing = clamp(
+      dot(normalize(vObjectNormal), normalize(uLookDirection)),
+      0.0,
+      1.0
+    );
+    float irisMask = smoothstep(0.2, 0.78, forwardFacing);
+    float pupilMask = smoothstep(0.88, 0.985, forwardFacing);
+    vec3 pupil = vec3(0.002, 0.008, 0.022);
+    vec3 shell = mix(
+      vec3(0.025, 0.24, 0.34),
+      uColor,
+      0.34 + uEnergy * 0.12
+    ) * mix(0.72, 0.96, viewFacing) * uGlow;
     vec3 iris = mix(
       vec3(0.018, 0.14, 0.24),
       uColor,
       mix(0.68, 0.9, uEnergy)
     ) * mix(0.86, 1.12, uEnergy) * uGlow;
-    vec3 eye = mix(socket, iris, lens * mix(0.84, 0.94, uEnergy));
-    float edge = pow(1.0 - facing, 2.4);
+    vec3 eye = mix(shell, iris, irisMask * mix(0.84, 0.94, uEnergy));
+    eye = mix(eye, pupil, pupilMask * 0.94);
+    float edge = pow(
+      1.0 - abs(dot(normalize(vNormalV), normalize(vViewPosition))),
+      2.4
+    );
     vec3 edgeColour = mix(
       vec3(0.04, 0.22, 0.34),
       vec3(0.34, 0.12, 0.42),
@@ -217,7 +241,7 @@ const EYE_FRAGMENT = /* glsl */ `
     );
     eye += edgeColour * edge * mix(0.12, 0.2, uEnergy);
     eye = mix(eye, vec3(0.16, 0.055, 0.12), uCollision * 0.54);
-    eye += vec3(0.32, 0.94, 1.0) * uRecovery * lens * 0.22;
+    eye += vec3(0.32, 0.94, 1.0) * uRecovery * irisMask * 0.22;
     gl_FragColor = vec4(eye, 1.0);
   }
 `;
@@ -352,10 +376,13 @@ export class Creature {
         uGlow: { value: 1 },
         uEnergy: { value: 0 },
         uCollision: { value: 0 },
-        uRecovery: { value: 0 }
+        uRecovery: { value: 0 },
+        uLookDirection: {
+          value: new THREE.Vector3(...GLOWFIN_EYE_LOOK_AXIS)
+        }
       },
       vertexShader: EYE_VERTEX,
-      fragmentShader: EYE_FRAGMENT,
+      fragmentShader: GLOWFIN_EYE_FRAGMENT_SHADER,
       toneMapped: false
     });
 
@@ -517,8 +544,8 @@ export class Creature {
     this.bank += (targetBank - this.bank) * alpha;
     this.group.rotation.z = this.bank;
     // Lean and yaw into the intended course while preserving the -Z forward
-    // axis. The lateral eye caps provide identity from rear chase; the body,
-    // tail and heading continue to communicate the actual travel direction.
+    // axis. The lateral eye shells remain visible from rear chase, but their
+    // shader-locked irises and pupils continue looking toward the obstacles.
     this.group.rotation.x = -momentumFraction * 0.07;
     this.group.rotation.y = -smoothedSteering * 0.12;
 

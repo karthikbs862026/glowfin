@@ -11,6 +11,7 @@ export type GlowfinLod = 0 | 1;
  */
 export const GLOWFIN_FORWARD_AXIS = [0, 0, -1] as const;
 export const GLOWFIN_REAR_AXIS = [0, 0, 1] as const;
+export const GLOWFIN_EYE_LOOK_AXIS = GLOWFIN_FORWARD_AXIS;
 
 export interface GlowfinRigGeometry {
   body: THREE.BufferGeometry;

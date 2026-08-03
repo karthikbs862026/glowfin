@@ -671,6 +671,9 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   face-edge placement at `±0.83R`, `0.40R` high and `+0.47R` deep. Keep the
   complete shallow `0.20R` lens ahead of every gill root along the negative-Z
   swim direction and visible around the body's edge in every animation state.
+- The eye shell may remain laterally visible, but iris and pupil shading must be
+  locked to Glowfin's local `(0, 0, -1)` obstacle-facing axis. Camera/view-facing
+  lens shading is rejected because it makes Glowfin appear to look backward.
 - Preserve the negative-Z travel axis, ten-bone rig, two draws, collision
   radius, camera, controls, scoring, route, world and soundtrack. Add source
   and packed-GLB assertions that reject more than one fin component per side or
