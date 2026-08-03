@@ -1,8 +1,9 @@
 # Phase 3 Exit Report — Version 31
 
-**Certificate state:** Conditional — automated candidate  
+**Certificate state:** Conditional — automated certification green; real-device sign-off pending  
 **Frozen gameplay/art baseline:** Version 30 / `4e797b44053bca96fd9dfb1bbb637dbe88653219`  
-**Tracking:** GitHub issue #14
+**Initial immutable evidence head:** `e29bba44b5cba05a532b1e4e934ec2afc45a4d3c`  
+**Tracking:** GitHub issue #14 and draft PR #15
 
 ## Scope
 
@@ -15,17 +16,24 @@ a release blocker and requires a separate owner-reviewed build.
 
 | Gate | Requirement | Candidate state |
 |---|---|---|
-| Source identity | Visible V31 environment + exact source SHA | Implemented; remote evidence pending |
-| Release manifest | Deterministic `release.json`, frozen V30 baseline | Implemented; remote evidence pending |
-| Core CI | lint, types, all tests, production build | Pending PR run |
-| Release guards | mounted paths, bundle ceiling, debug stripped | Pending PR run |
-| Clean artifact | exactly one main and one contrast hashed bundle | Pending PR run |
-| Asset contract | deterministic export/pack/publish verification | Pending PR run |
-| Structural art | all semantic assets, colliders and budgets | Pending PR run |
-| Phone rendering | complete 36-state 390×844 matrix | Pending PR run |
-| Touch/audio | gesture activation, signal, mute/reload | Pending PR run |
-| Lifecycle | 5,400 frames, bounded heap/resources, zero context loss | Pending PR run |
-| Hosted smoke | document, release manifest, source headers, no-store | Pending checkpoint |
+| Source identity | Visible V31 environment + exact source SHA | Green — badge, document data and compiled metadata agree |
+| Release manifest | Deterministic `release.json`, frozen V30 baseline | Green — exact environment, source and baseline validated |
+| Core CI | lint, types, all tests, production build | Green — 269 tests plus lint, types and production build |
+| Release guards | mounted paths, bundle ceiling, debug stripped | Green — 1.82 MB production package |
+| Clean artifact | exactly one main and one contrast hashed bundle | Green — stale-output regression guard passed |
+| Asset contract | deterministic export/pack/publish verification | Green — 878,100-byte runtime GLB package |
+| Structural art | all semantic assets, colliders and budgets | Green — 47 adversarial checks, zero blockers |
+| Phone rendering | complete 36-state 390×844 matrix | Green — 72 peak draws, 130,089 peak triangles, 10.3 MB textures |
+| Touch/audio | gesture activation, signal, mute/reload | Green — button, reload and real-touch canvas paths passed |
+| Lifecycle | 5,400 frames, bounded heap/resources, zero context loss | Green — 0.46 MB heap growth, fixed 103/18 GPU resources, zero losses |
+| Hosted smoke | document, release manifest, source headers, no-store | Required deployment evidence; recorded on PR #15 and issue #14 |
+
+The lifecycle runner covered 30.00 simulated minutes and 5,400 real WebGL
+renders. Its peak scene reached 80 draws and 141,235 triangles with 14 live
+gates, still inside the hard ceilings. Baseline, peak and end resources remained
+identical at 103 geometries and 18 textures. The full phone matrix separately
+owns 390×844 visual truth; the soak uses a reduced portrait raster to isolate
+renderer lifecycle behavior.
 
 ## Frozen Version 30 evidence
 
@@ -54,7 +62,8 @@ real-device certification pending**.
 ## Phase decision
 
 - Phase 3 art/game baseline: frozen and owner-approved.
-- Automated release certificate: pending this PR and hosted checkpoint.
+- Automated release certificate: green on the recorded evidence head; every
+  final PR head must repeat the same workflows before deployment.
 - Cross-platform Phase 3 exit: blocked by the real-device rows above.
 - Phase 4 feature work may be planned, but release promotion must retain this
   device risk explicitly and must not relabel it as completed evidence.
