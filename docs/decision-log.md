@@ -667,12 +667,14 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   sufficient for those silhouettes, but the separate purple gill-root collars
   still covered both eyes. Remove those last static collars as well.
 - The follow-up owner review rejected the `+0.72R` camera-side depth because it
-  physically placed the eyes behind the `+0.56R` gill roots. Keep the complete
-  shallow `0.22R` shell at `+0.46R` depth, ahead of every gill root along the
-  negative-Z swim direction. Phone evidence then rejected high inboard shells
-  because the body hid them completely. Place the centres at the outer face
-  edge (`±0.84R`, `0.40R` high) and widen only the lateral shell profile so it
-  clears the body and first gill root while the gaze remains forward.
+  physically placed the eyes behind the `+0.56R` gill roots. A later
+  `±0.84R / 0.40R / +0.46R` side-shell attempt remained hidden because its
+  screen-space footprint sat directly underneath the rear gill leaves. The
+  owner reference confirms the approved ordering is the earlier high
+  forward-crown placement: centres at `±0.62R / 0.76R / -0.48R`, with each
+  `0.22R` shell ending at the first `±0.84R` gill root laterally and remaining
+  entirely on the obstacle-facing side of the body. Both shells must clear the
+  body and gills in the 390×844 maximum-momentum rear-chase frame.
 - The eye shell may remain laterally visible, but iris and pupil shading must be
   locked to Glowfin's local `(0, 0, -1)` obstacle-facing axis. Camera/view-facing
   lens shading is rejected because it makes Glowfin appear to look backward.

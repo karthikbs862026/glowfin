@@ -19,7 +19,7 @@ viewer must identify the following by silhouette and value grouping alone:
 - ribbon kelp;
 - a cute round axolotl-puffer Glowfin, facing the obstacle corridor, with broad
   scalloped manta fins, one central kelp-like teardrop tail, three rounded external gill
-  leaves per side and two high lateral eyes visible around the body crown;
+  leaves per side and two high forward-crown eye shells visible before the gill fans;
 - a phone-readable mermaid guardian whose Tidekeeper, Coral Warden and Astral
   Oracle regalia match their districts, plus reef citizens, horizontal current
   swimmers and paired conch heralds;
@@ -29,7 +29,7 @@ viewer must identify the following by silhouette and value grouping alone:
 
 | GLB | Required contents | Runtime rule |
 | --- | --- | --- |
-| `glowfin-v2.glb` | One skinned body primitive, one combined high-lateral eye primitive, 10 bones, breathe/propulsion/bank/collision/recovery clips | Forward axis is negative Z; side-set eyes remain crown-visible; simulation selects calm/mid/max/collision/recovery states; two materials maximum |
+| `glowfin-v2.glb` | One skinned body primitive, one combined forward-crown eye primitive, 10 bones, breathe/propulsion/bank/collision/recovery clips | Forward axis is negative Z; eyes remain crown-visible before the gill fans while irises face obstacles; simulation selects calm/mid/max/collision/recovery states; two materials maximum |
 | `hero-merfolk-v1.glb`, `hero-merfolk-coral-warden-v1.glb`, `hero-merfolk-astral-oracle-v1.glb` | Shared guardian hierarchy with face, eyes, hair, hands, shell cuirass, pendant, three-joint tail, caudal/side fins and district regalia; hover/swim/turn/patrol/greeting clips | Exactly one gate-side hero visible; never collidable; one material and no more than 17 draws; at the tested phone view require ≥72 px overall, ≥22 px face and ≥4.5 px eyes |
 | `moon-gate-v1.glb` | Five asymmetric wall-fragment/canopy identities, mirrored-safe inner pier, broken voussoirs, dark channel and rubble base across LOD0–2 | Inner cyan edge remains a separate collider-derived runtime mesh |
 | `ruin-kit-v1.glb` | Broken tower, collapsed arch and forked spire across LOD0–2 | Outside-lane instancing only |
@@ -127,6 +127,7 @@ orientation, pivot and export presets so a later revision is reproducible.
 Version 30 keeps the approved Version 29 world unchanged and moves Glowfin
 behind the same runtime-asset truth contract. It adds organic body deformation,
 single-layer buried fin/tail transitions, integrated gill crowns, a longer
-central kelp tail, rear-readable lateral eyes just inside the gills and five
+central kelp tail, rear-readable forward-crown eye shells immediately inboard
+and above the gills, and five
 explicit simulation-selected motion states. Its reproducible topology is the
 production integration checkpoint, not the final external DCC sculpt source.

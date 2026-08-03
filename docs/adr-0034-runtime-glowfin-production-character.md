@@ -32,9 +32,9 @@ easy to lose at portrait gameplay scale.
   authority and course movement, collision, camera and replay are unchanged.
 - Refine the same bounded topology with an organic pudgy body profile, one
   manta-fin membrane per side, integrated gill crowns, one longer central
-  kelp-like tail and larger rear-readable lateral eyes immediately inside the
-  gills. Do not add separate shoulder collars or a tail peduncle beneath the
-  animated membranes.
+  kelp-like tail and larger forward-crown eyes whose shells remain readable
+  immediately inboard and above the gills. Do not add separate shoulder
+  collars or a tail peduncle beneath the animated membranes.
 - Resolve five deterministic visual states—calm, mid, max, collision and
   recovery—from momentum and collision/recovery fractions. Collision and
   recovery take precedence over propulsion.
@@ -48,7 +48,7 @@ shoulder, peduncle and gill-root collar layers, its LOD0/LOD1 geometry remains
 inside the original 6–8k and 3–4k triangle ranges at 6,780 and 3,388 triangles.
 
 Owner phone review and the calibrated browser matrix must still confirm that
-the larger eyes remain 8–12 pixels, Glowfin remains within 8–10% of portrait
+the larger eyes remain 8–16 pixels, Glowfin remains within 8–10% of portrait
 width, the obstacle route remains clear at maximum momentum, and the five
 states read without changing input response. Final external DCC sculpt, UV and
 PBR source replacement remains a separate production-art gate.

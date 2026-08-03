@@ -13,10 +13,10 @@ every camera-visible eye as proof that the whole creature faced backwards, so
 they hid both eyes on the far side. A later correction overcompensated by
 placing the eyes on the positive-Z camera side, which made Glowfin look back at
 the player. The Version 30 phone review established the final boundary:
-preserve the negative-Z travel axis and rear-chase body read, but expose
-shallow lateral eye caps at the face edge immediately inside the gills. A full
-rear-facing facial mask remains rejected; completely invisible eyes are also
-rejected.
+preserve the negative-Z travel axis and rear-chase body read, but expose the
+shallow crown-side shells high on the forward face edge before each gill fan.
+A full rear-facing facial mask remains rejected; completely invisible eyes are
+also rejected.
 
 ## Decision
 
@@ -24,22 +24,24 @@ rejected.
 - The positive-Z chase camera sees one smooth round sea-glass body, two
   scalloped manta fins, one centered teardrop tail, three clean lavender gill
   leaves per side and the back of the high crown—not a camera-facing face.
-- Both eyes sit on the outer face edge at `±0.84R`, level with the first gill
-  roots and at `0.40R` height. Their centres sit at `+0.46R` depth; the complete
-  shallow lens remains ahead of the nearest `+0.56R` gill root along the
-  negative-Z swim direction. A `1.22` lateral shell scale exposes their side
-  profiles beyond the body and gill roots without moving the gaze rearward.
+- Both eye centres sit high on the forward face edge at `±0.62R`, `0.76R`
+  height and `-0.48R` depth. Each `0.22R` shell uses a `1.0 × 0.88 × 0.40`
+  profile: its outer edge meets the first gill root at `±0.84R`, while its
+  complete rear bound ends at `-0.392R`, well ahead of every positive-Z gill
+  root. This places the visible crown-side shell inboard and above the fan
+  instead of directly underneath it in chase-camera projection.
 - Both irises and pupils use Glowfin's local `(0, 0, -1)` look axis. The eye
   shader must never derive gaze from the camera/view vector. From rear chase,
   the player sees the luminous lateral shell at the face edge—not a pupil
   painted onto the back of the eye.
 - Each eye uses a broad, shallow `0.22`-radius shell. It must remain readable at
-  8–12 pixels during calm, maximum momentum, collision and recovery. Collision
+  8–16 pixels during calm, maximum momentum, collision and recovery. Collision
   dimming may change colour but may never remove either eye.
-- Eye/gill ordering is a world-space contract, not an impression: every eye's
-  rear bound must stay forward of every gill root. In the normal rear-chase
-  frame each eye must read separately at the face edge before its three-leaf
-  fan, with no full face painted on the back of the body.
+- Eye/gill ordering is both a world-space and screen-space contract: every
+  eye's rear bound must stay forward of every gill root, each centre must be
+  above and inboard of the first root, and both shells must remain independently
+  visible through maximum-momentum left/right banking. No full face may be
+  painted on the back of the body.
 - Gill leaves remain simple, rounded and individually spaced. Separate static
   root collars, branched fronds, micro-leaflets, folded wedges, horns and spikes
   are rejected.
@@ -61,8 +63,9 @@ rejected.
 ## Verification
 
 The geometry regression suite locks the negative-Z swim and eye-look axes,
-forward eye-to-gill depth ordering, outer-edge visibility, near-zero screen-
-space eye-to-gill spacing, three gill leaves per side, enlarged lens span,
+forward eye-to-gill depth ordering, high inboard crown placement, near-zero
+outer-edge-to-gill spacing, phone-pixel visibility through left/right banking,
+three gill leaves per side, enlarged lens span,
 independent momentum/speed contributions, frame-rate-independent colour
 smoothing, buried fin/tail pivots and exactly one visible fin component per side
 plus one tail component.

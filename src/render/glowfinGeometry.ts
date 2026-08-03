@@ -484,12 +484,12 @@ export function createGlowfinRigGeometry(
       high ? 18 : 12,
       high ? 13 : 8
     );
-    // A broad, shallow lateral lens sits at the outer face edge level with the
-    // first external-gill root. Its full depth remains ahead of every gill
-    // root along the -Z swim axis. The extra lateral span exposes only the
-    // shell profile around the rear silhouette; the iris and pupil remain on
-    // the obstacle-facing -Z surface.
-    eye.scale(1.22, 0.82, 0.36);
+    // Restore the approved high face-edge ordering visible in the owner's
+    // reference: each shallow shell sits inboard and above its external-gill
+    // fan, while the whole lens stays on the obstacle-facing side of the body.
+    // The chase camera sees only the crown-side shell; iris and pupil remain on
+    // the -Z surface looking toward obstacles.
+    eye.scale(1, 0.88, 0.4);
     eyeParts.push(prepareEye(
       eye,
       new THREE.Vector3(
