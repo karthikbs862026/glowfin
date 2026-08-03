@@ -22,6 +22,10 @@ import { createMoonstoneObstacleMaterial } from "./moonGardenMaterial";
 
 const MAX_GATE_PARTS = 32;
 
+export const GATE_PRESENTATION_CONTRACT = {
+  maximumSimultaneousCeremonialCanopies: 1
+} as const;
+
 export type { GateFacadeVariant } from "../art/premiumWorld";
 
 /** Stable fallback for hand-authored/test gates that predate `artVariant`. */
@@ -305,10 +309,18 @@ export class MoonGardenGates {
     // slabs. Retire each gate as the creature clears it.
     const near = forwardDistance + 0.75;
     const far = forwardDistance + this.cfg.readability.visibleAheadUnits * 1.6;
+    let primaryGateClaimed = false;
 
     for (const gate of gates) {
       if (gate.distance < near) continue;
       if (gate.distance > far) break;
+      // Only the nearest encounter owns a ceremonial crown. Further collider
+      // walls remain readable in the fog, but suppressing their overhead art
+      // removes the nested/ghost-arch tunnel seen in portrait playtests. An
+      // Astral Observatory still claims this slot despite having no arch, so
+      // a later round gate can never appear to bridge its twin pylons.
+      const isPrimaryGate = !primaryGateClaimed;
+      primaryGateClaimed = true;
       const distanceAhead = gate.distance - forwardDistance;
       const lod = lodForDistance(distanceAhead);
       const artVariant = gateFacadeVariant(gate);
@@ -320,7 +332,11 @@ export class MoonGardenGates {
       const family = GATE_FAMILIES[artVariant];
       const canopy = this.canopies[lod][artVariant];
       const canopyIndex = canopyCounts[lod][artVariant];
-      if (family.canopy && canopyIndex < MAX_GATE_PARTS) {
+      if (
+        isPrimaryGate &&
+        family.canopy &&
+        canopyIndex < GATE_PRESENTATION_CONTRACT.maximumSimultaneousCeremonialCanopies
+      ) {
         const gapWidth = gate.gapRight - gate.gapLeft;
         const gapCentre = (gate.gapLeft + gate.gapRight) * 0.5;
         this.position.set(

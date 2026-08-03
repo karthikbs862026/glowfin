@@ -127,6 +127,18 @@ const FRAGMENT = /* glsl */ `
     float lapisRole = roleIs(3.0);
     float crystalRole = roleIs(4.0);
     float coralRole = roleIs(5.0);
+    float roleTotal = max(
+      0.001,
+      limestoneRole + nacreRole + bronzeRole + lapisRole + crystalRole + coralRole
+    );
+    vec3 authoredBase = (
+      vec3(0.46, 0.48, 0.36) * limestoneRole +
+      vec3(0.50, 0.43, 0.59) * nacreRole +
+      vec3(0.50, 0.245, 0.065) * bronzeRole +
+      vec3(0.055, 0.13, 0.43) * lapisRole +
+      vec3(0.055, 0.45, 0.56) * crystalRole +
+      max(vColour, vec3(0.16, 0.08, 0.18)) * coralRole
+    ) / roleTotal;
     float porousBreakup = 0.5 + 0.5 * sin(
       vWorldPos.x * 8.7 + sin(vWorldPos.y * 6.2) + vWorldPos.z * 7.1
     );
@@ -194,6 +206,22 @@ const FRAGMENT = /* glsl */ `
       vec3(1.42)
     );
     colour *= mix(vec3(1.0), livingBreakup, livingWeight * 0.52);
+    // Material identity must survive the portrait downsample. The previous
+    // role response was mostly an after-light tint, so limestone, nacre,
+    // bronze and lapis all inherited the same blue stone value. Establish a
+    // distinct authored base before specular/rim/emission are added.
+    float authoredStrength = 0.46 +
+      bronzeRole * 0.18 +
+      lapisRole * 0.16 +
+      nacreRole * 0.12 +
+      crystalRole * 0.14 -
+      coralRole * 0.1;
+    colour = mix(
+      colour,
+      authoredBase * mix(0.58, 1.2, keyLight) *
+        mix(vec3(1.0), surfaceBreakup, stoneWeight * 0.42),
+      clamp(authoredStrength, 0.34, 0.68)
+    );
     colour *= mix(1.0, 0.46, groundContact);
     colour *= mix(0.82, 1.0, cavity * stoneWeight + livingWeight);
     colour += vec3(0.018, 0.05, 0.07) * stoneWeight;
@@ -232,19 +260,19 @@ const FRAGMENT = /* glsl */ `
     // reading as one uniformly painted procedural mesh.
     colour = mix(
       colour,
-      colour * vec3(1.09, 1.04, 0.9) + vec3(0.012, 0.016, 0.012),
-      limestoneRole * 0.24
+      colour * vec3(1.12, 1.05, 0.82) + vec3(0.014, 0.018, 0.01),
+      limestoneRole * 0.3
     );
     vec3 nacreShift = mix(
       vec3(0.28, 0.52, 0.62),
       vec3(0.5, 0.29, 0.58),
       clamp(viewDirection.y * 0.5 + moonRim, 0.0, 1.0)
     );
-    colour += nacreShift * nacreRole * (0.055 + moonRim * 0.15);
-    colour = mix(colour, colour * vec3(1.28, 0.82, 0.42), bronzeRole * 0.46);
-    colour += vec3(0.24, 0.11, 0.02) * wetSpecular * bronzeRole * 0.32;
-    colour = mix(colour, colour * vec3(0.48, 0.66, 1.25), lapisRole * 0.58);
-    colour += vec3(0.045, 0.23, 0.36) * crystalRole * (0.24 + moonRim * 0.34);
+    colour += nacreShift * nacreRole * (0.075 + moonRim * 0.18);
+    colour = mix(colour, colour * vec3(1.3, 0.76, 0.34), bronzeRole * 0.38);
+    colour += vec3(0.3, 0.13, 0.018) * wetSpecular * bronzeRole * 0.44;
+    colour = mix(colour, colour * vec3(0.38, 0.58, 1.36), lapisRole * 0.34);
+    colour += vec3(0.035, 0.3, 0.43) * crystalRole * (0.28 + moonRim * 0.42);
     float travellingWave = 0.0;
     if (coralRole > 0.05) {
       float tideWaveA = smoothstep(
@@ -505,11 +533,36 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     colour *= 1.0 - joint * 0.14;
     colour *= mix(1.0, 0.43, groundContact);
     float stoneWeight = 1.0 - smoothstep(0.28, 0.66, vGlowWeight);
+    float limestoneRole = roleIs(0.0);
     float nacreRole = roleIs(1.0);
     float bronzeRole = roleIs(2.0);
     float lapisRole = roleIs(3.0);
     float crystalRole = roleIs(4.0);
     float coralRole = roleIs(5.0);
+    float roleTotal = max(
+      0.001,
+      limestoneRole + nacreRole + bronzeRole + lapisRole + crystalRole + coralRole
+    );
+    vec3 authoredBase = (
+      vec3(0.48, 0.49, 0.37) * limestoneRole +
+      vec3(0.52, 0.45, 0.62) * nacreRole +
+      vec3(0.52, 0.25, 0.06) * bronzeRole +
+      vec3(0.05, 0.12, 0.44) * lapisRole +
+      vec3(0.05, 0.48, 0.6) * crystalRole +
+      max(vColour, vec3(0.17, 0.075, 0.19)) * coralRole
+    ) / roleTotal;
+    float authoredStrength = clamp(
+      0.5 + bronzeRole * 0.16 + lapisRole * 0.14 +
+      nacreRole * 0.1 + crystalRole * 0.14 - coralRole * 0.08,
+      0.4,
+      0.68
+    );
+    colour = mix(
+      colour,
+      authoredBase * mix(0.56, 1.18, keyLight) *
+        mix(vec3(1.0), surfaceBreakup, 0.42),
+      authoredStrength
+    );
     colour += vec3(0.035, 0.085, 0.11) * stoneWeight;
     colour += vec3(0.08, 0.34, 0.46) * moonRim * 0.28;
     vec3 coralDirection = normalize(vec3(0.6, -0.2, -0.77));
@@ -525,11 +578,11 @@ const OBSTACLE_FRAGMENT = /* glsl */ `
     colour += vec3(0.46, 0.72, 0.82) * wetSpecular * 0.12;
     colour += uCausticColor * pattern * uIntensity * facing;
     colour += vColour * vGlowWeight * 0.035;
-    colour += mix(vec3(0.04, 0.18, 0.23), vec3(0.22, 0.06, 0.2), moonRim) *
-      nacreRole * (0.055 + moonRim * 0.11);
-    colour = mix(colour, colour * vec3(1.27, 0.78, 0.4), bronzeRole * 0.42);
-    colour = mix(colour, colour * vec3(0.47, 0.63, 1.24), lapisRole * 0.56);
-    colour += vec3(0.035, 0.24, 0.36) * crystalRole * (0.18 + moonRim * 0.24);
+    colour += mix(vec3(0.04, 0.18, 0.23), vec3(0.24, 0.07, 0.22), moonRim) *
+      nacreRole * (0.075 + moonRim * 0.14);
+    colour = mix(colour, colour * vec3(1.3, 0.74, 0.32), bronzeRole * 0.36);
+    colour = mix(colour, colour * vec3(0.36, 0.55, 1.38), lapisRole * 0.34);
+    colour += vec3(0.03, 0.31, 0.43) * crystalRole * (0.22 + moonRim * 0.3);
     float tideWave = smoothstep(
       0.74,
       0.98,

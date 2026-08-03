@@ -38,6 +38,62 @@ export const MATERIAL_ROLE = {
 
 type MaterialRole = typeof MATERIAL_ROLE[keyof typeof MATERIAL_ROLE];
 
+interface GateSurfaceFamily {
+  primary: THREE.Color;
+  secondary: THREE.Color;
+  shadow: THREE.Color;
+  primaryRole: MaterialRole;
+  accentRole: MaterialRole;
+}
+
+/**
+ * Stable, silhouette-scale material families for the five opening districts.
+ * These colours are intentionally separated before the shared shader adds its
+ * role-specific response; otherwise every gate collapses back into the same
+ * blue moonstone slab at phone distance.
+ */
+const GATE_SURFACES: readonly GateSurfaceFamily[] = [
+  {
+    primary: new THREE.Color(0x78958f),
+    secondary: new THREE.Color(0xa99067),
+    shadow: new THREE.Color(0x1c3538),
+    primaryRole: MATERIAL_ROLE.limestone,
+    accentRole: MATERIAL_ROLE.bronze
+  },
+  {
+    primary: new THREE.Color(0x1b3d82),
+    secondary: new THREE.Color(0x9a6b32),
+    shadow: new THREE.Color(0x07152f),
+    primaryRole: MATERIAL_ROLE.lapis,
+    accentRole: MATERIAL_ROLE.bronze
+  },
+  {
+    primary: new THREE.Color(0x8d3f71),
+    secondary: new THREE.Color(0x315f75),
+    shadow: new THREE.Color(0x25152f),
+    primaryRole: MATERIAL_ROLE.livingCoral,
+    accentRole: MATERIAL_ROLE.nacre
+  },
+  {
+    primary: new THREE.Color(0xaaa4ba),
+    secondary: new THREE.Color(0x7f9690),
+    shadow: new THREE.Color(0x273047),
+    primaryRole: MATERIAL_ROLE.nacre,
+    accentRole: MATERIAL_ROLE.bronze
+  },
+  {
+    primary: new THREE.Color(0x16356e),
+    secondary: new THREE.Color(0x53aeb8),
+    shadow: new THREE.Color(0x06152e),
+    primaryRole: MATERIAL_ROLE.lapis,
+    accentRole: MATERIAL_ROLE.crystal
+  }
+] as const;
+
+function gateSurface(variant: GateFacadeVariant): GateSurfaceFamily {
+  return GATE_SURFACES[variant] ?? GATE_SURFACES[0]!;
+}
+
 interface PartStyle {
   colour: THREE.Color;
   position?: THREE.Vector3;
@@ -215,7 +271,10 @@ function rubble(
   count: number,
   spreadX: number,
   spreadZ: number,
-  radius: number
+  radius: number,
+  primary: THREE.Color = STONE_DARK,
+  secondary: THREE.Color = STONE,
+  materialRole: MaterialRole = MATERIAL_ROLE.limestone
 ): THREE.BufferGeometry[] {
   const parts: THREE.BufferGeometry[] = [];
   for (let index = 0; index < count; index++) {
@@ -238,8 +297,9 @@ function rubble(
           -index * 0.23
         ),
         scale: new THREE.Vector3(1.25, 0.68, 0.92),
-        colour: index % 2 === 0 ? STONE_DARK : STONE,
-        glow: 0.01
+        colour: index % 2 === 0 ? primary : secondary,
+        glow: 0.01,
+        materialRole
       }
     ));
   }
@@ -256,6 +316,7 @@ export function createProductionWallGeometry(
   variant: GateFacadeVariant
 ): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
+  const surface = gateSurface(variant);
   const innerX = gapDirection * 0.5;
   const outerX = -gapDirection * 0.5;
   const crownHeights = [0.48, 0.5, 0.46, 0.52, 0.58] as const;
@@ -288,13 +349,20 @@ export function createProductionWallGeometry(
     );
     backing.lineTo(outerX, -0.17);
   } else {
-    backing.lineTo(gapDirection * 0.4, crownHeight + 0.015);
-    backing.lineTo(gapDirection * 0.4, 0.2);
-    backing.lineTo(gapDirection * 0.24, 0.2);
-    backing.lineTo(gapDirection * 0.24, -0.035);
-    backing.lineTo(gapDirection * 0.04, -0.035);
-    backing.lineTo(gapDirection * 0.04, -0.14);
-    backing.lineTo(outerX, -0.14);
+    // The load-bearing mass falls away in chipped, family-specific steps.
+    // Keeping the high section close to the playable pier removes the broad
+    // flat triangle that dominated earlier portrait captures.
+    const shoulderHeight = [0.31, 0.36, 0.3, 0.34, 0.39][variant] ?? 0.32;
+    const terraceHeight = [0.04, 0.11, 0.08, 0.05, 0.14][variant] ?? 0.06;
+    backing.lineTo(
+      innerX - gapDirection * (variant === 4 ? 0.1 : 0.075),
+      crownHeight - 0.035
+    );
+    backing.lineTo(gapDirection * 0.34, shoulderHeight);
+    backing.lineTo(gapDirection * 0.27, shoulderHeight - 0.035);
+    backing.lineTo(gapDirection * 0.19, terraceHeight);
+    backing.lineTo(gapDirection * 0.08, terraceHeight - 0.045);
+    backing.lineTo(outerX, -0.18 - variant * 0.006);
   }
   backing.lineTo(outerX, -0.5);
   backing.closePath();
@@ -309,9 +377,9 @@ export function createProductionWallGeometry(
   backingGeometry.translate(0, 0, -0.41);
   parts.push(styled(backingGeometry, {
     position: new THREE.Vector3(0, 0, -0.07),
-    colour: STONE_DARK,
+    colour: surface.shadow,
     glow: 0.012,
-    materialRole: variant === 4 ? MATERIAL_ROLE.lapis : MATERIAL_ROLE.limestone
+    materialRole: surface.primaryRole
   }));
 
   // A deep, curved inner buttress carries the arch load into the foundation.
@@ -350,13 +418,9 @@ export function createProductionWallGeometry(
       bevelThickness: 0.012
     }), {
       position: new THREE.Vector3(0, 0, 0.45),
-      colour: variant === 3 ? NACRE : variant === 4 ? LAPIS : STONE,
+      colour: surface.primary,
       glow: 0.014,
-      materialRole: variant === 3
-        ? MATERIAL_ROLE.nacre
-        : variant === 4
-          ? MATERIAL_ROLE.lapis
-          : MATERIAL_ROLE.limestone
+      materialRole: surface.primaryRole
     }));
 
     // A recessed shell-shaped niche is cut into the load-bearing face. It is
@@ -444,14 +508,16 @@ export function createProductionWallGeometry(
             gapDirection * Math.sin(row * 2.2 + column) * 0.025
           ),
           colour: (row + column + variant) % 3 === 0
-            ? STONE_LIGHT
-            : STONE,
-          glow: 0.018,
-          materialRole: variant === 3 && (row + column) % 3 === 0
-            ? MATERIAL_ROLE.nacre
-            : variant === 4 && (row + column) % 2 === 0
-              ? MATERIAL_ROLE.lapis
-              : MATERIAL_ROLE.limestone
+            ? surface.secondary
+            : surface.primary,
+          glow: surface.primaryRole === MATERIAL_ROLE.livingCoral
+            ? 0.08
+            : surface.accentRole === MATERIAL_ROLE.crystal && column === 0
+              ? 0.045
+              : 0.018,
+          materialRole: (row + column + variant) % 4 === 0
+            ? surface.accentRole
+            : surface.primaryRole
         }
       ));
     }
@@ -518,11 +584,11 @@ export function createProductionWallGeometry(
             gapDirection * (index % 2) * 0.025,
             gapDirection * Math.sin(index * 1.3) * 0.018
           ),
-          colour: index % 2 === 0 ? STONE_LIGHT : STONE,
+          colour: index % 2 === 0 ? surface.secondary : surface.primary,
           glow: 0.025,
-          materialRole: variant === 4
-            ? MATERIAL_ROLE.lapis
-            : MATERIAL_ROLE.limestone
+          materialRole: index % 3 === 2
+            ? surface.accentRole
+            : surface.primaryRole
         }
       ));
     }
@@ -646,9 +712,9 @@ export function createProductionWallGeometry(
       {
         position: new THREE.Vector3(buttressX, -0.22, 0.28),
         rotation: new THREE.Euler(0, gapDirection * 0.08, gapDirection * 0.05),
-        colour: STONE_DARK,
+        colour: surface.shadow,
         glow: 0.01,
-        materialRole: variant === 4 ? MATERIAL_ROLE.lapis : MATERIAL_ROLE.limestone
+        materialRole: surface.primaryRole
       }
     ));
   }
@@ -676,7 +742,8 @@ export function createProductionWallGeometry(
       lod === 0 ? 5 : 3
     ), {
       colour: index % 2 === 0 ? CYAN_LIGHT : ROSE,
-      glow: 0.38
+      glow: 0.38,
+      materialRole: MATERIAL_ROLE.livingCoral
     }));
   }
 
@@ -684,7 +751,10 @@ export function createProductionWallGeometry(
     lod === 0 ? 7 : lod === 1 ? 5 : 1,
     0.43,
     0.38,
-    lod === 2 ? 0.07 : 0.055
+    lod === 2 ? 0.07 : 0.055,
+    surface.shadow,
+    surface.primary,
+    surface.primaryRole
   ));
   const geometry = merged(parts);
   // Floating point bevel expansion is forced back onto the authoritative

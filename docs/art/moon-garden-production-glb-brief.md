@@ -1,7 +1,7 @@
 # Moon-Garden production GLB brief
 
-**Status:** version-28 runtime gate/reef delivery implemented on Draft PR #7;
-final DCC/PBR production remains active
+**Status:** Version 29 first-five-gates production-cohesion candidate;
+final owner and DCC/PBR production approval remain active
 **Visual authority:** Glowfin Phase 3 Concept-First Art Bible v1  
 **Gameplay authority:** `src/sim/gateGeometry.ts`
 
@@ -48,8 +48,8 @@ build-staged payloads under `public/art/moon-garden/models/`. The generated
 transition package is not committed. PR art-gate runs perform both operations
 and upload the raw and runtime packages with SHA-256 manifests.
 
-The gate and reef subset is now decoded and installed by the version-28 runtime,
-with the version-27 geometry retained only as a delivery-failure fallback. Art
+The gate and reef subset is decoded and installed by the Version 29 runtime,
+with the pre-GLB geometry retained only as a delivery-failure fallback. Art
 evidence rejects that fallback. These files remain the production handoff
 baseline, not final sculpt approval.
 The dedicated swimmer-v2 export is the first character-specific face checkpoint:
@@ -60,8 +60,8 @@ so a DCC author can replace the source forms without reconstructing gameplay
 constraints. Final LFS-tracked GLBs still require authored sculpting, UVs,
 normal/roughness/emissive maps, optimization and the full device render matrix.
 
-Final authored DCC GLBs remain Git LFS assets. The version-28 gate/reef
-transition GLBs are reproducibly generated from checked-in geometry during
+Final authored DCC GLBs remain Git LFS assets. The Version 29 gate/reef
+cohesion GLBs are reproducibly generated from checked-in geometry during
 development and production builds. Production source files must include scale,
 orientation, pivot and export presets so a later revision is reproducible.
 
@@ -122,6 +122,8 @@ orientation, pivot and export presets so a later revision is reproducible.
 5. Ambient creatures: volumetric motion replacing the final atlas dependency.
 6. PBR/light polish, texture compression, full render matrix and device soak.
 
-Version 28 loads the gate/reef production-transition meshes from the published
-GLBs. Their semantic names, bounds and collider alignment are the measurable
-replacement contract; their current topology is not the final sculpt source.
+Version 29 keeps the published gate/reef GLBs behind the established semantic,
+bounds and collider contract. It adds family-specific massing and material
+roles, one dominant ceremonial canopy, six stronger reef signatures and
+phone-scale population restraint. Its current topology is not the final DCC
+sculpt source.

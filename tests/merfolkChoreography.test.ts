@@ -148,4 +148,26 @@ describe("Moon-Garden merfolk choreography", () => {
       );
     }
   });
+
+  it("keeps the supporting cast subordinate to the district guardian", () => {
+    for (const momentumFraction of [0, 0.5, 1]) {
+      const poses = sampleMerfolkChoreography({
+        ...base,
+        momentumFraction,
+        timeSec: 2.4
+      });
+      for (const pose of poses) {
+        const scale = Math.abs(pose.scale.y);
+        const maximum = pose.role === "reef-citizen"
+          ? MERFOLK_CHOREOGRAPHY_CONTRACT.maximumCitizenScale
+          : pose.role === "current-swimmer"
+            ? MERFOLK_CHOREOGRAPHY_CONTRACT.maximumSwimmerScale
+            : MERFOLK_CHOREOGRAPHY_CONTRACT.maximumHeraldScale;
+        expect(scale).toBeLessThanOrEqual(maximum);
+        expect(pose.position.z + base.anchor).toBeLessThanOrEqual(
+          MERFOLK_CHOREOGRAPHY_CONTRACT.maximumPopulationForwardOffsetUnits
+        );
+      }
+    }
+  });
 });

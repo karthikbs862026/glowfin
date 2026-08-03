@@ -7,17 +7,15 @@ this README covers local setup only.
 
 ## Status
 
-**Phase 3C — Moon-Garden production-asset transition in active owner review.
-The version-22 score, version-25 current-swimmer faces and version-27 living
-district composition are approved; the runtime GLB gate/reef slice is the
-version-28 checkpoint.**
+**Phase 3C — Version 29 first-five-gates production-cohesion candidate.
+Version 28 is merged on `main`; the version-22 score, version-25 swimmer faces
+and version-27 living-district composition remain owner-approved.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
-trail, contrast probe and hardened art gate are in place. Draft PR #7 is an
-explicit visual reset after the first evidence frame failed owner Art-Bible
-review. It remains draft until the production-art and physical-device release
-gates below are complete. The integrated draft now includes:
+trail, contrast probe and hardened art gate are in place. Version 29 refines
+the merged runtime-GLB foundation without adding districts, gate encounters,
+residents or gameplay systems. The candidate includes:
 
 - a ten-bone volumetric Glowfin with an explicit negative-Z forward axis; the
   chase camera sees its cute round back, manta fins and central tail while its
@@ -52,18 +50,25 @@ gates below are complete. The integrated draft now includes:
   validated
   against collider planes and installed atomically into the approved fixed
   instance pools
+- a production-cohesion pass with family-specific limestone, nacre, bronze,
+  lapis, crystal and living-coral value groups; chipped stepped wall massing;
+  one dominant ceremonial canopy; larger family-readable reef signatures; and
+  supporting merfolk staged below the guardian rather than stacked at camera
+  depth
 - an in-camera Art-Bible acceptance target at
   `docs/art/phase3b-moon-garden-acceptance-target.webp`
 
 The owner has accepted the corrected upright-resident/conch-herald composition,
 the asynchronous current-swimmer choreography, the version-25 swimmer faces,
 the version-27 living districts and the version-22 Moon-Current score. This does
-not yet approve Phase 3 for merge: version 28 proves the optimized GLB delivery
-and replacement architecture, but its transition topology is not final premium
-DCC/PBR art. ADR-0028 keeps a top-level native media stream as the phone-output
+not yet approve Version 29 production art: Version 28 is merged and proves the
+optimized GLB delivery and replacement architecture, while Version 29 is the
+phone-review cohesion candidate. Final premium DCC/PBR art remains open.
+ADR-0028 keeps a top-level native media stream as the phone-output
 authority; ADR-0029 records the approved 64-second replacement score; ADR-0031
 records the accepted living-district composition; ADR-0032 establishes the
-runtime GLB gate/reef contract. The score still needs Android/iOS speaker,
+runtime GLB gate/reef contract; ADR-0033 records the cohesion scope. The score
+still needs Android/iOS speaker,
 headphone, interruption, performance and thermal review. Technical CI evidence
 cannot replace those visual and real-device approvals.
 

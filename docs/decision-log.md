@@ -606,3 +606,18 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Treat this as the runtime production path, not final DCC approval. The next
   art work refines topology, UV/PBR maps and silhouettes behind the now-stable
   asset contract.
+
+## 2026-08-03 — Refine the first five gates as one production world
+
+- Owner screenshots confirmed that Version 28 already contains the planned
+  gate, reef, district and population systems, so Version 29 adds no new world
+  system or encounter family.
+- Adopt ADR-0033. Separate the five districts with family-specific material
+  roles and stepped ruin massing, allow one dominant ceremonial canopy, enlarge
+  the six reef signatures outside the lane and subordinate the supporting
+  merfolk at near-camera depth.
+- Preserve the merged runtime GLB contract, exact collider planes, safe route,
+  camera, controls, scoring, approved characters and Moon-Current soundtrack.
+- Treat the build as an owner-review cohesion candidate. Full DCC sculpt/UV/PBR
+  source replacement and Android/iOS release certification remain independent
+  gates.

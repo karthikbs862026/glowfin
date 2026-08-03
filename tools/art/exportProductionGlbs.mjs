@@ -497,9 +497,9 @@ await writeGlb("drowned-skyline-v1.glb", createKit("DrownedSkyline", [
 await writeFile(
   resolve(outputDirectory, "manifest.json"),
   `${JSON.stringify({
-    version: 4,
-    source: "validated Phase 3B runtime production-transition meshes",
-    status: "Phase 3C gate/reef runtime handoff; final DCC sculpt sign-off remains required",
+    version: 5,
+    source: "validated Phase 3C first-five-gates production-cohesion meshes",
+    status: "Version 29 gate/reef cohesion candidate; final owner and DCC sculpt sign-off remain required",
     assets: manifest
   }, null, 2)}\n`,
   "utf8"

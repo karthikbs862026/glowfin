@@ -42,7 +42,11 @@ import {
   productionTriangles
 } from "../src/render/productionGeometry";
 import { createGlowfinRigGeometry } from "../src/render/glowfinGeometry";
-import { contourWorldWidth, MoonGardenGates } from "../src/render/gateArt";
+import {
+  contourWorldWidth,
+  GATE_PRESENTATION_CONTRACT,
+  MoonGardenGates
+} from "../src/render/gateArt";
 
 describe("Phase 3B art geometry inventory", () => {
   it("requires all five gate identities and all six reef families in runtime GLBs", () => {
@@ -154,7 +158,29 @@ describe("Phase 3B art geometry inventory", () => {
     }
   });
 
+  it("keeps a distinct phone-scale material identity on every gate family", () => {
+    const requiredRoles = [
+      [0, 2],
+      [3, 2],
+      [5, 1],
+      [1, 2],
+      [3, 4]
+    ] as const;
+    for (const variant of [0, 1, 2, 3, 4] as const) {
+      const wall = createProductionWallGeometry(0, 1, variant);
+      const roles = wall.getAttribute("materialRole");
+      const present = new Set<number>();
+      for (let index = 0; index < roles.count; index++) {
+        present.add(Math.round(roles.getX(index)));
+      }
+      for (const role of requiredRoles[variant]) expect(present.has(role)).toBe(true);
+      wall.dispose();
+    }
+  });
+
   it("gives the hero arch a continuous supported silhouette", () => {
+    expect(GATE_PRESENTATION_CONTRACT.maximumSimultaneousCeremonialCanopies)
+      .toBe(1);
     for (const lod of [0, 1, 2] as const) {
       for (const variant of [0, 1, 2, 3] as const) {
         const canopy = createProductionGateCanopyGeometry(lod, variant);

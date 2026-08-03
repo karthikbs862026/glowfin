@@ -46,7 +46,11 @@ export const MERFOLK_CHOREOGRAPHY_CONTRACT = {
   minimumSwimmerTravelUnits: 0.45,
   minimumSwimmerTravelDifferenceUnits: 0.2,
   minimumSpeedDifference: 0.08,
-  maximumAnchoredDriftUnits: 0.13
+  maximumAnchoredDriftUnits: 0.13,
+  maximumCitizenScale: 1.6,
+  maximumSwimmerScale: 2.1,
+  maximumHeraldScale: 1.7,
+  maximumPopulationForwardOffsetUnits: 3.6
 } as const;
 
 function hash01(value: number, salt: number): number {
@@ -106,7 +110,7 @@ export function sampleMerfolkChoreography({
       : heroSide;
     const seed = poseSeed(anchor, index, 1201);
     const phase = timeSec * (0.31 + seed * 0.08) + seed * Math.PI * 2;
-    const scale = 1.56 + seed * 0.14 + index * 0.035;
+    const scale = 1.42 + seed * 0.11 + index * 0.02;
     poses.push({
       id: `reef-citizen-${index}`,
       role: "reef-citizen",
@@ -114,9 +118,9 @@ export function sampleMerfolkChoreography({
       motionSeed: seed,
       speed: 0.31 + seed * 0.08,
       position: {
-        x: side * (laneHalfWidth + 3.02 + index * 0.16 + seed * 0.12),
-        y: 4.08 + index * 0.48 + Math.sin(phase) * 0.045,
-        z: -anchor + 4.72 + index * 0.92
+        x: side * (laneHalfWidth + 2.42 + index * 0.22 + seed * 0.1),
+        y: 3.52 + index * 0.34 + Math.sin(phase) * 0.045,
+        z: -anchor + 2.25 + index * 1.32
       },
       rotation: {
         x: 0.012 + seed * 0.012,
@@ -155,12 +159,12 @@ export function sampleMerfolkChoreography({
     // Wide maximum-momentum FOV previously shrank Astral swimmers below the
     // phone floor. Compensate only the decorative cast scale; collision and
     // course geometry remain untouched.
-    const scale = 1.46 + seed * 0.08 + momentum * 0.9;
+    const scale = 1.38 + seed * 0.07 + momentum * 0.58;
     const galleryDistance =
       laneHalfWidth +
       LOCAL_HALF_WIDTH["current-swimmer"] * scale +
       pathWidth +
-      0.78;
+      0.7;
     poses.push({
       id: `current-swimmer-${index}`,
       role: "current-swimmer",
@@ -169,12 +173,12 @@ export function sampleMerfolkChoreography({
       speed,
       position: {
         x: side * galleryDistance + track * pathWidth,
-        y: (index === 0 ? 7.45 : 9.35) +
+        y: (index === 0 ? 6.65 : 8.45) +
           Math.cos(phase) * verticalAmplitude,
         // Both swimmers stay in front of the gate depth plane. Previously the
         // upper swimmer passed behind masonry at the second evidence sample,
         // leaving only disconnected fin fragments for the tracker.
-        z: -anchor + (index === 0 ? 4.15 : 3.05) +
+        z: -anchor + (index === 0 ? 2.15 : 1.05) +
           Math.sin(phase * 0.47) * (0.16 + seed * 0.04)
       },
       rotation: {
@@ -193,7 +197,7 @@ export function sampleMerfolkChoreography({
     const seed = poseSeed(anchor, index, 3301);
     const speed = 0.24 + seed * 0.06;
     const phase = timeSec * speed + seed * Math.PI * 2;
-    const scale = 1.62 + index * 0.12 + seed * 0.06 + momentum * 0.055;
+    const scale = 1.48 + index * 0.08 + seed * 0.05 + momentum * 0.045;
     poses.push({
       id: `conch-herald-${index}`,
       role: "conch-herald",
@@ -201,9 +205,9 @@ export function sampleMerfolkChoreography({
       motionSeed: seed,
       speed,
       position: {
-        x: side * (laneHalfWidth + 1.78 + index * 0.12),
-        y: 1.72 + index * 0.12 + Math.sin(phase) * 0.035,
-        z: -anchor + 4.05 - index * 0.42
+        x: side * (laneHalfWidth + 1.7 + index * 0.18),
+        y: 1.58 + index * 0.1 + Math.sin(phase) * 0.035,
+        z: -anchor + 2.25 - index * 0.62
       },
       rotation: {
         x: 0.015,

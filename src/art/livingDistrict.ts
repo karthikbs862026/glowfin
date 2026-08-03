@@ -47,7 +47,10 @@ export const LIVING_DISTRICT_CONTRACT = {
   reef: {
     maximumSwayWorldUnits: 0.24,
     laneSafetyWorldUnits: 0.46,
-    travellingWaveSpeed: 1.7
+    travellingWaveSpeed: 1.7,
+    signatureRadiusWorldUnits: 18,
+    signatureHeightBoost: [1.2, 1.18, 1.12, 1.16, 1.14, 1.08],
+    signatureWidthBoost: [1.14, 1.18, 1.08, 1.16, 1.12, 1.06]
   }
 } as const;
 
