@@ -3,6 +3,7 @@ import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js"
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import {
   expectedRuntimeGateNodes,
+  expectedRuntimeGlowfinNodes,
   expectedRuntimeReefNodes,
   RUNTIME_PRODUCTION_ASSETS,
   RUNTIME_SHADER_ATTRIBUTE_ALIASES,
@@ -33,8 +34,16 @@ export type RuntimeReefGeometrySet = Record<
   THREE.BufferGeometry
 >;
 
+export interface RuntimeGlowfinGeometrySet {
+  body: THREE.BufferGeometry;
+  eyes: THREE.BufferGeometry;
+  clips: string[];
+  bones: number;
+}
+
 export interface RuntimeProductionGeometrySet {
   build: string;
+  glowfin: RuntimeGlowfinGeometrySet;
   gates: RuntimeGateGeometrySet;
   reef: RuntimeReefGeometrySet;
 }
@@ -118,6 +127,76 @@ function validatePlayablePlane(
   }
 }
 
+function extractGlowfinGeometry(gltf: GLTF): RuntimeGlowfinGeometrySet {
+  const meshes = meshMap(gltf, expectedRuntimeGlowfinNodes());
+  const bodyMesh = meshes.get("GlowfinBody_LOD0");
+  const eyeMesh = meshes.get("GlowfinEyes_LOD0");
+  if (!(bodyMesh instanceof THREE.SkinnedMesh)) {
+    throw new Error("GlowfinBody_LOD0 must remain a skinned mesh.");
+  }
+  if (!eyeMesh) throw new Error("GlowfinEyes_LOD0 is missing.");
+
+  bodyMesh.updateWorldMatrix(true, false);
+  eyeMesh.updateWorldMatrix(true, false);
+  if (!bodyMesh.matrixWorld.equals(new THREE.Matrix4())) {
+    throw new Error(
+      "GlowfinBody_LOD0 has a baked node transform that would invalidate skinning."
+    );
+  }
+  const body = bodyMesh.geometry.clone();
+  const eyes = eyeMesh.geometry.clone();
+  // Meshopt quantization normalizes the unskinned eye accessor and stores its
+  // decode scale/offset on the node. Bake that transform before discarding the
+  // imported scene; otherwise the eyes expand to unit spheres at the origin.
+  eyes.applyMatrix4(eyeMesh.matrixWorld);
+  for (const attribute of [
+    "position",
+    "normal",
+    "uv",
+    "color",
+    "skinIndex",
+    "skinWeight"
+  ]) {
+    if (!body.hasAttribute(attribute)) {
+      throw new Error(`GlowfinBody_LOD0 is missing ${attribute}.`);
+    }
+  }
+  for (const attribute of ["position", "normal", "uv"]) {
+    if (!eyes.hasAttribute(attribute)) {
+      throw new Error(`GlowfinEyes_LOD0 is missing ${attribute}.`);
+    }
+  }
+
+  const clips = gltf.animations.map((clip) => clip.name);
+  for (const required of RUNTIME_PRODUCTION_ASSETS.glowfinClips) {
+    if (!clips.includes(required)) {
+      throw new Error(`Glowfin runtime GLB is missing clip ${required}.`);
+    }
+  }
+  let bones = 0;
+  gltf.scene.traverse((node) => {
+    if (node instanceof THREE.Bone) bones += 1;
+  });
+  if (bones !== 10) {
+    throw new Error(`Glowfin runtime GLB contains ${bones} bones; expected 10.`);
+  }
+
+  for (const [geometry, node] of [
+    [body, "GlowfinBody_LOD0"],
+    [eyes, "GlowfinEyes_LOD0"]
+  ] as const) {
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    geometry.userData = {
+      ...geometry.userData,
+      runtimeProductionAsset: RUNTIME_PRODUCTION_ASSETS.build,
+      runtimeSourceNode: node
+    };
+  }
+  releaseImportedResources(gltf);
+  return { body, eyes, clips, bones };
+}
+
 function releaseImportedResources(gltf: GLTF): void {
   const materials = new Set<THREE.Material>();
   const geometries = new Set<THREE.BufferGeometry>();
@@ -176,12 +255,14 @@ export async function loadRuntimeProductionGeometry(): Promise<
 > {
   const loader = new GLTFLoader();
   loader.setMeshoptDecoder(MeshoptDecoder);
-  const [gateGltf, reefGltf] = await Promise.all([
+  const [glowfinGltf, gateGltf, reefGltf] = await Promise.all([
+    loader.loadAsync(RUNTIME_PRODUCTION_ASSETS.glowfinUrl),
     loader.loadAsync(RUNTIME_PRODUCTION_ASSETS.gateUrl),
     loader.loadAsync(RUNTIME_PRODUCTION_ASSETS.reefUrl)
   ]);
   return {
     build: RUNTIME_PRODUCTION_ASSETS.build,
+    glowfin: extractGlowfinGeometry(glowfinGltf),
     gates: extractGateGeometry(gateGltf),
     reef: extractReefGeometry(reefGltf)
   };

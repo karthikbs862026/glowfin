@@ -1,6 +1,6 @@
 # Moon-Garden production GLB brief
 
-**Status:** Version 29 first-five-gates production-cohesion candidate;
+**Status:** Version 30 Glowfin production-character candidate;
 final owner and DCC/PBR production approval remain active
 **Visual authority:** Glowfin Phase 3 Concept-First Art Bible v1  
 **Gameplay authority:** `src/sim/gateGeometry.ts`
@@ -18,7 +18,7 @@ viewer must identify the following by silhouette and value grouping alone:
 - a soft anemone garden;
 - ribbon kelp;
 - a cute round axolotl-puffer Glowfin, facing the obstacle corridor, with broad
-  scalloped manta fins, one central teardrop tail, three rounded external gill
+  scalloped manta fins, one central kelp-like teardrop tail, three rounded external gill
   leaves per side and two high lateral eyes visible around the body crown;
 - a phone-readable mermaid guardian whose Tidekeeper, Coral Warden and Astral
   Oracle regalia match their districts, plus reef citizens, horizontal current
@@ -29,7 +29,7 @@ viewer must identify the following by silhouette and value grouping alone:
 
 | GLB | Required contents | Runtime rule |
 | --- | --- | --- |
-| `glowfin-v1.glb` | One skinned body primitive, one combined high-lateral eye primitive, 10–18 bones, calm/propulsion/collision/recovery clips | Forward axis is negative Z; side-set eyes remain crown-visible; simulation selects and blends clips; two materials maximum |
+| `glowfin-v2.glb` | One skinned body primitive, one combined high-lateral eye primitive, 10 bones, breathe/propulsion/bank/collision/recovery clips | Forward axis is negative Z; side-set eyes remain crown-visible; simulation selects calm/mid/max/collision/recovery states; two materials maximum |
 | `hero-merfolk-v1.glb`, `hero-merfolk-coral-warden-v1.glb`, `hero-merfolk-astral-oracle-v1.glb` | Shared guardian hierarchy with face, eyes, hair, hands, shell cuirass, pendant, three-joint tail, caudal/side fins and district regalia; hover/swim/turn/patrol/greeting clips | Exactly one gate-side hero visible; never collidable; one material and no more than 17 draws; at the tested phone view require ≥72 px overall, ≥22 px face and ≥4.5 px eyes |
 | `moon-gate-v1.glb` | Five asymmetric wall-fragment/canopy identities, mirrored-safe inner pier, broken voussoirs, dark channel and rubble base across LOD0–2 | Inner cyan edge remains a separate collider-derived runtime mesh |
 | `ruin-kit-v1.glb` | Broken tower, collapsed arch and forked spire across LOD0–2 | Outside-lane instancing only |
@@ -42,14 +42,16 @@ viewer must identify the following by silhouette and value grouping alone:
 
 Run `npm run art:build-runtime-glbs` to write the current validated mesh, LOD
 and naming baseline to `build/production-glbs/`, then weld, prune and
-Meshopt-compress the gate/reef runtime subset into `build/runtime-glbs/`. Run
+Meshopt-compress Glowfin plus the gate/reef runtime subset into
+`build/runtime-glbs/`. Run
 `npm run art:verify-runtime-glbs` to compare those files byte-for-byte with the
 build-staged payloads under `public/art/moon-garden/models/`. The generated
 transition package is not committed. PR art-gate runs perform both operations
 and upload the raw and runtime packages with SHA-256 manifests.
 
-The gate and reef subset is decoded and installed by the Version 29 runtime,
-with the pre-GLB geometry retained only as a delivery-failure fallback. Art
+Glowfin, gate and reef assets are decoded and installed atomically by the
+Version 30 runtime, with pre-GLB geometry retained only as a delivery-failure
+fallback. Art
 evidence rejects that fallback. These files remain the production handoff
 baseline, not final sculpt approval.
 The dedicated swimmer-v2 export is the first character-specific face checkpoint:
@@ -60,8 +62,8 @@ so a DCC author can replace the source forms without reconstructing gameplay
 constraints. Final LFS-tracked GLBs still require authored sculpting, UVs,
 normal/roughness/emissive maps, optimization and the full device render matrix.
 
-Final authored DCC GLBs remain Git LFS assets. The Version 29 gate/reef
-cohesion GLBs are reproducibly generated from checked-in geometry during
+Final authored DCC GLBs remain Git LFS assets. The Version 30 Glowfin/gate/reef
+checkpoint GLBs are reproducibly generated from checked-in geometry during
 development and production builds. Production source files must include scale,
 orientation, pivot and export presets so a later revision is reproducible.
 
@@ -100,7 +102,7 @@ orientation, pivot and export presets so a later revision is reproducible.
 7. Merge remains blocked until Chromium plus Android and iOS portrait evidence
    pass visual review and the 30-minute soak.
 8. Glowfin's neutral chase-camera silhouette must show its back, two scalloped
-   manta fins, centered teardrop tail, six separated rounded gill leaves and two
+   manta fins, centered kelp-like tail, six separated rounded gill leaves and two
    high side-set eyes. Missing eyes or an inward camera-facing facial mask both
    block acceptance.
 9. The hero Tidekeeper must remain at least 72 portrait pixels tall across the
@@ -122,8 +124,9 @@ orientation, pivot and export presets so a later revision is reproducible.
 5. Ambient creatures: volumetric motion replacing the final atlas dependency.
 6. PBR/light polish, texture compression, full render matrix and device soak.
 
-Version 29 keeps the published gate/reef GLBs behind the established semantic,
-bounds and collider contract. It adds family-specific massing and material
-roles, one dominant ceremonial canopy, six stronger reef signatures and
-phone-scale population restraint. Its current topology is not the final DCC
-sculpt source.
+Version 30 keeps the approved Version 29 world unchanged and moves Glowfin
+behind the same runtime-asset truth contract. It adds organic body deformation,
+buried fin/tail transitions, integrated gill crowns, a longer central kelp tail,
+larger forward side-set eyes and five explicit simulation-selected motion
+states. Its reproducible topology is the production integration checkpoint,
+not the final external DCC sculpt source.

@@ -92,6 +92,55 @@ function prepareEye(
   return geometry;
 }
 
+function createOrganicBody(radius: number, high: boolean): THREE.BufferGeometry {
+  const geometry = new THREE.SphereGeometry(
+    radius,
+    high ? 52 : 36,
+    high ? 38 : 26
+  );
+  const positions = geometry.getAttribute("position");
+  for (let index = 0; index < positions.count; index++) {
+    const x = positions.getX(index);
+    const y = positions.getY(index);
+    const z = positions.getZ(index);
+    const nx = x / radius;
+    const ny = y / radius;
+    const nz = z / radius;
+    const middle = Math.max(0, 1 - Math.abs(nz));
+    const belly = Math.max(0, -ny) * middle;
+    const rear = THREE.MathUtils.smoothstep(nz, 0.05, 0.94);
+    const front = THREE.MathUtils.smoothstep(-nz, 0.18, 0.96);
+
+    // A round rear/belly and a slightly narrower obstacle-facing muzzle keep
+    // Glowfin pudgy without reading as an undeformed sphere. The deformation
+    // stays well inside the unchanged collision radius contract.
+    positions.setXYZ(
+      index,
+      x * (1 + rear * 0.055 + belly * 0.035 - front * 0.028),
+      y + radius * (belly * 0.026 + middle * 0.018),
+      z + radius * middle * (0.018 - Math.abs(nx) * 0.012)
+    );
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  geometry.normalizeNormals();
+  return geometry;
+}
+
+function createRootCollar(
+  radius: number,
+  high: boolean,
+  scale: THREE.Vector3
+): THREE.BufferGeometry {
+  const geometry = new THREE.SphereGeometry(
+    radius,
+    high ? 12 : 9,
+    high ? 8 : 6
+  );
+  geometry.scale(scale.x, scale.y, scale.z);
+  return geometry;
+}
+
 function createGillLeaf(radius: number, high: boolean): THREE.BufferGeometry {
   // The supplied reference uses three clean, rounded leaves per side. Do not
   // replace these with branched fronds, leaflet spikes or folded wedges.
@@ -249,38 +298,38 @@ function createTailPaddle(
   high: boolean
 ): THREE.BufferGeometry {
   const shape = new THREE.Shape();
-  shape.moveTo(-radius * 0.13, radius * 0.12);
+  shape.moveTo(-radius * 0.14, radius * 0.16);
   shape.bezierCurveTo(
-    -radius * 0.32,
-    -radius * 0.15,
-    -radius * 0.37,
-    -radius * 0.58,
-    -radius * 0.22,
-    -radius * 0.92
+    -radius * 0.34,
+    -radius * 0.12,
+    -radius * 0.42,
+    -radius * 0.62,
+    -radius * 0.25,
+    -radius * 1.02
   );
   shape.bezierCurveTo(
-    -radius * 0.15,
-    -radius * 1.05,
-    -radius * 0.05,
-    -radius * 0.86,
+    -radius * 0.17,
+    -radius * 1.2,
+    -radius * 0.055,
+    -radius * 1.04,
     0,
-    -radius * 0.82
+    -radius * 1.12
   );
   shape.bezierCurveTo(
-    radius * 0.05,
-    -radius * 0.86,
-    radius * 0.15,
-    -radius * 1.05,
-    radius * 0.22,
-    -radius * 0.92
+    radius * 0.055,
+    -radius * 1.04,
+    radius * 0.17,
+    -radius * 1.2,
+    radius * 0.25,
+    -radius * 1.02
   );
   shape.bezierCurveTo(
-    radius * 0.37,
-    -radius * 0.58,
-    radius * 0.32,
-    -radius * 0.15,
-    radius * 0.13,
-    radius * 0.12
+    radius * 0.42,
+    -radius * 0.62,
+    radius * 0.34,
+    -radius * 0.12,
+    radius * 0.14,
+    radius * 0.16
   );
   shape.closePath();
   const depth = radius * 0.15;
@@ -297,13 +346,13 @@ function createTailPaddle(
   const positions = geometry.getAttribute("position");
   for (let index = 0; index < positions.count; index++) {
     const length = THREE.MathUtils.clamp(
-      (radius * 0.12 - positions.getY(index)) / (radius * 1.17),
+      (radius * 0.16 - positions.getY(index)) / (radius * 1.36),
       0,
       1
     );
     positions.setZ(
       index,
-      positions.getZ(index) + Math.sin(length * Math.PI) * radius * 0.08
+      positions.getZ(index) + Math.sin(length * Math.PI) * radius * 0.11
     );
   }
   positions.needsUpdate = true;
@@ -322,21 +371,18 @@ export function createGlowfinRigGeometry(
   const cyan = new THREE.Color(0x08a9d2);
   const finRootCyan = new THREE.Color(0x057ba8);
   const finGlowCyan = new THREE.Color(0x79edf2);
+  const tailRootCyan = new THREE.Color(0x066f9a);
   const gillViolet = new THREE.Color(0x7659d4);
   const gillGlow = new THREE.Color(0xc5adff);
   const pivots = {
     finLeft: new THREE.Vector3(-r * 0.34, -r * 0.1, r * 0.12),
     finRight: new THREE.Vector3(r * 0.34, -r * 0.1, r * 0.12),
-    tail: new THREE.Vector3(0, -r * 0.52, r * 0.7),
+    tail: new THREE.Vector3(0, -r * 0.51, r * 0.68),
     gills: [] as THREE.Vector3[]
   };
 
   const bodyParts: RigPart[] = [{
-    geometry: new THREE.SphereGeometry(
-      r,
-      high ? 52 : 36,
-      high ? 38 : 26
-    ),
+    geometry: createOrganicBody(r, high),
     bone: 0,
     colour: (position) => deepCyan.clone().lerp(
       cyan,
@@ -357,6 +403,29 @@ export function createGlowfinRigGeometry(
   for (const side of [-1, 1]) {
     const pivot = side < 0 ? pivots.finLeft : pivots.finRight;
     bodyParts.push({
+      geometry: createRootCollar(
+        r * 0.33,
+        high,
+        new THREE.Vector3(1.34, 0.58, 0.92)
+      ),
+      bone: side < 0 ? 1 : 2,
+      colour: (position) => finRootCyan.clone().lerp(
+        cyan,
+        THREE.MathUtils.clamp(
+          Math.abs(position.x) / Math.max(r * 0.7, 0.001),
+          0,
+          0.58
+        )
+      ),
+      position: pivot.clone().add(new THREE.Vector3(
+        side * r * 0.08,
+        r * 0.015,
+        r * 0.025
+      )),
+      rotation: new THREE.Euler(-0.06, side * 0.03, side * 0.08),
+      scale: new THREE.Vector3(1, 1, 1)
+    });
+    bodyParts.push({
       geometry: createMantaFin(r * 1.04, high, side as -1 | 1),
       bone: side < 0 ? 1 : 2,
       colour: (position) => finRootCyan.clone().lerp(
@@ -373,9 +442,23 @@ export function createGlowfinRigGeometry(
     });
   }
 
-  // The supplied reference uses one small centered teardrop tail.
+  // Keep one centered kelp-like tail with a buried peduncle; never split it
+  // into detached lobes or add a dorsal ornament.
   bodyParts.push({
-    geometry: createTailPaddle(r * 0.92, high),
+    geometry: new THREE.CapsuleGeometry(
+      r * 0.15,
+      r * 0.34,
+      high ? 5 : 3,
+      high ? 12 : 8
+    ),
+    bone: 3,
+    colour: tailRootCyan,
+    position: new THREE.Vector3(0, -r * 0.34, r * 0.48),
+    rotation: new THREE.Euler(-0.96, 0, 0),
+    scale: new THREE.Vector3(0.9, 1, 0.78)
+  });
+  bodyParts.push({
+    geometry: createTailPaddle(r * 0.96, high),
     bone: 3,
     colour: (position) => finRootCyan.clone().lerp(
       finGlowCyan,
@@ -387,11 +470,27 @@ export function createGlowfinRigGeometry(
     ),
     position: pivots.tail.clone(),
     rotation: new THREE.Euler(-0.045, 0, 0),
-    scale: new THREE.Vector3(1.08, 0.94, 1)
+    scale: new THREE.Vector3(1.06, 0.98, 1)
   });
 
   let bone = 4;
   for (const side of [-1, 1]) {
+    bodyParts.push({
+      geometry: createRootCollar(
+        r * 0.22,
+        high,
+        new THREE.Vector3(0.74, 1.18, 0.72)
+      ),
+      bone: 0,
+      colour: gillViolet,
+      position: new THREE.Vector3(
+        side * r * 0.79,
+        r * 0.4,
+        r * 0.48
+      ),
+      rotation: new THREE.Euler(0.08, side * 0.18, side * 0.05),
+      scale: new THREE.Vector3(1, 1, 1)
+    });
     for (let index = 0; index < 3; index++) {
       const pivot = new THREE.Vector3(
         side * r * (0.84 + index * 0.04),

@@ -75,14 +75,14 @@ function wallManifest(
 function decorativeManifests(): AssetManifest[] {
   return [
     {
-      name: "glowfin-vertical-slice",
+      name: "glowfin-v2-runtime-production",
       family: "glowfin",
       collidable: false,
       materials: PRODUCTION_ART.glowfin.materials,
-      textureMemoryMB: 0,
+      textureMemoryMB: 1,
       contour: "none",
       bones: PRODUCTION_ART.glowfin.bones,
-      maxTextureSizePx: 0,
+      maxTextureSizePx: 512,
       clips: [...GLOWFIN_ANIMATION.clips],
       animationDriver: GLOWFIN_ANIMATION.driver,
       observedStates: [...GLOWFIN_ANIMATION.states],

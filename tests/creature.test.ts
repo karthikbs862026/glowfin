@@ -9,6 +9,7 @@ import {
 import {
   eyeEnergyTarget,
   eyeHueForEnergy,
+  resolveGlowfinAnimationState,
   smoothEyeEnergy
 } from "../src/render/creature";
 
@@ -107,10 +108,10 @@ describe("creature configuration (Part 3.1)", () => {
   it("keeps both eyes high on the obstacle-facing crown ahead of the gills", () => {
     expect(GLOWFIN_FORWARD_AXIS).toEqual([0, 0, -1]);
     expect(GLOWFIN_REAR_AXIS).toEqual([0, 0, 1]);
-    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.51);
-    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.65);
-    expect(tuning.creature.eyeOffsetZ).toBeCloseTo(-0.52);
-    expect(tuning.creature.eyeRadius).toBeGreaterThanOrEqual(0.18);
+    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.55);
+    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.69);
+    expect(tuning.creature.eyeOffsetZ).toBeCloseTo(-0.53);
+    expect(tuning.creature.eyeRadius).toBeGreaterThanOrEqual(0.2);
 
     const rig = createGlowfinRigGeometry(tuning, 1);
     rig.eyes.computeBoundingBox();
@@ -177,6 +178,14 @@ describe("creature configuration (Part 3.1)", () => {
 
     rig.body.dispose();
     rig.eyes.dispose();
+  });
+
+  it("selects five simulation-driven animation states with safe precedence", () => {
+    expect(resolveGlowfinAnimationState(0.1, 0, 0)).toBe("calm");
+    expect(resolveGlowfinAnimationState(0.5, 0, 0)).toBe("mid");
+    expect(resolveGlowfinAnimationState(0.9, 0, 0)).toBe("max");
+    expect(resolveGlowfinAnimationState(0.9, 0, 0.4)).toBe("recovery");
+    expect(resolveGlowfinAnimationState(0.9, 0.3, 0.4)).toBe("collision");
   });
 
   it("the creature's draw calls fit the budget alongside the scene", () => {

@@ -1,6 +1,6 @@
 # ADR-0033: First five gates production cohesion
 
-**Status:** Implemented as the Version 29 owner-review candidate  
+**Status:** Owner-approved and merged as Version 29
 **Date:** 2026-08-03
 
 ## Context

@@ -634,3 +634,22 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   existing floor, but both most-distant upright faces remained `7 px`. Raise
   only their vertical facial-shell contract to `0.60` world units; keep head
   width/depth, character transforms, choreography and the `8 px` floor fixed.
+
+## 2026-08-03 — Load and refine Glowfin as the production character
+
+- Owner approved and merged Version 29, freezing the first-five-gates world as
+  the visual foundation for the character pass.
+- Adopt ADR-0034. Export, Meshopt-compress, publish and load `glowfin-v2.glb`
+  alongside the existing gate and reef payloads. Require two semantic meshes,
+  ten bones, all five named clips and preserved UV/colour/skin attributes after
+  compression.
+- Keep the existing code geometry only as an atomic delivery-failure fallback;
+  make art/render/soak evidence reject fallback mode for Glowfin as it already
+  does for gates and reefs.
+- Refine the bounded character topology with organic body volume, buried
+  appendage transitions, integrated gill crowns, a longer central kelp tail and
+  larger forward side-set eyes. Preserve the negative-Z forward axis and the
+  approved two-draw shader/material contract.
+- Resolve calm, mid, max, collision and recovery motion from deterministic
+  simulation values. Preserve course movement, collision radius, controls,
+  camera, scoring, replay and soundtrack.

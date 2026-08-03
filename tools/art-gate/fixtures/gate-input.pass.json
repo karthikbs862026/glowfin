@@ -239,14 +239,14 @@
       ]
     },
     {
-      "name": "glowfin-vertical-slice",
+      "name": "glowfin-v2-runtime-production",
       "family": "glowfin",
       "collidable": false,
       "materials": 2,
-      "textureMemoryMB": 0,
+      "textureMemoryMB": 1,
       "contour": "none",
       "bones": 10,
-      "maxTextureSizePx": 0,
+      "maxTextureSizePx": 512,
       "clips": [
         "breathe",
         "propulsion",
@@ -267,11 +267,11 @@
       "lods": [
         {
           "level": 0,
-          "triangles": 6780
+          "triangles": 7956
         },
         {
           "level": 1,
-          "triangles": 3388
+          "triangles": 3956
         }
       ]
     },
