@@ -666,10 +666,11 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - The first corrected remote frame proved that removing the fin/tail layers was
   sufficient for those silhouettes, but the separate purple gill-root collars
   still covered both eyes. Remove those last static collars as well.
-- Place the lateral face-edge eyes at `±0.72R`, `0.42R` high and `+0.72R` deep.
-  Keep the shallow `0.20R` lenses immediately inside and camera-side of the
-  gill fans so both eyes remain visible in every animation state without
-  painting a full face on Glowfin's back.
+- The follow-up owner review rejected the `+0.72R` camera-side depth because it
+  physically placed the eyes behind the `+0.56R` gill roots. Restore the outer
+  face-edge placement at `±0.83R`, `0.40R` high and `+0.47R` deep. Keep the
+  complete shallow `0.20R` lens ahead of every gill root along the negative-Z
+  swim direction and visible around the body's edge in every animation state.
 - Preserve the negative-Z travel axis, ten-bone rig, two draws, collision
   radius, camera, controls, scoring, route, world and soundtrack. Add source
   and packed-GLB assertions that reject more than one fin component per side or

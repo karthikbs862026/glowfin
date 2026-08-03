@@ -483,10 +483,10 @@ export function createGlowfinRigGeometry(
       high ? 18 : 12,
       high ? 13 : 8
     );
-    // A broad, shallow lateral lens peeks around the body immediately inside
-    // the external-gill fan. This is not a camera-facing facial mask: the -Z
-    // swim axis stays unchanged, while the positive-Z cap remains visible to
-    // the player throughout rear-chase gameplay.
+    // A broad, shallow lateral lens sits at the outer face edge immediately
+    // inside the external-gill fan. Its full depth remains ahead of every gill
+    // root along the -Z swim axis, while the wide placement keeps the lens
+    // visible around the body in rear-chase gameplay.
     eye.scale(1, 0.82, 0.36);
     eyeParts.push(prepareEye(
       eye,

@@ -24,16 +24,17 @@ rejected.
 - The positive-Z chase camera sees one smooth round sea-glass body, two
   scalloped manta fins, one centered teardrop tail, three clean lavender gill
   leaves per side and the back of the high crown—not a camera-facing face.
-- Both eyes sit wide on the lateral face edge at `±0.72R`, between the upper
-  and middle gill leaves, with their centres immediately inside the first gill
-  roots. Their centres sit at `+0.72R` depth so the shallow positive-Z caps
-  clear both the organic body and the gill leaves in the chase camera.
+- Both eyes sit wide on the outer face edge at `±0.83R`, between the upper and
+  middle gill leaves, with their centres immediately inside the first gill
+  roots. Their centres sit at `+0.47R` depth; the complete shallow lens remains
+  ahead of the nearest `+0.56R` gill root along the negative-Z swim direction.
 - Each eye uses a broad, shallow `0.20`-radius lens. It must remain readable at
   8–12 pixels during calm, maximum momentum, collision and recovery. Collision
   dimming may change colour but may never remove either eye.
-- The eye/gill spacing is judged in the normal rear-chase frame: each eye must
-  read separately just before its three-leaf fan, with no full face painted on
-  the back of the body.
+- Eye/gill ordering is a world-space contract, not an impression: every eye's
+  rear bound must stay forward of every gill root. In the normal rear-chase
+  frame each eye must read separately at the face edge before its three-leaf
+  fan, with no full face painted on the back of the body.
 - Gill leaves remain simple, rounded and individually spaced. Separate static
   root collars, branched fronds, micro-leaflets, folded wedges, horns and spikes
   are rejected.
@@ -54,11 +55,11 @@ rejected.
 
 ## Verification
 
-The geometry regression suite locks the negative-Z swim axis, positive-Z
-lateral eye caps, near-zero screen-space eye-to-gill spacing, three gill leaves
-per side, enlarged lens span, independent momentum/speed contributions,
-frame-rate-independent colour smoothing, buried fin/tail pivots and exactly one
-visible fin component per side plus one tail component.
+The geometry regression suite locks the negative-Z swim axis, forward eye-to-
+gill depth ordering, outer-edge visibility, near-zero screen-space eye-to-gill
+spacing, three gill leaves per side, enlarged lens span, independent momentum/
+speed contributions, frame-rate-independent colour smoothing, buried fin/tail
+pivots and exactly one visible fin component per side plus one tail component.
 Phone-size browser review must include calm, maximum momentum, collision and
 recovery rear-chase frames. Reject hidden eyes, merged gills, overlapping
 under-fins, a second tail layer, an off-centre tail or a full camera-facing

@@ -105,12 +105,12 @@ describe("creature configuration (Part 3.1)", () => {
     expect(tuning.creature.rimStrength).toBeGreaterThan(0);
   });
 
-  it("keeps both eyes visible at the lateral face edge just inside the gills", () => {
+  it("keeps both eyes at the outer face edge physically ahead of the gills", () => {
     expect(GLOWFIN_FORWARD_AXIS).toEqual([0, 0, -1]);
     expect(GLOWFIN_REAR_AXIS).toEqual([0, 0, 1]);
-    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.72);
-    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.42);
-    expect(tuning.creature.eyeOffsetZ).toBeCloseTo(0.72);
+    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.83);
+    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.40);
+    expect(tuning.creature.eyeOffsetZ).toBeCloseTo(0.47);
     expect(tuning.creature.eyeRadius).toBeGreaterThanOrEqual(0.2);
 
     const rig = createGlowfinRigGeometry(tuning, 1);
@@ -118,42 +118,36 @@ describe("creature configuration (Part 3.1)", () => {
     const eyeBounds = rig.eyes.boundingBox;
     const radius = tuning.lane.creatureRadius;
     const eyeCentreY = radius * tuning.creature.eyeOffsetY;
-    const bodyHalfWidthAtEyeHeight = radius * 0.96 * Math.sqrt(
-      1 - (eyeCentreY / (radius * tuning.creature.bodyHeight)) ** 2
-    );
-    expect(eyeBounds?.min.x).toBeLessThan(-bodyHalfWidthAtEyeHeight);
-    expect(eyeBounds?.max.x).toBeGreaterThan(bodyHalfWidthAtEyeHeight);
-    expect(eyeBounds?.min.z).toBeGreaterThan(
-      radius * 0.62
-    );
-    expect(eyeBounds?.max.z).toBeLessThan(
-      radius * 0.82
-    );
-    expect(eyeBounds?.max.z).toBeGreaterThan(
-      Math.min(...rig.pivots.gills.map((pivot) => pivot.z))
+    const eyeCentreX = radius * tuning.creature.eyeOffsetX;
+    const eyeCentreZ = radius * tuning.creature.eyeOffsetZ;
+    const bodyEllipsoidDistance =
+      (eyeCentreX / (radius * 0.96)) ** 2 +
+      (eyeCentreY / (radius * tuning.creature.bodyHeight)) ** 2 +
+      (eyeCentreZ / (radius * tuning.creature.bodyLength)) ** 2;
+    expect(bodyEllipsoidDistance).toBeGreaterThan(1.05);
+    expect(eyeBounds?.min.x).toBeLessThan(-radius * 0.99);
+    expect(eyeBounds?.max.x).toBeGreaterThan(radius * 0.99);
+
+    const nearestGillRootZ = Math.min(...rig.pivots.gills.map((pivot) =>
+      pivot.z
+    ));
+    expect(nearestGillRootZ - (eyeBounds?.max.z ?? Infinity)).toBeGreaterThan(
+      radius * 0.01
     );
     expect(rig.pivots.tail.z).toBeGreaterThan(0);
-    // The eyes sit immediately inside the gill fans in screen space. Their
-    // shallow positive-Z caps peek around the round body for the chase camera,
-    // while the body and centered tail preserve the explicit -Z swim axis.
+    // Negative Z is forward. The complete eye lens—not merely its centre—must
+    // therefore remain below every gill root's Z coordinate while its outer
+    // edge clears the body silhouette for the chase camera.
     expect(rig.pivots.gills.every((pivot) => pivot.z > 0)).toBe(true);
     const innerGillX = Math.min(...rig.pivots.gills.map((pivot) =>
       Math.abs(pivot.x)
     ));
-    const eyeCentreX = radius * tuning.creature.eyeOffsetX;
     expect(innerGillX - eyeCentreX).toBeGreaterThanOrEqual(0);
     expect(innerGillX - eyeCentreX).toBeLessThanOrEqual(
-      radius * 0.15
-    );
-    const bodyRearAtEye = radius * tuning.creature.bodyLength * Math.sqrt(
-      1 - (eyeCentreX / (radius * 0.96)) ** 2 -
-        (eyeCentreY / (radius * tuning.creature.bodyHeight)) ** 2
-    );
-    expect(radius * tuning.creature.eyeOffsetZ - bodyRearAtEye).toBeGreaterThan(
-      radius * 0.15
+      radius * 0.02
     );
     expect((eyeBounds?.max.x ?? 0) - (eyeBounds?.min.x ?? 0)).toBeGreaterThan(
-      radius * 1.8
+      radius * 2
     );
     rig.body.dispose();
     rig.eyes.dispose();
