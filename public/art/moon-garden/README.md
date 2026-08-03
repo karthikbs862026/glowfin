@@ -1,13 +1,14 @@
 # Moon-Garden authored review sources
 
 These assets were generated from the approved Concept-First Art Bible during
-the owner-requested PR #7 visual reset. All character, gate, architecture,
-reef, skyline and ambient-life cards are now retired from the runtime. Shared
-material sources remain here while the final production GLB/PBR library is
-authored. Version 28 also generates the validated runtime gate and reef
-transition packages into `models/` during development and production builds;
-these establish the delivery contract but do not constitute final DCC sculpt
-approval.
+the owner-requested visual reset. All character, gate, architecture, reef,
+skyline and ambient-life cards are retired from the runtime. Shared material
+sources remain here while the final production GLB/PBR library is authored.
+Version 29 generates the validated runtime gate and reef cohesion packages
+into `models/` during development and production builds. They preserve the
+Version 28 delivery contract while establishing stronger family silhouettes,
+material separation and reef signatures; they do not constitute final DCC
+sculpt approval.
 
 | Asset | Runtime role | Production replacement |
 | --- | --- | --- |

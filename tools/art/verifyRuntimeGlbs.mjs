@@ -24,4 +24,4 @@ for (const file of files) {
   }
 }
 
-console.log("Published Phase 3C runtime GLBs match the deterministic export.");
+console.log("Published Version 29 runtime GLBs match the deterministic export.");

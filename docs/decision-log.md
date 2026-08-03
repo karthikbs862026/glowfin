@@ -606,3 +606,31 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Treat this as the runtime production path, not final DCC approval. The next
   art work refines topology, UV/PBR maps and silhouettes behind the now-stable
   asset contract.
+
+## 2026-08-03 — Refine the first five gates as one production world
+
+- Owner screenshots confirmed that Version 28 already contains the planned
+  gate, reef, district and population systems, so Version 29 adds no new world
+  system or encounter family.
+- Adopt ADR-0033. Separate the five districts with family-specific material
+  roles and stepped ruin massing, allow one dominant ceremonial canopy, enlarge
+  the six reef signatures outside the lane and subordinate the supporting
+  merfolk at near-camera depth.
+- Preserve the merged runtime GLB contract, exact collider planes, safe route,
+  camera, controls, scoring, approved characters and Moon-Current soundtrack.
+- Treat the build as an owner-review cohesion candidate. Full DCC sculpt/UV/PBR
+  source replacement and Android/iOS release certification remain independent
+  gates.
+- The first full matrix exposed a `2.9986:1` p10 contrast near-miss in one
+  plain/caustic state. Raise only the collider-contour's minimum cyan luminance
+  and rerun the exact matrix; do not round the result, widen the collider or
+  weaken the `3:1` floor.
+- The first reduced capture kept the improved cast staging but measured the
+  current-swimmer eyes at `2 px` and two upright facial planes at `7 px`, one
+  pixel below their existing floors. Enlarge only those local facial features
+  and add source-geometry floor assertions; do not restore oversized bodies,
+  move the cast toward the camera or weaken the rendered evidence thresholds.
+- The authoritative rerun raised the swimmer eye stack to `4 px`, clearing its
+  existing floor, but both most-distant upright faces remained `7 px`. Raise
+  only their vertical facial-shell contract to `0.60` world units; keep head
+  width/depth, character transforms, choreography and the `8 px` floor fixed.

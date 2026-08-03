@@ -63,5 +63,10 @@ describe("gate-linked living district contract", () => {
     expect(reef.laneSafetyWorldUnits - reef.maximumSwayWorldUnits)
       .toBeGreaterThanOrEqual(0.2);
     expect(reef.travellingWaveSpeed).toBeGreaterThan(1);
+    expect(reef.signatureHeightBoost).toHaveLength(6);
+    expect(reef.signatureWidthBoost).toHaveLength(6);
+    expect(Math.min(...reef.signatureHeightBoost)).toBeGreaterThan(1);
+    expect(Math.min(...reef.signatureWidthBoost)).toBeGreaterThan(1);
+    expect(reef.signatureRadiusWorldUnits).toBeGreaterThanOrEqual(16);
   });
 });

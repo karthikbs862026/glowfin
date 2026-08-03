@@ -22,6 +22,12 @@ import { createMoonstoneObstacleMaterial } from "./moonGardenMaterial";
 
 const MAX_GATE_PARTS = 32;
 
+export const GATE_PRESENTATION_CONTRACT = {
+  maximumSimultaneousCeremonialCanopies: 1,
+  contourDeepRgb: [0.08, 0.64, 0.72],
+  contourMoonRgb: [0.18, 0.84, 0.88]
+} as const;
+
 export type { GateFacadeVariant } from "../art/premiumWorld";
 
 /** Stable fallback for hand-authored/test gates that predate `artVariant`. */
@@ -189,6 +195,22 @@ export class MoonGardenGates {
       // it, but contextual faces must never erase it in one camera/bloom state.
       depthTest: false,
       depthWrite: false,
+      uniforms: {
+        uDeepCyan: {
+          value: new THREE.Color().setRGB(
+            GATE_PRESENTATION_CONTRACT.contourDeepRgb[0],
+            GATE_PRESENTATION_CONTRACT.contourDeepRgb[1],
+            GATE_PRESENTATION_CONTRACT.contourDeepRgb[2]
+          )
+        },
+        uMoonCyan: {
+          value: new THREE.Color().setRGB(
+            GATE_PRESENTATION_CONTRACT.contourMoonRgb[0],
+            GATE_PRESENTATION_CONTRACT.contourMoonRgb[1],
+            GATE_PRESENTATION_CONTRACT.contourMoonRgb[2]
+          )
+        }
+      },
       vertexShader: /* glsl */ `
         varying vec3 vLocalPosition;
         void main() {
@@ -202,15 +224,18 @@ export class MoonGardenGates {
       `,
       fragmentShader: /* glsl */ `
         precision mediump float;
+        uniform vec3 uDeepCyan;
+        uniform vec3 uMoonCyan;
         varying vec3 vLocalPosition;
         void main() {
           float endFade = smoothstep(-0.5, -0.42, vLocalPosition.y) *
             (1.0 - smoothstep(0.42, 0.5, vLocalPosition.y));
           float waterFlow = 0.94 + 0.06 *
             sin(vLocalPosition.y * 31.0 + vLocalPosition.z * 4.0);
-          vec3 deepCyan = vec3(0.05, 0.55, 0.64);
-          vec3 moonCyan = vec3(0.18, 0.84, 0.88);
-          gl_FragColor = vec4(mix(deepCyan, moonCyan, endFade) * waterFlow, 1.0);
+          gl_FragColor = vec4(
+            mix(uDeepCyan, uMoonCyan, endFade) * waterFlow,
+            1.0
+          );
         }
       `,
       toneMapped: true
@@ -305,10 +330,18 @@ export class MoonGardenGates {
     // slabs. Retire each gate as the creature clears it.
     const near = forwardDistance + 0.75;
     const far = forwardDistance + this.cfg.readability.visibleAheadUnits * 1.6;
+    let primaryGateClaimed = false;
 
     for (const gate of gates) {
       if (gate.distance < near) continue;
       if (gate.distance > far) break;
+      // Only the nearest encounter owns a ceremonial crown. Further collider
+      // walls remain readable in the fog, but suppressing their overhead art
+      // removes the nested/ghost-arch tunnel seen in portrait playtests. An
+      // Astral Observatory still claims this slot despite having no arch, so
+      // a later round gate can never appear to bridge its twin pylons.
+      const isPrimaryGate = !primaryGateClaimed;
+      primaryGateClaimed = true;
       const distanceAhead = gate.distance - forwardDistance;
       const lod = lodForDistance(distanceAhead);
       const artVariant = gateFacadeVariant(gate);
@@ -320,7 +353,11 @@ export class MoonGardenGates {
       const family = GATE_FAMILIES[artVariant];
       const canopy = this.canopies[lod][artVariant];
       const canopyIndex = canopyCounts[lod][artVariant];
-      if (family.canopy && canopyIndex < MAX_GATE_PARTS) {
+      if (
+        isPrimaryGate &&
+        family.canopy &&
+        canopyIndex < GATE_PRESENTATION_CONTRACT.maximumSimultaneousCeremonialCanopies
+      ) {
         const gapWidth = gate.gapRight - gate.gapLeft;
         const gapCentre = (gate.gapLeft + gate.gapRight) * 0.5;
         this.position.set(

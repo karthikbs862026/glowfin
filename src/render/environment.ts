@@ -72,6 +72,15 @@ function positiveMod(value: number, modulus: number): number {
   return ((value % modulus) + modulus) % modulus;
 }
 
+const REEF_FAMILY_TINTS = [
+  [0.92, 0.76, 1],
+  [1, 0.72, 0.86],
+  [0.66, 0.98, 0.92],
+  [0.78, 0.72, 1],
+  [1, 0.68, 0.9],
+  [0.58, 0.9, 0.98]
+] as const;
+
 class InstancedVolumeFamily {
   readonly object: THREE.InstancedMesh;
   halfWidth: number;
@@ -584,7 +593,14 @@ export class Environment {
       for (let index = 0; index < perSide; index++) {
         const band = firstBand + index;
         const salt = side > 0 ? 7717 : 3313;
-        const variant = positiveMod(band + (side > 0 ? 1 : 0), 5);
+        const rawVariant = positiveMod(band + (side > 0 ? 1 : 0), 5);
+        // Collapsed arches remain part of the ruin language, but they no
+        // longer repeat in every foreground band. Most of those slots become
+        // towers or spires, leaving the active gameplay gate as the only
+        // dominant portal silhouette.
+        const variant = rawVariant === 1 && positiveMod(band, 3) !== 0
+          ? (side > 0 ? 2 : 0)
+          : rawVariant;
         const zDistance = band * env.buildingBandSpacing +
           (hash01(band, salt + 4) - 0.5) * env.buildingBandSpacing * 0.45;
         const height = lerp(
@@ -598,10 +614,11 @@ export class Environment {
         const unitScale = height * silhouetteScale / family.height;
         const widthStretch = [0.76, 0.9, 0.82, 1.04, 0.94][variant] ?? 0.82;
         const depthStretch = [0.72, 0.84, 0.76, 0.9, 0.88][variant] ?? 0.76;
+        const archRetreat = variant === 1 ? 1.7 : 0;
         const safeInnerEdge =
           this.cfg.lane.halfWidth +
           family.halfWidth * unitScale * widthStretch +
-          0.42;
+          0.42 + archRetreat;
         const lateral = lerp(
           safeInnerEdge,
           Math.max(safeInnerEdge + 3.8, env.buildingLateralMax * 0.82),
@@ -612,7 +629,7 @@ export class Environment {
           1.1,
           (lateral - env.buildingLateralMin) /
             Math.max(1, env.buildingLateralMax - env.buildingLateralMin)
-        );
+        ) + (variant === 1 ? 0.34 : 0);
         this.position.set(side * lateral, -1 - sink, -zDistance);
         this.quaternion.setFromEuler(new THREE.Euler(
           0,
@@ -626,7 +643,8 @@ export class Environment {
           unitScale * depthStretch
         );
         this.matrix.compose(this.position, this.quaternion, this.scale);
-        const brightness = lerp(0.28, 0.43, hash01(band, salt + 5));
+        const brightness = lerp(0.28, 0.43, hash01(band, salt + 5)) *
+          (variant === 1 ? 0.8 : 1);
         this.colour.setRGB(
           brightness * 0.67,
           brightness * 0.84,
@@ -744,17 +762,29 @@ export class Environment {
         const zDistance = clusterStart + localOffset +
           (hash01(band, salt + 2) - 0.5) * 0.58;
         const isHero = variant < 2 && positiveMod(band, 4) === 0;
+        const familyHeightFloor = [1.8, 1.55, 1.5, 1.58, 1.08, 2.1][variant] ?? 1.4;
+        const familyHeightCeiling = [3.0, 2.5, 3.08, 2.92, 1.72, 3.22][variant] ?? 2.8;
+        const signatureDistance = Math.abs(zDistance - heroStage.anchor);
+        const isDistrictSignature = signatureDistance <
+          LIVING_DISTRICT_CONTRACT.reef.signatureRadiusWorldUnits;
+        const signatureHeightBoost = isDistrictSignature
+          ? LIVING_DISTRICT_CONTRACT.reef.signatureHeightBoost[variant] ?? 1
+          : 1;
         const desiredHeight = lerp(
-          variant === 4 ? 1.16 : 1.34,
-          variant === 5 ? 3.15 : variant < 2 ? 2.62 : 2.96,
+          familyHeightFloor,
+          familyHeightCeiling,
           hash01(band, salt + 1)
-        ) * (isHero ? 1.34 : 1);
+        ) * (isHero ? (isDistrictSignature ? 1.12 : 1.28) : 1) *
+          signatureHeightBoost;
         const unitScale = desiredHeight / family.height;
+        const signatureWidthBoost = isDistrictSignature
+          ? LIVING_DISTRICT_CONTRACT.reef.signatureWidthBoost[variant] ?? 1
+          : 1;
         const widthStretch = lerp(
           variant === 5 ? 1.08 : variant < 2 ? 1.18 : 1.26,
           variant === 5 ? 1.46 : variant < 2 ? 1.56 : 1.78,
           hash01(band, salt + 5)
-        );
+        ) * signatureWidthBoost;
         const depthStretch = [0.88, 0.78, 1.05, 0.92, 0.96, 0.72][variant] ?? 0.9;
         // Place from the actual 3D bounds' inner edge. Larger volumetric reef
         // can overlap in depth while remaining entirely outside gameplay.
@@ -809,10 +839,11 @@ export class Environment {
           1 - distance / Math.max(1, env.coralPulseRadiusUnits)
         );
         const brightness = 0.56 + response * 0.22 + momentumFraction * 0.025;
+        const familyTint = REEF_FAMILY_TINTS[variant] ?? REEF_FAMILY_TINTS[0];
         this.colour.setRGB(
-          brightness * 0.76,
-          brightness * 0.88,
-          brightness
+          brightness * familyTint[0],
+          brightness * familyTint[1],
+          brightness * familyTint[2]
         );
         family.add(this.matrix, this.colour);
       }

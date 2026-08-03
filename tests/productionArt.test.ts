@@ -42,7 +42,11 @@ import {
   productionTriangles
 } from "../src/render/productionGeometry";
 import { createGlowfinRigGeometry } from "../src/render/glowfinGeometry";
-import { contourWorldWidth, MoonGardenGates } from "../src/render/gateArt";
+import {
+  contourWorldWidth,
+  GATE_PRESENTATION_CONTRACT,
+  MoonGardenGates
+} from "../src/render/gateArt";
 
 describe("Phase 3B art geometry inventory", () => {
   it("requires all five gate identities and all six reef families in runtime GLBs", () => {
@@ -154,7 +158,31 @@ describe("Phase 3B art geometry inventory", () => {
     }
   });
 
+  it("keeps a distinct phone-scale material identity on every gate family", () => {
+    const requiredRoles = [
+      [0, 2],
+      [3, 2],
+      [5, 1],
+      [1, 2],
+      [3, 4]
+    ] as const;
+    for (const variant of [0, 1, 2, 3, 4] as const) {
+      const wall = createProductionWallGeometry(0, 1, variant);
+      const roles = wall.getAttribute("materialRole");
+      const present = new Set<number>();
+      for (let index = 0; index < roles.count; index++) {
+        present.add(Math.round(roles.getX(index)));
+      }
+      for (const role of requiredRoles[variant]) expect(present.has(role)).toBe(true);
+      wall.dispose();
+    }
+  });
+
   it("gives the hero arch a continuous supported silhouette", () => {
+    expect(GATE_PRESENTATION_CONTRACT.maximumSimultaneousCeremonialCanopies)
+      .toBe(1);
+    expect(GATE_PRESENTATION_CONTRACT.contourDeepRgb).toEqual([0.08, 0.64, 0.72]);
+    expect(GATE_PRESENTATION_CONTRACT.contourMoonRgb).toEqual([0.18, 0.84, 0.88]);
     for (const lod of [0, 1, 2] as const) {
       for (const variant of [0, 1, 2, 3] as const) {
         const canopy = createProductionGateCanopyGeometry(lod, variant);
@@ -273,6 +301,14 @@ describe("Phase 3B art geometry inventory", () => {
       expect(parts.body.userData["populationRole"]).toBe(role);
       expect(parts.face.userData["populationFeature"]).toBe("friendly-face");
       expect(parts.eyes.userData["populationFeature"]).toBe("expressive-eyes");
+      parts.face.computeBoundingBox();
+      parts.eyes.computeBoundingBox();
+      expect(parts.face.boundingBox).not.toBeNull();
+      expect(parts.eyes.boundingBox).not.toBeNull();
+      const faceHeight = (parts.face.boundingBox?.max.y ?? 0) -
+        (parts.face.boundingBox?.min.y ?? 0);
+      const eyeHeight = (parts.eyes.boundingBox?.max.y ?? 0) -
+        (parts.eyes.boundingBox?.min.y ?? 0);
       if (role === "current-swimmer") {
         expect(parts.face.userData["faceStyle"]).toBe(
           "sculpted-oval-cheeks-tapered-jaw-open-hairline"
@@ -282,11 +318,16 @@ describe("Phase 3B art geometry inventory", () => {
         expect(parts.eyes.userData["eyeStyle"]).toBe(
           "almond-white-turquoise-iris-dark-pupil-catchlight"
         );
+        // The curved almond's Bezier extrema sit inside its authored control
+        // height; this measured bound locks the enlarged rendered eye plane.
+        expect(eyeHeight).toBeGreaterThanOrEqual(0.14);
         for (const geometry of [parts.body, parts.face, parts.eyes]) {
           expect(geometry.userData["authoredCharacterVersion"]).toBe(
             "moon-current-swimmer-v2"
           );
         }
+      } else {
+        expect(faceHeight).toBeGreaterThanOrEqual(0.6);
       }
       for (const geometry of [parts.body, parts.face, parts.eyes]) {
         expect(geometry.hasAttribute("materialRole")).toBe(true);

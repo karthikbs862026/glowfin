@@ -5,7 +5,7 @@
  * into cosmetic variants.
  */
 export const RUNTIME_PRODUCTION_ASSETS = {
-  build: "phase3c-v28",
+  build: "phase3c-v29-cohesion",
   gateUrl: "art/moon-garden/models/moon-gate-v1.glb",
   reefUrl: "art/moon-garden/models/reef-kit-v1.glb",
   lods: [0, 1, 2],
