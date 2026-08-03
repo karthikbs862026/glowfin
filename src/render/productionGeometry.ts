@@ -2059,31 +2059,31 @@ function sculptedSwimmerPopulationHead(
     const eyeX = centre.x + side * 0.086;
     const gazeX = eyeX + 0.012;
     eyes.push(
-      // At the native 390 px review width the original 0.088-high almond
-      // rasterised to a two-pixel line.  This taller white preserves the
-      // authored almond silhouette while keeping iris and pupil separation
-      // readable through the least-favourable district camera framing.
-      styled(almondGeometry(0.138, 0.148, 0.018), {
+      // The reduced Coral-Warden evidence exposed a two-pixel eye stack even
+      // though the full matrix remained readable.  Grow only the authored
+      // almond and its internal marks: the swimmer body, head and choreography
+      // retain the smaller Version 29 presentation scale.
+      styled(almondGeometry(0.138, 0.178, 0.018), {
         position: new THREE.Vector3(eyeX, eyeY, centre.z + 0.219),
         colour: FACE_WHITE,
         glow: 0.2,
         materialRole: MATERIAL_ROLE.nacre
       }),
-      styled(new THREE.CircleGeometry(0.031, 10), {
+      styled(new THREE.CircleGeometry(0.034, 10), {
         position: new THREE.Vector3(gazeX, eyeY - 0.001, centre.z + 0.232),
         scale: new THREE.Vector3(0.92, 1, 1),
         colour: EYE_IRIS,
         glow: 0.24,
         materialRole: MATERIAL_ROLE.crystal
       }),
-      styled(new THREE.CircleGeometry(0.017, 9), {
+      styled(new THREE.CircleGeometry(0.0185, 9), {
         position: new THREE.Vector3(gazeX + 0.003, eyeY - 0.002, centre.z + 0.235),
         scale: new THREE.Vector3(0.9, 1, 1),
         colour: EYE_DARK,
         glow: 0.04,
         materialRole: MATERIAL_ROLE.lapis
       }),
-      styled(new THREE.CircleGeometry(0.0075, 7), {
+      styled(new THREE.CircleGeometry(0.008, 7), {
         position: new THREE.Vector3(
           gazeX - 0.006,
           eyeY + 0.011,
@@ -2173,7 +2173,9 @@ function friendlyPopulationHead(
   // and dark ring that read as a mask on a phone.
   face.push(styled(new THREE.SphereGeometry(radius, 12, 8), {
     position: centre,
-    scale: new THREE.Vector3(0.96, 1.04, 0.82),
+    // Preserve the reduced head width/depth while giving the semantic facial
+    // plane enough vertical area to survive the smallest approved capture.
+    scale: new THREE.Vector3(0.96, 1.12, 0.82),
     colour: palette.skinLight,
     glow: 0.13,
     materialRole: MATERIAL_ROLE.nacre

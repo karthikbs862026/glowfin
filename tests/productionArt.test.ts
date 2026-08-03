@@ -301,6 +301,14 @@ describe("Phase 3B art geometry inventory", () => {
       expect(parts.body.userData["populationRole"]).toBe(role);
       expect(parts.face.userData["populationFeature"]).toBe("friendly-face");
       expect(parts.eyes.userData["populationFeature"]).toBe("expressive-eyes");
+      parts.face.computeBoundingBox();
+      parts.eyes.computeBoundingBox();
+      expect(parts.face.boundingBox).not.toBeNull();
+      expect(parts.eyes.boundingBox).not.toBeNull();
+      const faceHeight = (parts.face.boundingBox?.max.y ?? 0) -
+        (parts.face.boundingBox?.min.y ?? 0);
+      const eyeHeight = (parts.eyes.boundingBox?.max.y ?? 0) -
+        (parts.eyes.boundingBox?.min.y ?? 0);
       if (role === "current-swimmer") {
         expect(parts.face.userData["faceStyle"]).toBe(
           "sculpted-oval-cheeks-tapered-jaw-open-hairline"
@@ -310,11 +318,16 @@ describe("Phase 3B art geometry inventory", () => {
         expect(parts.eyes.userData["eyeStyle"]).toBe(
           "almond-white-turquoise-iris-dark-pupil-catchlight"
         );
+        // The curved almond's Bezier extrema sit inside its authored control
+        // height; this measured bound locks the enlarged rendered eye plane.
+        expect(eyeHeight).toBeGreaterThanOrEqual(0.14);
         for (const geometry of [parts.body, parts.face, parts.eyes]) {
           expect(geometry.userData["authoredCharacterVersion"]).toBe(
             "moon-current-swimmer-v2"
           );
         }
+      } else {
+        expect(faceHeight).toBeGreaterThanOrEqual(0.52);
       }
       for (const geometry of [parts.body, parts.face, parts.eyes]) {
         expect(geometry.hasAttribute("materialRole")).toBe(true);

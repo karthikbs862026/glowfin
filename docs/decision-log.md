@@ -625,3 +625,8 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   plain/caustic state. Raise only the collider-contour's minimum cyan luminance
   and rerun the exact matrix; do not round the result, widen the collider or
   weaken the `3:1` floor.
+- The first reduced capture kept the improved cast staging but measured the
+  current-swimmer eyes at `2 px` and two upright facial planes at `7 px`, one
+  pixel below their existing floors. Enlarge only those local facial features
+  and add source-geometry floor assertions; do not restore oversized bodies,
+  move the cast toward the camera or weaken the rendered evidence thresholds.

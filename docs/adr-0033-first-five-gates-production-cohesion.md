@@ -41,3 +41,11 @@ The first authoritative Version 29 matrix measured `2.9986:1` p10 contrast in
 one plain/caustic state. The correction raises only the dim endpoint of the
 existing collider-derived cyan contour; its position, screen-pixel width and
 the `3:1` threshold remain unchanged.
+
+The first reduced evidence run then found three marginal population details:
+the current-swimmer eye stack measured `2 px` against the existing `3 px`
+floor, while the reef-citizen and conch-herald facial planes each measured
+`7 px` against the existing `8 px` floor. The correction enlarges only the
+swimmer's almond/iris stack and the upright characters' vertical facial shell.
+Whole-character scale, depth choreography, camera and evidence floors remain
+unchanged.
