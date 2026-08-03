@@ -1,0 +1,10 @@
+{
+  "$comment": "Version 31 release identity. Gameplay and art remain frozen to the owner-approved Version 30 baseline.",
+  "schemaVersion": 1,
+  "version": 31,
+  "phase": "phase-3-exit",
+  "certification": "conditional-device-signoff",
+  "baselineVersion": 30,
+  "baselineCommit": "4e797b44053bca96fd9dfb1bbb637dbe88653219",
+  "artBuild": "phase3c-v30-glowfin-production"
+}

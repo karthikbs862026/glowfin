@@ -1,6 +1,6 @@
 # ADR-0034: Runtime Glowfin production character
 
-**Status:** Implemented as the Version 30 owner-review candidate
+**Status:** Owner-approved and merged as Version 30
 **Date:** 2026-08-03
 
 ## Context
@@ -47,8 +47,9 @@ at two draws, ten bones and two materials. After removing the overlapping
 shoulder, peduncle and gill-root collar layers, its LOD0/LOD1 geometry remains
 inside the original 6–8k and 3–4k triangle ranges at 6,780 and 3,388 triangles.
 
-Owner phone review and the calibrated browser matrix must still confirm that
-the larger eyes remain 8–16 pixels, Glowfin remains within 8–10% of portrait
-width, the obstacle route remains clear at maximum momentum, and the five
-states read without changing input response. Final external DCC sculpt, UV and
-PBR source replacement remains a separate production-art gate.
+Owner Android review and both calibrated browser matrices confirmed that the
+larger eyes remain visible before the gill fans, Glowfin stays phone-readable,
+the obstacle route remains clear at maximum momentum, and the five states do
+not change input response. Final external DCC sculpt, UV and PBR source
+replacement is optional post-alpha polish behind this approved runtime
+contract; it must repeat the same visual, structural and device gates.

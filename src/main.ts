@@ -16,9 +16,12 @@ import { DebugOverlay } from "./render/debugOverlay";
 import { QualityController } from "./perf/quality";
 import { PerfMonitor, checkBudgets } from "./perf/metrics";
 import { GlowfinAudio } from "./audio/audioEngine";
+import { mountReleaseIdentity } from "./release";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
 if (!canvas) throw new Error("Canvas #glowfin-canvas not found");
+
+mountReleaseIdentity();
 
 const view = new GameView(canvas, tuning);
 const hud = new Hud();

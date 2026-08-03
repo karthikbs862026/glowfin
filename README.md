@@ -7,16 +7,16 @@ this README covers local setup only.
 
 ## Status
 
-**Phase 3C — Version 30 Glowfin production-character candidate.
-Version 29 is merged on `main`; the version-22 score, version-25 swimmer faces,
-version-27 living-district composition and version-29 cohesion pass remain
-owner-approved.**
+**Phase 3 exit — Version 31 certification candidate. Version 30 is
+owner-approved and merged on `main`; its gameplay, controls, camera, collision,
+scoring, world, character and audio tuning are frozen for this build.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
-trail, contrast probe and hardened art gate are in place. Version 30 extends
-the merged runtime-GLB foundation to Glowfin without adding districts, gate
-encounters, residents or gameplay systems. The candidate includes:
+trail, contrast probe and hardened art gate are in place. Version 31 adds only
+release identity, reproducible certification, staging-artifact and post-deploy
+smoke contracts around the approved Version 30 baseline. The frozen baseline
+includes:
 
 - a ten-bone volumetric Glowfin loaded from a deterministic Meshopt-compressed
   runtime GLB with an explicit negative-Z forward axis; the chase camera sees
@@ -64,19 +64,23 @@ encounters, residents or gameplay systems. The candidate includes:
 
 The owner has accepted the corrected upright-resident/conch-herald composition,
 the asynchronous current-swimmer choreography, the version-25 swimmer faces,
-the version-27 living districts, the version-29 first-five-gates cohesion pass
-and the version-22 Moon-Current score. This does not yet approve Version 30
-production character art. Version 30 extends the optimized GLB delivery path
-to Glowfin itself and remains the phone-review character candidate. Final
-external DCC/PBR source art remains open.
+the version-27 living districts, the version-29 first-five-gates cohesion pass,
+the version-30 Glowfin character and the version-22 Moon-Current score. Final
+external DCC/PBR source replacement remains optional post-alpha polish behind
+the now-frozen runtime contracts; it is not allowed to hold the approved alpha
+baseline open indefinitely.
 ADR-0028 keeps a top-level native media stream as the phone-output
 authority; ADR-0029 records the approved 64-second replacement score; ADR-0031
 records the accepted living-district composition; ADR-0032 establishes the
-runtime GLB gate/reef contract; ADR-0033 records the cohesion scope; and
-ADR-0034 records the runtime Glowfin character contract. The score still needs
-Android/iOS speaker,
-headphone, interruption, performance and thermal review. Technical CI evidence
-cannot replace those visual and real-device approvals.
+runtime GLB gate/reef contract; ADR-0033 records the cohesion scope; ADR-0034
+records the approved runtime Glowfin character; and ADR-0035 records the
+Version 31 release-certificate boundary. Android real-time thermal/audio review
+and all iOS Safari evidence remain outstanding. The automated certificate is
+therefore conditional and cannot replace those real-device approvals.
+
+Certification evidence and release operations are maintained in
+`docs/phase3-exit-report.md`, `docs/qa-runbook.md`, and
+`docs/release-runbook.md`.
 
 ## Local setup
 
@@ -128,5 +132,9 @@ scripts/        repo/CI and production bundle checks
 - [x] Phone-readable horizontal-swimmer face/expression checkpoint approved
 - [ ] Replace the approved swimmer prototype with final UV/PBR DCC topology without changing its face or choreography
 - [x] Owner visual approval for the gate-linked living-district and reef-current pass
-- [ ] Android and iOS Safari performance, contrast and real-time 30-minute soak sign-off
-- [ ] Final Android/iOS sound mix and interruption sign-off, production deployment and store-wrapper pipeline
+- [x] Owner visual approval for the Version 30 Glowfin production-character baseline
+- [x] Version 31 source/environment fingerprint and deterministic release manifest
+- [x] Immutable main-branch staging artifact and post-deploy smoke contract
+- [ ] Android real-time 30-minute performance, thermal, sound-mix and interruption sign-off
+- [ ] iOS Safari performance, contrast, audio and real-time 30-minute soak sign-off
+- [ ] Production promotion, monitoring, privacy/compliance and store-wrapper pipeline

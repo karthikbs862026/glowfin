@@ -1,7 +1,7 @@
 # Moon-Garden production GLB brief
 
-**Status:** Version 30 Glowfin production-character candidate;
-final owner and DCC/PBR production approval remain active
+**Status:** Version 30 Glowfin runtime baseline owner-approved and merged;
+external DCC/PBR replacement remains optional post-alpha polish
 **Visual authority:** Glowfin Phase 3 Concept-First Art Bible v1  
 **Gameplay authority:** `src/sim/gateGeometry.ts`
 

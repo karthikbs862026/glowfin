@@ -1,9 +1,10 @@
 # Device Support Matrix (Part 4.7)
 
-**Phase 2 Android rendering: validated. Current Phase 3B world/audio:
-real-device sign-off outstanding. iOS: untested.** Recorded plainly rather
-than allowing older device evidence to masquerade as approval of the much
-richer current scene.
+**Version 30 visual/gameplay baseline: owner-approved on both Android reference
+phones. Current-scene real-time thermal, interruption and complete sound-mix
+sign-off remain outstanding. iOS Safari: untested.** Recorded plainly rather
+than allowing emulated evidence or earlier primitive-scene measurements to
+masquerade as cross-platform release approval.
 
 ## Reference devices
 
@@ -78,12 +79,13 @@ Its exit criterion names both platforms.
 Worth noting the contrast probe is the kind of test that would work well over
 remote device services: it reports numbers, not frame timing.
 
-## Phase 3 audio device checklist — NOT YET EXECUTED
+## Version 31 release-device checklist — NOT YET COMPLETE
 
-The clean-room Chromium audio gate validates integration and gesture policy;
-it cannot certify phone-speaker quality, Safari interruption behavior, battery
-or thermals. Run this checklist on the S22 Ultra, OPPO Reno3 Pro and the future
-reference iPhone before Phase 3 sign-off:
+The owner has approved current-scene gameplay and visuals on the S22 Ultra and
+OPPO Reno3 Pro. The clean-room Chromium audio gate validates integration and
+gesture policy; neither result certifies phone-speaker quality, Safari
+interruption behavior, battery or thermals. Run this checklist on both Android
+phones and a future reference iPhone before unconditional Phase 3 sign-off:
 
 1. Fresh load remains silent; the first canvas touch both steers immediately
    and starts sound without a freeze, startup-error panel or delayed input.

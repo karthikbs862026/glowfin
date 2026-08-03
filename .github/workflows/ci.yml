@@ -1,10 +1,9 @@
 name: CI
 
-# Part 6.2 — Every commit / PR: lint, type-check, unit tests, build,
-# bundle-size check, secret scan. Integration tests + headless simulation +
-# visual regression + perf budget are added in later phases as those
-# systems exist (Part 6.1) — this file grows with the project, it doesn't
-# ship complete on day one.
+# Part 6.2 — Every commit / PR: lint, type-check, the complete unit,
+# integration, deterministic simulation and solvability suite, production
+# build, mounted-path/release checks, bundle budget, debug stripping and secret
+# scan. Render, touch-audio and lifecycle evidence runs in art-gate.yml.
 
 on:
   push:
@@ -56,6 +55,9 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          GLOWFIN_ENVIRONMENT: staging
+          GLOWFIN_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Hosted mount safety check
         run: npm run check:mounted-build
@@ -66,11 +68,13 @@ jobs:
       - name: Debug tooling strip check
         run: npm run check:no-debug
 
-  # Placeholder — wired up in Phase 1 once the movement/control test suite
-  # (Part 6.4) exists. Left here so the CI shape is visible from Phase 0.
-  # integration-and-simulation:
-  #   name: Integration + headless simulation
-  #   runs-on: ubuntu-latest
-  #   needs: lint-typecheck-test-build
-  #   steps:
-  #     - run: echo "Added in Phase 1 — see Part 6.4 and 6.6"
+      - name: Version 31 release identity check
+        run: npm run check:release-metadata
+        env:
+          GLOWFIN_EXPECTED_ENVIRONMENT: staging
+          GLOWFIN_EXPECTED_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: glowfin-release-metadata-${{ github.sha }}
+          path: dist/release.json

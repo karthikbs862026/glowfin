@@ -682,3 +682,25 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   radius, camera, controls, scoring, route, world and soundtrack. Add source
   and packed-GLB assertions that reject more than one fin component per side or
   more than one tail component.
+
+## 2026-08-03 — Freeze Version 30 and certify Phase 3 as Version 31
+
+- Owner Android review accepted the final eye placement and approved the
+  Version 30 merge. Freeze that exact gameplay/art tree as the Phase 3 alpha
+  baseline; Version 31 may change release controls and documentation only.
+- Adopt ADR-0035. Add a small DOM-only Version/environment/source badge and a
+  deterministic `release.json` so a tester can distinguish stale builds without
+  adding WebGL cost or changing the approved scene.
+- Require the production build, mounted-path check and hosted smoke test to
+  agree on Version 31, environment, full source commit, Version 30 baseline and
+  art-build identity.
+- Clear the ignored `dist` directory before every production build and reject
+  duplicate hashed bundles. The Version 31 exact-source rebuild caught a stale
+  prior bundle that would otherwise inflate the package and undermine cache
+  fingerprinting even though the new HTML referenced only the latest file.
+- Repeat the full phone matrix and 5,400-frame soak on `main`, then emit an
+  immutable staging artifact. Deploy through the existing owner-only managed
+  checkpoint because its credentials may not be copied into GitHub Actions.
+- Preserve honest exit language: automated certification can pass, but Phase 3
+  remains conditional until both Android real-time thermal/audio/interruption
+  rows and one real iPhone Safari row are signed off.
