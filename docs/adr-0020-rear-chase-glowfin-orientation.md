@@ -24,17 +24,19 @@ rejected.
 - The positive-Z chase camera sees one smooth round sea-glass body, two
   scalloped manta fins, one centered teardrop tail, three clean lavender gill
   leaves per side and the back of the high crown—not a camera-facing face.
-- Both eyes sit wide on the lateral face edge at `±0.83R`, between the upper
+- Both eyes sit wide on the lateral face edge at `±0.72R`, between the upper
   and middle gill leaves, with their centres immediately inside the first gill
-  roots. Their shallow positive-Z caps remain visible from the chase camera.
+  roots. Their centres sit at `+0.72R` depth so the shallow positive-Z caps
+  clear both the organic body and the gill leaves in the chase camera.
 - Each eye uses a broad, shallow `0.20`-radius lens. It must remain readable at
   8–12 pixels during calm, maximum momentum, collision and recovery. Collision
   dimming may change colour but may never remove either eye.
 - The eye/gill spacing is judged in the normal rear-chase frame: each eye must
   read separately just before its three-leaf fan, with no full face painted on
   the back of the body.
-- Gill leaves remain simple, rounded and individually spaced. Branched fronds,
-  micro-leaflets, folded wedges, horns and spikes are rejected.
+- Gill leaves remain simple, rounded and individually spaced. Separate static
+  root collars, branched fronds, micro-leaflets, folded wedges, horns and spikes
+  are rejected.
 - Each side uses one fin membrane and the centre uses one tail paddle. Their
   roots begin inside the body silhouette; separate shoulder collars,
   peduncles, under-fins, detached lobes and dorsal ornaments are forbidden

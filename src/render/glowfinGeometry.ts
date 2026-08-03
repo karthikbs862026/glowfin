@@ -132,20 +132,6 @@ function createOrganicBody(radius: number, high: boolean): THREE.BufferGeometry 
   return geometry;
 }
 
-function createRootCollar(
-  radius: number,
-  high: boolean,
-  scale: THREE.Vector3
-): THREE.BufferGeometry {
-  const geometry = new THREE.SphereGeometry(
-    radius,
-    high ? 12 : 9,
-    high ? 8 : 6
-  );
-  geometry.scale(scale.x, scale.y, scale.z);
-  return geometry;
-}
-
 function createGillLeaf(radius: number, high: boolean): THREE.BufferGeometry {
   // The supplied reference uses three clean, rounded leaves per side. Do not
   // replace these with branched fronds, leaflet spikes or folded wedges.
@@ -443,22 +429,6 @@ export function createGlowfinRigGeometry(
 
   let bone = 4;
   for (const side of [-1, 1]) {
-    bodyParts.push({
-      geometry: createRootCollar(
-        r * 0.22,
-        high,
-        new THREE.Vector3(0.74, 1.18, 0.72)
-      ),
-      bone: 0,
-      colour: gillViolet,
-      position: new THREE.Vector3(
-        side * r * 0.79,
-        r * 0.4,
-        r * 0.48
-      ),
-      rotation: new THREE.Euler(0.08, side * 0.18, side * 0.05),
-      scale: new THREE.Vector3(1, 1, 1)
-    });
     for (let index = 0; index < 3; index++) {
       const pivot = new THREE.Vector3(
         side * r * (0.84 + index * 0.04),

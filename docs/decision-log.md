@@ -663,10 +663,13 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Remove the separate fin collars and tail peduncle. Keep exactly one skinned
   fin membrane per side and one centered skinned tail paddle, with their roots
   already buried inside the organic body.
-- Restore the earlier approved lateral face-edge eye placement at `±0.83R`,
-  `0.40R` high and `+0.50R` deep. Keep the shallow `0.20R` lenses immediately
-  inside the gill fans so both eyes remain visible from the player camera in
-  every animation state without painting a full face on Glowfin's back.
+- The first corrected remote frame proved that removing the fin/tail layers was
+  sufficient for those silhouettes, but the separate purple gill-root collars
+  still covered both eyes. Remove those last static collars as well.
+- Place the lateral face-edge eyes at `±0.72R`, `0.42R` high and `+0.72R` deep.
+  Keep the shallow `0.20R` lenses immediately inside and camera-side of the
+  gill fans so both eyes remain visible in every animation state without
+  painting a full face on Glowfin's back.
 - Preserve the negative-Z travel axis, ten-bone rig, two draws, collision
   radius, camera, controls, scoring, route, world and soundtrack. Add source
   and packed-GLB assertions that reject more than one fin component per side or

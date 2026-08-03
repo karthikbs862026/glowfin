@@ -41,11 +41,11 @@ easy to lose at portrait gameplay scale.
 
 ## Consequences
 
-The complete compressed runtime package grows from roughly 756 KB to roughly
-881 KB while staying under the unchanged 1.25 MB art-package cap. Glowfin stays
+The complete compressed runtime package grows from roughly 756 KB to 878,020
+bytes while staying under the unchanged 1.25 MB art-package cap. Glowfin stays
 at two draws, ten bones and two materials. After removing the overlapping
-shoulder and peduncle layers, its LOD0/LOD1 geometry remains inside the original
-6–8k and 3–4k triangle ranges at 7,116 and 3,568 triangles.
+shoulder, peduncle and gill-root collar layers, its LOD0/LOD1 geometry remains
+inside the original 6–8k and 3–4k triangle ranges at 6,780 and 3,388 triangles.
 
 Owner phone review and the calibrated browser matrix must still confirm that
 the larger eyes remain 8–12 pixels, Glowfin remains within 8–10% of portrait
