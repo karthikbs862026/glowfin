@@ -20,9 +20,9 @@ encounters, residents or gameplay systems. The candidate includes:
 
 - a ten-bone volumetric Glowfin loaded from a deterministic Meshopt-compressed
   runtime GLB with an explicit negative-Z forward axis; the chase camera sees
-  its organic round back, buried manta-fin shoulders, longer central kelp tail,
-  integrated gill crowns and larger side-set eyes while its face remains aimed
-  into the obstacle corridor
+  its organic round back, one continuous manta fin per side, one longer central
+  kelp tail, integrated gill crowns and larger lateral eyes visible immediately
+  inside the gills
 - explicit simulation-selected calm, mid, max, collision and recovery motion
   languages with no wall-clock animation or gameplay-state changes
 - five truthful LOD gate districts with distinct round, pointed, scalloped,

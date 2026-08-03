@@ -105,46 +105,60 @@ describe("creature configuration (Part 3.1)", () => {
     expect(tuning.creature.rimStrength).toBeGreaterThan(0);
   });
 
-  it("keeps both eyes high on the obstacle-facing crown ahead of the gills", () => {
+  it("keeps both eyes visible at the lateral face edge just inside the gills", () => {
     expect(GLOWFIN_FORWARD_AXIS).toEqual([0, 0, -1]);
     expect(GLOWFIN_REAR_AXIS).toEqual([0, 0, 1]);
-    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.55);
-    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.69);
-    expect(tuning.creature.eyeOffsetZ).toBeCloseTo(-0.53);
+    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.83);
+    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.40);
+    expect(tuning.creature.eyeOffsetZ).toBeCloseTo(0.50);
     expect(tuning.creature.eyeRadius).toBeGreaterThanOrEqual(0.2);
 
     const rig = createGlowfinRigGeometry(tuning, 1);
     rig.eyes.computeBoundingBox();
     const eyeBounds = rig.eyes.boundingBox;
     expect(eyeBounds?.min.x).toBeLessThan(
-      -tuning.lane.creatureRadius * 0.53
+      -tuning.lane.creatureRadius * 0.96
     );
     expect(eyeBounds?.max.x).toBeGreaterThan(
-      tuning.lane.creatureRadius * 0.53
+      tuning.lane.creatureRadius * 0.96
     );
-    expect(eyeBounds?.max.y).toBeGreaterThan(
-      tuning.lane.creatureRadius * 0.75
+    expect(eyeBounds?.min.z).toBeGreaterThan(
+      tuning.lane.creatureRadius * 0.4
     );
     expect(eyeBounds?.max.z).toBeLessThan(
-      -tuning.lane.creatureRadius * 0.45
+      tuning.lane.creatureRadius * 0.6
+    );
+    expect(eyeBounds?.max.z).toBeGreaterThan(
+      Math.min(...rig.pivots.gills.map((pivot) => pivot.z))
     );
     expect(rig.pivots.tail.z).toBeGreaterThan(0);
-    // The gills remain on the side/rear silhouette while the eyes sit farther
-    // forward along the explicit negative-Z swim axis. This makes the eyes
-    // face the obstacles and prevents a camera-facing facial mask.
+    // The eyes sit immediately inside the gill fans in screen space. Their
+    // shallow positive-Z caps peek around the round body for the chase camera,
+    // while the body and centered tail preserve the explicit -Z swim axis.
     expect(rig.pivots.gills.every((pivot) => pivot.z > 0)).toBe(true);
-    expect(rig.pivots.gills.every((pivot) =>
-      pivot.z > (eyeBounds?.max.z ?? Infinity)
-    )).toBe(true);
+    const innerGillX = Math.min(...rig.pivots.gills.map((pivot) =>
+      Math.abs(pivot.x)
+    ));
+    const eyeCentreX = tuning.lane.creatureRadius *
+      tuning.creature.eyeOffsetX;
+    expect(innerGillX - eyeCentreX).toBeGreaterThanOrEqual(0);
+    expect(innerGillX - eyeCentreX).toBeLessThanOrEqual(
+      tuning.lane.creatureRadius * 0.05
+    );
     expect((eyeBounds?.max.x ?? 0) - (eyeBounds?.min.x ?? 0)).toBeGreaterThan(
-      tuning.lane.creatureRadius * 1.25
+      tuning.lane.creatureRadius * 1.9
     );
     rig.body.dispose();
     rig.eyes.dispose();
   });
 
-  it("buries fin and tail pivots while keeping three external gills per side", () => {
+  it("uses exactly one visible fin per side and one centered tail", () => {
     const rig = createGlowfinRigGeometry(tuning, 1);
+    expect(rig.appendageComponents).toEqual({
+      finLeft: 1,
+      finRight: 1,
+      tail: 1
+    });
     const radius = tuning.lane.creatureRadius;
     const axes = {
       x: radius * 0.96,
@@ -172,7 +186,7 @@ describe("creature configuration (Part 3.1)", () => {
       )).toBe(true);
       const eyeX = radius * tuning.creature.eyeOffsetX;
       expect(fan.every((pivot) =>
-        Math.abs(pivot.x) - eyeX >= radius * 0.1
+        Math.abs(pivot.x) - eyeX >= 0
       )).toBe(true);
     }
 

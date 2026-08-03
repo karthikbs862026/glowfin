@@ -15,6 +15,11 @@ export const GLOWFIN_REAR_AXIS = [0, 0, 1] as const;
 export interface GlowfinRigGeometry {
   body: THREE.BufferGeometry;
   eyes: THREE.BufferGeometry;
+  appendageComponents: {
+    finLeft: number;
+    finRight: number;
+    tail: number;
+  };
   pivots: {
     finLeft: THREE.Vector3;
     finRight: THREE.Vector3;
@@ -371,7 +376,6 @@ export function createGlowfinRigGeometry(
   const cyan = new THREE.Color(0x08a9d2);
   const finRootCyan = new THREE.Color(0x057ba8);
   const finGlowCyan = new THREE.Color(0x79edf2);
-  const tailRootCyan = new THREE.Color(0x066f9a);
   const gillViolet = new THREE.Color(0x7659d4);
   const gillGlow = new THREE.Color(0xc5adff);
   const pivots = {
@@ -403,29 +407,6 @@ export function createGlowfinRigGeometry(
   for (const side of [-1, 1]) {
     const pivot = side < 0 ? pivots.finLeft : pivots.finRight;
     bodyParts.push({
-      geometry: createRootCollar(
-        r * 0.33,
-        high,
-        new THREE.Vector3(1.34, 0.58, 0.92)
-      ),
-      bone: side < 0 ? 1 : 2,
-      colour: (position) => finRootCyan.clone().lerp(
-        cyan,
-        THREE.MathUtils.clamp(
-          Math.abs(position.x) / Math.max(r * 0.7, 0.001),
-          0,
-          0.58
-        )
-      ),
-      position: pivot.clone().add(new THREE.Vector3(
-        side * r * 0.08,
-        r * 0.015,
-        r * 0.025
-      )),
-      rotation: new THREE.Euler(-0.06, side * 0.03, side * 0.08),
-      scale: new THREE.Vector3(1, 1, 1)
-    });
-    bodyParts.push({
       geometry: createMantaFin(r * 1.04, high, side as -1 | 1),
       bone: side < 0 ? 1 : 2,
       colour: (position) => finRootCyan.clone().lerp(
@@ -442,21 +423,8 @@ export function createGlowfinRigGeometry(
     });
   }
 
-  // Keep one centered kelp-like tail with a buried peduncle; never split it
-  // into detached lobes or add a dorsal ornament.
-  bodyParts.push({
-    geometry: new THREE.CapsuleGeometry(
-      r * 0.15,
-      r * 0.34,
-      high ? 5 : 3,
-      high ? 12 : 8
-    ),
-    bone: 3,
-    colour: tailRootCyan,
-    position: new THREE.Vector3(0, -r * 0.34, r * 0.48),
-    rotation: new THREE.Euler(-0.96, 0, 0),
-    scale: new THREE.Vector3(0.9, 1, 0.78)
-  });
+  // Keep one centered kelp-like tail. Its broad paddle begins inside the body,
+  // so a separate peduncle would read as a fixed second tail in rear chase.
   bodyParts.push({
     geometry: createTailPaddle(r * 0.96, high),
     bone: 3,
@@ -526,6 +494,11 @@ export function createGlowfinRigGeometry(
   }
 
   const prepared = bodyParts.map(preparePart);
+  const appendageComponents = {
+    finLeft: bodyParts.filter((part) => part.bone === 1).length,
+    finRight: bodyParts.filter((part) => part.bone === 2).length,
+    tail: bodyParts.filter((part) => part.bone === 3).length
+  };
   const body = mergeGeometries(prepared, false);
   for (const part of prepared) part.dispose();
   if (!body) throw new Error("Glowfin rig geometry attributes did not match.");
@@ -540,9 +513,10 @@ export function createGlowfinRigGeometry(
       high ? 18 : 12,
       high ? 13 : 8
     );
-    // A broad, shallow lens remains readable at the portrait gameplay scale
-    // without turning back toward the chase camera. Depth stays compressed so
-    // the visible surface still faces the negative-Z obstacle corridor.
+    // A broad, shallow lateral lens peeks around the body immediately inside
+    // the external-gill fan. This is not a camera-facing facial mask: the -Z
+    // swim axis stays unchanged, while the positive-Z cap remains visible to
+    // the player throughout rear-chase gameplay.
     eye.scale(1, 0.82, 0.36);
     eyeParts.push(prepareEye(
       eye,
@@ -562,6 +536,7 @@ export function createGlowfinRigGeometry(
   return {
     body,
     eyes,
+    appendageComponents,
     pivots,
     triangles: triangleCount(body) + triangleCount(eyes)
   };

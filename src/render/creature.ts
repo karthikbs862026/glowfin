@@ -5,9 +5,10 @@
  * one skinned mesh with ten bones. Both eyes share one mesh and one emissive
  * material, so the complete character costs two draw calls instead of twelve.
  * The authored forward axis is -Z: the portrait chase camera sees Glowfin's
- * round back, broad fins and centered tail. Its high lateral eyes sit on the
- * negative-Z front crown, ahead of the three-leaf external gills, so the face
- * looks into the obstacle corridor rather than back at the camera.
+ * round back, broad fins and centered tail. Its lateral eyes sit immediately
+ * inside the three-leaf external gills and expose a shallow rear-readable cap,
+ * so the player can always see them without turning Glowfin into a full
+ * camera-facing face.
  * Animation remains simulation-driven for deterministic replay.
  */
 import * as THREE from "three";
@@ -516,8 +517,8 @@ export class Creature {
     this.bank += (targetBank - this.bank) * alpha;
     this.group.rotation.z = this.bank;
     // Lean and yaw into the intended course while preserving the -Z forward
-    // axis. The old camera-side eyes made a correct translation read as
-    // backwards swimming; this heading now reinforces the actual travel.
+    // axis. The lateral eye caps provide identity from rear chase; the body,
+    // tail and heading continue to communicate the actual travel direction.
     this.group.rotation.x = -momentumFraction * 0.07;
     this.group.rotation.y = -smoothedSteering * 0.12;
 

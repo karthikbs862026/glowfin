@@ -126,7 +126,7 @@ orientation, pivot and export presets so a later revision is reproducible.
 
 Version 30 keeps the approved Version 29 world unchanged and moves Glowfin
 behind the same runtime-asset truth contract. It adds organic body deformation,
-buried fin/tail transitions, integrated gill crowns, a longer central kelp tail,
-larger forward side-set eyes and five explicit simulation-selected motion
-states. Its reproducible topology is the production integration checkpoint,
-not the final external DCC sculpt source.
+single-layer buried fin/tail transitions, integrated gill crowns, a longer
+central kelp tail, rear-readable lateral eyes just inside the gills and five
+explicit simulation-selected motion states. Its reproducible topology is the
+production integration checkpoint, not the final external DCC sculpt source.

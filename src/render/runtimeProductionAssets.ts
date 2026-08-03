@@ -135,6 +135,18 @@ function extractGlowfinGeometry(gltf: GLTF): RuntimeGlowfinGeometrySet {
     throw new Error("GlowfinBody_LOD0 must remain a skinned mesh.");
   }
   if (!eyeMesh) throw new Error("GlowfinEyes_LOD0 is missing.");
+  const appendages = bodyMesh.userData["appendageComponents"] as
+    | Record<string, unknown>
+    | undefined;
+  if (
+    appendages?.["finLeft"] !== 1 ||
+    appendages?.["finRight"] !== 1 ||
+    appendages?.["tail"] !== 1
+  ) {
+    throw new Error(
+      "GlowfinBody_LOD0 must contain exactly one visible fin per side and one tail."
+    );
+  }
 
   bodyMesh.updateWorldMatrix(true, false);
   eyeMesh.updateWorldMatrix(true, false);

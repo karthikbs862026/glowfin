@@ -104,9 +104,17 @@ async function validatePackedAsset(path, descriptor) {
   }
 
   if (descriptor.kind === "glowfin") {
+    const glowfinBody = meshes.get("GlowfinBody_LOD0");
     assert(
-      meshes.get("GlowfinBody_LOD0")?.isSkinnedMesh === true,
+      glowfinBody?.isSkinnedMesh === true,
       "GlowfinBody_LOD0 must remain skinned after compression."
+    );
+    const appendages = glowfinBody?.userData?.appendageComponents;
+    assert(
+      appendages?.finLeft === 1 &&
+        appendages?.finRight === 1 &&
+        appendages?.tail === 1,
+      "GlowfinBody_LOD0 must contain exactly one visible fin per side and one tail."
     );
     const clips = gltf.animations.map((clip) => clip.name);
     for (const required of RUNTIME_PRODUCTION_ASSETS.glowfinClips) {

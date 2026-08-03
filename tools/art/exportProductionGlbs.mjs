@@ -329,7 +329,8 @@ function createGlowfinAsset() {
   body.userData = {
     lod: 0,
     collidable: false,
-    animationDriver: "simulation"
+    animationDriver: "simulation",
+    appendageComponents: rig.appendageComponents
   };
   const eyes = productionMesh(
     rig.eyes,

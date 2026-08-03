@@ -653,3 +653,21 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Resolve calm, mid, max, collision and recovery motion from deterministic
   simulation values. Preserve course movement, collision radius, controls,
   camera, scoring, replay and soundtrack.
+
+## 2026-08-03 — Correct the Version 30 appendage and eye regression
+
+- Owner Android screenshots showed two separate character failures: the added
+  fin shoulder collars and tail peduncle read as fixed colour-changing
+  appendages beneath the animated membranes, while both negative-Z eyes were
+  completely occluded by the body.
+- Remove the separate fin collars and tail peduncle. Keep exactly one skinned
+  fin membrane per side and one centered skinned tail paddle, with their roots
+  already buried inside the organic body.
+- Restore the earlier approved lateral face-edge eye placement at `±0.83R`,
+  `0.40R` high and `+0.50R` deep. Keep the shallow `0.20R` lenses immediately
+  inside the gill fans so both eyes remain visible from the player camera in
+  every animation state without painting a full face on Glowfin's back.
+- Preserve the negative-Z travel axis, ten-bone rig, two draws, collision
+  radius, camera, controls, scoring, route, world and soundtrack. Add source
+  and packed-GLB assertions that reject more than one fin component per side or
+  more than one tail component.

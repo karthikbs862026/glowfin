@@ -30,9 +30,11 @@ easy to lose at portrait gameplay scale.
 - Install only Glowfin's decoded geometry into the existing ten-bone runtime
   skeleton and custom sea-glass/eye shaders. Simulation remains the animation
   authority and course movement, collision, camera and replay are unchanged.
-- Refine the same bounded topology with an organic pudgy body profile, buried
-  manta-fin shoulders, a tail peduncle, integrated gill crowns, a longer single
-  kelp-like tail and larger high forward side-set eyes.
+- Refine the same bounded topology with an organic pudgy body profile, one
+  manta-fin membrane per side, integrated gill crowns, one longer central
+  kelp-like tail and larger rear-readable lateral eyes immediately inside the
+  gills. Do not add separate shoulder collars or a tail peduncle beneath the
+  animated membranes.
 - Resolve five deterministic visual states—calm, mid, max, collision and
   recovery—from momentum and collision/recovery fractions. Collision and
   recovery take precedence over propulsion.
@@ -40,9 +42,10 @@ easy to lose at portrait gameplay scale.
 ## Consequences
 
 The complete compressed runtime package grows from roughly 756 KB to roughly
-889 KB while staying under the unchanged 1.25 MB art-package cap. Glowfin stays
-at two draws, ten bones and two materials. Its LOD0/LOD1 geometry remains inside
-the original 6–8k and 3–4k triangle ranges at 7,956 and 3,956 triangles.
+881 KB while staying under the unchanged 1.25 MB art-package cap. Glowfin stays
+at two draws, ten bones and two materials. After removing the overlapping
+shoulder and peduncle layers, its LOD0/LOD1 geometry remains inside the original
+6–8k and 3–4k triangle ranges at 7,116 and 3,568 triangles.
 
 Owner phone review and the calibrated browser matrix must still confirm that
 the larger eyes remain 8–12 pixels, Glowfin remains within 8–10% of portrait
