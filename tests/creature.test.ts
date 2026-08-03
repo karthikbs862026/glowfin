@@ -112,8 +112,8 @@ describe("creature configuration (Part 3.1)", () => {
     expect(GLOWFIN_REAR_AXIS).toEqual([0, 0, 1]);
     expect(GLOWFIN_EYE_LOOK_AXIS).toEqual(GLOWFIN_FORWARD_AXIS);
     expect(GLOWFIN_EYE_LOOK_AXIS).not.toEqual(GLOWFIN_REAR_AXIS);
-    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.60);
-    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.68);
+    expect(tuning.creature.eyeOffsetX).toBeCloseTo(0.84);
+    expect(tuning.creature.eyeOffsetY).toBeCloseTo(0.40);
     expect(tuning.creature.eyeOffsetZ).toBeCloseTo(0.46);
     expect(tuning.creature.eyeRadius).toBeGreaterThanOrEqual(0.22);
 
@@ -157,6 +157,9 @@ describe("creature configuration (Part 3.1)", () => {
     expect(innerGillX - eyeCentreX).toBeGreaterThanOrEqual(0);
     expect(innerGillX - eyeCentreX).toBeLessThanOrEqual(
       radius * 0.25
+    );
+    expect((eyeBounds?.max.x ?? -Infinity) - innerGillX).toBeGreaterThan(
+      radius * 0.2
     );
     expect((eyeBounds?.max.x ?? 0) - (eyeBounds?.min.x ?? 0)).toBeGreaterThan(
       radius * 1.62
