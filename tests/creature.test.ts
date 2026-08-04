@@ -9,6 +9,7 @@ import {
   GLOWFIN_REAR_AXIS
 } from "../src/render/glowfinGeometry";
 import {
+  Creature,
   eyeEnergyTarget,
   eyeHueForEnergy,
   GLOWFIN_EYE_FRAGMENT_SHADER,
@@ -22,6 +23,28 @@ import {
  * meaning, and would break silently if a number drifted.
  */
 describe("creature configuration (Part 3.1)", () => {
+  it("keeps the translucent ghost within one additional active material", () => {
+    const skinMap = new THREE.Texture();
+    const ghost = new Creature(tuning, skinMap, { ghost: true });
+    const materials = new Set<THREE.Material>();
+
+    ghost.group.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      const assigned = Array.isArray(object.material)
+        ? object.material
+        : [object.material];
+      for (const material of assigned) materials.add(material);
+    });
+
+    expect(materials.size).toBe(1);
+    const [material] = materials;
+    expect(material?.transparent).toBe(true);
+    expect(material?.depthWrite).toBe(false);
+
+    ghost.dispose();
+    skinMap.dispose();
+  });
+
   it("fins beat faster with momentum", () => {
     // The creature visibly working harder is how effort reads at speed.
     expect(tuning.creature.finFlutterHzAtMaxMomentum).toBeGreaterThan(
