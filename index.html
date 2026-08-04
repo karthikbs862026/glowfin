@@ -783,6 +783,30 @@
       #tutorial-detail { margin: 4px 0 9px; color: rgba(222, 246, 255, 0.78); font-size: 13px; line-height: 1.35; }
       #tutorial-progress { height: 4px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.1); }
       #tutorial-progress-fill { width: 25%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #58e9ff, #a36fff); }
+      #hud-signature-cue {
+        position: fixed;
+        left: 50%;
+        bottom: max(104px, calc(env(safe-area-inset-bottom) + 88px));
+        z-index: 3;
+        width: min(340px, calc(100vw - 42px));
+        display: none;
+        transform: translateX(-50%);
+        padding: 10px 14px;
+        border: 1px solid rgba(127, 229, 255, 0.36);
+        border-radius: 15px;
+        background: rgba(3, 17, 35, 0.78);
+        box-shadow: 0 10px 34px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(6px);
+        box-sizing: border-box;
+        text-align: center;
+        pointer-events: none;
+      }
+      #hud-signature-cue[data-active="true"] { display: block; }
+      #hud-signature-cue strong { display: block; color: #f5fcff; font-size: 14px; }
+      #hud-signature-cue span { display: block; margin-top: 2px; color: rgba(217, 244, 255, 0.8); font-size: 12px; line-height: 1.3; }
+      #hud-signature-cue[data-verb="moonflash-choice"] { border-color: rgba(255, 93, 198, 0.58); }
+      #hud-signature-cue[data-verb="ceremonial-shutter"] { border-color: rgba(255, 190, 88, 0.54); }
+      html[data-glowfin-high-contrast="true"] #hud-signature-cue { background: rgba(0, 8, 20, 0.94); border-width: 2px; }
       .hud-meter { display: grid; grid-template-columns: 40px auto; align-items: center; gap: 7px; width: fit-content; }
       .hud-meter > span { color: rgba(211, 242, 252, 0.74); font-size: 12px; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; }
       #hud-best, #hud-meta span, #hud-ghost-gap { font-size: 12px; }
@@ -893,6 +917,11 @@
       <strong id="tutorial-title">Swipe to steer</strong>
       <p id="tutorial-detail">Drag left and right. Glowfin follows your finger while the current carries you forward.</p>
       <div id="tutorial-progress"><div id="tutorial-progress-fill"></div></div>
+    </aside>
+
+    <aside id="hud-signature-cue" data-active="false" data-verb="moonflash-choice" aria-live="polite">
+      <strong>Choose your current</strong>
+      <span>Wide cyan is safe · narrow rose earns 1.35×</span>
     </aside>
 
     <div id="hud">

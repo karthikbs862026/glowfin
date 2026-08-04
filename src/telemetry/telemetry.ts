@@ -21,6 +21,8 @@ export const TELEMETRY_EVENT_NAMES = [
   "momentum_sample",
   "near_miss",
   "collision",
+  "signature_obstacle",
+  "living_world_event",
   "run_end",
   "reward_granted",
   "first_reward",

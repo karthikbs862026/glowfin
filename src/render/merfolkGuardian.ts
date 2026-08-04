@@ -886,7 +886,8 @@ export class HeroMerfolkGuardian {
       anchor: number;
       side: -1 | 1;
       role?: MerfolkGuardianRole;
-    }
+    },
+    saluteIntensity = 0
   ): void {
     const spacing = 64;
     const band = Math.floor((forwardDistance + 30) / spacing);
@@ -898,6 +899,8 @@ export class HeroMerfolkGuardian {
     const hover = Math.sin(phase * 1.18);
     const patrol = Math.sin(phase * 0.42);
     const greeting = smoothstep(44, 31, ahead) * smoothstep(12, 21, ahead);
+    const salute = THREE.MathUtils.clamp(saluteIntensity, 0, 1);
+    const ceremonialGreeting = Math.max(greeting, salute);
     const turnAway = 1 - smoothstep(-4, 12, ahead);
     // The camera widens and pulls back with momentum. A small speed-linked
     // scale compensation keeps facial features stable without moving the
@@ -928,9 +931,9 @@ export class HeroMerfolkGuardian {
       -side * hover * 0.018
     );
     this.head.rotation.set(
-      -0.035 + hover * 0.025,
-      side * (0.08 + greeting * 0.12),
-      -side * greeting * 0.035
+      -0.035 + hover * 0.025 + salute * 0.08,
+      side * (0.08 + ceremonialGreeting * 0.12),
+      -side * ceremonialGreeting * 0.035
     );
 
     // The lane-side hand greets the player; the far hand remains attached to
@@ -939,16 +942,24 @@ export class HeroMerfolkGuardian {
     this.leftUpper.rotation.set(
       0.08,
       -0.12,
-      THREE.MathUtils.lerp(-0.32, -1.27, greeting)
+      THREE.MathUtils.lerp(-0.32, -1.38, ceremonialGreeting)
     );
     this.leftForearm.rotation.set(
       0.05,
       0,
-      THREE.MathUtils.lerp(-0.18, -0.74 + Math.sin(phase * 4.2) * 0.28, greeting)
+      THREE.MathUtils.lerp(
+        -0.18,
+        -0.74 + Math.sin(phase * 4.2) * 0.28,
+        ceremonialGreeting
+      )
     );
-    this.rightUpper.rotation.set(0.03, 0.08, 0.19 + hover * 0.025);
-    this.rightForearm.rotation.set(0.02, 0, 0.1 - hover * 0.02);
-    this.spear.rotation.z = -0.08 + hover * 0.018;
+    this.rightUpper.rotation.set(
+      0.03,
+      0.08,
+      0.19 + hover * 0.025 + salute * 0.72
+    );
+    this.rightForearm.rotation.set(0.02, 0, 0.1 - hover * 0.02 - salute * 0.34);
+    this.spear.rotation.z = -0.08 + hover * 0.018 + salute * 0.2;
 
     // Three nested tail joints create a travelling wave. Fins and hair lag the
     // body, supplying the soft underwater secondary motion the old whole-body

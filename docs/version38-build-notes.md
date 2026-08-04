@@ -5,7 +5,7 @@
 Version 38 begins from merged Version 37 commit
 `fccb95c86f15903e0d6c6850f66e5c200c9dc8fe`.
 
-## Slice 1 — mechanics contracts (implemented)
+## Slice 1 — mechanics contracts (complete)
 
 - `moonflash-choice`: deterministic wide safe and narrow 1.35x reward routes
 - `ceremonial-shutter`: deterministic phase/period with a guaranteed passable
@@ -18,15 +18,29 @@ Version 38 begins from merged Version 37 commit
 The slice is covered by pure deterministic tests and does not consume course
 RNG state.
 
-## Next slice — runtime activation (not yet complete)
+## Slice 2 — runtime activation (complete)
 
-1. Add authored Version 38 templates and stable verb assignments.
-2. Extend authoritative collider geometry for multiple openings and dynamic
-   shutter state.
-3. Apply current-lane force inside the fixed-step simulation.
-4. Render every collider edge and telegraph from the same plan.
-5. Extend solvability, replay, anti-cheat, telemetry and Moonflash scoring.
-6. Add phone capture, contrast and soak evidence before enabling the verbs in
-   normal or Daily Tide generation.
+- Twenty-one authored templates ship as seven Moonflash choices, seven
+  ceremonial shutters and seven current-lane patterns.
+- The exact opening list drives collision and every cyan contour. Choice gates
+  include a collidable divider; shutters move collider and art on simulation
+  time from one plan.
+- Fixed-step current drift remains separate from player input. The course proof
+  subtracts its closed-form maximum displacement from lateral authority.
+- The safe route preserves the authored solvable opening. The Moonflash route
+  is narrower and pays exactly 1.35x the route reward at the held multiplier.
+- Cyan/rose route marks, shutter cadence bars and directional current arrows
+  provide at least 30 world units of advance telegraphing.
+- Ray processions, guardian salutes and Moon-Bloom pulses animate existing
+  bounded systems and remain non-colliding.
+- Replay validation advances to `v38-signature-v2`; sparse consented telemetry
+  records semantic obstacle and living-world events without touch paths.
 
-Version 37 remains the live known-good release until those rows are green.
+## Certification state
+
+The complete local release certificate is green at 371 tests, 47 art-gate
+checks, a sealed 1.95 MB mounted build, hosted-authority validation, production
+fault/privacy checks, rollback rehearsal and structural budgets. Phone render,
+gesture/audio, context-recovery and deterministic soak evidence remain GitHub
+merge gates; Version 37 stays the live rollback artifact until those gates pass
+on the frozen candidate.

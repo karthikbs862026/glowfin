@@ -9,7 +9,11 @@
  */
 import type { TuningConfig } from "../core/config";
 import type { Gate } from "./course";
-import { gateClearance } from "./gateGeometry";
+import {
+  gateClearance,
+  gateOpeningsAt,
+  type GateOpeningRoute
+} from "./gateGeometry";
 
 export interface SweptSegment {
   /** Forward distance at the start of the step. */
@@ -20,6 +24,9 @@ export interface SweptSegment {
   fromLateral: number;
   /** Lateral position at the end of the step. */
   toLateral: number;
+  /** Optional simulated time bounds; legacy fixtures default to time zero. */
+  fromElapsedSec?: number;
+  toElapsedSec?: number;
 }
 
 export interface GatePassResult {
@@ -30,6 +37,10 @@ export interface GatePassResult {
    * crossing. Zero or negative means contact. Only meaningful when !collided.
    */
   clearance: number;
+  /** Which authoritative opening was crossed. */
+  route: GateOpeningRoute;
+  /** Route-specific discrete reward multiplier. */
+  scoreMultiplier: number;
 }
 
 function lerp(a: number, b: number, t: number): number {
@@ -55,14 +66,48 @@ export function evaluateGate(
 
   const t = (gate.distance - fromDistance) / span;
   const lateralAtGate = lerp(fromLateral, toLateral, t);
-
-  const { clearance } = gateClearance(
-    lateralAtGate,
-    cfg.lane.creatureRadius,
-    gate
+  const elapsedAtGate = lerp(
+    segment.fromElapsedSec ?? 0,
+    segment.toElapsedSec ?? segment.fromElapsedSec ?? 0,
+    t
   );
+  const openings = gateOpeningsAt(gate, elapsedAtGate);
+  let best: {
+    clearance: number;
+    route: GateOpeningRoute;
+    scoreMultiplier: number;
+  } | null = null;
+  for (const opening of openings) {
+    const { clearance } = gateClearance(
+      lateralAtGate,
+      cfg.lane.creatureRadius,
+      {
+        distance: gate.distance,
+        gapLeft: opening.left,
+        gapRight: opening.right
+      }
+    );
+    if (!best || clearance > best.clearance) {
+      best = {
+        clearance,
+        route: opening.route,
+        scoreMultiplier: opening.scoreMultiplier
+      };
+    }
+  }
+  const resolved = best ?? {
+    clearance: Number.NEGATIVE_INFINITY,
+    route: "standard" as const,
+    scoreMultiplier: 1
+  };
 
-  return { gate, collided: clearance < 0, clearance };
+  return {
+    gate,
+    collided: resolved.clearance < 0,
+    clearance: resolved.clearance,
+    route: resolved.route,
+    scoreMultiplier: resolved.scoreMultiplier
+  };
 }
 
 /**

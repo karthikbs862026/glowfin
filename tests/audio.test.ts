@@ -18,6 +18,7 @@ const noEvents = (): StepEvents => ({
   nearMisses: 0,
   collisions: 0,
   encounters: [],
+  signatureEvents: [],
   justEnded: false
 });
 

@@ -6,6 +6,7 @@ import { eyeHueForEnergy } from "./creature";
 import type { TelemetryConsent } from "../persistence/progress";
 import type { CosmeticCategory } from "../meta/progression";
 import type { StreakSummary } from "../meta/daily";
+import type { SignatureObstacleVerb } from "../sim/obstacleVariety";
 import type {
   LeaderboardEntryV1,
   LeaderboardSnapshotV1
@@ -30,6 +31,12 @@ export interface HudMetaPresentation {
   tideXpForNextLevel: number;
   tideFraction: number;
   cosmeticNames: Record<CosmeticCategory, string>;
+}
+
+export interface SignatureCuePresentation {
+  verb: SignatureObstacleVerb;
+  title: string;
+  detail: string;
 }
 
 export interface RunEndPresentation extends HudMetaPresentation {
@@ -80,6 +87,9 @@ export class Hud {
   private readonly highContrast: HTMLButtonElement;
   private readonly rewardedPearls: HTMLButtonElement;
   private readonly telemetryChoice: HTMLButtonElement;
+  private readonly signatureCue: HTMLElement;
+  private readonly signatureCueTitle: HTMLElement;
+  private readonly signatureCueDetail: HTMLElement;
 
   constructor(root: Document = document) {
     this.score = Hud.require(root, "hud-score");
@@ -114,6 +124,14 @@ export class Hud {
     this.highContrast = Hud.requireButton(root, "hud-high-contrast");
     this.rewardedPearls = Hud.requireButton(root, "hud-rewarded-pearls");
     this.telemetryChoice = Hud.requireButton(root, "hud-telemetry-choice");
+    this.signatureCue = Hud.require(root, "hud-signature-cue");
+    const signatureCueTitle = this.signatureCue.querySelector("strong");
+    const signatureCueDetail = this.signatureCue.querySelector("span");
+    if (!(signatureCueTitle instanceof HTMLElement) || !(signatureCueDetail instanceof HTMLElement)) {
+      throw new Error("Hud: signature cue copy is incomplete");
+    }
+    this.signatureCueTitle = signatureCueTitle;
+    this.signatureCueDetail = signatureCueDetail;
   }
 
   private static require(root: Document, id: string): HTMLElement {
@@ -186,6 +204,14 @@ export class Hud {
 
   hideGhostGap(): void {
     this.ghostGap.dataset["active"] = "false";
+  }
+
+  setSignatureCue(presentation: SignatureCuePresentation | null): void {
+    this.signatureCue.dataset["active"] = presentation ? "true" : "false";
+    if (!presentation) return;
+    this.signatureCue.dataset["verb"] = presentation.verb;
+    this.signatureCueTitle.textContent = presentation.title;
+    this.signatureCueDetail.textContent = presentation.detail;
   }
 
   setTelemetryConsent(consent: TelemetryConsent): void {

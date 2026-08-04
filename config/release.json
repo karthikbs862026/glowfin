@@ -1,9 +1,9 @@
 {
-  "$comment": "Version 38 Signature Obstacle Variety foundation: replay-safe Moonflash choices, ceremonial shutters, current lanes and rare living-world event plans.",
+  "$comment": "Version 38 Signature Obstacle Variety release: playable Moonflash choices, ceremonial shutters, current lanes and rare living-world set pieces.",
   "schemaVersion": 1,
   "version": 38,
   "phase": "signature-obstacles",
-  "certification": "mechanics-foundation",
+  "certification": "release-candidate",
   "baselineVersion": 37,
   "baselineCommit": "fccb95c86f15903e0d6c6850f66e5c200c9dc8fe",
   "artBuild": "phase3c-v30-glowfin-production",

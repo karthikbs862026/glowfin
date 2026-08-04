@@ -13,6 +13,7 @@
  * trade in Part 2.3 is describing. See ADR-0006.
  */
 import type { TuningConfig } from "../core/config";
+import { OBSTACLE_VARIETY_CONTRACT } from "./obstacleVariety";
 
 export interface ScoringState {
   multiplier: number;
@@ -22,6 +23,9 @@ export interface ScoringState {
   /** Blocks a single cluster from farming multiplier stacks (Part 2.3). */
   nearMissCooldownRemainingSec: number;
   nearMissCount: number;
+  choiceRouteCount: number;
+  moonflashRouteCount: number;
+  choiceRouteScore: number;
 }
 
 export function createScoringState(cfg: TuningConfig): ScoringState {
@@ -30,8 +34,32 @@ export function createScoringState(cfg: TuningConfig): ScoringState {
     score: 0,
     secondsSinceNearMiss: 0,
     nearMissCooldownRemainingSec: 0,
-    nearMissCount: 0
+    nearMissCount: 0,
+    choiceRouteCount: 0,
+    moonflashRouteCount: 0,
+    choiceRouteScore: 0
   };
+}
+
+/**
+ * Bank the explicit safe-versus-risk choice reward. Both routes pay a discrete
+ * gate reward; the narrow Moonflash route is exactly 1.35x at the same held
+ * multiplier, making the authored decision economically real and replay-safe.
+ */
+export function registerChoiceRoute(
+  state: ScoringState,
+  route: "safe" | "moonflash"
+): number {
+  const routeMultiplier = route === "moonflash"
+    ? OBSTACLE_VARIETY_CONTRACT.riskRouteScoreMultiplier
+    : 1;
+  const reward = OBSTACLE_VARIETY_CONTRACT.choiceRouteBaseScoreUnits *
+    state.multiplier * routeMultiplier;
+  state.score += reward;
+  state.choiceRouteScore += reward;
+  state.choiceRouteCount += 1;
+  if (route === "moonflash") state.moonflashRouteCount += 1;
+  return reward;
 }
 
 export function cloneScoringState(state: ScoringState): ScoringState {

@@ -15,14 +15,22 @@ import type { TuningConfig } from "../core/config";
 import {
   type Gate,
   MomentumProfile,
-  lateralBudget,
   rawLateralCapability,
   requiredTravel,
-  forwardSpeedAt
+  forwardSpeedAt,
+  gateSolvabilityOpening,
+  transitionLateralBudget
 } from "./course";
+import { OBSTACLE_VARIETY_CONTRACT } from "./obstacleVariety";
+import { gateOpeningsAt } from "./gateGeometry";
 
 export interface SolvabilityViolation {
-  kind: "unreachable" | "gap-too-narrow" | "outside-lane" | "insufficient-lead-time";
+  kind:
+    | "unreachable"
+    | "gap-too-narrow"
+    | "outside-lane"
+    | "insufficient-lead-time"
+    | "insufficient-signature-telegraph";
   gateIndex: number;
   gate: Gate;
   detail: string;
@@ -71,28 +79,40 @@ export function checkSolvability(
     if (!gate) continue;
 
     // --- the gap must physically admit the creature ---
-    const gapWidth = gate.gapRight - gate.gapLeft;
-    if (gapWidth <= r * 2) {
-      violations.push({
-        kind: "gap-too-narrow",
-        gateIndex: i,
-        gate,
-        detail: `gap ${gapWidth.toFixed(3)} cannot admit a creature of diameter ${(r * 2).toFixed(3)}`,
-        required: r * 2,
-        available: gapWidth
-      });
-      continue;
+    const proofGate = gateSolvabilityOpening(gate);
+    const physicalOpenings = gate.obstaclePlan?.verb === "moonflash-choice"
+      ? gateOpeningsAt(gate, 0)
+      : [{
+          left: proofGate.gapLeft,
+          right: proofGate.gapRight,
+          route: "standard" as const,
+          scoreMultiplier: 1
+        }];
+    let physicallyInvalid = false;
+    for (const opening of physicalOpenings) {
+      const gapWidth = opening.right - opening.left;
+      if (gapWidth <= r * 2) {
+        violations.push({
+          kind: "gap-too-narrow",
+          gateIndex: i,
+          gate,
+          detail: `${opening.route} gap ${gapWidth.toFixed(3)} cannot admit a creature of diameter ${(r * 2).toFixed(3)}`,
+          required: r * 2,
+          available: gapWidth
+        });
+        physicallyInvalid = true;
+      }
+      if (opening.left < -halfWidth - 1e-6 || opening.right > halfWidth + 1e-6) {
+        violations.push({
+          kind: "outside-lane",
+          gateIndex: i,
+          gate,
+          detail: `${opening.route} gap [${opening.left.toFixed(2)}, ${opening.right.toFixed(2)}] falls outside lane +/-${halfWidth}`
+        });
+        physicallyInvalid = true;
+      }
     }
-
-    // --- the gap must lie inside the lane ---
-    if (gate.gapLeft < -halfWidth - 1e-6 || gate.gapRight > halfWidth + 1e-6) {
-      violations.push({
-        kind: "outside-lane",
-        gateIndex: i,
-        gate,
-        detail: `gap [${gate.gapLeft.toFixed(2)}, ${gate.gapRight.toFixed(2)}] falls outside lane +/-${halfWidth}`
-      });
-    }
+    if (physicallyInvalid) continue;
 
     // --- the player must be able to see it in time (Part 4.5) ---
     const momentum = profile.at(gate.distance);
@@ -109,6 +129,22 @@ export function checkSolvability(
       });
     }
 
+    const signaturePlan = gate.obstaclePlan;
+    if (
+      signaturePlan &&
+      gate.distance - signaturePlan.telegraphFromDistance <
+        OBSTACLE_VARIETY_CONTRACT.minimumTelegraphLeadUnits
+    ) {
+      violations.push({
+        kind: "insufficient-signature-telegraph",
+        gateIndex: i,
+        gate,
+        detail: `${signaturePlan.verb} exposes fewer than ${OBSTACLE_VARIETY_CONTRACT.minimumTelegraphLeadUnits} world units of telegraph`,
+        required: OBSTACLE_VARIETY_CONTRACT.minimumTelegraphLeadUnits,
+        available: gate.distance - signaturePlan.telegraphFromDistance
+      });
+    }
+
     // --- the player must be able to reach it from wherever they were ---
     const previous = i === 0 ? null : gates[i - 1];
     const fromGate: Gate = previous ?? {
@@ -121,7 +157,7 @@ export function checkSolvability(
     };
 
     const needed = requiredTravel(fromGate, gate, cfg);
-    const budget = lateralBudget(fromGate.distance, gate.distance, profile, cfg);
+    const budget = transitionLateralBudget(fromGate, gate, profile, cfg);
 
     if (needed > budget + 1e-9) {
       violations.push({

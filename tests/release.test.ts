@@ -18,7 +18,7 @@ function metadata(
 }
 
 describe("Version 38 release identity", () => {
-  it("accepts only the merged Version 37 first-ten-minutes baseline contract", () => {
+  it("accepts only Version 38 built from the merged Version 37 baseline", () => {
     expect(isGlowfinReleaseMetadata(metadata())).toBe(true);
     expect(isGlowfinReleaseMetadata(metadata({ version: 37 }))).toBe(false);
     expect(isGlowfinReleaseMetadata(metadata({ baselineCommit: "deadbeef" }))).toBe(false);

@@ -1,6 +1,6 @@
 # ADR-0042 — Signature obstacle variety and living-world events
 
-**Status:** Accepted for the Version 38 foundation
+**Status:** Accepted for the Version 38 release
 **Date:** 2026-08-04
 
 ## Context
@@ -32,11 +32,14 @@ deterministic replay, cyan collider truth or the independent solvability proof.
    guardian salutes and Moon-Bloom pulses. They remain non-colliding and may not
    increase static prop density or obscure the cyan gameplay edge.
 
-## Consequences
+## Release resolution
 
-- The first Version 38 commit is intentionally a tested mechanics foundation,
-  not a claim that all three verbs are already playable.
-- Replay and anti-cheat can adopt the contracts without inference or duplicate
-  random-number streams.
-- Subsequent slices can wire one verb at a time while the dormant plans remain
-  safe and fully deterministic.
+- Twenty-one authored templates ship in three equal seven-template families.
+- Collision, renderer geometry, telegraphs, course generation, solvability,
+  replay validation, scoring and telemetry consume the authoritative plans.
+- The safe route preserves the already-proved authored gap; the narrow
+  Moonflash route pays exactly 1.35x the discrete choice reward.
+- Current displacement is reserved from the next transition's lateral budget,
+  and the shutter's guaranteed minimum aperture is used by the proof.
+- The living-world events animate existing bounded ray, guardian and shared
+  Moon-Garden material systems without increasing collision or static density.

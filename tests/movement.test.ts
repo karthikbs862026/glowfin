@@ -225,6 +225,21 @@ describe("momentum behaviour (Part 2.2 / 2.4)", () => {
 });
 
 describe("movement bounds (Part 2.1)", () => {
+  it("applies deterministic environmental drift independently of steering", () => {
+    const left = createSimState();
+    const right = createSimState();
+    const reference = createSimState();
+    for (let i = 0; i < 120; i++) {
+      stepSim(left, 0, FIXED_DT_SEC, tuning, -2.4);
+      stepSim(right, 0, FIXED_DT_SEC, tuning, 2.4);
+      stepSim(reference, 0, FIXED_DT_SEC, tuning);
+    }
+    expect(left.lateralPosition).toBeCloseTo(-2.4, 9);
+    expect(right.lateralPosition).toBeCloseTo(2.4, 9);
+    expect(reference.lateralPosition).toBe(0);
+    expect(right.forwardDistance).toBe(reference.forwardDistance);
+  });
+
   it("the creature body never leaves the lane", () => {
     const state = createSimState();
     const limit = tuning.lane.halfWidth - tuning.lane.creatureRadius;

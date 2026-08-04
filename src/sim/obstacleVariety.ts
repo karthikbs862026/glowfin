@@ -13,7 +13,8 @@ export const OBSTACLE_VARIETY_CONTRACT = Object.freeze({
   targetTemplateMaximum: 24,
   minimumTelegraphLeadUnits: 30,
   livingEventFrequencyDivisor: 7,
-  riskRouteScoreMultiplier: 1.35
+  riskRouteScoreMultiplier: 1.35,
+  choiceRouteBaseScoreUnits: 32
 });
 
 export interface ObstacleSource {
@@ -52,7 +53,8 @@ export interface CurrentLanePlan {
   endDistance: number;
   laneLeft: number;
   laneRight: number;
-  lateralAcceleration: number;
+  /** Signed lateral drift in world units per second at the envelope peak. */
+  lateralDriftPerSec: number;
 }
 
 export type SignatureObstaclePlan =
@@ -68,8 +70,14 @@ export type LivingWorldEventKind =
 export interface LivingWorldEventPlan {
   kind: LivingWorldEventKind;
   seed: number;
+  anchorDistance: number;
   triggerDistance: number;
   durationSec: number;
+}
+
+export interface ActiveLivingWorldEvent {
+  plan: LivingWorldEventPlan;
+  startedAtSec: number;
 }
 
 function hashText(text: string, seed: number): number {
@@ -113,42 +121,43 @@ export function planMoonflashChoice(
   const laneWidth = laneHalfWidth * 2;
   const authoredWidth = source.gate.gapRight - source.gate.gapLeft;
   const dividerWidth = clamp(laneWidth * 0.065, 0.62, 0.9);
-  const safeWidth = clamp(
-    authoredWidth * 0.82,
-    creatureRadius * 2 + 1.4,
-    laneWidth * 0.43
-  );
-  const moonflashWidth = clamp(
-    safeWidth * 0.56,
-    creatureRadius * 2 + 0.42,
+  // The authored gap remains the guaranteed safe route. This is important:
+  // the existing course generator has already proved that interval reachable,
+  // so the optional high-reward branch may never invalidate it.
+  const minimumMoonflashWidth = creatureRadius * 2 + 0.42;
+  const desiredMoonflashWidth = clamp(
+    authoredWidth * 0.5,
+    minimumMoonflashWidth,
     laneWidth * 0.25
   );
-  const totalWidth = safeWidth + dividerWidth + moonflashWidth;
-  const groupLeft = -totalWidth / 2;
-  const safeFirst = (sourceHash(source, "choice-side") & 1) === 0;
-  const safe: RouteOpening = safeFirst
+  const safe: RouteOpening = {
+    left: source.gate.gapLeft,
+    right: source.gate.gapRight,
+    route: "safe",
+    scoreMultiplier: 1
+  };
+  const preferredRight = (sourceHash(source, "choice-side") & 1) === 0;
+  const rightCapacity = laneHalfWidth - safe.right - dividerWidth;
+  const leftCapacity = safe.left + laneHalfWidth - dividerWidth;
+  const fitsRight = rightCapacity >= minimumMoonflashWidth;
+  const fitsLeft = leftCapacity >= minimumMoonflashWidth;
+  const placeRight = preferredRight
+    ? fitsRight || !fitsLeft
+    : !fitsLeft && fitsRight;
+  const moonflashWidth = Math.min(
+    desiredMoonflashWidth,
+    Math.max(minimumMoonflashWidth, placeRight ? rightCapacity : leftCapacity)
+  );
+  const moonflash: RouteOpening = placeRight
     ? {
-        left: groupLeft,
-        right: groupLeft + safeWidth,
-        route: "safe",
-        scoreMultiplier: 1
-      }
-    : {
-        left: groupLeft + moonflashWidth + dividerWidth,
-        right: groupLeft + moonflashWidth + dividerWidth + safeWidth,
-        route: "safe",
-        scoreMultiplier: 1
-      };
-  const moonflash: RouteOpening = safeFirst
-    ? {
-        left: groupLeft + safeWidth + dividerWidth,
-        right: groupLeft + safeWidth + dividerWidth + moonflashWidth,
+        left: safe.right + dividerWidth,
+        right: safe.right + dividerWidth + moonflashWidth,
         route: "moonflash",
         scoreMultiplier: OBSTACLE_VARIETY_CONTRACT.riskRouteScoreMultiplier
       }
     : {
-        left: groupLeft,
-        right: groupLeft + moonflashWidth,
+        left: safe.left - dividerWidth - moonflashWidth,
+        right: safe.left - dividerWidth,
         route: "moonflash",
         scoreMultiplier: OBSTACLE_VARIETY_CONTRACT.riskRouteScoreMultiplier
       };
@@ -219,7 +228,7 @@ export function planCurrentLane(
     endDistance: source.gate.distance - 4,
     laneLeft: clamp(center - laneWidth * 0.5, -laneHalfWidth, laneHalfWidth),
     laneRight: clamp(center + laneWidth * 0.5, -laneHalfWidth, laneHalfWidth),
-    lateralAcceleration: direction * (2.15 + unit(sourceHash(source, "current-force")) * 0.85)
+    lateralDriftPerSec: direction * (2.15 + unit(sourceHash(source, "current-force")) * 0.85)
   };
 }
 
@@ -237,7 +246,21 @@ export function currentLaneForce(
   const span = Math.max(0.001, plan.endDistance - plan.startDistance);
   const progress = (forwardDistance - plan.startDistance) / span;
   const longitudinalEnvelope = Math.sin(Math.PI * clamp(progress, 0, 1));
-  return plan.lateralAcceleration * longitudinalEnvelope;
+  return plan.lateralDriftPerSec * longitudinalEnvelope;
+}
+
+/**
+ * Closed-form upper bound for a complete current-lane traversal. The sine
+ * envelope integrates to 2/pi over its span, so the course proof can reserve
+ * this much lateral authority before accepting a transition.
+ */
+export function maximumCurrentLaneDisplacement(
+  plan: CurrentLanePlan,
+  forwardSpeedPerSec: number
+): number {
+  const durationSec = Math.max(0, plan.endDistance - plan.startDistance) /
+    Math.max(0.001, forwardSpeedPerSec);
+  return Math.abs(plan.lateralDriftPerSec) * durationSec * (2 / Math.PI);
 }
 
 export function planSignatureObstacle(
@@ -267,10 +290,17 @@ export function planLivingWorldEvent(
     "guardian-salute",
     "moon-bloom-pulse"
   ];
+  const kind = kinds[(hash >>> 8) % kinds.length] ?? "moon-bloom-pulse";
+  const triggerLead = kind === "guardian-salute"
+    ? 52
+    : kind === "ray-procession"
+      ? 46
+      : 38;
   return {
-    kind: kinds[(hash >>> 8) % kinds.length] ?? "moon-bloom-pulse",
+    kind,
     seed: hash,
-    triggerDistance: source.gate.distance - 18,
-    durationSec: 4.5 + unit(sourceHash(source, "living-duration")) * 2.5
+    anchorDistance: source.gate.distance,
+    triggerDistance: source.gate.distance - triggerLead,
+    durationSec: 3.2 + unit(sourceHash(source, "living-duration")) * 1.8
   };
 }

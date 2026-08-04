@@ -1,6 +1,6 @@
 {
   "$comment": "Authored chunk templates (Part 2.5). Gates are positioned as fractions: centerFraction is -1..1 across the lane, widthFraction is a fraction of full lane width. The generator clamps these at spawn time so every gate stays provably reachable from the previous one — see src/sim/course.ts. Adding a template here needs no code change, but re-run the solvability sweep.",
-  "version": 1,
+  "version": 2,
 
   "difficulty": {
     "distancePerTier": 300,
@@ -14,76 +14,178 @@
 
   "templates": [
     {
-      "id": "straight",
+      "id": "choice-moonwell",
       "minTier": 0,
-      "weight": 3,
+      "weight": 4,
+      "signatureVerb": "moonflash-choice",
       "gates": [{ "centerFraction": 0.0, "widthFraction": 0.55 }]
     },
     {
-      "id": "gentle-offset",
+      "id": "choice-crescent-left",
       "minTier": 0,
       "weight": 3,
-      "gates": [
-        { "centerFraction": 0.35, "widthFraction": 0.5 },
-        { "centerFraction": -0.35, "widthFraction": 0.5 }
-      ]
+      "signatureVerb": "moonflash-choice",
+      "gates": [{ "centerFraction": -0.28, "widthFraction": 0.5 }]
     },
     {
-      "id": "weave-three",
-      "minTier": 1,
+      "id": "choice-crescent-right",
+      "minTier": 0,
       "weight": 3,
-      "gates": [
-        { "centerFraction": -0.5, "widthFraction": 0.42 },
-        { "centerFraction": 0.5, "widthFraction": 0.42 },
-        { "centerFraction": -0.5, "widthFraction": 0.42 }
-      ]
+      "signatureVerb": "moonflash-choice",
+      "gates": [{ "centerFraction": 0.28, "widthFraction": 0.5 }]
     },
     {
-      "id": "drift-right",
+      "id": "choice-twin-tide",
       "minTier": 1,
       "weight": 2,
+      "signatureVerb": "moonflash-choice",
       "gates": [
-        { "centerFraction": -0.4, "widthFraction": 0.45 },
-        { "centerFraction": 0.1, "widthFraction": 0.42 },
-        { "centerFraction": 0.6, "widthFraction": 0.4 }
+        { "centerFraction": -0.22, "widthFraction": 0.47 },
+        { "centerFraction": 0.22, "widthFraction": 0.45 }
       ]
     },
     {
-      "id": "drift-left",
-      "minTier": 1,
-      "weight": 2,
-      "gates": [
-        { "centerFraction": 0.4, "widthFraction": 0.45 },
-        { "centerFraction": -0.1, "widthFraction": 0.42 },
-        { "centerFraction": -0.6, "widthFraction": 0.4 }
-      ]
-    },
-    {
-      "id": "wide-then-pinch",
+      "id": "choice-oracle-switch",
       "minTier": 2,
       "weight": 2,
+      "signatureVerb": "moonflash-choice",
       "gates": [
-        { "centerFraction": 0.0, "widthFraction": 0.62 },
-        { "centerFraction": 0.0, "widthFraction": 0.3 }
+        { "centerFraction": 0.34, "widthFraction": 0.43 },
+        { "centerFraction": -0.34, "widthFraction": 0.41 }
       ]
     },
     {
-      "id": "edge-run",
+      "id": "choice-reef-edge",
       "minTier": 3,
       "weight": 2,
+      "signatureVerb": "moonflash-choice",
+      "gates": [{ "centerFraction": 0.48, "widthFraction": 0.38 }]
+    },
+    {
+      "id": "choice-eclipse-pinch",
+      "minTier": 5,
+      "weight": 1,
+      "signatureVerb": "moonflash-choice",
       "gates": [
-        { "centerFraction": 0.7, "widthFraction": 0.36 },
-        { "centerFraction": 0.75, "widthFraction": 0.34 },
-        { "centerFraction": -0.7, "widthFraction": 0.38 }
+        { "centerFraction": -0.3, "widthFraction": 0.34 },
+        { "centerFraction": 0.3, "widthFraction": 0.32 }
       ]
     },
     {
-      "id": "double-pinch",
+      "id": "shutter-temple-breath",
+      "minTier": 1,
+      "weight": 3,
+      "signatureVerb": "ceremonial-shutter",
+      "gates": [{ "centerFraction": 0.0, "widthFraction": 0.58 }]
+    },
+    {
+      "id": "shutter-lapis-left",
+      "minTier": 1,
+      "weight": 2,
+      "signatureVerb": "ceremonial-shutter",
+      "gates": [{ "centerFraction": -0.3, "widthFraction": 0.52 }]
+    },
+    {
+      "id": "shutter-lapis-right",
+      "minTier": 1,
+      "weight": 2,
+      "signatureVerb": "ceremonial-shutter",
+      "gates": [{ "centerFraction": 0.3, "widthFraction": 0.52 }]
+    },
+    {
+      "id": "shutter-double-heart",
+      "minTier": 2,
+      "weight": 2,
+      "signatureVerb": "ceremonial-shutter",
+      "gates": [
+        { "centerFraction": -0.2, "widthFraction": 0.48 },
+        { "centerFraction": 0.2, "widthFraction": 0.46 }
+      ]
+    },
+    {
+      "id": "shutter-warden-weave",
+      "minTier": 3,
+      "weight": 2,
+      "signatureVerb": "ceremonial-shutter",
+      "gates": [
+        { "centerFraction": -0.38, "widthFraction": 0.43 },
+        { "centerFraction": 0.38, "widthFraction": 0.43 }
+      ]
+    },
+    {
+      "id": "shutter-observatory",
       "minTier": 4,
       "weight": 1,
+      "signatureVerb": "ceremonial-shutter",
+      "gates": [{ "centerFraction": 0.12, "widthFraction": 0.39 }]
+    },
+    {
+      "id": "shutter-pearl-cadence",
+      "minTier": 6,
+      "weight": 1,
+      "signatureVerb": "ceremonial-shutter",
       "gates": [
-        { "centerFraction": -0.3, "widthFraction": 0.3 },
-        { "centerFraction": 0.3, "widthFraction": 0.3 }
+        { "centerFraction": 0.26, "widthFraction": 0.36 },
+        { "centerFraction": -0.26, "widthFraction": 0.34 }
+      ]
+    },
+    {
+      "id": "current-gentle-left",
+      "minTier": 1,
+      "weight": 3,
+      "signatureVerb": "current-lane",
+      "gates": [{ "centerFraction": -0.18, "widthFraction": 0.56 }]
+    },
+    {
+      "id": "current-gentle-right",
+      "minTier": 1,
+      "weight": 3,
+      "signatureVerb": "current-lane",
+      "gates": [{ "centerFraction": 0.18, "widthFraction": 0.56 }]
+    },
+    {
+      "id": "current-kelp-drift",
+      "minTier": 2,
+      "weight": 2,
+      "signatureVerb": "current-lane",
+      "gates": [
+        { "centerFraction": -0.24, "widthFraction": 0.5 },
+        { "centerFraction": 0.24, "widthFraction": 0.48 }
+      ]
+    },
+    {
+      "id": "current-ray-crossing",
+      "minTier": 3,
+      "weight": 2,
+      "signatureVerb": "current-lane",
+      "gates": [{ "centerFraction": 0.38, "widthFraction": 0.46 }]
+    },
+    {
+      "id": "current-moon-braid",
+      "minTier": 4,
+      "weight": 2,
+      "signatureVerb": "current-lane",
+      "gates": [
+        { "centerFraction": 0.32, "widthFraction": 0.43 },
+        { "centerFraction": -0.32, "widthFraction": 0.43 },
+        { "centerFraction": 0.0, "widthFraction": 0.4 }
+      ]
+    },
+    {
+      "id": "current-astral-sweep",
+      "minTier": 5,
+      "weight": 1,
+      "signatureVerb": "current-lane",
+      "gates": [{ "centerFraction": -0.44, "widthFraction": 0.4 }]
+    },
+    {
+      "id": "current-deep-return",
+      "minTier": 7,
+      "weight": 1,
+      "signatureVerb": "current-lane",
+      "gates": [
+        { "centerFraction": -0.36, "widthFraction": 0.38 },
+        { "centerFraction": 0.36, "widthFraction": 0.36 }
       ]
     }
   ]

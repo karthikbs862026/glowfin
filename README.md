@@ -7,10 +7,9 @@ this README covers local setup only.
 
 ## Status
 
-**Version 38 — Signature Obstacle Variety foundation. Version 37 is the merged
-first-ten-minutes and economy baseline. The new mechanics remain behind their
-simulation contracts until collider, renderer and solvability integration are
-certified together.**
+**Version 38 — Signature Obstacle Variety release candidate. Version 37 is the
+merged and deployed first-ten-minutes/economy baseline and remains the rollback
+artifact until Version 38 clears its immutable GitHub and hosted gates.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
@@ -100,18 +99,22 @@ Version 37 closes the expert-review first-session and economy gaps:
   tutorial completion, first reward, preview, first purchase, first equip and
   Daily Tide entry
 
-Version 38 has begun with the replay-safe mechanics foundation:
+Version 38 completes the expert-review mechanical-variety scope:
 
-- exactly three distinct obstacle verbs: a safe-versus-Moonflash route choice,
-  predictable ceremonial shutters and telegraphed lateral current lanes
+- 21 authored templates across exactly three obstacle verbs: safe-versus-risk
+  Moonflash choices, predictable ceremonial shutters and lateral current lanes
 - deterministic per-gate plans derived from the run seed and authored gate
   identity without consuming or perturbing the course RNG stream
-- hard minimum opening widths, minimum telegraph distance and bounded current
-  forces that are independently testable before runtime activation
+- one authoritative geometry contract for collision, cyan/rose contours,
+  moving shutter faces, route resolution and replay validation
+- minimum opening widths, at least 30 world units of telegraphing, and
+  closed-form current-displacement reserves in the independent solvability proof
+- a real safe-versus-spectacle decision: the authored wide route stays safe and
+  the narrow Moonflash route earns exactly 1.35x its discrete route reward
 - rare seeded ray processions, guardian salutes and Moon-Bloom pulses instead
-  of additional static scenery
-- an explicit 20–24-template target; collision, render and solvability wiring
-  remains the next Version 38 slice and is not yet claimed complete
+  of additional static scenery; all remain non-colliding and pool-bounded
+- phone-readable route, cadence and direction cues, plus consent-gated semantic
+  instrumentation that does not capture steering or touch paths
 
 The frozen visual/gameplay baseline includes:
 
@@ -188,7 +191,7 @@ Certification evidence and release operations are maintained in
 `docs/phase3-exit-report.md`, `docs/phase4a-release-report.md`,
 `docs/phase4b-release-report.md`, `docs/phase5a-release-report.md`,
 `docs/phase5b-release-report.md`, `docs/version37-release-report.md`,
-`docs/version38-build-notes.md`,
+`docs/version38-build-notes.md`, `docs/version38-release-report.md`,
 `docs/core-game-memory.md`,
 `docs/qa-runbook.md`, and
 `docs/release-runbook.md`.

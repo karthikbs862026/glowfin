@@ -3,11 +3,13 @@ import {
   OBSTACLE_VARIETY_CONTRACT,
   SIGNATURE_OBSTACLE_VERBS,
   currentLaneForce,
+  maximumCurrentLaneDisplacement,
   planLivingWorldEvent,
   planSignatureObstacle,
   shutterOpeningAt,
   type ObstacleSource
 } from "../src/sim/obstacleVariety";
+import chunkData from "../config/chunks.json";
 
 const source: ObstacleSource = {
   seed: 0x1234abcd,
@@ -20,8 +22,8 @@ const source: ObstacleSource = {
   }
 };
 
-describe("Version 38 signature-obstacle foundation", () => {
-  it("defines exactly three new replay-safe obstacle verbs", () => {
+describe("Version 38 signature-obstacle release contract", () => {
+  it("ships 21 authored templates across exactly three replay-safe obstacle verbs", () => {
     expect(SIGNATURE_OBSTACLE_VERBS).toEqual([
       "moonflash-choice",
       "ceremonial-shutter",
@@ -29,6 +31,12 @@ describe("Version 38 signature-obstacle foundation", () => {
     ]);
     expect(OBSTACLE_VARIETY_CONTRACT.targetTemplateMinimum).toBe(20);
     expect(OBSTACLE_VARIETY_CONTRACT.targetTemplateMaximum).toBe(24);
+    expect(chunkData.templates).toHaveLength(21);
+    for (const verb of SIGNATURE_OBSTACLE_VERBS) {
+      expect(chunkData.templates.filter((template) => template.signatureVerb === verb))
+        .toHaveLength(7);
+    }
+    expect(new Set(chunkData.templates.map((template) => template.id)).size).toBe(21);
   });
 
   it("plans a safe route and a narrower high-reward Moonflash route", () => {
@@ -72,6 +80,16 @@ describe("Version 38 signature-obstacle foundation", () => {
     expect(currentLaneForce(plan, middleDistance, middleLateral)).not.toBe(0);
     expect(currentLaneForce(plan, plan.startDistance - 0.01, middleLateral)).toBe(0);
     expect(currentLaneForce(plan, middleDistance, plan.laneRight + 0.01)).toBe(0);
+
+    const speed = 35;
+    const dt = 1 / 120;
+    let integrated = 0;
+    for (let distance = plan.startDistance; distance < plan.endDistance; distance += speed * dt) {
+      integrated += Math.abs(currentLaneForce(plan, distance, middleLateral)) * dt;
+    }
+    expect(integrated).toBeLessThanOrEqual(
+      maximumCurrentLaneDisplacement(plan, speed) + Math.abs(plan.lateralDriftPerSec) * dt
+    );
   });
 
   it("is deterministic and keeps living-world events rare rather than constant", () => {

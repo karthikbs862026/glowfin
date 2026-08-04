@@ -11,7 +11,7 @@ import { SteeringSource, attachPointerInput } from "./input/steering";
 import { generateSeed } from "./core/rng";
 import { Run } from "./sim/run";
 import { GameView } from "./render/gameView";
-import { Hud } from "./render/hud";
+import { Hud, type SignatureCuePresentation } from "./render/hud";
 import { MoonWell, type MoonWellPanel } from "./render/moonWell";
 import { DebugOverlay } from "./render/debugOverlay";
 import { QualityController } from "./perf/quality";
@@ -238,6 +238,40 @@ let gameplayActive = false;
 let firstRunTutorial: FirstRunTutorial | null = null;
 let tutorialStep: TutorialStep | null = null;
 let tutorialCompleteAtSec: number | null = null;
+
+function signatureCueForRun(): SignatureCuePresentation | null {
+  if (!gameplayActive || awaitingRestart || firstRunTutorial) return null;
+  const forwardDistance = run.sim.forwardDistance;
+  const gate = run.gates.find((candidate) => {
+    const plan = candidate.obstaclePlan;
+    return Boolean(
+      plan &&
+      candidate.distance > forwardDistance + 3 &&
+      forwardDistance >= plan.telegraphFromDistance
+    );
+  });
+  const plan = gate?.obstaclePlan;
+  if (!plan) return null;
+  if (plan.verb === "moonflash-choice") {
+    return {
+      verb: plan.verb,
+      title: "Choose your current",
+      detail: "Wide cyan is safe · narrow rose earns 1.35×"
+    };
+  }
+  if (plan.verb === "ceremonial-shutter") {
+    return {
+      verb: plan.verb,
+      title: "Ceremonial shutters",
+      detail: "Watch the amber cadence · the centre always stays passable"
+    };
+  }
+  return {
+    verb: plan.verb,
+    title: `Cross-current pushes ${plan.lateralDriftPerSec < 0 ? "left" : "right"}`,
+    detail: "Follow the angled glow or steer against it"
+  };
+}
 
 interface CompletedCompetitiveRun {
   runId: string;
@@ -1257,6 +1291,24 @@ function frame(nowMs: number): void {
         activeRunId
       );
     }
+    for (const event of events.signatureEvents) {
+      telemetry.track(
+        event.kind === "living-world"
+          ? "living_world_event"
+          : "signature_obstacle",
+        {
+          kind: event.kind,
+          verb: event.verb,
+          livingKind: event.livingKind ?? null,
+          distance: event.distance,
+          tier: event.tier,
+          template: event.templateId,
+          rewardScore: event.rewardScore ?? 0,
+          direction: event.direction ?? 0
+        },
+        activeRunId
+      );
+    }
     if (firstRunTutorial) {
       const previousStep = firstRunTutorial.step;
       const nextStep = firstRunTutorial.update({
@@ -1502,13 +1554,15 @@ function frame(nowMs: number): void {
     lightFraction,
     run.sim.elapsedSec,
     frameSec,
-    ghostVisible && ghostRun ? ghostRun.sim : null
+    ghostVisible && ghostRun ? ghostRun.sim : null,
+    run.activeLivingWorldEvents
   );
   if (ghostVisible && ghostRun) {
     hud.updateGhostGap(run.sim.forwardDistance, ghostRun.sim.forwardDistance);
   } else {
     hud.hideGhostGap();
   }
+  hud.setSignatureCue(signatureCueForRun());
   const momentumFraction =
     tuning.momentum.ceiling === 0 ? 0 : run.sim.momentum / tuning.momentum.ceiling;
   audio.update(momentumFraction, lightFraction);

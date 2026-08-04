@@ -17,6 +17,14 @@ import {
   GATE_FAMILIES,
   type GateFacadeVariant
 } from "../art/premiumWorld";
+import {
+  maximumCurrentLaneDisplacement,
+  planLivingWorldEvent,
+  planSignatureObstacle,
+  type LivingWorldEventPlan,
+  type SignatureObstaclePlan,
+  type SignatureObstacleVerb
+} from "./obstacleVariety";
 import chunkData from "../../config/chunks.json";
 
 export interface Gate {
@@ -35,6 +43,10 @@ export interface Gate {
    * revisions remain readable; newly generated gates always populate it.
    */
   artVariant?: GateFacadeVariant;
+  /** Version 38 authoritative obstacle contract, absent on legacy fixtures. */
+  obstaclePlan?: SignatureObstaclePlan;
+  /** Rare non-colliding authored event associated with this gate. */
+  livingEvent?: LivingWorldEventPlan;
 }
 
 interface GateTemplate {
@@ -46,6 +58,7 @@ interface ChunkTemplate {
   id: string;
   minTier: number;
   weight: number;
+  signatureVerb: SignatureObstacleVerb;
   gates: GateTemplate[];
 }
 
@@ -190,13 +203,55 @@ export function lateralBudget(
  */
 export function requiredTravel(from: Gate, to: Gate, cfg: TuningConfig): number {
   const r = cfg.lane.creatureRadius;
-  const fromLo = from.gapLeft + r;
-  const fromHi = from.gapRight - r;
-  const toLo = to.gapLeft + r;
-  const toHi = to.gapRight - r;
+  const fromOpening = gateSolvabilityOpening(from);
+  const toOpening = gateSolvabilityOpening(to);
+  const fromLo = fromOpening.gapLeft + r;
+  const fromHi = fromOpening.gapRight - r;
+  const toLo = toOpening.gapLeft + r;
+  const toHi = toOpening.gapRight - r;
 
   const distanceToInterval = (x: number) => Math.max(0, toLo - x, x - toHi);
   return Math.max(distanceToInterval(fromLo), distanceToInterval(fromHi));
+}
+
+/**
+ * The opening used by the independent proof. Choice gates retain their wide
+ * safe authored route; shutters use their guaranteed minimum aperture.
+ */
+export function gateSolvabilityOpening(
+  gate: Gate
+): Pick<Gate, "distance" | "gapLeft" | "gapRight" | "templateId" | "tier"> {
+  const plan = gate.obstaclePlan;
+  if (plan?.verb === "moonflash-choice") {
+    const safe = plan.openings.find((opening) => opening.route === "safe");
+    if (safe) return { ...gate, gapLeft: safe.left, gapRight: safe.right };
+  }
+  if (plan?.verb === "ceremonial-shutter") {
+    return {
+      ...gate,
+      gapLeft: plan.center - plan.minimumWidth * 0.5,
+      gapRight: plan.center + plan.minimumWidth * 0.5
+    };
+  }
+  return gate;
+}
+
+/**
+ * Transition authority after reserving the worst complete current-lane drift.
+ * The same function is used while authoring gates and by the independent
+ * solvability checker, so a current cannot silently consume the safety margin.
+ */
+export function transitionLateralBudget(
+  from: Gate,
+  to: Gate,
+  profile: MomentumProfile,
+  cfg: TuningConfig
+): number {
+  const base = lateralBudget(from.distance, to.distance, profile, cfg);
+  const plan = to.obstaclePlan;
+  if (plan?.verb !== "current-lane") return base;
+  const speed = forwardSpeedAt(profile.at(to.distance), cfg);
+  return Math.max(0, base - maximumCurrentLaneDisplacement(plan, speed));
 }
 
 export class CourseGenerator {
@@ -264,7 +319,13 @@ export class CourseGenerator {
         this.rng.range(difficulty.gateSpacingMinUnits, difficulty.gateSpacingMaxUnits) *
         spacingScale;
       const distance = this.nextDistance;
-      this.generated.push(this.buildGate(gateTemplate, distance, tier, template.id));
+      this.generated.push(this.buildGate(
+        gateTemplate,
+        distance,
+        tier,
+        template.id,
+        template.signatureVerb
+      ));
       this.nextDistance = distance + spacing;
     }
   }
@@ -291,7 +352,8 @@ export class CourseGenerator {
     template: GateTemplate,
     distance: number,
     tier: number,
-    templateId: string
+    templateId: string,
+    signatureVerb: SignatureObstacleVerb
   ): Gate {
     const cfg = this.cfg;
     const halfWidth = cfg.lane.halfWidth;
@@ -314,17 +376,42 @@ export class CourseGenerator {
     const laneHi = halfWidth - halfGap;
     center = Math.max(laneLo, Math.min(laneHi, center));
 
-    // --- centre, clamped so the gate is reachable from the previous one ---
+    // Resolve the deterministic plan once before reachability clamping. Only
+    // shutters change the proof aperture; current lanes additionally reserve
+    // their maximum drift from the transition budget.
+    const draftGate: Gate = {
+      distance,
+      gapLeft: center - halfGap,
+      gapRight: center + halfGap,
+      templateId,
+      tier
+    };
+    draftGate.obstaclePlan = planSignatureObstacle(
+      signatureVerb,
+      { seed: this.seed, gate: draftGate },
+      halfWidth,
+      r
+    );
+    const proofOpening = gateSolvabilityOpening(draftGate);
+    const proofHalfGap = (proofOpening.gapRight - proofOpening.gapLeft) * 0.5;
+
+    // --- centre, clamped so the guaranteed route is reachable ---
     const previous = this.generated[this.generated.length - 1];
     if (previous) {
-      const budget = lateralBudget(previous.distance, distance, this.profile, cfg);
-      const prevLo = previous.gapLeft + r;
-      const prevHi = previous.gapRight - r;
+      const budget = transitionLateralBudget(
+        previous,
+        draftGate,
+        this.profile,
+        cfg
+      );
+      const previousOpening = gateSolvabilityOpening(previous);
+      const prevLo = previousOpening.gapLeft + r;
+      const prevHi = previousOpening.gapRight - r;
 
       // Derivation: requiring dist(prevLo, [c-halfGap+r, c+halfGap-r]) <= budget
       // and the same for prevHi, solved for c.
-      const cMin = prevHi - halfGap + r - budget;
-      const cMax = prevLo + halfGap - r + budget;
+      const cMin = prevHi - proofHalfGap + r - budget;
+      const cMax = prevLo + proofHalfGap - r + budget;
 
       const lo = Math.max(laneLo, cMin);
       const hi = Math.min(laneHi, cMax);
@@ -332,10 +419,10 @@ export class CourseGenerator {
       // fall back to matching the previous gate's centre, which needs no travel.
       center = lo <= hi
         ? Math.max(lo, Math.min(hi, center))
-        : (previous.gapLeft + previous.gapRight) / 2;
+        : (previousOpening.gapLeft + previousOpening.gapRight) / 2;
     }
 
-    return {
+    const gate: Gate = {
       distance,
       gapLeft: center - halfGap,
       gapRight: center + halfGap,
@@ -347,5 +434,13 @@ export class CourseGenerator {
         this.nextArtVariant++ % GATE_FAMILIES.length
       ) as GateFacadeVariant
     };
+    gate.obstaclePlan = planSignatureObstacle(
+      signatureVerb,
+      { seed: this.seed, gate },
+      halfWidth,
+      r
+    );
+    gate.livingEvent = planLivingWorldEvent({ seed: this.seed, gate }) ?? undefined;
+    return gate;
   }
 }

@@ -9,6 +9,7 @@
 import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
 import type { Gate } from "../sim/course";
+import type { ActiveLivingWorldEvent } from "../sim/obstacleVariety";
 import {
   createProductionAnemone,
   createProductionBrainCoral,
@@ -70,6 +71,18 @@ function lerp(a: number, b: number, t: number): number {
 
 function positiveMod(value: number, modulus: number): number {
   return ((value % modulus) + modulus) % modulus;
+}
+
+function livingEventStrength(
+  active: ActiveLivingWorldEvent,
+  timeSec: number
+): number {
+  const progress = THREE.MathUtils.clamp(
+    (timeSec - active.startedAtSec) / Math.max(0.001, active.plan.durationSec),
+    0,
+    1
+  );
+  return Math.sin(progress * Math.PI);
 }
 
 const REEF_FAMILY_TINTS = [
@@ -547,14 +560,24 @@ export class Environment {
     lateralPosition: number,
     momentumFraction: number,
     timeSec: number,
-    gates: readonly Gate[] = []
+    gates: readonly Gate[] = [],
+    activeLivingEvents: readonly ActiveLivingWorldEvent[] = []
   ): void {
     const time = Math.max(0, timeSec);
+    const moonBloom = activeLivingEvents.find(
+      (active) => active.plan.kind === "moon-bloom-pulse"
+    );
     updateMoonGardenMaterial(
       this.volumeMaterial,
       time,
       this.position.set(lateralPosition, -0.15, -forwardDistance),
-      momentumFraction
+      momentumFraction,
+      moonBloom
+        ? {
+            anchorDistance: moonBloom.plan.anchorDistance,
+            strength: livingEventStrength(moonBloom, time)
+          }
+        : null
     );
     const heroStage = this.resolveHeroStage(forwardDistance, gates);
     this.updateArchitecture(forwardDistance, heroStage);
@@ -566,7 +589,13 @@ export class Environment {
       heroStage
     );
     this.updateProps(forwardDistance, heroStage);
-    this.updateLife(forwardDistance, time, momentumFraction, heroStage);
+    this.updateLife(
+      forwardDistance,
+      time,
+      momentumFraction,
+      heroStage,
+      activeLivingEvents
+    );
     this.updateMoonAndMotes(forwardDistance, time);
     this.updateGodRays(forwardDistance, momentumFraction);
   }
@@ -931,7 +960,8 @@ export class Environment {
     forwardDistance: number,
     time: number,
     momentumFraction: number,
-    heroStage: HeroStage
+    heroStage: HeroStage,
+    activeLivingEvents: readonly ActiveLivingWorldEvent[]
   ): void {
     for (const family of this.life) family.begin();
     for (const family of this.merfolkPopulation) family.begin();
@@ -1041,6 +1071,41 @@ export class Environment {
       this.life[2]?.add(this.matrix, this.colour);
     }
 
+    const rayProcession = activeLivingEvents.find(
+      (active) => active.plan.kind === "ray-procession"
+    );
+    if (rayProcession) {
+      const progress = THREE.MathUtils.clamp(
+        (time - rayProcession.startedAtSec) /
+          Math.max(0.001, rayProcession.plan.durationSec),
+        0,
+        1
+      );
+      const direction = (rayProcession.plan.seed & 1) === 0 ? 1 : -1;
+      for (let member = 0; member < 2; member++) {
+        const memberProgress = THREE.MathUtils.clamp(
+          progress * 1.18 - member * 0.18,
+          0,
+          1
+        );
+        this.position.set(
+          direction * THREE.MathUtils.lerp(-10.5, 10.5, memberProgress),
+          8.8 + member * 1.1 + Math.sin(memberProgress * Math.PI) * 1.25,
+          -(rayProcession.plan.anchorDistance + member * 4.2)
+        );
+        this.quaternion.setFromEuler(new THREE.Euler(
+          0,
+          direction > 0 ? 0 : Math.PI,
+          direction * Math.sin(memberProgress * Math.PI * 2) * 0.12
+        ));
+        const size = 2.7 - member * 0.28;
+        this.scale.set(size, size, 1);
+        this.matrix.compose(this.position, this.quaternion, this.scale);
+        this.colour.setRGB(0.72, 0.82, 1);
+        this.life[2]?.add(this.matrix, this.colour);
+      }
+    }
+
     // One deterministic sampler owns the entire cast composition. Residents
     // and heralds stay vertically anchored; two independently seeded swimmers
     // occupy opposite galleries and never enter collider truth.
@@ -1096,11 +1161,16 @@ export class Environment {
 
     for (const family of this.life) family.finish();
     for (const family of this.merfolkPopulation) family.finish();
+    const guardianSalute = activeLivingEvents.find((active) => (
+      active.plan.kind === "guardian-salute" &&
+      Math.abs(active.plan.anchorDistance - heroStage.anchor) < 1
+    ));
     this.heroMerfolk.update(
       forwardDistance,
       time,
       momentumFraction,
-      heroStage
+      heroStage,
+      guardianSalute ? livingEventStrength(guardianSalute, time) : 0
     );
   }
 
