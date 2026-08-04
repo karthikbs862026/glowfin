@@ -798,3 +798,23 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Keep the owner-only checkpoint deployable and mergeable while Android
   thermal/audio, physical retention and real iPhone Safari evidence remain
   conditional. Do not promote publicly until those rows are signed.
+
+## 2026-08-04 — Make the first ten minutes deliberate and give Pearls purpose
+
+- Accept the Version 36 expert verdict as core game direction and preserve its
+  full review in `docs/expert-verdict-v36.md`.
+- Adopt ADR-0041 and label Version 37 “First 10 Minutes & Economy Clarity,”
+  based on the merged Version 36 production-readiness release.
+- Start at the Moon Well and require an explicit Tap to Dive gesture. Use that
+  same gesture for the existing mobile-safe audio activation path.
+- Add a bounded learn-by-playing sequence for steering, Light, near-miss
+  scoring and recoverable collisions, with progress stored in schema version 3.
+- Reduce post-run to Dive Again, saved ghost and Moon Well. Relocate Daily Tide,
+  Wardrobe, Objectives, Leaderboard, Settings, access and privacy controls.
+- Make Tide XP unlock availability and Lumen Pearls purchase cosmetics.
+  Grandfather previously available Version 36 cosmetics, keep ownership
+  monotonic across cloud merges and never restore spent Pearls from an older
+  snapshot.
+- Keep all simulation, controls, lane geometry, collision, scoring, replay,
+  art, audio composition and performance budgets frozen. Reserve obstacle
+  verbs and living-world set pieces for Version 38.

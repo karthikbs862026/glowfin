@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#04060f" />
-    <title>Glowfin — Version 36</title>
+    <title>Glowfin — Version 37</title>
     <style>
       :root {
         --ink: #cfefff;
@@ -159,6 +159,7 @@
         pointer-events: auto;
         cursor: pointer;
         touch-action: manipulation;
+        z-index: 7;
       }
       #hud-audio-toggle svg { width: 23px; height: 23px; }
       #hud-audio-toggle .audio-wave,
@@ -548,6 +549,267 @@
         cursor: pointer;
       }
       #runtime-status-retry[hidden] { display: none; }
+
+      /* Version 37 — first-ten-minutes shell. */
+      #moonwell-hub {
+        position: fixed;
+        inset: 0;
+        z-index: 5;
+        display: none;
+        align-items: stretch;
+        justify-content: center;
+        padding: max(18px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 50% 8%, rgba(75, 226, 255, 0.17), transparent 36%),
+          linear-gradient(180deg, rgba(3, 12, 29, 0.76), rgba(4, 6, 20, 0.94));
+        backdrop-filter: blur(7px) saturate(1.08);
+        pointer-events: auto;
+        box-sizing: border-box;
+      }
+      #moonwell-hub[data-active="true"] { display: flex; }
+      .moonwell-shell {
+        width: min(420px, 100%);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid rgba(154, 230, 255, 0.23);
+        border-radius: 30px;
+        background: linear-gradient(168deg, rgba(8, 38, 62, 0.94), rgba(20, 16, 53, 0.95));
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.48), inset 0 1px rgba(255, 255, 255, 0.08);
+      }
+      .moonwell-header {
+        flex: 0 0 auto;
+        padding: 24px 22px 12px;
+        text-align: center;
+      }
+      .moonwell-kicker,
+      .moonwell-panel-heading span {
+        color: #80e7fb;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+      .moonwell-header h1 {
+        margin: 2px 0 0;
+        color: #f1fbff;
+        font-size: clamp(38px, 11vw, 52px);
+        line-height: 1;
+        letter-spacing: -0.045em;
+        text-shadow: 0 0 32px rgba(76, 229, 255, 0.36);
+      }
+      #moonwell-meta {
+        margin: 8px 0 0;
+        color: #ffebb6;
+        font-size: 14px;
+        font-weight: 750;
+      }
+      .moonwell-view {
+        flex: 1 1 auto;
+        min-height: 0;
+        padding: 8px 18px 20px;
+        overflow: auto;
+        scrollbar-width: none;
+        box-sizing: border-box;
+      }
+      .moonwell-view::-webkit-scrollbar { display: none; }
+      .moonwell-view[hidden] { display: none; }
+      .moonwell-invitation,
+      .moonwell-panel-copy {
+        margin: 4px auto 16px;
+        max-width: 31ch;
+        color: rgba(217, 244, 255, 0.75);
+        font-size: 14px;
+        line-height: 1.45;
+        text-align: center;
+      }
+      .moonwell-cta,
+      .moonwell-daily,
+      .moonwell-nav button,
+      .moonwell-panel-heading button,
+      .wardrobe-actions button {
+        border: 1px solid rgba(147, 230, 250, 0.36);
+        color: #e8fbff;
+        font: inherit;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      .moonwell-cta {
+        width: 100%;
+        min-height: 76px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        border-color: rgba(143, 243, 255, 0.74);
+        border-radius: 24px;
+        background: linear-gradient(135deg, rgba(12, 148, 178, 0.94), rgba(83, 70, 180, 0.94));
+        box-shadow: 0 0 32px rgba(65, 220, 255, 0.22);
+      }
+      .moonwell-cta span { font-size: 22px; font-weight: 850; letter-spacing: -0.02em; }
+      .moonwell-cta small { color: rgba(236, 253, 255, 0.74); font-size: 12px; }
+      .moonwell-daily {
+        width: 100%;
+        min-height: 48px;
+        margin-top: 10px;
+        border-radius: 18px;
+        background: rgba(24, 65, 90, 0.72);
+        font-size: 14px;
+        font-weight: 780;
+      }
+      .moonwell-nav {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+        margin-top: 12px;
+      }
+      .moonwell-nav button {
+        min-height: 72px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 4px;
+        padding: 10px 12px;
+        border-radius: 18px;
+        background: rgba(5, 25, 46, 0.66);
+        text-align: left;
+      }
+      .moonwell-nav strong { font-size: 14px; }
+      .moonwell-nav span { color: rgba(197, 230, 242, 0.62); font-size: 12px; line-height: 1.2; }
+      .moonwell-panel-heading {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .moonwell-panel-heading button {
+        min-height: 42px;
+        padding: 0 14px;
+        border-radius: 999px;
+        background: rgba(5, 25, 46, 0.68);
+        font-size: 13px;
+        font-weight: 750;
+      }
+      .moonwell-panel-heading h2 { margin: 1px 0 0; font-size: 26px; line-height: 1; }
+      .moonwell-panel-heading span { font-size: 10px; }
+      #moonwell-wardrobe-grid { display: grid; gap: 9px; }
+      .wardrobe-card {
+        display: grid;
+        grid-template-columns: 42px 1fr;
+        gap: 10px;
+        padding: 10px;
+        border: 1px solid rgba(140, 222, 244, 0.16);
+        border-radius: 17px;
+        background: rgba(3, 19, 37, 0.56);
+      }
+      .wardrobe-card[data-state="equipped"] { border-color: rgba(255, 231, 163, 0.58); }
+      .wardrobe-card[data-state="locked"] { opacity: 0.68; }
+      .wardrobe-swatch {
+        grid-row: 1 / span 2;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 32% 28%, #fff, var(--swatch-primary) 34%, var(--swatch-secondary) 88%);
+        box-shadow: 0 0 18px rgba(94, 224, 255, 0.28);
+      }
+      .wardrobe-copy { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+      .wardrobe-copy strong { font-size: 14px; }
+      .wardrobe-copy span { color: rgba(198, 229, 241, 0.7); font-size: 12px; }
+      .wardrobe-actions { grid-column: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+      .wardrobe-actions button {
+        min-height: 38px;
+        border-radius: 12px;
+        background: rgba(12, 54, 78, 0.74);
+        font-size: 12px;
+        font-weight: 760;
+      }
+      .wardrobe-actions button:disabled { opacity: 0.46; }
+      #moonwell-wardrobe-feedback {
+        display: none;
+        margin: 0 0 10px;
+        padding: 9px 11px;
+        border-radius: 12px;
+        background: rgba(94, 65, 27, 0.42);
+        color: #ffe9b2;
+        font-size: 13px;
+        line-height: 1.35;
+      }
+      #moonwell-wardrobe-feedback[data-visible="true"] { display: block; }
+      #moonwell-objectives-list { display: grid; gap: 9px; }
+      .moonwell-objective {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px;
+        border-radius: 15px;
+        background: rgba(3, 19, 37, 0.58);
+        color: rgba(221, 247, 255, 0.82);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+      .moonwell-objective strong { color: #9ef1ff; white-space: nowrap; }
+      .moonwell-objective[data-complete="true"] strong { color: #aaffd9; }
+      .moonwell-panel > .hud-action { width: 100%; margin-top: 10px; }
+      #hud-build {
+        position: static;
+        width: fit-content;
+        margin: 18px auto 0;
+        font-size: 11px;
+      }
+      #tutorial-overlay {
+        position: fixed;
+        left: 50%;
+        bottom: max(22px, env(safe-area-inset-bottom));
+        z-index: 4;
+        width: min(380px, calc(100vw - 28px));
+        display: none;
+        transform: translateX(-50%);
+        padding: 14px 16px 13px;
+        border: 1px solid rgba(157, 234, 255, 0.38);
+        border-radius: 18px;
+        background: rgba(4, 20, 39, 0.88);
+        box-shadow: 0 14px 44px rgba(0, 0, 0, 0.38);
+        backdrop-filter: blur(7px);
+        box-sizing: border-box;
+        pointer-events: none;
+      }
+      #tutorial-overlay[data-active="true"] { display: block; }
+      #tutorial-eyebrow { display: block; color: #91edff; font-size: 11px; font-weight: 850; letter-spacing: 0.12em; text-transform: uppercase; }
+      #tutorial-title { display: block; margin-top: 2px; color: #f3fcff; font-size: 19px; }
+      #tutorial-detail { margin: 4px 0 9px; color: rgba(222, 246, 255, 0.78); font-size: 13px; line-height: 1.35; }
+      #tutorial-progress { height: 4px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.1); }
+      #tutorial-progress-fill { width: 25%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #58e9ff, #a36fff); }
+      .hud-meter { display: grid; grid-template-columns: 40px auto; align-items: center; gap: 7px; width: fit-content; }
+      .hud-meter > span { color: rgba(211, 242, 252, 0.74); font-size: 12px; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; }
+      #hud-best, #hud-meta span, #hud-ghost-gap { font-size: 12px; }
+      #hud-light, #hud-momentum { margin-top: 0; }
+      #hud-tide-progress-label, #hud-unlock-banner, #hud-streak { font-size: 12px; }
+      .hud-objective, .hud-objective strong { font-size: 12px; }
+      #hud-competitive-division, #hud-leaderboard-status, .hud-leaderboard-row { font-size: 12px; }
+      #hud-gameover-card { max-height: min(700px, calc(100dvh - 24px)); }
+      #hud-gameover-actions { display: grid; grid-template-columns: 1fr 1fr; }
+      #hud-dive-again { grid-column: 1 / -1; min-height: 52px; font-size: 15px; }
+      #hud-open-hub, #hud-race-best { min-height: 46px; padding: 0 11px; }
+      #hud-restart { font-size: 12px; }
+      #moonwell-hub[data-active="true"] ~ #hud #hud-top,
+      #moonwell-hub[data-active="true"] ~ #hud #hud-best,
+      #moonwell-hub[data-active="true"] ~ #hud #hud-meta,
+      #moonwell-hub[data-active="true"] ~ #hud #hud-ghost-gap,
+      #moonwell-hub[data-active="true"] ~ #hud .hud-meter { opacity: 0; }
+      #moonwell-hub[data-active="true"] ~ #hud #hud-audio-feedback { display: none; }
+      @media (max-height: 690px) {
+        .moonwell-header { padding-top: 15px; padding-bottom: 7px; }
+        .moonwell-header h1 { font-size: 38px; }
+        .moonwell-nav button { min-height: 62px; }
+        .moonwell-cta { min-height: 65px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #tutorial-overlay, .moonwell-shell { transition: none; }
+      }
     </style>
     <script>
       (() => {
@@ -567,38 +829,88 @@
   <body>
     <canvas id="glowfin-canvas"></canvas>
 
+    <section id="moonwell-hub" data-active="true" data-panel="home" aria-label="Moon Well">
+      <div class="moonwell-shell">
+        <header class="moonwell-header">
+          <span class="moonwell-kicker">The Moon-Garden Ruins</span>
+          <h1>Glowfin</h1>
+          <p id="moonwell-meta">Tide 1 · 0 Lumen Pearls</p>
+        </header>
+
+        <div id="moonwell-home" class="moonwell-view">
+          <p class="moonwell-invitation">Follow the current. Thread the cyan gates. Gather a brighter Moonwake.</p>
+          <button id="moonwell-dive" class="moonwell-cta" type="button" data-hud-action>
+            <span>Tap to Dive</span><small>Starts sound and the current</small>
+          </button>
+          <button id="hud-daily-trial" class="moonwell-daily" type="button" data-hud-action>Daily Tide</button>
+          <nav class="moonwell-nav" aria-label="Moon Well destinations">
+            <button type="button" data-hud-action data-moonwell-panel="wardrobe"><strong>Wardrobe</strong><span>Preview · buy · equip</span></button>
+            <button type="button" data-hud-action data-moonwell-panel="objectives"><strong>Objectives</strong><span>Three rotating goals</span></button>
+            <button type="button" data-hud-action data-moonwell-panel="leaderboard"><strong>Leaderboard</strong><span>Verified currents</span></button>
+            <button type="button" data-hud-action data-moonwell-panel="settings"><strong>Settings</strong><span>Access · sound · privacy</span></button>
+          </nav>
+        </div>
+
+        <section id="moonwell-panel-wardrobe" class="moonwell-view moonwell-panel" hidden>
+          <div class="moonwell-panel-heading"><button type="button" data-hud-action data-moonwell-back>Back</button><div><span>Moonwake collection</span><h2>Wardrobe</h2></div></div>
+          <p class="moonwell-panel-copy">Tide XP reveals cosmetics. Lumen Pearls purchase them. Every choice is visual-only.</p>
+          <div id="moonwell-wardrobe-feedback" role="status" data-visible="false"></div>
+          <div id="moonwell-wardrobe-grid"></div>
+          <button id="hud-rewarded-pearls" class="hud-action" type="button" data-hud-action disabled>Rewarded video unavailable</button>
+        </section>
+
+        <section id="moonwell-panel-objectives" class="moonwell-view moonwell-panel" hidden>
+          <div class="moonwell-panel-heading"><button type="button" data-hud-action data-moonwell-back>Back</button><div><span>Today’s current</span><h2>Objectives</h2></div></div>
+          <p class="moonwell-panel-copy">Complete two daily goals and one weekly goal. A grace day protects your streak.</p>
+          <div id="moonwell-objectives-list"></div>
+        </section>
+
+        <section id="moonwell-panel-leaderboard" class="moonwell-view moonwell-panel" hidden>
+          <div class="moonwell-panel-heading"><button type="button" data-hud-action data-moonwell-back>Back</button><div><span>Replay-verified</span><h2>Leaderboard</h2></div></div>
+          <div id="hud-competitive" aria-label="Verified leaderboard">
+            <div id="hud-competitive-division">Standard division · deterministic replay validation</div>
+            <div id="hud-leaderboard-status">Complete a run to load verified currents</div>
+            <div id="hud-leaderboard-list"></div>
+          </div>
+          <button id="hud-submit-score" class="hud-action primary" type="button" data-hud-action disabled>Submit verified score</button>
+          <button id="hud-share-clip" class="hud-action" type="button" data-hud-action disabled>Share best Moonflash</button>
+        </section>
+
+        <section id="moonwell-panel-settings" class="moonwell-view moonwell-panel" hidden>
+          <div class="moonwell-panel-heading"><button type="button" data-hud-action data-moonwell-back>Back</button><div><span>Before you dive</span><h2>Settings</h2></div></div>
+          <button id="hud-motor-assist" class="hud-action" type="button" data-hud-action aria-pressed="false">Steering · Standard division</button>
+          <button id="hud-reduced-motion" class="hud-action" type="button" data-hud-action aria-pressed="false">Motion effects · Standard</button>
+          <button id="hud-high-contrast" class="hud-action" type="button" data-hud-action aria-pressed="false">Contrast · Standard</button>
+          <button id="hud-telemetry-choice" class="hud-action" type="button" data-hud-action>Anonymous playtest data: choose</button>
+          <div id="hud-telemetry-note">No name, email, device fingerprint or touch path is collected.</div>
+          <div id="hud-build" role="status">V37 · LOCAL · local</div>
+        </section>
+      </div>
+    </section>
+
+    <aside id="tutorial-overlay" data-active="false" data-step="steer" aria-live="polite">
+      <span id="tutorial-eyebrow">Learn the current · 1/4</span>
+      <strong id="tutorial-title">Swipe to steer</strong>
+      <p id="tutorial-detail">Drag left and right. Glowfin follows your finger while the current carries you forward.</p>
+      <div id="tutorial-progress"><div id="tutorial-progress-fill"></div></div>
+    </aside>
+
     <div id="hud">
-      <button
-        id="hud-audio-toggle"
-        type="button"
-        data-audio-state="locked"
-        data-audio-signal="idle"
-        data-audio-native="idle"
-        data-audio-context="missing"
-        aria-label="Turn sound on"
-        aria-pressed="false"
-      >
+      <button id="hud-audio-toggle" type="button" data-audio-state="locked" data-audio-signal="idle" data-audio-native="idle" data-audio-context="missing" aria-label="Turn sound on" aria-pressed="false">
         <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M5 9v6h4l5 4V5L9 9H5Z" />
           <path class="audio-wave" d="M17 9.2c1.1 1.5 1.1 4.1 0 5.6M19.5 6.8c2.7 2.8 2.7 7.6 0 10.4" />
           <path class="audio-slash" d="M4 4l16 16" />
         </svg>
       </button>
-      <span id="hud-audio-feedback">Tap for sound</span>
-      <span id="hud-audio-status" class="sr-only" aria-live="polite">Tap once for sound</span>
-      <div id="hud-top">
-        <div id="hud-score">0</div>
-        <div id="hud-multiplier">x1.0</div>
-      </div>
+      <span id="hud-audio-feedback">Sound starts with Dive</span>
+      <span id="hud-audio-status" class="sr-only" aria-live="polite">Tap Dive for sound</span>
+      <div id="hud-top"><div id="hud-score">0</div><div id="hud-multiplier">x1.0</div></div>
       <div id="hud-best">Best 0</div>
-      <div id="hud-meta">
-        <span id="hud-tide-level">Tide 1</span>
-        <span id="hud-pearls">◇ 0</span>
-      </div>
+      <div id="hud-meta"><span id="hud-tide-level">Tide 1</span><span id="hud-pearls">◇ 0</span></div>
       <div id="hud-ghost-gap" data-active="false">Ghost even</div>
-      <div id="hud-light"><div id="hud-light-fill"></div></div>
-      <div id="hud-momentum"><div id="hud-momentum-fill"></div></div>
-      <div id="hud-build" role="status">V36 · LOCAL · local</div>
+      <div class="hud-meter"><span>Light</span><div id="hud-light"><div id="hud-light-fill"></div></div></div>
+      <div class="hud-meter"><span>Flow</span><div id="hud-momentum"><div id="hud-momentum-fill"></div></div></div>
     </div>
 
     <div id="hud-gameover">
@@ -615,48 +927,12 @@
         <div id="hud-unlock-banner" data-visible="false"></div>
         <div id="hud-objectives" aria-label="Tide objectives"></div>
         <div id="hud-streak">0-day Tide streak · Grace day ready</div>
-        <div id="hud-competitive" aria-label="Verified leaderboard">
-          <div id="hud-competitive-division">Standard division · deterministic replay validation</div>
-          <div id="hud-leaderboard-status">Verified currents</div>
-          <div id="hud-leaderboard-list"></div>
-        </div>
         <div id="hud-gameover-actions">
-          <button id="hud-race-best" class="hud-action primary" type="button" data-hud-action disabled>
-            Race saved ghost
-          </button>
-          <button id="hud-daily-trial" class="hud-action primary" type="button" data-hud-action>
-            Daily Tide Trial
-          </button>
-          <button id="hud-submit-score" class="hud-action primary" type="button" data-hud-action disabled>
-            Submit verified score
-          </button>
-          <button id="hud-share-clip" class="hud-action" type="button" data-hud-action disabled>
-            Share best Moonflash
-          </button>
-          <button id="hud-rewarded-pearls" class="hud-action" type="button" data-hud-action disabled>
-            Rewarded video unavailable
-          </button>
-          <button id="hud-motor-assist" class="hud-action" type="button" data-hud-action aria-pressed="false">
-            Steering · Standard division
-          </button>
-          <button id="hud-reduced-motion" class="hud-action" type="button" data-hud-action aria-pressed="false">
-            Motion effects · Standard
-          </button>
-          <button id="hud-high-contrast" class="hud-action" type="button" data-hud-action aria-pressed="false">
-            Contrast · Standard
-          </button>
-          <div id="hud-wardrobe" aria-label="Moonwake wardrobe">
-            <button id="hud-cosmetic-glow" class="hud-action" type="button" data-hud-action>Glow · Moon Cyan</button>
-            <button id="hud-cosmetic-fin" class="hud-action" type="button" data-hud-action>Fins · Tideglass</button>
-            <button id="hud-cosmetic-trail" class="hud-action" type="button" data-hud-action>Trail · Moonwake</button>
-            <button id="hud-cosmetic-aura" class="hud-action" type="button" data-hud-action>Aura · Quiet Current</button>
-          </div>
-          <button id="hud-telemetry-choice" class="hud-action" type="button" data-hud-action>
-            Anonymous playtest data: choose
-          </button>
-          <div id="hud-telemetry-note">No name, email, device fingerprint or touch path is collected.</div>
+          <button id="hud-dive-again" class="hud-action primary" type="button" data-hud-action>Dive Again</button>
+          <button id="hud-race-best" class="hud-action" type="button" data-hud-action disabled>Race saved ghost</button>
+          <button id="hud-open-hub" class="hud-action" type="button" data-hud-action>Moon Well</button>
         </div>
-        <div id="hud-restart">Tap outside the buttons for a fresh current</div>
+        <div id="hud-restart">Choose Dive Again for a fresh current</div>
       </div>
     </div>
 

@@ -7,6 +7,7 @@ export interface CosmeticDefinition {
   category: CosmeticCategory;
   name: string;
   unlockLevel: number;
+  pricePearls: number;
   primaryColor: number;
   secondaryColor: number;
   strength: number;
@@ -53,6 +54,7 @@ const DEFAULTS: CosmeticDefinition[] = [
     category: "glow",
     name: "Moon Cyan",
     unlockLevel: 1,
+    pricePearls: 0,
     primaryColor: 0x63e6ff,
     secondaryColor: 0x7c72ff,
     strength: 0
@@ -62,6 +64,7 @@ const DEFAULTS: CosmeticDefinition[] = [
     category: "fin",
     name: "Tideglass",
     unlockLevel: 1,
+    pricePearls: 0,
     primaryColor: 0x79edf2,
     secondaryColor: 0x7659d4,
     strength: 0
@@ -71,6 +74,7 @@ const DEFAULTS: CosmeticDefinition[] = [
     category: "trail",
     name: "Moonwake",
     unlockLevel: 1,
+    pricePearls: 0,
     primaryColor: 0x8fefff,
     secondaryColor: 0x7a5cff,
     strength: 1
@@ -80,6 +84,7 @@ const DEFAULTS: CosmeticDefinition[] = [
     category: "aura",
     name: "Quiet Current",
     unlockLevel: 1,
+    pricePearls: 0,
     primaryColor: 0x63e6ff,
     secondaryColor: 0x63e6ff,
     strength: 0
@@ -92,18 +97,18 @@ const DEFAULTS: CosmeticDefinition[] = [
  * mesh, material, collider, sound authority, score modifier or input change.
  */
 const UNLOCKS: CosmeticDefinition[] = [
-  { id: "glow.coral-rose", category: "glow", name: "Coral Rose", unlockLevel: 2, primaryColor: 0xff78b9, secondaryColor: 0x7cecff, strength: 0.3 },
-  { id: "trail.foam-lace", category: "trail", name: "Foam Lace", unlockLevel: 2, primaryColor: 0xd5fbff, secondaryColor: 0x4dd7e8, strength: 1 },
-  { id: "fin.nacre-edge", category: "fin", name: "Nacre Edge", unlockLevel: 3, primaryColor: 0xffd9f1, secondaryColor: 0x8ef4ff, strength: 0.72 },
-  { id: "aura.pearl-halo", category: "aura", name: "Pearl Halo", unlockLevel: 3, primaryColor: 0xfff0c7, secondaryColor: 0xbef8ff, strength: 0.28 },
-  { id: "glow.lapis-violet", category: "glow", name: "Lapis Violet", unlockLevel: 4, primaryColor: 0x8f78ff, secondaryColor: 0x50e6ff, strength: 0.34 },
-  { id: "trail.star-ribbon", category: "trail", name: "Star Ribbon", unlockLevel: 4, primaryColor: 0xf4e9ff, secondaryColor: 0x9b60ff, strength: 1 },
-  { id: "fin.coral-bloom", category: "fin", name: "Coral Bloom", unlockLevel: 5, primaryColor: 0xff789f, secondaryColor: 0xffb974, strength: 0.74 },
-  { id: "aura.tide-sparks", category: "aura", name: "Tide Sparks", unlockLevel: 6, primaryColor: 0x5cf6ff, secondaryColor: 0x8d72ff, strength: 0.38 },
-  { id: "glow.pearl-gold", category: "glow", name: "Pearl Gold", unlockLevel: 7, primaryColor: 0xffd889, secondaryColor: 0x81efff, strength: 0.32 },
-  { id: "trail.royal-current", category: "trail", name: "Royal Current", unlockLevel: 8, primaryColor: 0xff9fe6, secondaryColor: 0x694dff, strength: 1 },
-  { id: "fin.astral-edge", category: "fin", name: "Astral Edge", unlockLevel: 9, primaryColor: 0xa7ecff, secondaryColor: 0xc071ff, strength: 0.78 },
-  { id: "aura.astral-crown", category: "aura", name: "Astral Crown", unlockLevel: 10, primaryColor: 0xffc9f2, secondaryColor: 0x7defff, strength: 0.48 }
+  { id: "glow.coral-rose", category: "glow", name: "Coral Rose", unlockLevel: 2, pricePearls: 70, primaryColor: 0xff78b9, secondaryColor: 0x7cecff, strength: 0.3 },
+  { id: "trail.foam-lace", category: "trail", name: "Foam Lace", unlockLevel: 2, pricePearls: 85, primaryColor: 0xd5fbff, secondaryColor: 0x4dd7e8, strength: 1 },
+  { id: "fin.nacre-edge", category: "fin", name: "Nacre Edge", unlockLevel: 3, pricePearls: 115, primaryColor: 0xffd9f1, secondaryColor: 0x8ef4ff, strength: 0.72 },
+  { id: "aura.pearl-halo", category: "aura", name: "Pearl Halo", unlockLevel: 3, pricePearls: 135, primaryColor: 0xfff0c7, secondaryColor: 0xbef8ff, strength: 0.28 },
+  { id: "glow.lapis-violet", category: "glow", name: "Lapis Violet", unlockLevel: 4, pricePearls: 165, primaryColor: 0x8f78ff, secondaryColor: 0x50e6ff, strength: 0.34 },
+  { id: "trail.star-ribbon", category: "trail", name: "Star Ribbon", unlockLevel: 4, pricePearls: 195, primaryColor: 0xf4e9ff, secondaryColor: 0x9b60ff, strength: 1 },
+  { id: "fin.coral-bloom", category: "fin", name: "Coral Bloom", unlockLevel: 5, pricePearls: 235, primaryColor: 0xff789f, secondaryColor: 0xffb974, strength: 0.74 },
+  { id: "aura.tide-sparks", category: "aura", name: "Tide Sparks", unlockLevel: 6, pricePearls: 280, primaryColor: 0x5cf6ff, secondaryColor: 0x8d72ff, strength: 0.38 },
+  { id: "glow.pearl-gold", category: "glow", name: "Pearl Gold", unlockLevel: 7, pricePearls: 330, primaryColor: 0xffd889, secondaryColor: 0x81efff, strength: 0.32 },
+  { id: "trail.royal-current", category: "trail", name: "Royal Current", unlockLevel: 8, pricePearls: 390, primaryColor: 0xff9fe6, secondaryColor: 0x694dff, strength: 1 },
+  { id: "fin.astral-edge", category: "fin", name: "Astral Edge", unlockLevel: 9, pricePearls: 460, primaryColor: 0xa7ecff, secondaryColor: 0xc071ff, strength: 0.78 },
+  { id: "aura.astral-crown", category: "aura", name: "Astral Crown", unlockLevel: 10, pricePearls: 540, primaryColor: 0xffc9f2, secondaryColor: 0x7defff, strength: 0.48 }
 ];
 
 export const COSMETIC_CATALOG: readonly CosmeticDefinition[] = Object.freeze([
@@ -121,6 +126,10 @@ export const DEFAULT_COSMETIC_LOADOUT: Readonly<CosmeticLoadout> = Object.freeze
   trail: "trail.moonwake",
   aura: "aura.none"
 });
+
+export const DEFAULT_COSMETIC_IDS: readonly string[] = Object.freeze(
+  Object.values(DEFAULT_COSMETIC_LOADOUT)
+);
 
 const cosmeticById = new Map(COSMETIC_CATALOG.map((entry) => [entry.id, entry]));
 
@@ -165,6 +174,38 @@ export function unlockedCosmeticsForXp(xp: number): CosmeticDefinition[] {
   return COSMETIC_CATALOG.filter((entry) => entry.unlockLevel <= level);
 }
 
+export function sanitizeOwnedCosmetics(value: unknown): string[] {
+  const requested = Array.isArray(value) ? value : [];
+  const valid = requested.filter((id): id is string => (
+    typeof id === "string" && cosmeticById.has(id)
+  ));
+  return Array.from(new Set([...DEFAULT_COSMETIC_IDS, ...valid])).sort();
+}
+
+export function grandfatheredCosmeticsForXp(xp: number): string[] {
+  return sanitizeOwnedCosmetics(unlockedCosmeticsForXp(xp).map((item) => item.id));
+}
+
+export type CosmeticAvailability = "locked" | "available" | "owned" | "equipped";
+
+export function cosmeticAvailability(
+  cosmetic: CosmeticDefinition,
+  tideXp: number,
+  ownedCosmetics: readonly string[],
+  loadout: CosmeticLoadout
+): CosmeticAvailability {
+  if (loadout[cosmetic.category] === cosmetic.id) return "equipped";
+  if (ownedCosmetics.includes(cosmetic.id)) return "owned";
+  return tideLevelForXp(tideXp) >= cosmetic.unlockLevel ? "available" : "locked";
+}
+
+export function purchasedCosmeticCost(ids: readonly string[]): number {
+  return Array.from(new Set(ids)).reduce((total, id) => {
+    const item = cosmeticDefinition(id);
+    return total + (item?.pricePearls ?? 0);
+  }, 0);
+}
+
 export function newlyUnlockedCosmetics(
   previousXp: number,
   nextXp: number
@@ -179,18 +220,20 @@ export function newlyUnlockedCosmetics(
 
 export function sanitizeCosmeticLoadout(
   value: unknown,
-  tideXp: number
+  ownedOrXp: readonly string[] | number
 ): CosmeticLoadout {
   const candidate = value && typeof value === "object"
     ? value as Partial<CosmeticLoadout>
     : {};
-  const level = tideLevelForXp(tideXp);
+  const owned = Array.isArray(ownedOrXp)
+    ? new Set(sanitizeOwnedCosmetics(ownedOrXp))
+    : new Set(unlockedCosmeticsForXp(ownedOrXp as number).map((item) => item.id));
   const choose = (category: CosmeticCategory): string => {
     const requested = candidate[category];
     const definition = typeof requested === "string"
       ? cosmeticDefinition(requested)
       : null;
-    return definition?.category === category && definition.unlockLevel <= level
+    return definition?.category === category && owned.has(definition.id)
       ? definition.id
       : DEFAULT_COSMETIC_LOADOUT[category];
   };
@@ -205,16 +248,36 @@ export function sanitizeCosmeticLoadout(
 export function nextCosmeticInCategory(
   loadout: CosmeticLoadout,
   category: CosmeticCategory,
-  tideXp: number
+  ownedOrXp: readonly string[] | number
 ): CosmeticLoadout {
-  const available = unlockedCosmeticsForXp(tideXp)
+  const owned = Array.isArray(ownedOrXp)
+    ? sanitizeOwnedCosmetics(ownedOrXp)
+    : unlockedCosmeticsForXp(ownedOrXp as number).map((item) => item.id);
+  const available = COSMETIC_CATALOG
+    .filter((entry) => owned.includes(entry.id))
     .filter((entry) => entry.category === category);
-  if (available.length < 1) return sanitizeCosmeticLoadout(loadout, tideXp);
+  if (available.length < 1) return sanitizeCosmeticLoadout(loadout, owned);
   const current = available.findIndex((entry) => entry.id === loadout[category]);
   const next = available[(current + 1 + available.length) % available.length] ?? available[0];
   return {
-    ...sanitizeCosmeticLoadout(loadout, tideXp),
+    ...sanitizeCosmeticLoadout(loadout, owned),
     [category]: next?.id ?? DEFAULT_COSMETIC_LOADOUT[category]
+  };
+}
+
+export function loadoutWithCosmetic(
+  loadout: CosmeticLoadout,
+  cosmeticId: string,
+  ownedCosmetics: readonly string[]
+): CosmeticLoadout {
+  const cosmetic = cosmeticDefinition(cosmeticId);
+  const owned = sanitizeOwnedCosmetics(ownedCosmetics);
+  if (!cosmetic || !owned.includes(cosmetic.id)) {
+    return sanitizeCosmeticLoadout(loadout, owned);
+  }
+  return {
+    ...sanitizeCosmeticLoadout(loadout, owned),
+    [cosmetic.category]: cosmetic.id
   };
 }
 
@@ -245,9 +308,13 @@ export function calculateRunPearlReward(summary: ReplaySummary): RunPearlReward 
     5,
     Math.min(220, 5 + distancePearls + skillPearls + scorePearls + cleanRunPearls)
   );
+  const xp = Math.max(
+    3,
+    Math.min(150, Math.floor(pearls * 0.62) + Math.min(12, clampCount(summary.nearMisses)))
+  );
   return {
     pearls,
-    xp: pearls,
+    xp,
     distancePearls,
     skillPearls,
     scorePearls,

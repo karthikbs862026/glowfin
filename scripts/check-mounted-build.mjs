@@ -12,10 +12,22 @@ if (!index.includes('id="startup-error" role="alert"')) {
   throw new Error("Production HTML omits the visible startup recovery state.");
 }
 if (!index.includes('id="runtime-status"')) {
-  throw new Error("Production HTML omits the Version 36 runtime recovery state.");
+  throw new Error("Production HTML omits the runtime recovery state.");
 }
 if (!index.includes('id="hud-build"')) {
-  throw new Error("Production HTML omits the visible release identity.");
+  throw new Error("Production HTML omits the Settings diagnostic release identity.");
+}
+for (const id of [
+  "moonwell-hub",
+  "moonwell-dive",
+  "moonwell-wardrobe-grid",
+  "tutorial-overlay",
+  "hud-dive-again",
+  "hud-open-hub"
+]) {
+  if (!index.includes(`id="${id}"`)) {
+    throw new Error(`Production HTML omits Version 37 player surface #${id}.`);
+  }
 }
 
 const release = JSON.parse(await readFile(new URL("release.json", root), "utf8"));

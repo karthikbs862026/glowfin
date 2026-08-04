@@ -115,14 +115,18 @@ try {
     );
   }
 
-  // Regression for the real-device failure: pressing the visible sound button
-  // while locked must activate audio, not race the capture-phase unlock and
-  // immediately mute it again.
-  await page.locator("#hud-audio-toggle").tap();
-  await waitForAudioReady("sound-button activation");
+  // Version 37 deliberately unlocks sound and begins simulation through the
+  // Moon Well CTA. The corner sound control becomes actionable after the hub
+  // closes, avoiding a competing first-run gesture.
+  await page.locator("#moonwell-dive").tap();
+  await waitForAudioReady("initial tap-to-dive activation");
   await page.waitForTimeout(280);
-  const afterButtonActivation = await snapshot();
+  const afterDiveActivation = await snapshot();
 
+  // The first corner-button tap after Dive confirms/replays the newly unlocked
+  // sound path. A second deliberate tap is the mute command.
+  await page.locator("#hud-audio-toggle").tap();
+  await waitForAudioReady("initial dive-then-button confirmation");
   await page.locator("#hud-audio-toggle").tap();
   await page.waitForFunction(
     () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-state") === "muted"
@@ -138,30 +142,31 @@ try {
     );
   }
 
+  await page.locator("#moonwell-dive").tap();
   await page.locator("#hud-audio-toggle").tap();
   await waitForAudioReady("unmute activation");
   await page.waitForTimeout(280);
   const afterUnmute = await snapshot();
 
-  // Also retain the original game-surface gesture path. Start from a clean,
-  // unlocked preference so a canvas touch must create/resume sources and emit
-  // measurable signal without delaying the steering listener.
+  // Version 37 makes Tap to Dive the deliberate launch and audio-activation
+  // gesture. Start from a clean preference so that CTA must create/resume both
+  // audio paths before the first simulation step.
   await page.locator("#hud-audio-toggle").tap();
   await page.evaluate(() => localStorage.removeItem("glowfin-audio-muted-v1"));
   await page.reload({ waitUntil: "load" });
-  await page.locator("#glowfin-canvas").waitFor({ state: "visible" });
-  const beforeCanvasGesture = await snapshot();
-  await page.locator("#glowfin-canvas").tap({ position: { x: 195, y: 640 } });
-  await waitForAudioReady("touch-canvas activation");
+  await page.locator("#moonwell-dive").waitFor({ state: "visible" });
+  const beforeSecondDive = await snapshot();
+  await page.locator("#moonwell-dive").tap();
+  await waitForAudioReady("second tap-to-dive activation");
   await page.waitForTimeout(280);
-  const afterCanvasGesture = await snapshot();
+  const afterSecondDive = await snapshot();
 
-  // A common phone flow is canvas first, sound button second. The first
-  // explicit sound-button tap must confirm/replay sound, not mute the audio that
-  // the canvas gesture just started.
+  // A common phone flow is Dive first, sound button second. The first explicit
+  // sound-button tap must confirm/replay sound, not mute the audio that the Dive
+  // gesture just started.
   await page.locator("#hud-audio-toggle").tap();
-  await waitForAudioReady("canvas-then-button confirmation");
-  const afterCanvasThenButton = await snapshot();
+  await waitForAudioReady("dive-then-button confirmation");
+  const afterDiveThenButton = await snapshot();
   await page.locator("#hud-audio-toggle").tap();
   await page.waitForFunction(
     () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-state") === "muted",
@@ -170,41 +175,41 @@ try {
   );
 
   if (
-    afterButtonActivation.pressed !== "true" ||
-    afterButtonActivation.label !== "Mute sound" ||
+    afterDiveActivation.pressed !== "true" ||
+    afterDiveActivation.label !== "Mute sound" ||
     afterMute.pressed !== "false" ||
     afterUnmute.pressed !== "true" ||
-    beforeCanvasGesture.state !== "locked" ||
-    beforeCanvasGesture.pressed !== "false" ||
-    afterCanvasGesture.pressed !== "true" ||
-    afterCanvasThenButton.state !== "active" ||
-    afterCanvasThenButton.pressed !== "true" ||
-    [afterButtonActivation, afterUnmute, afterCanvasGesture, afterCanvasThenButton]
+    beforeSecondDive.state !== "locked" ||
+    beforeSecondDive.pressed !== "false" ||
+    afterSecondDive.pressed !== "true" ||
+    afterDiveThenButton.state !== "active" ||
+    afterDiveThenButton.pressed !== "true" ||
+    [afterDiveActivation, afterUnmute, afterSecondDive, afterDiveThenButton]
       .some((state) =>
         state.native !== "playing" ||
         state.signal !== "generated" ||
         Number(state.rms) <= 0
       ) ||
-    Object.keys(readinessProofs).length !== 4 ||
+    Object.keys(readinessProofs).length !== 5 ||
     Object.values(readinessProofs).some((proof) =>
       !proof ||
       proof.nativeMediaTime <= 0 ||
       proof.nativePaused ||
       proof.signalRms <= 0
     ) ||
-    [beforeGesture, afterButtonActivation, afterMute, afterReload, afterUnmute, beforeCanvasGesture, afterCanvasGesture, afterCanvasThenButton]
+    [beforeGesture, afterDiveActivation, afterMute, afterReload, afterUnmute, beforeSecondDive, afterSecondDive, afterDiveThenButton]
       .some((state) => state.startupError)
   ) {
     throw new Error(
       `Audio signal, accessibility state, or startup-failure contract was violated: ${JSON.stringify({
         beforeGesture,
-        afterButtonActivation,
+        afterDiveActivation,
         afterMute,
         afterReload,
         afterUnmute,
-        beforeCanvasGesture,
-        afterCanvasGesture,
-        afterCanvasThenButton,
+        beforeSecondDive,
+        afterSecondDive,
+        afterDiveThenButton,
         readinessProofs
       })}`
     );
@@ -217,13 +222,13 @@ try {
   writeFileSync(output, `${JSON.stringify({
     source: "ci-chromium-native-media-plus-web-audio-signal",
     beforeGesture,
-    afterButtonActivation,
+    afterDiveActivation,
     afterMute,
     afterReload,
     afterUnmute,
-    beforeCanvasGesture,
-    afterCanvasGesture,
-    afterCanvasThenButton,
+    beforeSecondDive,
+    afterSecondDive,
+    afterDiveThenButton,
     readinessProofs,
     errors
   }, null, 2)}\n`, "utf8");

@@ -69,7 +69,7 @@ export interface DailyCompletion {
 }
 
 export const DAILY_TRIAL_REWARD_PEARLS = 36;
-export const DAILY_TRIAL_REWARD_XP = 36;
+export const DAILY_TRIAL_REWARD_XP = 22;
 export const MAX_DAILY_CLAIMS = 400;
 export const MAX_OBJECTIVE_CLAIMS = 512;
 export const MAX_OBJECTIVE_PROGRESS_KEYS = 64;
@@ -177,21 +177,21 @@ export function rotatingObjectives(dayId: string): DailyObjectiveDefinition[] {
       cadence: "daily",
       ...dailyA,
       rewardPearls: 24,
-      rewardXp: 24
+      rewardXp: 15
     },
     {
       id: `daily:${dayId}:${dailyB.kind}:${dailyB.target}`,
       cadence: "daily",
       ...dailyB,
       rewardPearls: 28,
-      rewardXp: 28
+      rewardXp: 17
     },
     {
       id: `weekly:${week}:${weekly.kind}:${weekly.target}`,
       cadence: "weekly",
       ...weekly,
       rewardPearls: 72,
-      rewardXp: 72
+      rewardXp: 44
     }
   ];
 }

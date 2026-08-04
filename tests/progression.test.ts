@@ -4,9 +4,14 @@ import {
   COSMETIC_UNLOCKS,
   DEFAULT_COSMETIC_LOADOUT,
   calculateRunPearlReward,
+  cosmeticAvailability,
   cosmeticPalette,
+  grandfatheredCosmeticsForXp,
+  loadoutWithCosmetic,
   nextCosmeticInCategory,
+  purchasedCosmeticCost,
   sanitizeCosmeticLoadout,
+  sanitizeOwnedCosmetics,
   tideLevelForXp,
   tideProgressForXp,
   tideXpForLevel
@@ -107,7 +112,7 @@ describe("Version 33 Moonwake progression", () => {
     });
     expect(clean.cleanRunPearls).toBe(8);
     expect(clean.pearls - hit.pearls).toBe(8);
-    expect(clean.xp).toBe(clean.pearls);
+    expect(clean.xp).toBeLessThan(clean.pearls);
     expect(calculateRunPearlReward({
       score: Number.MAX_SAFE_INTEGER,
       elapsedSec: 999,
@@ -115,5 +120,34 @@ describe("Version 33 Moonwake progression", () => {
       nearMisses: Number.MAX_SAFE_INTEGER,
       collisions: 0
     }).pearls).toBeLessThanOrEqual(220);
+  });
+
+  it("separates Tide availability, Pearl ownership and equipped state", () => {
+    const coral = COSMETIC_CATALOG.find((item) => item.id === "glow.coral-rose")!;
+    const defaults = sanitizeOwnedCosmetics([]);
+    expect(cosmeticAvailability(coral, 0, defaults, { ...DEFAULT_COSMETIC_LOADOUT })).toBe("locked");
+    expect(cosmeticAvailability(
+      coral,
+      tideXpForLevel(2),
+      defaults,
+      { ...DEFAULT_COSMETIC_LOADOUT }
+    )).toBe("available");
+    const owned = sanitizeOwnedCosmetics([...defaults, coral.id]);
+    expect(cosmeticAvailability(
+      coral,
+      tideXpForLevel(2),
+      owned,
+      { ...DEFAULT_COSMETIC_LOADOUT }
+    )).toBe("owned");
+    const equipped = loadoutWithCosmetic({ ...DEFAULT_COSMETIC_LOADOUT }, coral.id, owned);
+    expect(cosmeticAvailability(coral, tideXpForLevel(2), owned, equipped)).toBe("equipped");
+    expect(purchasedCosmeticCost([coral.id, coral.id])).toBe(coral.pricePearls);
+  });
+
+  it("grandfathers every previously auto-unlocked cosmetic during Version 36 migration", () => {
+    const owned = grandfatheredCosmeticsForXp(tideXpForLevel(4));
+    expect(owned).toContain("glow.coral-rose");
+    expect(owned).toContain("trail.star-ribbon");
+    expect(owned).not.toContain("fin.coral-bloom");
   });
 });

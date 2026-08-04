@@ -69,6 +69,8 @@ export class Hud {
   private readonly competitiveDivision: HTMLElement;
   private readonly leaderboardStatus: HTMLElement;
   private readonly leaderboardList: HTMLElement;
+  private readonly diveAgain: HTMLButtonElement;
+  private readonly openHub: HTMLButtonElement;
   private readonly raceBest: HTMLButtonElement;
   private readonly dailyTrial: HTMLButtonElement;
   private readonly submitScore: HTMLButtonElement;
@@ -78,7 +80,6 @@ export class Hud {
   private readonly highContrast: HTMLButtonElement;
   private readonly rewardedPearls: HTMLButtonElement;
   private readonly telemetryChoice: HTMLButtonElement;
-  private readonly wardrobe = new Map<CosmeticCategory, HTMLButtonElement>();
 
   constructor(root: Document = document) {
     this.score = Hud.require(root, "hud-score");
@@ -102,6 +103,8 @@ export class Hud {
     this.competitiveDivision = Hud.require(root, "hud-competitive-division");
     this.leaderboardStatus = Hud.require(root, "hud-leaderboard-status");
     this.leaderboardList = Hud.require(root, "hud-leaderboard-list");
+    this.diveAgain = Hud.requireButton(root, "hud-dive-again");
+    this.openHub = Hud.requireButton(root, "hud-open-hub");
     this.raceBest = Hud.requireButton(root, "hud-race-best");
     this.dailyTrial = Hud.requireButton(root, "hud-daily-trial");
     this.submitScore = Hud.requireButton(root, "hud-submit-score");
@@ -111,9 +114,6 @@ export class Hud {
     this.highContrast = Hud.requireButton(root, "hud-high-contrast");
     this.rewardedPearls = Hud.requireButton(root, "hud-rewarded-pearls");
     this.telemetryChoice = Hud.requireButton(root, "hud-telemetry-choice");
-    for (const category of ["glow", "fin", "trail", "aura"] as const) {
-      this.wardrobe.set(category, Hud.requireButton(root, `hud-cosmetic-${category}`));
-    }
   }
 
   private static require(root: Document, id: string): HTMLElement {
@@ -171,16 +171,6 @@ export class Hud {
     this.tideProgressFill.style.width = `${pct.toFixed(1)}%`;
     this.tideProgressLabel.textContent =
       `Tide ${meta.tideLevel} · ${Math.floor(meta.tideXpIntoLevel)}/${Math.floor(meta.tideXpForNextLevel)} current`;
-    const labels: Record<CosmeticCategory, string> = {
-      glow: "Glow",
-      fin: "Fins",
-      trail: "Trail",
-      aura: "Aura"
-    };
-    for (const category of ["glow", "fin", "trail", "aura"] as const) {
-      const button = this.wardrobe.get(category);
-      if (button) button.textContent = `${labels[category]} · ${meta.cosmeticNames[category]}`;
-    }
   }
 
   updateGhostGap(playerDistance: number, ghostDistance: number): void {
@@ -219,6 +209,14 @@ export class Hud {
     this.wireAction(this.raceBest, listener);
   }
 
+  onDiveAgain(listener: () => void): void {
+    this.wireAction(this.diveAgain, listener);
+  }
+
+  onOpenHub(listener: () => void): void {
+    this.wireAction(this.openHub, listener);
+  }
+
   onDailyTrial(listener: () => void): void {
     this.wireAction(this.dailyTrial, listener);
   }
@@ -245,11 +243,6 @@ export class Hud {
 
   onRewardedPearls(listener: () => void): void {
     this.wireAction(this.rewardedPearls, listener);
-  }
-
-  onCosmeticCycle(category: CosmeticCategory, listener: () => void): void {
-    const button = this.wardrobe.get(category);
-    if (button) this.wireAction(button, listener);
   }
 
   onTelemetryChoice(listener: () => void): void {
@@ -375,7 +368,7 @@ export class Hud {
       : "Rewards already secured";
     this.unlockBanner.dataset["visible"] = presentation.unlockedNames.length > 0 ? "true" : "false";
     this.unlockBanner.textContent = presentation.unlockedNames.length > 0
-      ? `Unlocked · ${presentation.unlockedNames.join(" · ")}`
+      ? `Now available in Wardrobe · ${presentation.unlockedNames.join(" · ")}`
       : "";
     this.objectiveList.replaceChildren(...presentation.objectives.map((objective) => {
       const row = document.createElement("div");

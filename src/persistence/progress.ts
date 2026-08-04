@@ -21,12 +21,16 @@ import {
   type StreakSummary
 } from "../meta/daily";
 import {
+  DEFAULT_COSMETIC_IDS,
   DEFAULT_COSMETIC_LOADOUT,
   calculateRunPearlReward,
   cosmeticDefinition,
+  grandfatheredCosmeticsForXp,
+  loadoutWithCosmetic,
   newlyUnlockedCosmetics,
-  nextCosmeticInCategory,
+  purchasedCosmeticCost,
   sanitizeCosmeticLoadout,
+  sanitizeOwnedCosmetics,
   tideLevelForXp,
   type CosmeticCategory,
   type CosmeticDefinition,
@@ -34,9 +38,11 @@ import {
   type RunPearlReward
 } from "../meta/progression";
 
-export const PROGRESS_SCHEMA_VERSION = 2 as const;
-export const PROGRESS_PRIMARY_KEY = "glowfin.progress.v2.primary";
-export const PROGRESS_BACKUP_KEY = "glowfin.progress.v2.backup";
+export const PROGRESS_SCHEMA_VERSION = 3 as const;
+export const PROGRESS_PRIMARY_KEY = "glowfin.progress.v3.primary";
+export const PROGRESS_BACKUP_KEY = "glowfin.progress.v3.backup";
+export const VERSION_2_PRIMARY_KEY = "glowfin.progress.v2.primary";
+export const VERSION_2_BACKUP_KEY = "glowfin.progress.v2.backup";
 export const VERSION_1_PRIMARY_KEY = "glowfin.progress.v1.primary";
 export const VERSION_1_BACKUP_KEY = "glowfin.progress.v1.backup";
 export const LEGACY_BEST_SCORE_KEY = "glowfin.best-score";
@@ -47,9 +53,20 @@ export type TelemetryConsent = "unset" | "granted" | "denied";
 
 export interface GlowfinProgressionV2 {
   lumenPearls: number;
+  lumenPearlsEarned: number;
   tideXp: number;
+  ownedCosmetics: string[];
+  purchasedCosmetics: string[];
   equippedCosmetics: CosmeticLoadout;
   recentRewardClaims: string[];
+}
+
+export interface GlowfinOnboardingV1 {
+  tutorialCompleted: boolean;
+  firstRunCompleted: boolean;
+  firstRewardSeen: boolean;
+  firstPurchaseCompleted: boolean;
+  firstEquipCompleted: boolean;
 }
 
 export interface GlowfinProgressV2 {
@@ -68,6 +85,25 @@ export interface GlowfinProgressV2 {
   ghostEnabled: boolean;
   progression: GlowfinProgressionV2;
   daily: DailyRetentionState;
+  onboarding: GlowfinOnboardingV1;
+}
+
+interface GlowfinProgressV2Legacy {
+  schemaVersion: 2;
+  revision: number;
+  updatedAt: string;
+  bestScore: number;
+  bestReplay: GlowfinReplayV1 | null;
+  totals: GlowfinProgressV2["totals"];
+  telemetryConsent: TelemetryConsent;
+  ghostEnabled: boolean;
+  progression: {
+    lumenPearls: number;
+    tideXp: number;
+    equippedCosmetics: CosmeticLoadout;
+    recentRewardClaims: string[];
+  };
+  daily: DailyRetentionState;
 }
 
 interface GlowfinProgressV1Legacy {
@@ -81,9 +117,15 @@ interface GlowfinProgressV1Legacy {
   ghostEnabled: boolean;
 }
 
-interface ProgressEnvelopeV2 {
-  envelopeVersion: 2;
+interface ProgressEnvelopeV3 {
+  envelopeVersion: 3;
   payload: GlowfinProgressV2;
+  checksum: string;
+}
+
+interface LegacyProgressEnvelopeV2 {
+  envelopeVersion: 2;
+  payload: GlowfinProgressV2Legacy;
   checksum: string;
 }
 
@@ -101,7 +143,7 @@ export interface ProgressStorage {
 
 export interface ProgressLoadResult {
   progress: GlowfinProgressV2;
-  recoveredFrom: "primary" | "backup" | "version-1" | "legacy" | "default";
+  recoveredFrom: "primary" | "backup" | "version-2" | "version-1" | "legacy" | "default";
   recoveryReason: string | null;
 }
 
@@ -147,6 +189,27 @@ export interface RewardedPearlGrantResult {
   pearls: number;
 }
 
+export type CosmeticPurchaseStatus =
+  | "purchased"
+  | "owned"
+  | "locked"
+  | "insufficient-pearls"
+  | "unknown";
+
+export interface CosmeticPurchaseResult {
+  progress: GlowfinProgressV2;
+  status: CosmeticPurchaseStatus;
+  cosmetic: CosmeticDefinition | null;
+  spentPearls: number;
+}
+
+export interface CosmeticEquipResult {
+  progress: GlowfinProgressV2;
+  equipped: boolean;
+  cosmetic: CosmeticDefinition | null;
+  firstEquip: boolean;
+}
+
 export interface SessionObservation {
   progress: GlowfinProgressV2;
   dayId: string;
@@ -177,6 +240,10 @@ export function progressChecksum(progress: GlowfinProgressV2): string {
 }
 
 function legacyProgressChecksum(progress: GlowfinProgressV1Legacy): string {
+  return checksumText(JSON.stringify(progress));
+}
+
+function version2ProgressChecksum(progress: GlowfinProgressV2Legacy): string {
   return checksumText(JSON.stringify(progress));
 }
 
@@ -245,7 +312,11 @@ function progressionValid(value: unknown): value is GlowfinProgressionV2 {
   const progression = value as Partial<GlowfinProgressionV2>;
   if (
     !Number.isInteger(progression.lumenPearls) || Number(progression.lumenPearls) < 0 ||
+    !Number.isInteger(progression.lumenPearlsEarned) || Number(progression.lumenPearlsEarned) < 0 ||
+    Number(progression.lumenPearls) > Number(progression.lumenPearlsEarned) ||
     !Number.isInteger(progression.tideXp) || Number(progression.tideXp) < 0 ||
+    !Array.isArray(progression.ownedCosmetics) ||
+    !Array.isArray(progression.purchasedCosmetics) ||
     !Array.isArray(progression.recentRewardClaims) ||
     progression.recentRewardClaims.length > MAX_RECENT_REWARD_CLAIMS ||
     !progression.recentRewardClaims.every((claim) => (
@@ -255,11 +326,76 @@ function progressionValid(value: unknown): value is GlowfinProgressionV2 {
   ) {
     return false;
   }
+  const owned = sanitizeOwnedCosmetics(progression.ownedCosmetics);
+  const purchased = sanitizeOwnedCosmetics(progression.purchasedCosmetics)
+    .filter((id) => !DEFAULT_COSMETIC_IDS.includes(id));
+  if (
+    JSON.stringify(owned) !== JSON.stringify(progression.ownedCosmetics) ||
+    JSON.stringify(purchased) !== JSON.stringify(progression.purchasedCosmetics) ||
+    !purchased.every((id) => owned.includes(id)) ||
+    Number(progression.lumenPearls) !== Math.max(
+      0,
+      Number(progression.lumenPearlsEarned) - purchasedCosmeticCost(purchased)
+    )
+  ) return false;
+  const sanitized = sanitizeCosmeticLoadout(
+    progression.equippedCosmetics,
+    owned
+  );
+  return JSON.stringify(sanitized) === JSON.stringify(progression.equippedCosmetics);
+}
+
+function onboardingValid(value: unknown): value is GlowfinOnboardingV1 {
+  if (!value || typeof value !== "object") return false;
+  const onboarding = value as Partial<GlowfinOnboardingV1>;
+  return [
+    onboarding.tutorialCompleted,
+    onboarding.firstRunCompleted,
+    onboarding.firstRewardSeen,
+    onboarding.firstPurchaseCompleted,
+    onboarding.firstEquipCompleted
+  ].every((entry) => typeof entry === "boolean");
+}
+
+function version2ProgressionValid(
+  value: unknown
+): value is GlowfinProgressV2Legacy["progression"] {
+  if (!value || typeof value !== "object") return false;
+  const progression = value as Partial<GlowfinProgressV2Legacy["progression"]>;
+  if (
+    !Number.isInteger(progression.lumenPearls) || Number(progression.lumenPearls) < 0 ||
+    !Number.isInteger(progression.tideXp) || Number(progression.tideXp) < 0 ||
+    !Array.isArray(progression.recentRewardClaims) ||
+    progression.recentRewardClaims.length > MAX_RECENT_REWARD_CLAIMS ||
+    !progression.recentRewardClaims.every((claim) => (
+      typeof claim === "string" && /^[a-zA-Z0-9:._-]{1,120}$/.test(claim)
+    )) ||
+    new Set(progression.recentRewardClaims).size !== progression.recentRewardClaims.length
+  ) return false;
   const sanitized = sanitizeCosmeticLoadout(
     progression.equippedCosmetics,
     Number(progression.tideXp)
   );
   return JSON.stringify(sanitized) === JSON.stringify(progression.equippedCosmetics);
+}
+
+function validateVersion2Progress(value: unknown): value is GlowfinProgressV2Legacy {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<GlowfinProgressV2Legacy>;
+  const replayValid = candidate.bestReplay === null || validateReplay(candidate.bestReplay).valid;
+  return (
+    candidate.schemaVersion === 2 &&
+    Number.isInteger(candidate.revision) && Number(candidate.revision) >= 0 &&
+    safeIsoDate(candidate.updatedAt ?? "") &&
+    typeof candidate.bestScore === "number" && Number.isFinite(candidate.bestScore) && candidate.bestScore >= 0 &&
+    replayValid &&
+    totalsValid(candidate.totals) &&
+    consentValid(candidate.telemetryConsent) &&
+    typeof candidate.ghostEnabled === "boolean" &&
+    version2ProgressionValid(candidate.progression) &&
+    dailyValid(candidate.daily) &&
+    (!candidate.bestReplay || candidate.bestReplay.summary.score <= candidate.bestScore + 1e-6)
+  );
 }
 
 function validateLegacyProgress(value: unknown): value is GlowfinProgressV1Legacy {
@@ -296,11 +432,21 @@ export function createDefaultProgress(now = new Date()): GlowfinProgressV2 {
     ghostEnabled: true,
     progression: {
       lumenPearls: 0,
+      lumenPearlsEarned: 0,
       tideXp: 0,
+      ownedCosmetics: [...DEFAULT_COSMETIC_IDS].sort(),
+      purchasedCosmetics: [],
       equippedCosmetics: { ...DEFAULT_COSMETIC_LOADOUT },
       recentRewardClaims: []
     },
-    daily: createDefaultDailyRetention()
+    daily: createDefaultDailyRetention(),
+    onboarding: {
+      tutorialCompleted: false,
+      firstRunCompleted: false,
+      firstRewardSeen: false,
+      firstPurchaseCompleted: false,
+      firstEquipCompleted: false
+    }
   };
 }
 
@@ -319,11 +465,59 @@ export function migrateLegacyProgress(
     ghostEnabled: legacy.ghostEnabled,
     progression: {
       lumenPearls: 0,
+      lumenPearlsEarned: 0,
       tideXp: 0,
+      ownedCosmetics: [...DEFAULT_COSMETIC_IDS].sort(),
+      purchasedCosmetics: [],
       equippedCosmetics: { ...DEFAULT_COSMETIC_LOADOUT },
       recentRewardClaims: []
     },
-    daily: createDefaultDailyRetention()
+    daily: createDefaultDailyRetention(),
+    onboarding: {
+      tutorialCompleted: false,
+      firstRunCompleted: false,
+      firstRewardSeen: false,
+      firstPurchaseCompleted: false,
+      firstEquipCompleted: false
+    }
+  };
+}
+
+export function migrateVersion2Progress(
+  legacy: GlowfinProgressV2Legacy,
+  now = new Date()
+): GlowfinProgressV2 {
+  const ownedCosmetics = grandfatheredCosmeticsForXp(legacy.progression.tideXp);
+  const returningPlayer = legacy.totals.runs > 0;
+  return {
+    schemaVersion: PROGRESS_SCHEMA_VERSION,
+    revision: legacy.revision + 1,
+    updatedAt: now.toISOString(),
+    bestScore: legacy.bestScore,
+    bestReplay: cloneReplay(legacy.bestReplay),
+    totals: { ...legacy.totals },
+    telemetryConsent: legacy.telemetryConsent,
+    ghostEnabled: legacy.ghostEnabled,
+    progression: {
+      lumenPearls: legacy.progression.lumenPearls,
+      lumenPearlsEarned: legacy.progression.lumenPearls,
+      tideXp: legacy.progression.tideXp,
+      ownedCosmetics,
+      purchasedCosmetics: [],
+      equippedCosmetics: sanitizeCosmeticLoadout(
+        legacy.progression.equippedCosmetics,
+        ownedCosmetics
+      ),
+      recentRewardClaims: [...legacy.progression.recentRewardClaims]
+    },
+    daily: JSON.parse(JSON.stringify(legacy.daily)) as DailyRetentionState,
+    onboarding: {
+      tutorialCompleted: returningPlayer,
+      firstRunCompleted: returningPlayer,
+      firstRewardSeen: legacy.progression.lumenPearls > 0,
+      firstPurchaseCompleted: false,
+      firstEquipCompleted: returningPlayer
+    }
   };
 }
 
@@ -342,6 +536,7 @@ export function validateProgress(value: unknown): value is GlowfinProgressV2 {
     typeof candidate.ghostEnabled === "boolean" &&
     progressionValid(candidate.progression) &&
     dailyValid(candidate.daily) &&
+    onboardingValid(candidate.onboarding) &&
     (!candidate.bestReplay || candidate.bestReplay.summary.score <= candidate.bestScore + 1e-6)
   );
 }
@@ -351,13 +546,14 @@ export function migrateProgressValue(
   now = new Date()
 ): GlowfinProgressV2 | null {
   if (validateProgress(value)) return cloneProgress(value);
+  if (validateVersion2Progress(value)) return migrateVersion2Progress(value, now);
   if (validateLegacyProgress(value)) return migrateLegacyProgress(value, now);
   return null;
 }
 
 function encodeEnvelope(progress: GlowfinProgressV2): string {
-  const envelope: ProgressEnvelopeV2 = {
-    envelopeVersion: 2,
+  const envelope: ProgressEnvelopeV3 = {
+    envelopeVersion: 3,
     payload: progress,
     checksum: progressChecksum(progress)
   };
@@ -371,9 +567,9 @@ function encodeEnvelope(progress: GlowfinProgressV2): string {
 function decodeEnvelope(encoded: string): GlowfinProgressV2 | null {
   if (encoded.length < 2 || encoded.length > MAX_PROGRESS_BYTES) return null;
   try {
-    const value = JSON.parse(encoded) as Partial<ProgressEnvelopeV2>;
+    const value = JSON.parse(encoded) as Partial<ProgressEnvelopeV3>;
     if (
-      value.envelopeVersion !== 2 ||
+      value.envelopeVersion !== 3 ||
       typeof value.checksum !== "string" ||
       !validateProgress(value.payload) ||
       progressChecksum(value.payload) !== value.checksum
@@ -381,6 +577,22 @@ function decodeEnvelope(encoded: string): GlowfinProgressV2 | null {
       return null;
     }
     return value.payload;
+  } catch {
+    return null;
+  }
+}
+
+function decodeVersion2Envelope(encoded: string, now: Date): GlowfinProgressV2 | null {
+  if (encoded.length < 2 || encoded.length > MAX_PROGRESS_BYTES) return null;
+  try {
+    const value = JSON.parse(encoded) as Partial<LegacyProgressEnvelopeV2>;
+    if (
+      value.envelopeVersion !== 2 ||
+      typeof value.checksum !== "string" ||
+      !validateVersion2Progress(value.payload) ||
+      version2ProgressChecksum(value.payload) !== value.checksum
+    ) return null;
+    return migrateVersion2Progress(value.payload, now);
   } catch {
     return null;
   }
@@ -420,6 +632,18 @@ export function mergeProgress(
     ? local.telemetryConsent
     : remote.telemetryConsent;
   const tideXp = Math.max(local.progression.tideXp, remote.progression.tideXp);
+  const ownedCosmetics = sanitizeOwnedCosmetics([
+    ...local.progression.ownedCosmetics,
+    ...remote.progression.ownedCosmetics
+  ]);
+  const purchasedCosmetics = Array.from(new Set([
+    ...local.progression.purchasedCosmetics,
+    ...remote.progression.purchasedCosmetics
+  ])).sort();
+  const lumenPearlsEarned = Math.max(
+    local.progression.lumenPearlsEarned,
+    remote.progression.lumenPearlsEarned
+  );
   const preferredLoadout = local.revision >= remote.revision
     ? local.progression.equippedCosmetics
     : remote.progression.equippedCosmetics;
@@ -440,18 +664,25 @@ export function mergeProgress(
     telemetryConsent: consent,
     ghostEnabled: local.ghostEnabled,
     progression: {
-      lumenPearls: Math.max(
-        local.progression.lumenPearls,
-        remote.progression.lumenPearls
-      ),
+      lumenPearls: Math.max(0, lumenPearlsEarned - purchasedCosmeticCost(purchasedCosmetics)),
+      lumenPearlsEarned,
       tideXp,
-      equippedCosmetics: sanitizeCosmeticLoadout(preferredLoadout, tideXp),
+      ownedCosmetics,
+      purchasedCosmetics,
+      equippedCosmetics: sanitizeCosmeticLoadout(preferredLoadout, ownedCosmetics),
       recentRewardClaims: mergeRewardClaims(
         local.progression.recentRewardClaims,
         remote.progression.recentRewardClaims
       )
     },
-    daily: mergeDailyRetention(local.daily, remote.daily)
+    daily: mergeDailyRetention(local.daily, remote.daily),
+    onboarding: {
+      tutorialCompleted: local.onboarding.tutorialCompleted || remote.onboarding.tutorialCompleted,
+      firstRunCompleted: local.onboarding.firstRunCompleted || remote.onboarding.firstRunCompleted,
+      firstRewardSeen: local.onboarding.firstRewardSeen || remote.onboarding.firstRewardSeen,
+      firstPurchaseCompleted: local.onboarding.firstPurchaseCompleted || remote.onboarding.firstPurchaseCompleted,
+      firstEquipCompleted: local.onboarding.firstEquipCompleted || remote.onboarding.firstEquipCompleted
+    }
   };
 }
 
@@ -511,6 +742,17 @@ export class ProgressRepository {
         progress: cloneProgress(backup),
         recoveredFrom: "backup",
         recoveryReason: primaryRaw ? "primary-corrupt" : "primary-missing"
+      };
+    }
+
+    const version2 = this.readVersion2();
+    if (version2) {
+      this.current = version2;
+      this.persist(this.current);
+      return {
+        progress: cloneProgress(this.current),
+        recoveredFrom: "version-2",
+        recoveryReason: "migrated-version-2"
       };
     }
 
@@ -605,7 +847,13 @@ export class ProgressRepository {
     const totalXp = awardedRunXp + objectiveUpdate.rewardXp + dailyRewardXp;
     const previousXp = this.current.progression.tideXp;
     const nextXp = clampCount(previousXp + totalXp);
-    const nextPearls = clampCount(this.current.progression.lumenPearls + totalPearls);
+    const nextPearlsEarned = clampCount(
+      this.current.progression.lumenPearlsEarned + totalPearls
+    );
+    const nextPearls = Math.max(
+      0,
+      nextPearlsEarned - purchasedCosmeticCost(this.current.progression.purchasedCosmetics)
+    );
     const unlockedCosmetics = newlyUnlockedCosmetics(previousXp, nextXp);
 
     this.current = {
@@ -622,14 +870,22 @@ export class ProgressRepository {
       },
       progression: {
         lumenPearls: nextPearls,
+        lumenPearlsEarned: nextPearlsEarned,
         tideXp: nextXp,
+        ownedCosmetics: [...this.current.progression.ownedCosmetics],
+        purchasedCosmetics: [...this.current.progression.purchasedCosmetics],
         equippedCosmetics: sanitizeCosmeticLoadout(
           this.current.progression.equippedCosmetics,
-          nextXp
+          this.current.progression.ownedCosmetics
         ),
         recentRewardClaims: Array.from(claims).sort().slice(-MAX_RECENT_REWARD_CLAIMS)
       },
-      daily
+      daily,
+      onboarding: {
+        ...this.current.onboarding,
+        firstRunCompleted: true,
+        firstRewardSeen: this.current.onboarding.firstRewardSeen || totalPearls > 0
+      }
     };
     this.persist(this.current);
     return {
@@ -674,7 +930,12 @@ export class ProgressRepository {
       progression: {
         ...this.current.progression,
         lumenPearls: clampCount(this.current.progression.lumenPearls + amount),
+        lumenPearlsEarned: clampCount(this.current.progression.lumenPearlsEarned + amount),
         recentRewardClaims: Array.from(claims).sort().slice(-MAX_RECENT_REWARD_CLAIMS)
+      },
+      onboarding: {
+        ...this.current.onboarding,
+        firstRewardSeen: true
       }
     };
     this.persist(this.current);
@@ -740,21 +1001,130 @@ export class ProgressRepository {
   }
 
   cycleCosmetic(category: CosmeticCategory): GlowfinProgressV2 {
+    const owned = this.current.progression.ownedCosmetics;
+    const candidates = owned
+      .map((id) => cosmeticDefinition(id))
+      .filter((item): item is CosmeticDefinition => item?.category === category);
+    const currentId = this.current.progression.equippedCosmetics[category];
+    const currentIndex = candidates.findIndex((item) => item.id === currentId);
+    const next = candidates[(currentIndex + 1 + candidates.length) % candidates.length];
+    if (!next) return this.snapshot();
     this.current = {
       ...this.current,
       revision: this.current.revision + 1,
       updatedAt: this.now().toISOString(),
       progression: {
         ...this.current.progression,
-        equippedCosmetics: nextCosmeticInCategory(
+        equippedCosmetics: loadoutWithCosmetic(
           this.current.progression.equippedCosmetics,
-          category,
-          this.current.progression.tideXp
+          next.id,
+          owned
         )
       }
     };
     this.persist(this.current);
     return cloneProgress(this.current);
+  }
+
+  purchaseCosmetic(cosmeticId: string): CosmeticPurchaseResult {
+    const cosmetic = cosmeticDefinition(cosmeticId);
+    if (!cosmetic) {
+      return { progress: this.snapshot(), status: "unknown", cosmetic: null, spentPearls: 0 };
+    }
+    if (this.current.progression.ownedCosmetics.includes(cosmetic.id)) {
+      return { progress: this.snapshot(), status: "owned", cosmetic, spentPearls: 0 };
+    }
+    if (tideLevelForXp(this.current.progression.tideXp) < cosmetic.unlockLevel) {
+      return { progress: this.snapshot(), status: "locked", cosmetic, spentPearls: 0 };
+    }
+    if (this.current.progression.lumenPearls < cosmetic.pricePearls) {
+      return {
+        progress: this.snapshot(),
+        status: "insufficient-pearls",
+        cosmetic,
+        spentPearls: 0
+      };
+    }
+    const purchasedCosmetics = Array.from(new Set([
+      ...this.current.progression.purchasedCosmetics,
+      cosmetic.id
+    ])).sort();
+    const ownedCosmetics = sanitizeOwnedCosmetics([
+      ...this.current.progression.ownedCosmetics,
+      cosmetic.id
+    ]);
+    this.current = {
+      ...this.current,
+      revision: this.current.revision + 1,
+      updatedAt: this.now().toISOString(),
+      progression: {
+        ...this.current.progression,
+        lumenPearls: Math.max(
+          0,
+          this.current.progression.lumenPearlsEarned - purchasedCosmeticCost(purchasedCosmetics)
+        ),
+        ownedCosmetics,
+        purchasedCosmetics
+      },
+      onboarding: {
+        ...this.current.onboarding,
+        firstPurchaseCompleted: true
+      }
+    };
+    this.persist(this.current);
+    return {
+      progress: this.snapshot(),
+      status: "purchased",
+      cosmetic,
+      spentPearls: cosmetic.pricePearls
+    };
+  }
+
+  equipCosmetic(cosmeticId: string): CosmeticEquipResult {
+    const cosmetic = cosmeticDefinition(cosmeticId);
+    if (!cosmetic || !this.current.progression.ownedCosmetics.includes(cosmetic.id)) {
+      return {
+        progress: this.snapshot(),
+        equipped: false,
+        cosmetic,
+        firstEquip: false
+      };
+    }
+    const firstEquip = !this.current.onboarding.firstEquipCompleted;
+    this.current = {
+      ...this.current,
+      revision: this.current.revision + 1,
+      updatedAt: this.now().toISOString(),
+      progression: {
+        ...this.current.progression,
+        equippedCosmetics: loadoutWithCosmetic(
+          this.current.progression.equippedCosmetics,
+          cosmetic.id,
+          this.current.progression.ownedCosmetics
+        )
+      },
+      onboarding: {
+        ...this.current.onboarding,
+        firstEquipCompleted: true
+      }
+    };
+    this.persist(this.current);
+    return { progress: this.snapshot(), equipped: true, cosmetic, firstEquip };
+  }
+
+  completeTutorial(): GlowfinProgressV2 {
+    if (this.current.onboarding.tutorialCompleted) return this.snapshot();
+    this.current = {
+      ...this.current,
+      revision: this.current.revision + 1,
+      updatedAt: this.now().toISOString(),
+      onboarding: {
+        ...this.current.onboarding,
+        tutorialCompleted: true
+      }
+    };
+    this.persist(this.current);
+    return this.snapshot();
   }
 
   activeObjectives(dayId: string): ObjectiveRunPresentation[] {
@@ -814,6 +1184,19 @@ export class ProgressRepository {
       return (
         (primary ? decodeLegacyEnvelope(primary, this.now()) : null) ??
         (backup ? decodeLegacyEnvelope(backup, this.now()) : null)
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  private readVersion2(): GlowfinProgressV2 | null {
+    try {
+      const primary = this.storage.getItem(VERSION_2_PRIMARY_KEY);
+      const backup = this.storage.getItem(VERSION_2_BACKUP_KEY);
+      return (
+        (primary ? decodeVersion2Envelope(primary, this.now()) : null) ??
+        (backup ? decodeVersion2Envelope(backup, this.now()) : null)
       );
     } catch {
       return null;
