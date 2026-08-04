@@ -16,6 +16,14 @@ export interface RewardedVideoProvider {
   show(placement: RewardedPlacement): Promise<"completed" | "skipped" | "failed">;
 }
 
+export interface GlowfinRewardedVideoBridge {
+  available(placement: RewardedPlacement): boolean | Promise<boolean>;
+  show(placement: RewardedPlacement): Promise<
+    "completed" | "skipped" | "failed" |
+    { status: "completed" | "skipped" | "failed"; receipt?: string }
+  >;
+}
+
 export interface RewardedVideoFlags {
   enabled: boolean;
   runRecovery: boolean;
@@ -32,6 +40,54 @@ export const REWARDED_VIDEO_FLAGS: Readonly<RewardedVideoFlags> = Object.freeze(
   runRecovery: false,
   doubleLumenPearls: false
 });
+
+/**
+ * Phase 4B live bridge policy. A host must inject a conforming provider before
+ * boot; without one, no placement is offered and no advertising code runs.
+ * Recovery remains disabled because reviving a competitive run would change
+ * leaderboard truth. Completed-run Lumen doubling affects cosmetics only.
+ */
+export const LIVE_REWARDED_VIDEO_FLAGS: Readonly<RewardedVideoFlags> = Object.freeze({
+  enabled: true,
+  runRecovery: false,
+  doubleLumenPearls: true
+});
+
+function isBridge(value: unknown): value is GlowfinRewardedVideoBridge {
+  return Boolean(value) && typeof value === "object" &&
+    typeof (value as Partial<GlowfinRewardedVideoBridge>).available === "function" &&
+    typeof (value as Partial<GlowfinRewardedVideoBridge>).show === "function";
+}
+
+/** Provider adapter for an owner-controlled, consented host SDK integration. */
+export class BrowserRewardedVideoProvider implements RewardedVideoProvider {
+  constructor(private readonly bridge: GlowfinRewardedVideoBridge) {}
+
+  static fromGlobal(root: typeof globalThis = globalThis): BrowserRewardedVideoProvider | null {
+    const bridge = (root as typeof globalThis & {
+      GlowfinRewardedVideo?: unknown;
+    }).GlowfinRewardedVideo;
+    return isBridge(bridge) ? new BrowserRewardedVideoProvider(bridge) : null;
+  }
+
+  async available(placement: RewardedPlacement): Promise<boolean> {
+    try {
+      return (await this.bridge.available(placement)) === true;
+    } catch {
+      return false;
+    }
+  }
+
+  async show(placement: RewardedPlacement): Promise<"completed" | "skipped" | "failed"> {
+    try {
+      const result = await this.bridge.show(placement);
+      const status = typeof result === "string" ? result : result.status;
+      return status === "completed" || status === "skipped" ? status : "failed";
+    } catch {
+      return "failed";
+    }
+  }
+}
 
 export class RewardedVideoHooks {
   constructor(
