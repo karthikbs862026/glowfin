@@ -5,6 +5,11 @@ import {
   isRunAccessClassification,
   type RunAccessClassificationV1
 } from "../competitive/assists";
+import {
+  fetchWithPolicy,
+  WRITE_NETWORK_POLICY,
+  type FetchLike
+} from "../operations/networkPolicy";
 
 export const MOONFLASH_CLIP_VERSION = 1 as const;
 export const MAX_CAPTURED_NEAR_MISSES = 32;
@@ -37,11 +42,6 @@ export interface PublishedMoonflashClipV1 {
   shareUrl: string;
   expiresAt: string;
 }
-
-type FetchLike = (
-  input: RequestInfo | URL,
-  init?: RequestInit
-) => Promise<Response>;
 
 function checksumText(text: string): string {
   let hash = 0x811c9dc5;
@@ -205,14 +205,14 @@ export class HostedMoonflashClient {
     if (!validateMoonflashClip(clip)) throw new Error("Refusing to publish an invalid Moonflash clip.");
     const body = JSON.stringify({ clip });
     if (body.length > 160 * 1024) throw new Error("Moonflash clip is too large.");
-    const response = await this.fetcher(this.endpoint, {
+    const response = await fetchWithPolicy(this.fetcher, this.endpoint, {
       method: "POST",
       cache: "no-store",
       credentials: "same-origin",
       headers: { accept: "application/json", "content-type": "application/json" },
       body,
       signal
-    });
+    }, WRITE_NETWORK_POLICY);
     const text = await response.text();
     let value: unknown = null;
     if (text.length >= 2 && text.length <= 4096) {

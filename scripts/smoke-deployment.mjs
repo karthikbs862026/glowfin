@@ -52,13 +52,21 @@ for (const key of [
   "certification",
   "baselineVersion",
   "baselineCommit",
-  "artBuild"
+  "artBuild",
+  "productionPolicyVersion"
 ]) {
   if (release[key] !== config[key]) {
     throw new Error(
       `Deployed release ${key}=${JSON.stringify(release[key])}; expected ${JSON.stringify(config[key])}.`
     );
   }
+}
+if (
+  release.sealSchemaVersion !== 1 ||
+  !/^[0-9a-f]{64}$/.test(release.artifactDigest) ||
+  !Number.isInteger(release.artifactFileCount) || release.artifactFileCount < 1
+) {
+  throw new Error("Deployed release manifest is missing its immutable artifact seal.");
 }
 if (release.environment !== expectedEnvironment) {
   throw new Error(
@@ -86,6 +94,10 @@ if (requireHeaders) {
   }
   if (!/no-store/i.test(documentResponse.headers.get("cache-control") ?? "")) {
     throw new Error("Deployed game document is missing its no-store cache policy.");
+  }
+  const headerDigest = releaseResponse.headers.get("x-glowfin-artifact-digest");
+  if (headerDigest && headerDigest !== release.artifactDigest) {
+    throw new Error("Deployed artifact digest header does not match release.json.");
   }
 }
 

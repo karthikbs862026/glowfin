@@ -18,6 +18,7 @@ export interface GlowfinReleaseMetadata {
   baselineVersion: number;
   baselineCommit: string;
   artBuild: string;
+  productionPolicyVersion: number;
 }
 
 declare const __GLOWFIN_RELEASE__: GlowfinReleaseMetadata;
@@ -40,10 +41,13 @@ export function isGlowfinReleaseMetadata(
     candidate.certification === releaseConfig.certification &&
     GLOWFIN_ENVIRONMENTS.some((entry) => entry === candidate.environment) &&
     typeof candidate.sourceCommit === "string" &&
-    (candidate.sourceCommit === "local" || /^[0-9a-f]{7,40}$/.test(candidate.sourceCommit)) &&
+    (candidate.environment === "local"
+      ? candidate.sourceCommit === "local" || /^[0-9a-f]{40}$/.test(candidate.sourceCommit)
+      : /^[0-9a-f]{40}$/.test(candidate.sourceCommit)) &&
     candidate.baselineVersion === releaseConfig.baselineVersion &&
     candidate.baselineCommit === releaseConfig.baselineCommit &&
-    candidate.artBuild === releaseConfig.artBuild
+    candidate.artBuild === releaseConfig.artBuild &&
+    candidate.productionPolicyVersion === releaseConfig.productionPolicyVersion
   );
 }
 

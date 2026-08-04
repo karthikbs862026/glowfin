@@ -47,18 +47,21 @@ function releaseMetadataPlugin(metadata: ReleaseMetadata): Plugin {
 // pipe through it — an empty pipeline config would just be decoration.
 export default defineConfig(({ command }) => {
   const environment = environmentVariables();
+  const sourceCommit = environment["GLOWFIN_COMMIT_SHA"]?.trim() || "local";
   const releaseEnvironment = environment["GLOWFIN_ENVIRONMENT"] ??
-    (command === "serve" ? "local" : "staging");
+    (command === "serve" || sourceCommit === "local" ? "local" : "staging");
   if (!["local", "staging", "production"].includes(releaseEnvironment)) {
     throw new Error(
       `GLOWFIN_ENVIRONMENT must be local, staging, or production; received ${releaseEnvironment}.`
     );
   }
 
-  const sourceCommit = environment["GLOWFIN_COMMIT_SHA"]?.trim() || "local";
-  if (sourceCommit !== "local" && !/^[0-9a-f]{7,40}$/.test(sourceCommit)) {
+  if (
+    (sourceCommit !== "local" && !/^[0-9a-f]{40}$/.test(sourceCommit)) ||
+    (releaseEnvironment !== "local" && sourceCommit === "local")
+  ) {
     throw new Error(
-      "GLOWFIN_COMMIT_SHA must be 'local' or a 7-40 character lowercase Git SHA."
+      "A staged or production Glowfin build requires a full 40-character lowercase Git SHA."
     );
   }
 

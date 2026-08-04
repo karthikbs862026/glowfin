@@ -7,8 +7,8 @@ this README covers local setup only.
 
 ## Status
 
-**Phase 5A — Version 35 runtime resilience and accessibility-hardening release
-candidate. Version 34 remains the merged verified-competition baseline;
+**Phase 5B — Version 36 production-readiness and release-certification
+candidate. Version 35 is the merged runtime-resilience baseline;
 controls, camera, collision, scoring, world, character and audio tuning stay
 frozen.**
 
@@ -67,6 +67,20 @@ Version 35 completes the bounded Phase 5A resilience surface:
   migration of Version 34 reduced-travel steering preferences
 - consent-gated runtime-health events and a Chromium gate that forces context
   loss/restoration plus a page-cache pause/resume cycle
+
+Version 36 completes the code-owned Phase 5B production-readiness surface:
+
+- bounded retry/timeout policy that retries transient reads once and never
+  replays a potentially accepted save, score, share, telemetry or reward write
+- consent-safe production health and first-run-to-next-day funnel contracts,
+  backed by identity-free hosted operational counters and explicit thresholds
+- authenticated fixed-window abuse limits plus enforced telemetry,
+  leaderboard, Moonflash, rewarded-claim and rate-bucket expiry policies
+- receipt-gated, idempotent and bounded rewarded-video claims; competitive
+  recovery remains disabled and cosmetic rewards remain outside run truth
+- deterministic SHA-256 sealing of every release artifact, source-pinned
+  staging manifests, post-gate release tags and an ancestor-verified rollback
+  rehearsal to the Version 35 known-good baseline
 
 The frozen visual/gameplay baseline includes:
 
@@ -130,7 +144,8 @@ Version 31 release-certificate boundary. ADR-0036 records the Version 32 save,
 telemetry, replay and ghost contracts; ADR-0037 records the Version 33 Moonwake
 progression and Daily Tide contracts; ADR-0038 records the Version 34 ranked,
 sharing and rewarded-provider boundaries; and ADR-0039 records the Version 35
-runtime recovery boundary. Android real-time thermal/audio/recovery review,
+runtime recovery boundary. ADR-0040 records the Version 36 production policy,
+privacy, abuse, retention, artifact-seal and rollback boundary. Android real-time thermal/audio/recovery review,
 the physical first-run-to-next-day return journey and all iOS Safari evidence
 remain outstanding. The automated certificate is therefore conditional and
 cannot replace those real-device approvals.
@@ -138,6 +153,7 @@ cannot replace those real-device approvals.
 Certification evidence and release operations are maintained in
 `docs/phase3-exit-report.md`, `docs/phase4a-release-report.md`,
 `docs/phase4b-release-report.md`, `docs/phase5a-release-report.md`,
+`docs/phase5b-release-report.md`,
 `docs/qa-runbook.md`, and
 `docs/release-runbook.md`.
 
@@ -207,4 +223,5 @@ scripts/        repo/CI and production bundle checks
 - [ ] Physical first-run-to-simulated-next-day-return and retention-funnel sign-off
 - [ ] Android real-time 30-minute performance, thermal, sound-mix and interruption sign-off
 - [ ] iOS Safari performance, contrast, audio and real-time 30-minute soak sign-off
-- [ ] Production promotion, monitoring, privacy/compliance and store-wrapper pipeline
+- [x] Code-owned monitoring, consent-safe funnel, abuse limits, retention expiry, sealed artifacts and rollback rehearsal
+- [ ] Public production promotion and store-wrapper pipeline

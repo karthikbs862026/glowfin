@@ -12,7 +12,7 @@ if (!index.includes('id="startup-error" role="alert"')) {
   throw new Error("Production HTML omits the visible startup recovery state.");
 }
 if (!index.includes('id="runtime-status"')) {
-  throw new Error("Production HTML omits the Version 35 runtime recovery state.");
+  throw new Error("Production HTML omits the Version 36 runtime recovery state.");
 }
 if (!index.includes('id="hud-build"')) {
   throw new Error("Production HTML omits the visible release identity.");

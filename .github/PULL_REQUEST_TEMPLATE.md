@@ -57,3 +57,12 @@
 - [ ] No hardcoded tuning values that belong in config (Part 2 preamble)
 - [ ] No new `console.log`/debug scaffolding left in
 - [ ] Docs updated if behavior or setup changed (Part 5.4)
+
+## Production-readiness acceptance (required for Version 36+ operational changes)
+
+- [ ] Hosted reads remain bounded and no write is automatically replayed
+- [ ] Telemetry remains zero-collection without consent; operational outputs are aggregate-only
+- [ ] Rate limits and expiry policies are covered by deterministic tests
+- [ ] Rewarded claims remain receipt-gated, idempotent and cosmetic-only
+- [ ] Release manifest, source SHA, artifact digest and rollback baseline agree
+- [ ] Missing physical Android/iOS evidence is recorded as conditional, never inferred from emulation

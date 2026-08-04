@@ -1,10 +1,11 @@
 {
-  "$comment": "Version 35 Phase 5A runtime resilience, WebGL2 fallback, interruption recovery and persistent presentation accessibility.",
+  "$comment": "Version 36 Phase 5B production readiness, privacy-safe operations, abuse controls, sealed releases and rollback certification.",
   "schemaVersion": 1,
-  "version": 35,
-  "phase": "phase-5a",
-  "certification": "runtime-resilience-candidate",
-  "baselineVersion": 34,
-  "baselineCommit": "76667c42e4a7a36d0b051a31b1bddb3caaacd9cb",
-  "artBuild": "phase3c-v30-glowfin-production"
+  "version": 36,
+  "phase": "phase-5b",
+  "certification": "production-readiness-candidate",
+  "baselineVersion": 35,
+  "baselineCommit": "2fca087dbec1b24b48c8398c7c24f0abea5c0454",
+  "artBuild": "phase3c-v30-glowfin-production",
+  "productionPolicyVersion": 1
 }

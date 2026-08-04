@@ -17,7 +17,10 @@ class Provider implements RewardedVideoProvider {
   }
   async show(placement: RewardedPlacement) {
     this.showCalls.push(placement);
-    return this.showResult;
+    return {
+      status: this.showResult,
+      receipt: this.showResult === "completed" ? "receipt_abcdefghijklmnopqrstuvwxyz" : null
+    };
   }
 }
 
@@ -62,8 +65,14 @@ describe("Version 33 rewarded-video architecture hooks", () => {
     });
     const offer = await hooks.offer("double-lumen-pearls", context);
     expect(offer).toMatchObject({ eligible: true, reason: "eligible" });
-    expect(await hooks.show(offer)).toBe("completed");
+    expect(await hooks.show(offer)).toEqual({
+      status: "completed",
+      receipt: "receipt_abcdefghijklmnopqrstuvwxyz"
+    });
     expect(provider.showCalls).toEqual(["double-lumen-pearls"]);
-    expect(await hooks.show({ ...offer, eligible: false })).toBe("failed");
+    expect(await hooks.show({ ...offer, eligible: false })).toEqual({
+      status: "failed",
+      receipt: null
+    });
   });
 });

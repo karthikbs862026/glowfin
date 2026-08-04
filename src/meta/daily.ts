@@ -2,6 +2,11 @@ import type { TuningConfig } from "../core/config";
 import type { GlowfinReplayV1, ReplaySummary } from "../replay/replay";
 import { CourseGenerator, MomentumProfile } from "../sim/course";
 import { checkSolvability } from "../sim/solvability";
+import {
+  fetchWithPolicy,
+  READ_NETWORK_POLICY,
+  type FetchLike
+} from "../operations/networkPolicy";
 
 export type GlowfinRunMode = "fresh" | "ghost" | "daily" | "daily-ghost";
 export type DailyClockStatus = "trusted" | "local" | "clock-rollback";
@@ -407,18 +412,18 @@ export interface HostedDailyClockResponse {
 
 export class HostedDailyClockClient {
   constructor(
-    private readonly fetcher: typeof fetch = fetch,
+    private readonly fetcher: FetchLike = fetch,
     private readonly endpoint = "/api/glowfin/daily"
   ) {}
 
   async load(signal?: AbortSignal): Promise<HostedDailyClockResponse | null> {
-    const response = await this.fetcher(this.endpoint, {
+    const response = await fetchWithPolicy(this.fetcher, this.endpoint, {
       method: "GET",
       cache: "no-store",
       credentials: "same-origin",
       headers: { accept: "application/json" },
       signal
-    });
+    }, READ_NETWORK_POLICY);
     if (!response.ok) return null;
     const value = await response.json() as Partial<HostedDailyClockResponse>;
     if (!isDayId(value.dayId) || value.seed !== dailySeed(value.dayId)) return null;

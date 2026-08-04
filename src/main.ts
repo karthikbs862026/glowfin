@@ -16,7 +16,7 @@ import { DebugOverlay } from "./render/debugOverlay";
 import { QualityController } from "./perf/quality";
 import { PerfMonitor, checkBudgets } from "./perf/metrics";
 import { GlowfinAudio } from "./audio/audioEngine";
-import { mountReleaseIdentity } from "./release";
+import { GLOWFIN_RELEASE, mountReleaseIdentity } from "./release";
 import {
   ProgressRepository,
   equippedCosmeticNames,
@@ -55,6 +55,11 @@ import {
   RewardedVideoHooks,
   type RewardedOffer
 } from "./monetization/rewarded";
+import { HostedRewardedAuthorityClient } from "./monetization/rewardAuthority";
+import {
+  isSealedReleaseManifest,
+  shouldUseHostedServices
+} from "./operations/productionReadiness";
 import {
   AccessPreferenceRepository,
   classifyRunAccess,
@@ -82,6 +87,10 @@ if (!initialCanvas) throw new Error("Canvas #glowfin-canvas not found");
 let canvas: HTMLCanvasElement = initialCanvas;
 
 mountReleaseIdentity();
+const hostedServicesEnabled = shouldUseHostedServices(
+  GLOWFIN_RELEASE.environment,
+  window.location.hostname
+);
 
 const runtimeLifecycle = new RuntimeLifecycle();
 const runtimeSupport = detectRuntimeSupport();
@@ -142,6 +151,7 @@ const rewardedVideo = new RewardedVideoHooks(
   rewardedProvider,
   rewardedProvider ? LIVE_REWARDED_VIDEO_FLAGS : undefined
 );
+const rewardedAuthority = new HostedRewardedAuthorityClient();
 
 function requiredElement<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id);
@@ -232,7 +242,7 @@ let completedCompetitiveRun: CompletedCompetitiveRun | null = null;
 
 if (progress.telemetryConsent === "granted") {
   telemetry.track("session_start", {
-    release: 35,
+    release: GLOWFIN_RELEASE.version,
     tuningVersion: tuning.version,
     saveSchemaVersion: progress.schemaVersion
   });
@@ -241,6 +251,12 @@ if (progress.telemetryConsent === "granted") {
     reason: runtimeSupport.reason,
     state: runtimeLifecycle.snapshot().state
   });
+  if (!runtimeSupport.supported || !view) {
+    telemetry.track("startup_failure", {
+      reason: runtimeSupport.supported ? "renderer-construction" : runtimeSupport.reason,
+      state: runtimeLifecycle.snapshot().state
+    });
+  }
   if (progressLoad.recoveryReason) {
     telemetry.track("save_recovered", {
       source: progressLoad.recoveredFrom,
@@ -248,6 +264,40 @@ if (progress.telemetryConsent === "granted") {
     });
   }
 }
+
+async function verifyHostedReleaseManifest(): Promise<void> {
+  // Build-time checks own loopback certification because Vite's development
+  // server does not expose the sealed dist manifest. Hosted checkpoints still
+  // verify their top-level manifest on every fresh page load.
+  if (!hostedServicesEnabled) return;
+  let valid = false;
+  try {
+    const response = await fetch(new URL("./release.json", window.location.href), {
+      cache: "no-store",
+      credentials: "same-origin"
+    });
+    const manifest = response.ok ? await response.json() as unknown : null;
+    valid = isSealedReleaseManifest(manifest) &&
+      manifest.version === GLOWFIN_RELEASE.version &&
+      manifest.environment === GLOWFIN_RELEASE.environment &&
+      manifest.sourceCommit === GLOWFIN_RELEASE.sourceCommit;
+  } catch {
+    valid = false;
+  }
+  telemetry.track("release_manifest_check", {
+    valid,
+    release: GLOWFIN_RELEASE.version,
+    environment: GLOWFIN_RELEASE.environment
+  });
+  telemetry.track("service_result", {
+    service: "release-manifest",
+    operation: "verify",
+    success: valid
+  });
+  void telemetry.flush();
+}
+
+void verifyHostedReleaseManifest();
 
 function raceableReplay() {
   const replay = progress.bestReplay;
@@ -325,29 +375,60 @@ function trackRetentionReturn(observation: SessionObservation): void {
 }
 
 async function hydrateCloudProgress(): Promise<void> {
+  if (!hostedServicesEnabled) return;
   try {
     const remote = await cloudProgress.load();
-    if (!remote) return;
-    cloudRevision = remote.revision;
-    progress = progressRepository.replaceWithMerged(remote.progress);
-    telemetry.setConsent(progress.telemetryConsent);
-    updateProgressUi();
-    observeSessionDay(currentDailyDay().dayId);
+    if (remote) {
+      cloudRevision = remote.revision;
+      progress = progressRepository.replaceWithMerged(remote.progress);
+      telemetry.setConsent(progress.telemetryConsent);
+      updateProgressUi();
+      observeSessionDay(currentDailyDay().dayId);
+    }
+    telemetry.track("service_result", {
+      service: "cloud-save",
+      operation: "load",
+      success: true,
+      found: Boolean(remote)
+    });
   } catch {
+    telemetry.track("service_result", {
+      service: "cloud-save",
+      operation: "load",
+      success: false
+    });
     // The standalone build and offline play remain local-first. The next run
     // completion retries cloud sync without interrupting gameplay.
   }
 }
 
 async function hydrateDailyClock(): Promise<void> {
+  if (!hostedServicesEnabled) return;
   try {
     const remote = await dailyClock.load();
-    if (!remote) return;
+    if (!remote) {
+      telemetry.track("service_result", {
+        service: "daily-clock",
+        operation: "load",
+        success: false
+      });
+      return;
+    }
     authoritativeDailyDay = remote.dayId;
     progress = progressRepository.trustCalendarDay(remote.dayId, true);
     observeSessionDay(remote.dayId);
     updateProgressUi();
+    telemetry.track("service_result", {
+      service: "daily-clock",
+      operation: "load",
+      success: true
+    });
   } catch {
+    telemetry.track("service_result", {
+      service: "daily-clock",
+      operation: "load",
+      success: false
+    });
     // Offline play uses the monotonic saved/local day and withholds rewards on
     // rollback. The hosted UTC day is retried when the tab becomes active.
   }
@@ -359,6 +440,7 @@ const cloudHydrated = hydrateCloudProgress();
 const dailyHydrated = hydrateDailyClock();
 
 async function synchronizeCloudProgress(): Promise<void> {
+  if (!hostedServicesEnabled) return;
   cloudSyncRequested = true;
   if (cloudSyncInFlight) return cloudSyncInFlight;
   cloudSyncInFlight = (async () => {
@@ -373,12 +455,28 @@ async function synchronizeCloudProgress(): Promise<void> {
           cloudRevision
         );
         cloudRevision = saved.revision;
+        telemetry.track("cloud_sync_result", {
+          result: "saved",
+          attempt: attempts,
+          revision: cloudRevision
+        });
       } catch (error) {
         if (error instanceof CloudProgressConflict && error.current) {
           cloudRevision = error.current.revision;
           progress = progressRepository.replaceWithMerged(error.current.progress);
           updateProgressUi();
           cloudSyncRequested = true;
+          telemetry.track("cloud_sync_result", {
+            result: "conflict",
+            attempt: attempts,
+            revision: cloudRevision
+          });
+        } else {
+          telemetry.track("cloud_sync_result", {
+            result: "failed",
+            attempt: attempts,
+            revision: cloudRevision
+          });
         }
       }
     }
@@ -477,6 +575,10 @@ hud.onDailyTrial(() => {
 });
 
 async function loadCompetitiveBoard(state: CompletedCompetitiveRun): Promise<void> {
+  if (!hostedServicesEnabled) {
+    hud.setLeaderboard(null, "offline");
+    return;
+  }
   hud.setLeaderboard(null, "loading");
   try {
     const snapshot = await leaderboard.list(
@@ -492,14 +594,28 @@ async function loadCompetitiveBoard(state: CompletedCompetitiveRun): Promise<voi
       division: state.classification.division,
       entries: snapshot.entries.length
     }, state.runId);
+    telemetry.track("service_result", {
+      service: "leaderboard",
+      operation: "list",
+      success: true
+    }, state.runId);
   } catch {
     if (completedCompetitiveRun === state) hud.setLeaderboard(null, "offline");
+    telemetry.track("service_result", {
+      service: "leaderboard",
+      operation: "list",
+      success: false
+    }, state.runId);
   }
 }
 
 hud.onSubmitScore(() => {
   const state = completedCompetitiveRun;
   if (!awaitingRestart || !state?.submission || state.submitted) return;
+  if (!hostedServicesEnabled) {
+    hud.setSubmitState("unavailable");
+    return;
+  }
   state.submitted = true;
   hud.setSubmitState("submitting");
   telemetry.track("leaderboard_submit", {
@@ -518,6 +634,11 @@ hud.onSubmitScore(() => {
       rank: snapshot.playerRank ?? -1,
       validationVersion: snapshot.validationVersion
     }, state.runId);
+    telemetry.track("service_result", {
+      service: "leaderboard",
+      operation: "submit",
+      success: true
+    }, state.runId);
     void telemetry.flush();
   }).catch(() => {
     if (completedCompetitiveRun !== state) return;
@@ -527,6 +648,11 @@ hud.onSubmitScore(() => {
       scope: state.scope,
       division: state.classification.division
     }, state.runId);
+    telemetry.track("service_result", {
+      service: "leaderboard",
+      operation: "submit",
+      success: false
+    }, state.runId);
     void telemetry.flush();
   });
 });
@@ -534,6 +660,10 @@ hud.onSubmitScore(() => {
 hud.onShareClip(() => {
   const state = completedCompetitiveRun;
   if (!awaitingRestart || !state?.clip) return;
+  if (!hostedServicesEnabled) {
+    hud.setShareState("unavailable");
+    return;
+  }
   if (state.shareUrl) {
     void navigator.clipboard?.writeText(state.shareUrl);
     return;
@@ -551,6 +681,11 @@ hud.onShareClip(() => {
     telemetry.track("share_clip_result", {
       published: true,
       division: state.classification.division
+    }, state.runId);
+    telemetry.track("service_result", {
+      service: "moonflash",
+      operation: "publish",
+      success: true
     }, state.runId);
     try {
       if (typeof navigator.share === "function") {
@@ -573,6 +708,11 @@ hud.onShareClip(() => {
     telemetry.track("share_clip_result", {
       published: false,
       division: state.classification.division
+    }, state.runId);
+    telemetry.track("service_result", {
+      service: "moonflash",
+      operation: "publish",
+      success: false
     }, state.runId);
     void telemetry.flush();
   });
@@ -622,28 +762,55 @@ hud.onRewardedPearls(() => {
   state.rewardedOffer = null;
   hud.setRewardedOffer(state.rewardedPearls, "showing");
   telemetry.track("rewarded_start", { placement: offer.placement }, state.runId);
-  void rewardedVideo.show(offer).then((result) => {
+  void rewardedVideo.show(offer).then(async (completion) => {
     if (completedCompetitiveRun !== state) return;
     telemetry.track("rewarded_complete", {
       placement: offer.placement,
-      result
+      result: completion.status,
+      hasReceipt: Boolean(completion.receipt)
     }, state.runId);
-    if (result !== "completed") {
+    if (completion.status !== "completed" || !completion.receipt) {
       hud.setRewardedOffer(state.rewardedPearls, "failed");
       void telemetry.flush();
       return;
     }
-    const grant = progressRepository.grantRewardedPearls(state.runId, state.rewardedPearls);
-    progress = grant.progress;
-    updateProgressUi();
-    hud.setRewardedOffer(state.rewardedPearls, grant.granted ? "claimed" : "failed");
-    telemetry.track("rewarded_reward", {
-      placement: offer.placement,
-      pearls: grant.pearls,
-      duplicatePrevented: !grant.granted
-    }, state.runId);
-    void telemetry.flush();
-    void synchronizeCloudProgress();
+    try {
+      const authorized = await rewardedAuthority.claim(
+        state.runId,
+        offer.placement,
+        state.rewardedPearls,
+        completion.receipt
+      );
+      if (completedCompetitiveRun !== state) return;
+      const grant = authorized.granted
+        ? progressRepository.grantRewardedPearls(state.runId, authorized.pearls)
+        : { progress: progressRepository.snapshot(), granted: false, pearls: 0 };
+      progress = grant.progress;
+      updateProgressUi();
+      hud.setRewardedOffer(state.rewardedPearls, grant.granted ? "claimed" : "failed");
+      telemetry.track("rewarded_reward", {
+        placement: offer.placement,
+        pearls: grant.pearls,
+        duplicatePrevented: authorized.duplicate || !grant.granted,
+        authority: true
+      }, state.runId);
+      telemetry.track("service_result", {
+        service: "rewarded-authority",
+        operation: "claim",
+        success: true
+      }, state.runId);
+      void telemetry.flush();
+      void synchronizeCloudProgress();
+    } catch {
+      if (completedCompetitiveRun !== state) return;
+      hud.setRewardedOffer(state.rewardedPearls, "failed");
+      telemetry.track("service_result", {
+        service: "rewarded-authority",
+        operation: "claim",
+        success: false
+      }, state.runId);
+      void telemetry.flush();
+    }
   });
 });
 
@@ -669,7 +836,7 @@ hud.onTelemetryChoice(() => {
   updateProgressUi();
   if (consent === "granted") {
     telemetry.track("session_start", {
-      release: 35,
+      release: GLOWFIN_RELEASE.version,
       tuningVersion: tuning.version,
       saveSchemaVersion: progress.schemaVersion,
       consentSource: "game-over"

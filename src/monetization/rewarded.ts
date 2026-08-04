@@ -11,9 +11,14 @@ export interface RewardedOffer {
   reason: string;
 }
 
+export interface RewardedVideoCompletion {
+  status: "completed" | "skipped" | "failed";
+  receipt: string | null;
+}
+
 export interface RewardedVideoProvider {
   available(placement: RewardedPlacement): Promise<boolean>;
-  show(placement: RewardedPlacement): Promise<"completed" | "skipped" | "failed">;
+  show(placement: RewardedPlacement): Promise<RewardedVideoCompletion>;
 }
 
 export interface GlowfinRewardedVideoBridge {
@@ -78,13 +83,22 @@ export class BrowserRewardedVideoProvider implements RewardedVideoProvider {
     }
   }
 
-  async show(placement: RewardedPlacement): Promise<"completed" | "skipped" | "failed"> {
+  async show(placement: RewardedPlacement): Promise<RewardedVideoCompletion> {
     try {
       const result = await this.bridge.show(placement);
       const status = typeof result === "string" ? result : result.status;
-      return status === "completed" || status === "skipped" ? status : "failed";
+      const receipt = typeof result === "string" ? null : result.receipt ?? null;
+      if (status !== "completed" && status !== "skipped") {
+        return { status: "failed", receipt: null };
+      }
+      return {
+        status,
+        receipt: status === "completed" && typeof receipt === "string"
+          ? receipt.slice(0, 2048)
+          : null
+      };
     } catch {
-      return "failed";
+      return { status: "failed", receipt: null };
     }
   }
 }
@@ -123,8 +137,10 @@ export class RewardedVideoHooks {
     return { placement, eligible: true, reason: "eligible" };
   }
 
-  async show(offer: RewardedOffer): Promise<"completed" | "skipped" | "failed"> {
-    if (!offer.eligible || !this.flags.enabled || !this.provider) return "failed";
+  async show(offer: RewardedOffer): Promise<RewardedVideoCompletion> {
+    if (!offer.eligible || !this.flags.enabled || !this.provider) {
+      return { status: "failed", receipt: null };
+    }
     return this.provider.show(offer.placement);
   }
 }

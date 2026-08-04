@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   CloudProgressConflict,
-  HostedProgressClient,
-  type FetchLike
+  HostedProgressClient
 } from "../src/persistence/cloud";
+import type { FetchLike } from "../src/operations/networkPolicy";
 import { createDefaultProgress } from "../src/persistence/progress";
 
 function jsonResponse(value: unknown, status = 200): Response {

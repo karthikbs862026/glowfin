@@ -781,3 +781,20 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   context loss/restoration plus page-cache recovery a required PR art gate.
 - Keep physical Android/iOS memory-pressure, interruption, thermal and
   accessibility review conditional; browser automation cannot sign those rows.
+
+## 2026-08-04 — Add production readiness and release certification
+
+- Adopt ADR-0040 and label Version 36 as Phase 5B, based on merged Version 35.
+- Bound hosted reads to one transient retry and never automatically replay
+  saves, score submissions, shares, telemetry batches or reward claims.
+- Add consent-gated runtime/funnel signals, identity-free operational counters,
+  explicit alert thresholds and enforced lifecycle policies for stored data.
+- Rate-limit authenticated hosted operations without IP or device
+  fingerprinting. Require one server-verified rewarded receipt per run and keep
+  every grant cosmetic-only.
+- Seal release artifacts with a deterministic digest, require the production
+  fault/privacy/rollback gate, and create immutable version tags only after the
+  full main-branch render and soak certificate.
+- Keep the owner-only checkpoint deployable and mergeable while Android
+  thermal/audio, physical retention and real iPhone Safari evidence remain
+  conditional. Do not promote publicly until those rows are signed.

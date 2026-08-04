@@ -5,6 +5,12 @@ import {
   type LeaderboardDivision,
   type RunAccessClassificationV1
 } from "./assists";
+import {
+  fetchWithPolicy,
+  READ_NETWORK_POLICY,
+  WRITE_NETWORK_POLICY,
+  type FetchLike
+} from "../operations/networkPolicy";
 
 export const LEADERBOARD_CONTRACT_VERSION = 1 as const;
 export const MAX_LEADERBOARD_ENTRIES = 25;
@@ -40,11 +46,6 @@ export interface LeaderboardSnapshotV1 {
   playerRank: number | null;
   validationVersion: string;
 }
-
-type FetchLike = (
-  input: RequestInfo | URL,
-  init?: RequestInit
-) => Promise<Response>;
 
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -141,13 +142,13 @@ export class HostedLeaderboardClient {
       if (!isDayId(dayId)) throw new Error("Daily leaderboard requires a valid UTC day.");
       query.set("day", dayId);
     }
-    const response = await this.fetcher(`${this.endpoint}?${query}`, {
+    const response = await fetchWithPolicy(this.fetcher, `${this.endpoint}?${query}`, {
       method: "GET",
       cache: "no-store",
       credentials: "same-origin",
       headers: { accept: "application/json" },
       signal
-    });
+    }, READ_NETWORK_POLICY);
     if (!response.ok) throw new Error(`Leaderboard load failed (${response.status}).`);
     const value = await readJson(response);
     if (!isLeaderboardSnapshot(value)) throw new Error("Leaderboard response is invalid.");
@@ -163,7 +164,7 @@ export class HostedLeaderboardClient {
     }
     const body = JSON.stringify(submission);
     if (body.length > 160 * 1024) throw new Error("Leaderboard replay is too large.");
-    const response = await this.fetcher(this.endpoint, {
+    const response = await fetchWithPolicy(this.fetcher, this.endpoint, {
       method: "POST",
       cache: "no-store",
       credentials: "same-origin",
@@ -173,7 +174,7 @@ export class HostedLeaderboardClient {
       },
       body,
       signal
-    });
+    }, WRITE_NETWORK_POLICY);
     const value = await readJson(response);
     if (!response.ok) {
       const reason = value && typeof value === "object"
