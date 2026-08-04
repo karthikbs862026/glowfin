@@ -19,6 +19,7 @@ import {
   GLOWFIN_EYE_LOOK_AXIS
 } from "./glowfinGeometry";
 import type { RuntimeGlowfinGeometrySet } from "./runtimeProductionAssets";
+import type { CosmeticPalette } from "../meta/progression";
 
 const BODY_VERTEX = /* glsl */ `
   #include <common>
@@ -56,6 +57,12 @@ const BODY_FRAGMENT = /* glsl */ `
   uniform float uCollision;
   uniform float uRecovery;
   uniform float uGhost;
+  uniform vec3 uCosmeticGlowColor;
+  uniform float uCosmeticGlowStrength;
+  uniform vec3 uFinAccentColor;
+  uniform float uFinAccentStrength;
+  uniform vec3 uAuraColor;
+  uniform float uAuraStrength;
   uniform sampler2D uSkinMap;
   varying vec3 vNormalV;
   varying vec3 vViewPosition;
@@ -123,14 +130,19 @@ const BODY_FRAGMENT = /* glsl */ `
       mix(0.2, 0.86, appendageMask)
     );
     seaGlass *= mix(vec3(1.0), skinTint, (1.0 - gillMask) * 0.34);
+    float core = smoothstep(-0.8, 0.55, vObjectPosition.y) *
+      (1.0 - smoothstep(0.15, 1.25, abs(vObjectPosition.x)));
     vec3 base = mix(seaGlass, momentumColour, 0.04 + uMomentum * 0.17);
+    base = mix(
+      base,
+      uCosmeticGlowColor,
+      uCosmeticGlowStrength * (0.1 + core * 0.12)
+    );
     base *= handPainted * mix(0.74, 1.0, internal) *
       mix(0.76, 1.08, softVolume) *
       mix(0.62, 1.12, crownLight);
     base = mix(base, vec3(0.23, 0.29, 0.36), uCollision * 0.72);
     vec3 rim = mix(vec3(0.85, 0.965, 1.0), gold, uMomentum * 0.45);
-    float core = smoothstep(-0.8, 0.55, vObjectPosition.y) *
-      (1.0 - smoothstep(0.15, 1.25, abs(vObjectPosition.x)));
     float seaGlassSpecular = pow(max(facing, 0.0), 18.0) * 0.11;
     float livingPulse = 0.5 + 0.5 * sin(
       vObjectPosition.y * 7.2 + vObjectPosition.x * 2.8
@@ -159,6 +171,13 @@ const BODY_FRAGMENT = /* glsl */ `
       vec3(0.34, 0.96, 1.0) * uRecovery *
         smoothstep(-0.72, 0.8, vObjectPosition.y) * 0.11 +
       vec3(0.42, 0.78, 0.94) * seaGlassSpecular;
+    colour = mix(
+      colour,
+      uFinAccentColor * mix(0.58, 1.06, uGlow),
+      finMask * uFinAccentStrength * 0.34
+    );
+    colour += uAuraColor * fresnel * uAuraStrength *
+      (0.18 + livingPulse * 0.12) * mix(0.72, 1.0, uGlow);
     // Preserve Glowfin's authored blue/teal identity under ACES. The previous
     // equal-channel lift made the body read as grey plastic in the browser
     // even though the source pigment was saturated.
@@ -377,6 +396,12 @@ export class Creature {
         uCollision: { value: 0 },
         uRecovery: { value: 0 },
         uGhost: { value: ghost ? 1 : 0 },
+        uCosmeticGlowColor: { value: new THREE.Color(0x63e6ff) },
+        uCosmeticGlowStrength: { value: 0 },
+        uFinAccentColor: { value: new THREE.Color(0x79edf2) },
+        uFinAccentStrength: { value: 0 },
+        uAuraColor: { value: new THREE.Color(0x63e6ff) },
+        uAuraStrength: { value: 0 },
         uSkinMap: { value: skinMap }
       },
       vertexShader: BODY_VERTEX,
@@ -467,6 +492,25 @@ export class Creature {
       runtimeClips: [...geometry.clips],
       runtimeBones: geometry.bones
     };
+  }
+
+  /**
+   * Cosmetic uniforms reuse the existing body shader. Applying or switching a
+   * loadout never allocates a mesh/material and cannot alter simulation state.
+   */
+  applyCosmeticPalette(palette: CosmeticPalette): void {
+    const glowColor = this.bodyMaterial.uniforms["uCosmeticGlowColor"];
+    if (glowColor) (glowColor.value as THREE.Color).setHex(palette.glowColor);
+    const glowStrength = this.bodyMaterial.uniforms["uCosmeticGlowStrength"];
+    if (glowStrength) glowStrength.value = clamp01(palette.glowStrength);
+    const finColor = this.bodyMaterial.uniforms["uFinAccentColor"];
+    if (finColor) (finColor.value as THREE.Color).setHex(palette.finAccentColor);
+    const finStrength = this.bodyMaterial.uniforms["uFinAccentStrength"];
+    if (finStrength) finStrength.value = clamp01(palette.finAccentStrength);
+    const auraColor = this.bodyMaterial.uniforms["uAuraColor"];
+    if (auraColor) (auraColor.value as THREE.Color).setHex(palette.auraColor);
+    const auraStrength = this.bodyMaterial.uniforms["uAuraStrength"];
+    if (auraStrength) auraStrength.value = clamp01(palette.auraStrength);
   }
 
   update(

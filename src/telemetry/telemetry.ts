@@ -12,6 +12,16 @@ export const TELEMETRY_EVENT_NAMES = [
   "near_miss",
   "collision",
   "run_end",
+  "reward_granted",
+  "tide_level_up",
+  "cosmetic_unlock",
+  "cosmetic_equip",
+  "daily_trial_start",
+  "daily_trial_complete",
+  "objective_progress",
+  "objective_complete",
+  "streak_update",
+  "retention_return",
   "replay_start",
   "replay_complete",
   "save_recovered",
@@ -155,16 +165,22 @@ export class TelemetryClient {
     if (this.consent !== "granted" || this.queue.length < 1) {
       return Promise.resolve();
     }
-    const batch = this.queue.splice(0, MAX_TELEMETRY_BATCH);
-    this.flushing = this.transport.send(batch)
-      .catch(() => {
-        if (this.consent === "granted") {
-          this.queue.unshift(...batch.slice(-MAX_TELEMETRY_QUEUE));
-          if (this.queue.length > MAX_TELEMETRY_QUEUE) {
-            this.queue.length = MAX_TELEMETRY_QUEUE;
+    this.flushing = (async () => {
+      while (this.consent === "granted" && this.queue.length > 0) {
+        const batch = this.queue.splice(0, MAX_TELEMETRY_BATCH);
+        try {
+          await this.transport.send(batch);
+        } catch {
+          if (this.consent === "granted") {
+            this.queue.unshift(...batch.slice(-MAX_TELEMETRY_QUEUE));
+            if (this.queue.length > MAX_TELEMETRY_QUEUE) {
+              this.queue.length = MAX_TELEMETRY_QUEUE;
+            }
           }
+          break;
         }
-      })
+      }
+    })()
       .finally(() => {
         this.flushing = null;
       });

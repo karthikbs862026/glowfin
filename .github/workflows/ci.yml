@@ -68,7 +68,7 @@ jobs:
       - name: Debug tooling strip check
         run: npm run check:no-debug
 
-      - name: Version 31 release identity check
+      - name: Release identity check
         run: npm run check:release-metadata
         env:
           GLOWFIN_EXPECTED_ENVIRONMENT: staging

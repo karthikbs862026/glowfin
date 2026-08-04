@@ -1,12 +1,13 @@
 import {
   MAX_PROGRESS_BYTES,
-  type GlowfinProgressV1,
+  type GlowfinProgressV2,
+  migrateProgressValue,
   validateProgress
 } from "./progress";
 
 export interface CloudProgressRecord {
   revision: number;
-  progress: GlowfinProgressV1;
+  progress: GlowfinProgressV2;
 }
 
 export type FetchLike = (
@@ -23,14 +24,11 @@ export class CloudProgressConflict extends Error {
 function parseRecord(value: unknown): CloudProgressRecord | null {
   if (!value || typeof value !== "object") return null;
   const candidate = value as Partial<CloudProgressRecord>;
-  if (
-    !Number.isInteger(candidate.revision) ||
-    Number(candidate.revision) < 0 ||
-    !validateProgress(candidate.progress)
-  ) {
+  const progress = migrateProgressValue(candidate.progress);
+  if (!Number.isInteger(candidate.revision) || Number(candidate.revision) < 0 || !progress) {
     return null;
   }
-  return candidate as CloudProgressRecord;
+  return { revision: Number(candidate.revision), progress };
 }
 
 async function readJson(response: Response): Promise<unknown> {
@@ -70,7 +68,7 @@ export class HostedProgressClient {
   }
 
   async save(
-    progress: GlowfinProgressV1,
+    progress: GlowfinProgressV2,
     expectedRevision: number,
     signal?: AbortSignal
   ): Promise<CloudProgressRecord> {

@@ -1,30 +1,40 @@
 /**
- * DOM overlay HUD.
- *
- * Deliberately DOM rather than in-scene text: zero extra draw calls, crisp at
- * any pixel ratio, and it keeps the WebGL budget for the things that actually
- * need it (Part 4.6).
- *
- * MOMENTUM METER — added because the test said to.
- *
- * Part 3.1 proposes creature eye hue as a diegetic momentum indicator and
- * explicitly says to test whether it is legible enough to replace a HUD meter
- * rather than assume it. Tested on device: it is not, because the chase camera
- * only ever shows the creature from behind and the eyes were on its face.
- *
- * The eyes have since been repositioned to be visible, but Part 3.1's
- * instruction for that outcome is unambiguous — add a minimal HUD element
- * rather than compromise readability for aesthetic purity. So both exist, and
- * the meter's hue tracks the same calm-to-hot mapping as the eyes, so the HUD
- * reinforces the diegetic read instead of competing with it.
+ * DOM overlay HUD. Meta-progression stays in DOM so cosmetics and retention UI
+ * consume zero WebGL draws/materials and remain crisp on portrait phones.
  */
 import { eyeHueForEnergy } from "./creature";
 import type { TelemetryConsent } from "../persistence/progress";
+import type { CosmeticCategory } from "../meta/progression";
+import type { StreakSummary } from "../meta/daily";
 
-export interface RunEndPresentation {
+export interface HudObjectivePresentation {
+  id: string;
+  label: string;
+  progress: number;
+  target: number;
+  completed: boolean;
+}
+export interface HudMetaPresentation {
+  lumenPearls: number;
+  tideLevel: number;
+  tideXpIntoLevel: number;
+  tideXpForNextLevel: number;
+  tideFraction: number;
+  cosmeticNames: Record<CosmeticCategory, string>;
+}
+
+export interface RunEndPresentation extends HudMetaPresentation {
   bestScore: number;
   newBest: boolean;
-  savedGhostScore: number | null;
+  raceGhostScore: number | null;
+  raceGhostLabel: string;
+  rewardPearls: number;
+  unlockedNames: string[];
+  objectives: HudObjectivePresentation[];
+  streak: StreakSummary;
+  dailyDayId: string;
+  dailyCompleted: boolean;
+  calendarRewardRejected: boolean;
 }
 
 export class Hud {
@@ -34,12 +44,22 @@ export class Hud {
   private readonly ghostGap: HTMLElement;
   private readonly lightBar: HTMLElement;
   private readonly momentumBar: HTMLElement;
+  private readonly pearlCount: HTMLElement;
+  private readonly tideLevel: HTMLElement;
   private readonly gameOver: HTMLElement;
   private readonly finalScore: HTMLElement;
   private readonly finalDetail: HTMLElement;
   private readonly newBest: HTMLElement;
+  private readonly runReward: HTMLElement;
+  private readonly tideProgressFill: HTMLElement;
+  private readonly tideProgressLabel: HTMLElement;
+  private readonly unlockBanner: HTMLElement;
+  private readonly objectiveList: HTMLElement;
+  private readonly streak: HTMLElement;
   private readonly raceBest: HTMLButtonElement;
+  private readonly dailyTrial: HTMLButtonElement;
   private readonly telemetryChoice: HTMLButtonElement;
+  private readonly wardrobe = new Map<CosmeticCategory, HTMLButtonElement>();
 
   constructor(root: Document = document) {
     this.score = Hud.require(root, "hud-score");
@@ -48,12 +68,24 @@ export class Hud {
     this.ghostGap = Hud.require(root, "hud-ghost-gap");
     this.lightBar = Hud.require(root, "hud-light-fill");
     this.momentumBar = Hud.require(root, "hud-momentum-fill");
+    this.pearlCount = Hud.require(root, "hud-pearls");
+    this.tideLevel = Hud.require(root, "hud-tide-level");
     this.gameOver = Hud.require(root, "hud-gameover");
     this.finalScore = Hud.require(root, "hud-final-score");
     this.finalDetail = Hud.require(root, "hud-final-detail");
     this.newBest = Hud.require(root, "hud-new-best");
+    this.runReward = Hud.require(root, "hud-run-reward");
+    this.tideProgressFill = Hud.require(root, "hud-tide-progress-fill");
+    this.tideProgressLabel = Hud.require(root, "hud-tide-progress-label");
+    this.unlockBanner = Hud.require(root, "hud-unlock-banner");
+    this.objectiveList = Hud.require(root, "hud-objectives");
+    this.streak = Hud.require(root, "hud-streak");
     this.raceBest = Hud.requireButton(root, "hud-race-best");
+    this.dailyTrial = Hud.requireButton(root, "hud-daily-trial");
     this.telemetryChoice = Hud.requireButton(root, "hud-telemetry-choice");
+    for (const category of ["glow", "fin", "trail", "aura"] as const) {
+      this.wardrobe.set(category, Hud.requireButton(root, `hud-cosmetic-${category}`));
+    }
   }
 
   private static require(root: Document, id: string): HTMLElement {
@@ -84,12 +116,10 @@ export class Hud {
     this.multiplier.textContent = `x${multiplier.toFixed(1)}`;
     const pct = Math.max(0, Math.min(1, lightFraction)) * 100;
     this.lightBar.style.width = `${pct.toFixed(1)}%`;
-    // Warn as the resource runs down — this is the run-end signal.
-    this.lightBar.style.background =
-      pct < 35 ? "linear-gradient(90deg,#ff5b7f,#ffb36b)" : "linear-gradient(90deg,#35d0ff,#8a7bff)";
+    this.lightBar.style.background = pct < 35
+      ? "linear-gradient(90deg,#ff5b7f,#ffb36b)"
+      : "linear-gradient(90deg,#35d0ff,#8a7bff)";
 
-    // Momentum meter, hue-matched to the creature's eyes so the two readouts
-    // agree rather than compete.
     const momentum = Math.max(0, Math.min(1, momentumFraction));
     const hueDegrees = eyeHueForEnergy(
       momentum,
@@ -104,6 +134,25 @@ export class Hud {
 
   setBestScore(score: number): void {
     this.best.textContent = `Best ${Math.floor(score).toLocaleString()}`;
+  }
+
+  setMeta(meta: HudMetaPresentation): void {
+    this.pearlCount.textContent = `◇ ${meta.lumenPearls.toLocaleString()}`;
+    this.tideLevel.textContent = `Tide ${meta.tideLevel}`;
+    const pct = Math.max(0, Math.min(1, meta.tideFraction)) * 100;
+    this.tideProgressFill.style.width = `${pct.toFixed(1)}%`;
+    this.tideProgressLabel.textContent =
+      `Tide ${meta.tideLevel} · ${Math.floor(meta.tideXpIntoLevel)}/${Math.floor(meta.tideXpForNextLevel)} current`;
+    const labels: Record<CosmeticCategory, string> = {
+      glow: "Glow",
+      fin: "Fins",
+      trail: "Trail",
+      aura: "Aura"
+    };
+    for (const category of ["glow", "fin", "trail", "aura"] as const) {
+      const button = this.wardrobe.get(category);
+      if (button) button.textContent = `${labels[category]} · ${meta.cosmeticNames[category]}`;
+    }
   }
 
   updateGhostGap(playerDistance: number, ghostDistance: number): void {
@@ -127,30 +176,32 @@ export class Hud {
       : consent === "denied"
         ? "Anonymous playtest data: Off"
         : "Share anonymous playtest data";
-    this.telemetryChoice.setAttribute(
-      "aria-pressed",
-      consent === "granted" ? "true" : "false"
-    );
+    this.telemetryChoice.setAttribute("aria-pressed", consent === "granted" ? "true" : "false");
+  }
+
+  private wireAction(button: HTMLButtonElement, listener: () => void): void {
+    button.addEventListener("pointerdown", (event) => event.stopPropagation());
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      listener();
+    });
   }
 
   onRaceBest(listener: () => void): void {
-    this.raceBest.addEventListener("pointerdown", (event) => {
-      event.stopPropagation();
-    });
-    this.raceBest.addEventListener("click", (event) => {
-      event.stopPropagation();
-      listener();
-    });
+    this.wireAction(this.raceBest, listener);
+  }
+
+  onDailyTrial(listener: () => void): void {
+    this.wireAction(this.dailyTrial, listener);
+  }
+
+  onCosmeticCycle(category: CosmeticCategory, listener: () => void): void {
+    const button = this.wardrobe.get(category);
+    if (button) this.wireAction(button, listener);
   }
 
   onTelemetryChoice(listener: () => void): void {
-    this.telemetryChoice.addEventListener("pointerdown", (event) => {
-      event.stopPropagation();
-    });
-    this.telemetryChoice.addEventListener("click", (event) => {
-      event.stopPropagation();
-      listener();
-    });
+    this.wireAction(this.telemetryChoice, listener);
   }
 
   isActionTarget(target: EventTarget | null): boolean {
@@ -165,14 +216,44 @@ export class Hud {
     presentation: RunEndPresentation
   ): void {
     this.finalScore.textContent = Math.floor(score).toLocaleString();
-    this.finalDetail.textContent =
-      `${seconds.toFixed(0)}s · ${nearMisses} near-miss · ${collisions} hits`;
+    this.finalDetail.textContent = `${seconds.toFixed(0)}s · ${nearMisses} near-miss · ${collisions} hits`;
     this.setBestScore(presentation.bestScore);
+    this.setMeta(presentation);
     this.newBest.dataset["visible"] = presentation.newBest ? "true" : "false";
-    this.raceBest.disabled = presentation.savedGhostScore === null;
-    this.raceBest.textContent = presentation.savedGhostScore === null
-      ? "Race saved ghost"
-      : `Race ghost · ${Math.floor(presentation.savedGhostScore).toLocaleString()}`;
+    this.runReward.textContent = presentation.rewardPearls > 0
+      ? `+${presentation.rewardPearls.toLocaleString()} Lumen Pearls`
+      : "Rewards already secured";
+    this.unlockBanner.dataset["visible"] = presentation.unlockedNames.length > 0 ? "true" : "false";
+    this.unlockBanner.textContent = presentation.unlockedNames.length > 0
+      ? `Unlocked · ${presentation.unlockedNames.join(" · ")}`
+      : "";
+    this.objectiveList.replaceChildren(...presentation.objectives.map((objective) => {
+      const row = document.createElement("div");
+      row.className = "hud-objective";
+      row.dataset["complete"] = objective.completed ? "true" : "false";
+      const label = document.createElement("span");
+      label.textContent = objective.label;
+      const value = document.createElement("strong");
+      value.textContent = objective.completed
+        ? "Complete"
+        : `${Math.floor(objective.progress).toLocaleString()}/${Math.floor(objective.target).toLocaleString()}`;
+      row.append(label, value);
+      return row;
+    }));
+    const grace = presentation.streak.graceAvailable
+      ? "Grace day ready"
+      : `Grace protected ${presentation.streak.graceUsedForDay ?? "one missed day"}`;
+    this.streak.textContent = `${presentation.streak.current}-day Tide streak · ${grace}`;
+    if (presentation.calendarRewardRejected) {
+      this.streak.textContent = "Daily rewards paused until the device date is corrected";
+    }
+    this.raceBest.disabled = presentation.raceGhostScore === null;
+    this.raceBest.textContent = presentation.raceGhostScore === null
+      ? presentation.raceGhostLabel
+      : `${presentation.raceGhostLabel} · ${Math.floor(presentation.raceGhostScore).toLocaleString()}`;
+    this.dailyTrial.textContent = presentation.dailyCompleted
+      ? `Replay Daily Tide Trial · ${presentation.dailyDayId}`
+      : `Daily Tide Trial · ${presentation.dailyDayId}`;
     this.gameOver.style.display = "flex";
   }
 

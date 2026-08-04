@@ -4,7 +4,7 @@
 
 | Environment | Purpose | Required identity |
 |---|---|---|
-| `local` | developer iteration | `V31 · LOCAL · local` |
+| `local` | developer iteration | `V33 · LOCAL · local` |
 | `staging` | owner-only certification checkpoint | exact Git commit SHA |
 | `production` | promoted public release | exact tagged commit SHA |
 
@@ -30,7 +30,8 @@ source SHA with the intended environment and repeat the release checks.
 
 ## Promote criteria
 
-- All automated rows in `docs/phase3-exit-report.md` are green.
+- All automated rows in `docs/phase3-exit-report.md` and the current phase
+  release report are green.
 - All required real-device rows are signed off.
 - No Core Design Principle regression or unresolved release-blocking issue.
 - The previous known-good version remains available for rollback.
