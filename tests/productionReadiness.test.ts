@@ -6,6 +6,7 @@ import {
   evaluateProductionHealth,
   isSealedReleaseManifest,
   planRollback,
+  shouldVerifyHostedReleaseManifest,
   type HealthSignalCounts,
   type SealedReleaseManifest
 } from "../src/operations/productionReadiness";
@@ -49,6 +50,14 @@ const healthy: HealthSignalCounts = {
 };
 
 describe("Version 36 production-readiness policy", () => {
+  it("runs hosted manifest checks off loopback without polluting browser gates", () => {
+    expect(shouldVerifyHostedReleaseManifest("staging", "glowfin.example")).toBe(true);
+    expect(shouldVerifyHostedReleaseManifest("production", "glowfin.example")).toBe(true);
+    expect(shouldVerifyHostedReleaseManifest("staging", "127.0.0.1")).toBe(false);
+    expect(shouldVerifyHostedReleaseManifest("staging", "localhost")).toBe(false);
+    expect(shouldVerifyHostedReleaseManifest("local", "glowfin.example")).toBe(false);
+  });
+
   it("keeps retention, rate limits and funnel fields explicit and bounded", () => {
     expect(DATA_RETENTION_DAYS).toEqual({
       telemetry: 90,

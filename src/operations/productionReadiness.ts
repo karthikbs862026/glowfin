@@ -145,6 +145,18 @@ export interface SealedReleaseManifest {
   artifactFileCount: number;
 }
 
+export function shouldVerifyHostedReleaseManifest(
+  environment: SealedReleaseManifest["environment"],
+  hostname: string
+): boolean {
+  if (environment === "local") return false;
+  const normalized = hostname.trim().toLowerCase();
+  return normalized !== "localhost" &&
+    normalized !== "127.0.0.1" &&
+    normalized !== "::1" &&
+    normalized !== "[::1]";
+}
+
 export function isSealedReleaseManifest(value: unknown): value is SealedReleaseManifest {
   if (!value || typeof value !== "object") return false;
   const manifest = value as Partial<SealedReleaseManifest>;

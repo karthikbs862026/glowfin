@@ -56,7 +56,10 @@ import {
   type RewardedOffer
 } from "./monetization/rewarded";
 import { HostedRewardedAuthorityClient } from "./monetization/rewardAuthority";
-import { isSealedReleaseManifest } from "./operations/productionReadiness";
+import {
+  isSealedReleaseManifest,
+  shouldVerifyHostedReleaseManifest
+} from "./operations/productionReadiness";
 import {
   AccessPreferenceRepository,
   classifyRunAccess,
@@ -259,7 +262,13 @@ if (progress.telemetryConsent === "granted") {
 }
 
 async function verifyHostedReleaseManifest(): Promise<void> {
-  if (GLOWFIN_RELEASE.environment === "local") return;
+  // Build-time checks own loopback certification because Vite's development
+  // server does not expose the sealed dist manifest. Hosted checkpoints still
+  // verify their top-level manifest on every fresh page load.
+  if (!shouldVerifyHostedReleaseManifest(
+    GLOWFIN_RELEASE.environment,
+    window.location.hostname
+  )) return;
   let valid = false;
   try {
     const response = await fetch(new URL("./release.json", window.location.href), {
