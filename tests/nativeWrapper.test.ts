@@ -40,6 +40,10 @@ describe("Version 39 Capacitor wrapper contract", () => {
     expect(android).toContain('android:usesCleartextTraffic="false"');
     expect(android).toContain('android:allowBackup="false"');
 
+    const androidStyles = file("android/app/src/main/res/values/styles.xml");
+    expect(androidStyles).toContain('android:windowLightNavigationBar" tools:targetApi="27"');
+    expect(androidStyles).toContain('android:forceDarkAllowed" tools:targetApi="29"');
+
     const ios = file("ios/App/App/Info.plist");
     expect(ios).toContain("UIInterfaceOrientationPortrait");
     expect(ios).not.toContain("UIInterfaceOrientationLandscape");
