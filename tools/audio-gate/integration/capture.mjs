@@ -98,6 +98,15 @@ try {
     }
   };
 
+  const dismissVersion39TutorialIntro = async () => {
+    const intro = page.locator("#tutorial-intro");
+    if (await intro.getAttribute("data-active") !== "true") return;
+    await page.locator("#tutorial-intro-skip").tap();
+    await page.waitForFunction(
+      () => document.querySelector("#tutorial-intro")?.getAttribute("data-active") === "false"
+    );
+  };
+
   await page.goto(baseUrl, { waitUntil: "load" });
   await page.locator("#glowfin-canvas").waitFor({ state: "visible" });
   await page.locator("#hud-audio-toggle").waitFor({ state: "visible" });
@@ -115,9 +124,10 @@ try {
     );
   }
 
-  // Version 37 deliberately unlocks sound and begins simulation through the
-  // Moon Well CTA. The corner sound control becomes actionable after the hub
-  // closes, avoiding a competing first-run gesture.
+  // Version 39 first exposes the guided-tutorial invitation. This audio-only
+  // gate deliberately chooses its visible Skip path before exercising the
+  // Moon Well audio gesture; it never taps through the modal.
+  await dismissVersion39TutorialIntro();
   await page.locator("#moonwell-dive").tap();
   await waitForAudioReady("initial tap-to-dive activation");
   await page.waitForTimeout(280);
@@ -142,6 +152,7 @@ try {
     );
   }
 
+  await dismissVersion39TutorialIntro();
   await page.locator("#moonwell-dive").tap();
   await page.locator("#hud-audio-toggle").tap();
   await waitForAudioReady("unmute activation");
@@ -155,6 +166,7 @@ try {
   await page.evaluate(() => localStorage.removeItem("glowfin-audio-muted-v1"));
   await page.reload({ waitUntil: "load" });
   await page.locator("#moonwell-dive").waitFor({ state: "visible" });
+  await dismissVersion39TutorialIntro();
   const beforeSecondDive = await snapshot();
   await page.locator("#moonwell-dive").tap();
   await waitForAudioReady("second tap-to-dive activation");
