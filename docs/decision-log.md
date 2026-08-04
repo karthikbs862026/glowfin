@@ -763,3 +763,21 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Keep competitive recovery disabled. Permit an injected host video provider
   to grant one idempotent Lumen-only bonus that cannot alter score, Tide XP,
   unlock level, collision state, replay or division.
+
+## 2026-08-04 — Harden runtime recovery and presentation accessibility
+
+- Adopt ADR-0039 and label Version 35 as Phase 5A, based on merged Version 34.
+- Probe WebGL2 before constructing the renderer and show an explicit fallback
+  when graphics support is unavailable or blocked.
+- Pause on independent visibility, page-cache and WebGL blockers. Reset pointer
+  and fixed-step state, and resume only after every blocker clears.
+- After context restoration, replace the canvas and rebuild the complete
+  `GameView`; reapply quality, cosmetics and presentation preferences only
+  after required assets are ready. Remain fail-closed if reconstruction fails.
+- Migrate access preferences to schema version 2. Add persistent reduced-motion
+  and high-contrast controls that never change input, score, collision, replay
+  truth or leaderboard division.
+- Add bounded consent-gated runtime-health events and make forced Chromium
+  context loss/restoration plus page-cache recovery a required PR art gate.
+- Keep physical Android/iOS memory-pressure, interruption, thermal and
+  accessibility review conditional; browser automation cannot sign those rows.

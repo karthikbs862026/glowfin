@@ -36,6 +36,13 @@ import {
 /** Hard caps. Part 4.6 requires pool sizes be part of the performance budget. */
 const MAX_POOLED_STRIPES = 40;
 const STRIPE_SPACING_UNITS = 14;
+const STANDARD_EXPOSURE = 0.96;
+const HIGH_CONTRAST_EXPOSURE = 1.06;
+
+export interface PresentationPreferences {
+  reducedMotion: boolean;
+  highContrast: boolean;
+}
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
@@ -58,6 +65,9 @@ export class GameView {
   private readonly composer: EffectComposer;
   private readonly bloomPass: UnrealBloomPass;
   private bloomEnabled = true;
+  private qualityBloomEnabled = true;
+  private reducedMotion = false;
+  private highContrast = false;
   private readonly wallCausticBase = new THREE.Color(0x63e0ff);
   private readonly wallCausticHot = new THREE.Color(0xff6be0);
   private readonly wallCausticScratch = new THREE.Color();
@@ -175,7 +185,7 @@ export class GameView {
     // The deeper directional material pass intentionally removed broad
     // caustic wash. A small filmic exposure lift keeps midtones above the
     // Art-Bible floor without flattening stone cavities or clipping bloom.
-    this.renderer.toneMappingExposure = 0.96;
+    this.renderer.toneMappingExposure = STANDARD_EXPOSURE;
     // EffectComposer runs several passes and renderer.info auto-resets on each
     // one, so by the time stats() reads it, it describes bloom's final
     // fullscreen quad rather than the scene — the overlay showed "draws 1
@@ -635,8 +645,8 @@ export class GameView {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, settings.pixelRatioCap));
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
 
-    this.bloomEnabled = settings.bloomEnabled;
-    this.bloomPass.enabled = settings.bloomEnabled;
+    this.qualityBloomEnabled = settings.bloomEnabled;
+    this.applyPresentationEffects();
     this.bloomPass.resolution.set(
       Math.max(64, window.innerWidth * settings.bloomResolutionScale),
       Math.max(64, window.innerHeight * settings.bloomResolutionScale)
@@ -685,6 +695,26 @@ export class GameView {
         ? this.cfg.visual.causticIntensityWall
         : 0;
     }
+  }
+
+  /**
+   * Presentation-only accessibility controls. Neither option touches the
+   * deterministic simulation, replay stream, input mapping, or score truth.
+   * Reduced motion freezes ambient world/caustic drift and removes bloom;
+   * high contrast raises filmic exposure without changing collision shapes.
+   */
+  setPresentationPreferences(preferences: PresentationPreferences): void {
+    this.reducedMotion = preferences.reducedMotion;
+    this.highContrast = preferences.highContrast;
+    this.applyPresentationEffects();
+  }
+
+  private applyPresentationEffects(): void {
+    this.bloomEnabled = this.qualityBloomEnabled && !this.reducedMotion;
+    this.bloomPass.enabled = this.bloomEnabled;
+    this.renderer.toneMappingExposure = this.highContrast
+      ? HIGH_CONTRAST_EXPOSURE
+      : STANDARD_EXPOSURE;
   }
 
   /** Metrics the capture harness cannot infer reliably from render.info. */
@@ -792,8 +822,9 @@ export class GameView {
   ): void {
     const cfg = this.cfg;
     this.renderer.info.reset();
-    advanceCausticTime(this.floorMaterial, elapsedSec, cfg.visual.causticSpeed);
-    advanceCausticTime(this.wallMaterial, elapsedSec, cfg.visual.causticSpeed);
+    const presentationElapsedSec = this.reducedMotion ? 0 : elapsedSec;
+    advanceCausticTime(this.floorMaterial, presentationElapsedSec, cfg.visual.causticSpeed);
+    advanceCausticTime(this.wallMaterial, presentationElapsedSec, cfg.visual.causticSpeed);
     const momentumFraction =
       cfg.momentum.ceiling === 0 ? 0 : sim.momentum / cfg.momentum.ceiling;
     const speedRange =
@@ -902,7 +933,7 @@ export class GameView {
       sim.forwardDistance,
       sim.lateralPosition,
       momentumFraction,
-      elapsedSec,
+      presentationElapsedSec,
       gates
     );
 
@@ -931,7 +962,7 @@ export class GameView {
     this.speedInlays.instanceMatrix.needsUpdate = true;
   }
 
-  /** Release GPU resources. Full context-loss rebuild is Phase 5 (Part 4.3). */
+  /** Release GPU resources; Version 35 reconstructs a fresh view after loss. */
   dispose(): void {
     window.removeEventListener("resize", this.handleResize);
     for (const item of this.disposables) item.dispose();

@@ -71,13 +71,30 @@ import {
   MoonflashRecorder,
   type MoonflashClipV1
 } from "./sharing/clips";
+import {
+  RuntimeLifecycle,
+  type RuntimeLifecycleSnapshot
+} from "./resilience/runtimeLifecycle";
+import { detectRuntimeSupport } from "./resilience/runtimeSupport";
 
-const canvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
-if (!canvas) throw new Error("Canvas #glowfin-canvas not found");
+const initialCanvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
+if (!initialCanvas) throw new Error("Canvas #glowfin-canvas not found");
+let canvas: HTMLCanvasElement = initialCanvas;
 
 mountReleaseIdentity();
 
-const view = new GameView(canvas, tuning);
+const runtimeLifecycle = new RuntimeLifecycle();
+const runtimeSupport = detectRuntimeSupport();
+let view: GameView | null = null;
+if (runtimeSupport.supported) {
+  try {
+    view = new GameView(canvas, tuning);
+  } catch {
+    runtimeLifecycle.markFailed();
+  }
+} else {
+  runtimeLifecycle.markUnsupported();
+}
 const hud = new Hud();
 const audio = new GlowfinAudio(tuning);
 const steering = new SteeringSource({
@@ -85,12 +102,14 @@ const steering = new SteeringSource({
   sensitivity: tuning.input.sensitivity,
   deadZone: tuning.input.deadZone
 });
-attachPointerInput(canvas, steering);
+let detachPointerInput: () => void = view
+  ? attachPointerInput(canvas, steering)
+  : () => undefined;
 
 const quality = new QualityController();
 const perf = new PerfMonitor();
 const overlay = new DebugOverlay();
-view.setQuality(quality.settings);
+view?.setQuality(quality.settings);
 
 const timestep = new FixedTimestepRunner(FIXED_DT_SEC);
 const progressStorage = (() => {
@@ -123,6 +142,57 @@ const rewardedVideo = new RewardedVideoHooks(
   rewardedProvider,
   rewardedProvider ? LIVE_REWARDED_VIDEO_FLAGS : undefined
 );
+
+function requiredElement<T extends HTMLElement>(id: string): T {
+  const element = document.getElementById(id);
+  if (!element) throw new Error(`Missing required runtime element #${id}.`);
+  return element as T;
+}
+
+const runtimeStatus = requiredElement<HTMLElement>("runtime-status");
+const runtimeStatusTitle = requiredElement<HTMLElement>("runtime-status-title");
+const runtimeStatusDetail = requiredElement<HTMLElement>("runtime-status-detail");
+const runtimeStatusRetry = requiredElement<HTMLButtonElement>("runtime-status-retry");
+
+function publishRuntimeState(
+  snapshot: RuntimeLifecycleSnapshot = runtimeLifecycle.snapshot()
+): void {
+  document.documentElement.dataset["glowfinRuntime"] = snapshot.state;
+  runtimeStatus.dataset["state"] = snapshot.state;
+  window.__GLOWFIN_RUNTIME__ = snapshot;
+
+  if (snapshot.state === "running") {
+    runtimeStatus.dataset["active"] = "false";
+    runtimeStatusRetry.hidden = true;
+    return;
+  }
+
+  runtimeStatus.dataset["active"] = "true";
+  runtimeStatusRetry.hidden = ![
+    "context-lost",
+    "unsupported",
+    "failed"
+  ].includes(snapshot.state);
+  if (snapshot.state === "interrupted") {
+    runtimeStatusTitle.textContent = "Glowfin paused safely";
+    runtimeStatusDetail.textContent = "Your current is held while the app is interrupted and resumes without a time jump.";
+  } else if (snapshot.state === "context-lost") {
+    runtimeStatusTitle.textContent = "Restoring the Moon-Garden";
+    runtimeStatusDetail.textContent = "The graphics context was interrupted. Your run is paused while the browser restores it.";
+  } else if (snapshot.state === "recovering") {
+    runtimeStatusTitle.textContent = "Rebuilding the Moon-Garden";
+    runtimeStatusDetail.textContent = "Glowfin is recreating every graphics resource before play resumes.";
+  } else if (snapshot.state === "unsupported") {
+    runtimeStatusTitle.textContent = "Glowfin needs WebGL2";
+    runtimeStatusDetail.textContent = runtimeSupport.detail;
+  } else {
+    runtimeStatusTitle.textContent = "Glowfin could not recover";
+    runtimeStatusDetail.textContent = "The graphics system could not be rebuilt safely. Reload to begin a fresh session; saved progress is preserved.";
+  }
+}
+
+runtimeStatusRetry.addEventListener("click", () => window.location.reload());
+publishRuntimeState();
 
 let cloudRevision = 0;
 let cloudSyncInFlight: Promise<void> | null = null;
@@ -162,9 +232,14 @@ let completedCompetitiveRun: CompletedCompetitiveRun | null = null;
 
 if (progress.telemetryConsent === "granted") {
   telemetry.track("session_start", {
-    release: 34,
+    release: 35,
     tuningVersion: tuning.version,
     saveSchemaVersion: progress.schemaVersion
+  });
+  telemetry.track("runtime_support", {
+    supported: runtimeSupport.supported,
+    reason: runtimeSupport.reason,
+    state: runtimeLifecycle.snapshot().state
   });
   if (progressLoad.recoveryReason) {
     telemetry.track("save_recovered", {
@@ -218,8 +293,14 @@ function updateProgressUi(): void {
   hud.setBestScore(progress.bestScore);
   hud.setTelemetryConsent(progress.telemetryConsent);
   hud.setMeta(hudMeta());
-  view.applyCosmetics(progress.progression.equippedCosmetics);
+  view?.applyCosmetics(progress.progression.equippedCosmetics);
+  view?.setPresentationPreferences(accessPreferences);
   hud.setMotorAssist(accessPreferences.motorAssist);
+  hud.setPresentationPreferences(accessPreferences);
+  document.documentElement.dataset["glowfinReducedMotion"] =
+    String(accessPreferences.reducedMotion);
+  document.documentElement.dataset["glowfinHighContrast"] =
+    String(accessPreferences.highContrast);
 }
 
 function observeSessionDay(dayId: string): void {
@@ -320,7 +401,8 @@ function reportRunStart(): void {
     dailyDay: activeRunDayId ?? "none",
     division: activeClassification.division,
     motorAssist: activeClassification.motorAssist,
-    reducedMotion: activeClassification.reducedMotion
+    reducedMotion: activeClassification.reducedMotion,
+    highContrast: accessPreferences.highContrast
   }, activeRunId);
   if (activeRunMode === "daily" || activeRunMode === "daily-ghost") {
     telemetry.track("daily_trial_start", {
@@ -366,7 +448,7 @@ function startRun(mode: GlowfinRunMode = "fresh"): void {
   completedCompetitiveRun = null;
   steering.reset();
   timestep.reset();
-  view.resetTrail();
+  view?.resetTrail();
   hud.hideGameOver();
   hud.setSubmitState("unavailable");
   hud.setShareState("unavailable");
@@ -500,11 +582,35 @@ hud.onMotorAssistToggle(() => {
   if (!awaitingRestart) return;
   accessPreferences = accessPreferenceRepository.toggleMotorAssist();
   steering.setSensitivityMultiplier(steeringSensitivityMultiplier(accessPreferences));
-  hud.setMotorAssist(accessPreferences.motorAssist);
+  updateProgressUi();
   const nextClassification = classifyRunAccess(accessPreferences);
   telemetry.track("assist_change", {
     motorAssist: accessPreferences.motorAssist,
     nextDivision: nextClassification.division
+  });
+  void telemetry.flush();
+});
+
+hud.onReducedMotionToggle(() => {
+  if (!awaitingRestart) return;
+  accessPreferences = accessPreferenceRepository.toggleReducedMotion();
+  updateProgressUi();
+  telemetry.track("accessibility_change", {
+    setting: "reduced-motion",
+    enabled: accessPreferences.reducedMotion,
+    nextDivision: classifyRunAccess(accessPreferences).division
+  });
+  void telemetry.flush();
+});
+
+hud.onHighContrastToggle(() => {
+  if (!awaitingRestart) return;
+  accessPreferences = accessPreferenceRepository.toggleHighContrast();
+  updateProgressUi();
+  telemetry.track("accessibility_change", {
+    setting: "high-contrast",
+    enabled: accessPreferences.highContrast,
+    nextDivision: classifyRunAccess(accessPreferences).division
   });
   void telemetry.flush();
 });
@@ -563,10 +669,15 @@ hud.onTelemetryChoice(() => {
   updateProgressUi();
   if (consent === "granted") {
     telemetry.track("session_start", {
-      release: 34,
+      release: 35,
       tuningVersion: tuning.version,
       saveSchemaVersion: progress.schemaVersion,
       consentSource: "game-over"
+    });
+    telemetry.track("runtime_support", {
+      supported: runtimeSupport.supported,
+      reason: runtimeSupport.reason,
+      state: runtimeLifecycle.snapshot().state
     });
     if (lastSessionObservation) trackRetentionReturn(lastSessionObservation);
     void telemetry.flush();
@@ -577,31 +688,176 @@ hud.onTelemetryChoice(() => {
 // Restart on tap once the run has ended. Registered on the document rather than
 // the canvas so a tap on the game-over panel also counts.
 document.addEventListener("pointerdown", (event) => {
-  if (awaitingRestart && !hud.isActionTarget(event.target)) startRun("fresh");
+  if (
+    runtimeLifecycle.canAdvance &&
+    awaitingRestart &&
+    !hud.isActionTarget(event.target)
+  ) startRun("fresh");
 });
 
+let lastFrameMs = performance.now();
+const interruptionStartedAt = new Map<"visibility" | "page-cache", number>();
+
+function pauseForInterruption(
+  reason: "visibility" | "page-cache",
+  source: string
+): void {
+  const alreadyPaused = runtimeLifecycle.snapshot().blockers.includes(reason);
+  runtimeLifecycle.pause(reason);
+  steering.reset();
+  publishRuntimeState();
+  if (!alreadyPaused) {
+    interruptionStartedAt.set(reason, performance.now());
+    telemetry.track("runtime_pause", {
+      reason,
+      source,
+      elapsedSec: run.sim.elapsedSec
+    }, activeRunId);
+    void telemetry.flush();
+  }
+}
+
+function resumeFromInterruption(
+  reason: "visibility" | "page-cache",
+  source: string
+): void {
+  const wasPaused = runtimeLifecycle.snapshot().blockers.includes(reason);
+  runtimeLifecycle.resume(reason);
+  steering.reset();
+  timestep.reset();
+  lastFrameMs = performance.now();
+  publishRuntimeState();
+  if (wasPaused) {
+    const startedAt = interruptionStartedAt.get(reason) ?? performance.now();
+    interruptionStartedAt.delete(reason);
+    telemetry.track("runtime_resume", {
+      reason,
+      source,
+      pausedMs: Math.max(0, performance.now() - startedAt),
+      state: runtimeLifecycle.snapshot().state
+    }, activeRunId);
+    void telemetry.flush();
+  }
+}
+
 // A backgrounded tab hands back a huge frame time and a finger that is no
-// longer down (Part 2.1). Drop both rather than simulating the gap.
+// longer down. Pause the simulation and drop both rather than simulating the
+// gap or resuming a stale pointer anchor.
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) {
-    timestep.reset();
-    lastFrameMs = performance.now();
+  if (document.hidden) {
+    pauseForInterruption("visibility", "visibilitychange");
+  } else {
+    resumeFromInterruption("visibility", "visibilitychange");
     void hydrateDailyClock();
   }
 });
 
-// Losing the WebGL context currently pauses rather than rebuilding. Full
-// resource rebuild is Phase 5 (Part 4.3) — preventing the default at least
-// keeps the browser from tearing the canvas down permanently.
-canvas.addEventListener("webglcontextlost", (event) => {
-  event.preventDefault();
-  telemetry.track("webgl_context_lost", {
-    elapsedSec: run.sim.elapsedSec,
-    quality: quality.current
-  }, activeRunId);
-  void telemetry.flush();
-  console.warn("WebGL context lost — rebuild is not implemented until Phase 5");
-});
+let rendererGeneration = view ? 1 : 0;
+if (rendererGeneration > 0) canvas.dataset["rendererGeneration"] = String(rendererGeneration);
+let detachContextListeners: () => void = () => undefined;
+let rebuildInFlight: Promise<void> | null = null;
+
+function installContextListeners(target: HTMLCanvasElement): () => void {
+  const onContextLost = (event: Event) => {
+    event.preventDefault();
+    const alreadyLost = runtimeLifecycle.snapshot().blockers.includes("webgl");
+    runtimeLifecycle.contextLost();
+    steering.reset();
+    publishRuntimeState();
+    if (!alreadyLost) {
+      telemetry.track("webgl_context_lost", {
+        elapsedSec: run.sim.elapsedSec,
+        quality: quality.current,
+        generation: rendererGeneration
+      }, activeRunId);
+      void telemetry.flush();
+    }
+  };
+  const onContextRestored = () => {
+    void rebuildRenderer();
+  };
+  target.addEventListener("webglcontextlost", onContextLost);
+  target.addEventListener("webglcontextrestored", onContextRestored);
+  return () => {
+    target.removeEventListener("webglcontextlost", onContextLost);
+    target.removeEventListener("webglcontextrestored", onContextRestored);
+  };
+}
+
+function rebuildRenderer(): Promise<void> {
+  if (rebuildInFlight) return rebuildInFlight;
+  if (!view || !runtimeLifecycle.snapshot().blockers.includes("webgl")) {
+    return Promise.resolve();
+  }
+
+  rebuildInFlight = (async () => {
+    runtimeLifecycle.beginRecovery();
+    publishRuntimeState();
+    const previousView = view;
+    const previousCanvas = canvas;
+    view = null;
+    detachContextListeners();
+    detachPointerInput();
+
+    const replacement = previousCanvas.cloneNode(false) as HTMLCanvasElement;
+    rendererGeneration += 1;
+    replacement.dataset["rendererGeneration"] = String(rendererGeneration);
+    previousCanvas.replaceWith(replacement);
+    canvas = replacement;
+
+    try {
+      previousView.dispose();
+    } catch {
+      // A lost context can reject individual WebGL cleanup calls. Every DOM
+      // and Three.js reference is dropped regardless, and the replacement
+      // canvas starts from a fresh context.
+    }
+
+    let rebuiltView: GameView | null = null;
+    try {
+      rebuiltView = new GameView(canvas, tuning);
+      rebuiltView.setQuality(quality.settings);
+      rebuiltView.setPresentationPreferences(accessPreferences);
+      rebuiltView.applyCosmetics(progress.progression.equippedCosmetics);
+      detachContextListeners = installContextListeners(canvas);
+      detachPointerInput = attachPointerInput(canvas, steering);
+      await rebuiltView.ready;
+      rebuiltView.resetTrail();
+      view = rebuiltView;
+      runtimeLifecycle.recoverySucceeded();
+      timestep.reset();
+      lastFrameMs = performance.now();
+      publishRuntimeState();
+      telemetry.track("webgl_context_restored", {
+        generation: rendererGeneration,
+        quality: quality.current,
+        state: runtimeLifecycle.snapshot().state
+      }, activeRunId);
+      void telemetry.flush();
+    } catch {
+      detachContextListeners();
+      detachPointerInput();
+      try {
+        rebuiltView?.dispose();
+      } catch {
+        // The failed reconstruction is abandoned and play remains fail-closed.
+      }
+      view = null;
+      runtimeLifecycle.recoveryFailed();
+      publishRuntimeState();
+      telemetry.track("webgl_context_recovery_failed", {
+        generation: rendererGeneration,
+        quality: quality.current
+      }, activeRunId);
+      void telemetry.flush();
+    }
+  })().finally(() => {
+    rebuildInFlight = null;
+  });
+  return rebuildInFlight;
+}
+
+if (view) detachContextListeners = installContextListeners(canvas);
 
 window.addEventListener("error", () => {
   telemetry.track("error", { source: "window", phase: "runtime" }, activeRunId);
@@ -612,14 +868,27 @@ window.addEventListener("unhandledrejection", () => {
   void telemetry.flush();
 });
 window.addEventListener("pagehide", () => {
+  pauseForInterruption("page-cache", "pagehide");
   void telemetry.flush();
 });
-
-let lastFrameMs = performance.now();
+window.addEventListener("pageshow", () => {
+  resumeFromInterruption("page-cache", "pageshow");
+});
+document.addEventListener("freeze", () => {
+  pauseForInterruption("page-cache", "freeze");
+});
+document.addEventListener("resume", () => {
+  resumeFromInterruption("page-cache", "resume");
+});
 
 function frame(nowMs: number): void {
   const frameSec = (nowMs - lastFrameMs) / 1000;
   lastFrameMs = nowMs;
+  const activeView = view;
+  if (!runtimeLifecycle.canAdvance || !activeView) {
+    requestAnimationFrame(frame);
+    return;
+  }
 
   // Slow-mo is applied to wall-clock time before it reaches the accumulator, so
   // the simulation itself always steps at a fixed dt (ADR-0006).
@@ -856,7 +1125,7 @@ function frame(nowMs: number): void {
   });
 
   const lightFraction = run.light / tuning.light.max;
-  view.render(
+  activeView.render(
     run.sim,
     run.gates,
     lightFraction,
@@ -891,13 +1160,13 @@ function frame(nowMs: number): void {
   perf.record(frameMs);
   const change = quality.recordFrame(frameMs);
   if (change) {
-    view.setQuality(quality.settings);
+    activeView.setQuality(quality.settings);
     console.info(`Quality ${change.from} -> ${change.to} (${change.reason})`);
   }
 
   if (import.meta.env.DEV) {
-    const stats = view.stats();
-    const sample = perf.sample(stats.drawCalls, stats.triangles, view.gpuName);
+    const stats = activeView.stats();
+    const sample = perf.sample(stats.drawCalls, stats.triangles, activeView.gpuName);
     overlay.update(sample, quality.current, checkBudgets(sample));
   }
 
@@ -921,12 +1190,39 @@ function isProbeRequested(): boolean {
 }
 
 async function start(): Promise<void> {
-  await view.ready;
+  if (!runtimeSupport.supported || !view) {
+    publishRuntimeState();
+    return;
+  }
+
+  let activeView: GameView | null = null;
+  try {
+    while (!activeView) {
+      if (!view && rebuildInFlight) await rebuildInFlight;
+      const candidate: GameView | null = view;
+      if (!candidate) break;
+      await candidate.ready;
+      if (candidate === view) activeView = candidate;
+    }
+  } catch {
+    runtimeLifecycle.markFailed();
+    publishRuntimeState();
+    telemetry.track("error", { source: "startup", phase: "renderer-ready" });
+    void telemetry.flush();
+    return;
+  }
+  if (!activeView) {
+    publishRuntimeState();
+    return;
+  }
 
   telemetry.track("load_complete", {
     loadMs: performance.now(),
     quality: quality.current,
-    productionAssets: view.productionAssetStatus().glowfin === "glb"
+    productionAssets: activeView.productionAssetStatus().glowfin === "glb",
+    rendererGeneration,
+    reducedMotion: accessPreferences.reducedMotion,
+    highContrast: accessPreferences.highContrast
   });
   reportRunStart();
 
@@ -935,7 +1231,7 @@ async function start(): Promise<void> {
       runContrastProbe,
       showProbeResult
     } = await import("./render/contrastProbe");
-    const result = runContrastProbe(view, tuning);
+    const result = runContrastProbe(activeView, tuning);
     showProbeResult(result);
     console.info(result.lines.join("\n"));
     return;
@@ -945,3 +1241,9 @@ async function start(): Promise<void> {
 }
 
 void start();
+
+declare global {
+  interface Window {
+    __GLOWFIN_RUNTIME__?: RuntimeLifecycleSnapshot;
+  }
+}

@@ -1,10 +1,10 @@
 {
-  "$comment": "Version 34 Phase 4B verified leaderboards, assist divisions, controlled Moonflash sharing and rewarded-video provider bridge.",
+  "$comment": "Version 35 Phase 5A runtime resilience, WebGL2 fallback, interruption recovery and persistent presentation accessibility.",
   "schemaVersion": 1,
-  "version": 34,
-  "phase": "phase-4b",
-  "certification": "competitive-sharing-candidate",
-  "baselineVersion": 33,
-  "baselineCommit": "3f7ef32c7429d6f28ef772bcfe7f3af08dd323ff",
+  "version": 35,
+  "phase": "phase-5a",
+  "certification": "runtime-resilience-candidate",
+  "baselineVersion": 34,
+  "baselineCommit": "76667c42e4a7a36d0b051a31b1bddb3caaacd9cb",
   "artBuild": "phase3c-v30-glowfin-production"
 }

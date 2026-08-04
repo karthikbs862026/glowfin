@@ -39,6 +39,9 @@ if (!document.includes('id="glowfin-canvas"')) {
 if (!document.includes('id="hud-build"')) {
   throw new Error("Deployed document omits the visible release badge.");
 }
+if (!document.includes('id="runtime-status"')) {
+  throw new Error("Deployed document omits the runtime recovery fallback.");
+}
 
 const releaseResponse = await checkedFetch("release.json");
 const release = await releaseResponse.json();

@@ -49,9 +49,9 @@ assumed here.
 
 ## Known gaps, carried forward honestly
 
-- **WebGL context loss pauses rather than rebuilding.** `preventDefault` is
-  called so the browser does not tear the canvas down permanently, but full
-  resource rebuild is Phase 5 (Part 4.3).
+- **Superseded in Version 35:** the original implementation paused and called
+  `preventDefault` without rebuilding. ADR-0039 now requires a replacement
+  canvas and complete `GameView` reconstruction before safe resume.
 - **No audio.** Phase 3, including the iOS gesture gating in Part 3.5.
 - **Body glow vs momentum glow conflict from ADR-0006 is still unresolved.**
   Light drives body brightness, momentum drives hue. Legibility unvalidated.

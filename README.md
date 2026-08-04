@@ -7,10 +7,10 @@ this README covers local setup only.
 
 ## Status
 
-**Phase 4B — Version 34 verified competition and controlled Moonflash sharing
-release candidate. Version 33 remains the merged progression and Daily Tide
-baseline; controls, camera, collision, scoring, world, character and audio
-tuning stay frozen.**
+**Phase 5A — Version 35 runtime resilience and accessibility-hardening release
+candidate. Version 34 remains the merged verified-competition baseline;
+controls, camera, collision, scoring, world, character and audio tuning stay
+frozen.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
@@ -53,6 +53,20 @@ Version 34 completes the code-owned Phase 4B surface:
   near-miss and publish only after an explicit share action
 - a host-injected rewarded-video bridge limited to idempotent Lumen bonuses;
   competitive recovery remains disabled and no provider SDK ships in the repo
+
+Version 35 completes the bounded Phase 5A resilience surface:
+
+- capability-gated WebGL2 startup with a readable fallback instead of a broken
+  canvas on unsupported or blocked devices
+- blocker-aware background, page-cache and interruption handling that resets
+  input and fixed-step timing before safe resume
+- full WebGL context reconstruction that replaces the canvas and rebuilds all
+  renderer, scene, post-processing, texture and geometry resources before play
+  resumes
+- persistent reduced-motion and high-contrast presentation controls, including
+  migration of Version 34 reduced-travel steering preferences
+- consent-gated runtime-health events and a Chromium gate that forces context
+  loss/restoration plus a page-cache pause/resume cycle
 
 The frozen visual/gameplay baseline includes:
 
@@ -115,14 +129,16 @@ records the approved runtime Glowfin character; and ADR-0035 records the
 Version 31 release-certificate boundary. ADR-0036 records the Version 32 save,
 telemetry, replay and ghost contracts; ADR-0037 records the Version 33 Moonwake
 progression and Daily Tide contracts; ADR-0038 records the Version 34 ranked,
-sharing and rewarded-provider boundaries. Android real-time thermal/audio review,
+sharing and rewarded-provider boundaries; and ADR-0039 records the Version 35
+runtime recovery boundary. Android real-time thermal/audio/recovery review,
 the physical first-run-to-next-day return journey and all iOS Safari evidence
 remain outstanding. The automated certificate is therefore conditional and
 cannot replace those real-device approvals.
 
 Certification evidence and release operations are maintained in
 `docs/phase3-exit-report.md`, `docs/phase4a-release-report.md`,
-`docs/phase4b-release-report.md`, `docs/qa-runbook.md`, and
+`docs/phase4b-release-report.md`, `docs/phase5a-release-report.md`,
+`docs/qa-runbook.md`, and
 `docs/release-runbook.md`.
 
 ## Local setup
