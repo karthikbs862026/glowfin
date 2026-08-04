@@ -42,6 +42,21 @@ describe("Version 35 runtime lifecycle", () => {
     expect(lifecycle.canAdvance).toBe(true);
   });
 
+  it("keeps the run paused until browser and native app blockers both clear", () => {
+    const lifecycle = new RuntimeLifecycle();
+    lifecycle.pause("visibility");
+    lifecycle.pause("native-app");
+    expect(lifecycle.snapshot()).toMatchObject({
+      state: "interrupted",
+      blockers: ["visibility", "native-app"],
+      interruptions: 2
+    });
+    lifecycle.resume("visibility");
+    expect(lifecycle.canAdvance).toBe(false);
+    lifecycle.resume("native-app");
+    expect(lifecycle.canAdvance).toBe(true);
+  });
+
   it("fails closed when resource reconstruction fails", () => {
     const lifecycle = new RuntimeLifecycle();
     lifecycle.contextLost();

@@ -38,17 +38,29 @@
     "check:mounted-build": "node scripts/check-mounted-build.mjs",
     "check:release-metadata": "node scripts/check-release-metadata.mjs",
     "check:hosted-verifier": "node scripts/check-hosted-verifier.mjs",
+    "check:native-wrapper": "node scripts/check-native-wrapper.mjs",
     "smoke:deployment": "node scripts/smoke-deployment.mjs",
     "check:rollback-rehearsal": "node scripts/check-rollback-rehearsal.mjs",
     "production-gate": "vitest run tests/networkPolicy.test.ts tests/productionReadiness.test.ts tests/productionJourney.test.ts tests/rewardAuthority.test.ts tests/retentionJourney.test.ts tests/cloud.test.ts tests/rewardedIntegration.test.ts && npm run check:rollback-rehearsal",
-    "certify:phase3": "npm run lint && npm run typecheck && npm run test -- --run && npm run build && npm run build:hosted-verifier && npm run check:hosted-verifier && npm run check:mounted-build && npm run check:bundle-size && npm run check:no-debug && npm run check:release-metadata && npm run production-gate && npm run art-gate:test && npm run art-gate:structural"
+    "native:sync": "npm run build && cap sync",
+    "native:copy": "npm run build && cap copy",
+    "native:doctor": "cap doctor",
+    "native:open:android": "cap open android",
+    "native:open:ios": "cap open ios",
+    "certify:phase3": "npm run lint && npm run typecheck && npm run test -- --run && npm run build && cap sync && npm run check:native-wrapper && npm run build:hosted-verifier && npm run check:hosted-verifier && npm run check:mounted-build && npm run check:bundle-size && npm run check:no-debug && npm run check:release-metadata && npm run production-gate && npm run art-gate:test && npm run art-gate:structural"
   },
   "dependencies": {
+    "@capacitor/android": "8.5.0",
+    "@capacitor/app": "8.1.1",
+    "@capacitor/core": "8.5.0",
+    "@capacitor/haptics": "8.0.2",
+    "@capacitor/ios": "8.5.0",
     "three": "^0.165.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.0",
+    "@capacitor/cli": "8.5.0",
     "@gltf-transform/cli": "^4.4.2",
+    "@playwright/test": "^1.62.0",
     "@types/three": "^0.165.0",
     "@typescript-eslint/eslint-plugin": "^8.65.0",
     "@typescript-eslint/parser": "^8.65.0",

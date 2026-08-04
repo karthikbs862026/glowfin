@@ -131,3 +131,21 @@ route, interruption sequence, source SHA and artifact digest when executed.
 On each device, verify the safe and Moonflash routes are distinguishable before
 commitment, the shutter cadence is predictable, current direction is readable,
 and ray/guardian/Moon-Bloom events never obscure the cyan collision edge.
+
+## Version 39 native-wrapper rows — AWAITING PHYSICAL EXECUTION
+
+Automated Android and iPhone-simulator compilation proves project structure,
+not touch feel, motor strength, speaker behavior, thermals or interruption
+recovery on hardware.
+
+| Device | install + safe areas | haptic mapping + opt-out | background/audio/recovery | Result |
+|---|---|---|---|---|
+| Samsung Galaxy S22 Ultra | Not run in wrapper | Not run | Not rerun for V39 | Conditional |
+| OPPO Reno3 Pro | Not run in wrapper | Not run | Not rerun for V39 | Conditional |
+| iPhone reference 1 | Not available | Not available | Not run | Blocking store candidate |
+| iPhone reference 2 | Not available | Not available | Not run | Blocking store candidate |
+
+For haptics, verify a restrained light pulse for tutorial steps and near-miss,
+a clearly stronger collision impact, one success pattern for a completed
+purchase/milestone, no burst from repeated events, immediate Settings opt-out,
+and no feedback while the app is backgrounded.

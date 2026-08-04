@@ -85,6 +85,7 @@ export class Hud {
   private readonly motorAssist: HTMLButtonElement;
   private readonly reducedMotion: HTMLButtonElement;
   private readonly highContrast: HTMLButtonElement;
+  private readonly haptics: HTMLButtonElement;
   private readonly rewardedPearls: HTMLButtonElement;
   private readonly telemetryChoice: HTMLButtonElement;
   private readonly signatureCue: HTMLElement;
@@ -122,6 +123,7 @@ export class Hud {
     this.motorAssist = Hud.requireButton(root, "hud-motor-assist");
     this.reducedMotion = Hud.requireButton(root, "hud-reduced-motion");
     this.highContrast = Hud.requireButton(root, "hud-high-contrast");
+    this.haptics = Hud.requireButton(root, "hud-haptics");
     this.rewardedPearls = Hud.requireButton(root, "hud-rewarded-pearls");
     this.telemetryChoice = Hud.requireButton(root, "hud-telemetry-choice");
     this.signatureCue = Hud.require(root, "hud-signature-cue");
@@ -267,6 +269,10 @@ export class Hud {
     this.wireAction(this.highContrast, listener);
   }
 
+  onHapticsToggle(listener: () => void): void {
+    this.wireAction(this.haptics, listener);
+  }
+
   onRewardedPearls(listener: () => void): void {
     this.wireAction(this.rewardedPearls, listener);
   }
@@ -303,6 +309,14 @@ export class Hud {
       "aria-pressed",
       preferences.highContrast ? "true" : "false"
     );
+  }
+
+  setHapticsPreference(enabled: boolean, nativeAvailable: boolean): void {
+    this.haptics.textContent = nativeAvailable
+      ? enabled ? "Haptics · On" : "Haptics · Off"
+      : enabled ? "Haptics · On when installed" : "Haptics · Off";
+    this.haptics.setAttribute("aria-pressed", enabled ? "true" : "false");
+    this.haptics.dataset["nativeAvailable"] = String(nativeAvailable);
   }
 
   setSubmitState(

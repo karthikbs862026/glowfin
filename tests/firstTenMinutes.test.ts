@@ -42,5 +42,6 @@ describe("Version 39 first-ten-minute player shell", () => {
     expect(settingsIndex).toBeGreaterThan(0);
     expect(badgeIndex).toBeGreaterThan(settingsIndex);
     expect(html).toContain(".hud-objective, .hud-objective strong { font-size: 12px; }");
+    expect(html).toContain('id="hud-haptics"');
   });
 });

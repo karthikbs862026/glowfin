@@ -1,0 +1,85 @@
+name: native-wrapper
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: native-wrapper-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GLOWFIN_ENVIRONMENT: staging
+  GLOWFIN_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  android-wrapper:
+    name: Android wrapper compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - run: npm ci
+      - name: Build sealed web payload and synchronize native projects
+        run: npm run build && npx cap sync
+      - name: Verify wrapper policy and identical payloads
+        run: npm run check:native-wrapper
+      - name: Compile Android debug candidate
+        working-directory: android
+        run: ./gradlew assembleDebug lintDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: glowfin-v39-android-debug-${{ github.sha }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+
+  ios-wrapper:
+    name: iOS wrapper compile
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Build sealed web payload and synchronize native projects
+        run: npm run build && npx cap sync
+      - name: Verify wrapper policy and identical payloads
+        run: npm run check:native-wrapper
+      - name: Compile unsigned iPhone simulator candidate
+        shell: bash
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath /tmp/glowfin-ios-derived \
+            CODE_SIGNING_ALLOWED=NO \
+            build | tee build/ios-wrapper-build.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: glowfin-v39-ios-wrapper-log-${{ github.sha }}
+          path: build/ios-wrapper-build.log
+          retention-days: 14

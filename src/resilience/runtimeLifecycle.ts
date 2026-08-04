@@ -7,9 +7,13 @@
  * the last event to arrive resume the run prematurely.
  */
 
-export type RuntimePauseReason =
+export type RuntimeInterruptionReason =
   | "visibility"
   | "page-cache"
+  | "native-app";
+
+export type RuntimePauseReason =
+  | RuntimeInterruptionReason
   | "webgl"
   | "recovery"
   | "unsupported"
@@ -34,6 +38,7 @@ export interface RuntimeLifecycleSnapshot {
 const BLOCKER_ORDER: RuntimePauseReason[] = [
   "visibility",
   "page-cache",
+  "native-app",
   "webgl",
   "recovery",
   "unsupported",
@@ -46,13 +51,13 @@ export class RuntimeLifecycle {
   private successfulRecoveries = 0;
   private interruptions = 0;
 
-  pause(reason: "visibility" | "page-cache"): RuntimeLifecycleSnapshot {
+  pause(reason: RuntimeInterruptionReason): RuntimeLifecycleSnapshot {
     if (!this.blockers.has(reason)) this.interruptions += 1;
     this.blockers.add(reason);
     return this.snapshot();
   }
 
-  resume(reason: "visibility" | "page-cache"): RuntimeLifecycleSnapshot {
+  resume(reason: RuntimeInterruptionReason): RuntimeLifecycleSnapshot {
     this.blockers.delete(reason);
     return this.snapshot();
   }
@@ -117,7 +122,11 @@ export class RuntimeLifecycle {
     if (this.blockers.has("fatal")) return "failed";
     if (this.blockers.has("recovery")) return "recovering";
     if (this.blockers.has("webgl")) return "context-lost";
-    if (this.blockers.has("visibility") || this.blockers.has("page-cache")) {
+    if (
+      this.blockers.has("visibility") ||
+      this.blockers.has("page-cache") ||
+      this.blockers.has("native-app")
+    ) {
       return "interrupted";
     }
     return "running";

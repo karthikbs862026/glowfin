@@ -89,9 +89,19 @@ import {
 } from "./sharing/clips";
 import {
   RuntimeLifecycle,
+  type RuntimeInterruptionReason,
   type RuntimeLifecycleSnapshot
 } from "./resilience/runtimeLifecycle";
 import { detectRuntimeSupport } from "./resilience/runtimeSupport";
+import {
+  capacitorHapticDriver,
+  installCapacitorShell,
+  nativeRuntime
+} from "./native/capacitorBridge";
+import {
+  HapticDirector,
+  HapticPreferenceRepository
+} from "./native/haptics";
 
 const initialCanvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
 if (!initialCanvas) throw new Error("Canvas #glowfin-canvas not found");
@@ -153,6 +163,13 @@ let progress: GlowfinProgressV2 = progressLoad.progress;
 const accessPreferenceRepository = new AccessPreferenceRepository(progressStorage);
 let accessPreferences = accessPreferenceRepository.load();
 steering.setSensitivityMultiplier(steeringSensitivityMultiplier(accessPreferences));
+const wrapperRuntime = nativeRuntime();
+const hapticPreferenceRepository = new HapticPreferenceRepository(progressStorage);
+let hapticsEnabled = hapticPreferenceRepository.load();
+const haptics = new HapticDirector({
+  enabled: hapticsEnabled,
+  driver: capacitorHapticDriver(wrapperRuntime)
+});
 const telemetry = new TelemetryClient(
   progress.telemetryConsent,
   new HostedTelemetryTransport()
@@ -298,7 +315,9 @@ if (progress.telemetryConsent === "granted") {
   telemetry.track("session_start", {
     release: GLOWFIN_RELEASE.version,
     tuningVersion: tuning.version,
-    saveSchemaVersion: progress.schemaVersion
+    saveSchemaVersion: progress.schemaVersion,
+    nativeWrapper: wrapperRuntime.isNative,
+    platform: wrapperRuntime.platform
   });
   telemetry.track("runtime_support", {
     supported: runtimeSupport.supported,
@@ -456,6 +475,9 @@ function updateProgressUi(): void {
   view?.setPresentationPreferences(accessPreferences);
   hud.setMotorAssist(accessPreferences.motorAssist);
   hud.setPresentationPreferences(accessPreferences);
+  hud.setHapticsPreference(hapticsEnabled, wrapperRuntime.isNative);
+  document.documentElement.dataset["glowfinNativePlatform"] = wrapperRuntime.platform;
+  document.documentElement.dataset["glowfinHaptics"] = String(hapticsEnabled);
   document.documentElement.dataset["glowfinReducedMotion"] =
     String(accessPreferences.reducedMotion);
   document.documentElement.dataset["glowfinHighContrast"] =
@@ -685,6 +707,7 @@ function startRun(
     tutorialStep ? tutorialPresentation(tutorialStep) : null
   );
   if (firstRunTutorial) {
+    haptics.play("tutorial-step");
     telemetry.track("tutorial_start", {
       source: tutorialSessionSource ?? "required",
       tutorialVersion: GUIDED_TUTORIAL_VERSION
@@ -953,6 +976,20 @@ hud.onHighContrastToggle(() => {
   void telemetry.flush();
 });
 
+hud.onHapticsToggle(() => {
+  if (!awaitingRestart && !moonWell.isOpen) return;
+  hapticsEnabled = hapticPreferenceRepository.toggle();
+  haptics.setEnabled(hapticsEnabled);
+  updateProgressUi();
+  if (hapticsEnabled) haptics.play("setting");
+  telemetry.track("accessibility_change", {
+    setting: "haptics",
+    enabled: hapticsEnabled,
+    nativeAvailable: wrapperRuntime.isNative
+  });
+  void telemetry.flush();
+});
+
 hud.onRewardedPearls(() => {
   const state = completedCompetitiveRun;
   const offer = state?.rewardedOffer;
@@ -1051,6 +1088,7 @@ moonWell.onWardrobeAction((cosmeticId) => {
       price: cosmetic.pricePearls,
       firstPurchase: firstPurchase && result.status === "purchased"
     });
+    if (result.status === "purchased") haptics.play("purchase");
     void telemetry.flush();
     if (result.status === "purchased") void synchronizeCloudProgress();
     return;
@@ -1070,6 +1108,7 @@ moonWell.onWardrobeAction((cosmeticId) => {
     tideLevel: tideProgressForXp(progress.progression.tideXp).level,
     firstEquip: result.firstEquip
   });
+  if (result.equipped) haptics.play("equip");
   void telemetry.flush();
   if (result.equipped) void synchronizeCloudProgress();
 });
@@ -1084,7 +1123,9 @@ hud.onTelemetryChoice(() => {
       release: GLOWFIN_RELEASE.version,
       tuningVersion: tuning.version,
       saveSchemaVersion: progress.schemaVersion,
-      consentSource: "settings"
+      consentSource: "settings",
+      nativeWrapper: wrapperRuntime.isNative,
+      platform: wrapperRuntime.platform
     });
     telemetry.track("runtime_support", {
       supported: runtimeSupport.supported,
@@ -1098,10 +1139,10 @@ hud.onTelemetryChoice(() => {
 });
 
 let lastFrameMs = performance.now();
-const interruptionStartedAt = new Map<"visibility" | "page-cache", number>();
+const interruptionStartedAt = new Map<RuntimeInterruptionReason, number>();
 
 function pauseForInterruption(
-  reason: "visibility" | "page-cache",
+  reason: RuntimeInterruptionReason,
   source: string
 ): void {
   const alreadyPaused = runtimeLifecycle.snapshot().blockers.includes(reason);
@@ -1120,7 +1161,7 @@ function pauseForInterruption(
 }
 
 function resumeFromInterruption(
-  reason: "visibility" | "page-cache",
+  reason: RuntimeInterruptionReason,
   source: string
 ): void {
   const wasPaused = runtimeLifecycle.snapshot().blockers.includes(reason);
@@ -1152,6 +1193,28 @@ document.addEventListener("visibilitychange", () => {
     resumeFromInterruption("visibility", "visibilitychange");
     void hydrateDailyClock();
   }
+});
+
+let nativeAppInterrupted = false;
+void installCapacitorShell({
+  onActiveChange(active) {
+    if (!active) {
+      nativeAppInterrupted = true;
+      haptics.setActive(false);
+      void audio.setAppActive(false);
+      pauseForInterruption("native-app", "capacitor-app-state");
+      return;
+    }
+    if (!nativeAppInterrupted) return;
+    nativeAppInterrupted = false;
+    haptics.setActive(true);
+    resumeFromInterruption("native-app", "capacitor-app-state");
+    void audio.setAppActive(!document.hidden);
+    void hydrateDailyClock();
+  }
+}, wrapperRuntime).catch(() => {
+  telemetry.track("error", { source: "capacitor-shell", phase: "startup" });
+  void telemetry.flush();
 });
 
 let rendererGeneration = view ? 1 : 0;
@@ -1326,6 +1389,7 @@ function frame(nowMs: number): void {
     }
 
     for (const encounter of events.encounters) {
+      haptics.play(encounter.kind === "collision" ? "collision" : "near-miss");
       telemetry.track(
         encounter.kind === "collision" ? "collision" : "near_miss",
         {
@@ -1375,6 +1439,7 @@ function frame(nowMs: number): void {
       if (nextStep !== previousStep) {
         tutorialStep = nextStep;
         moonWell.showTutorial(tutorialPresentation(nextStep));
+        haptics.play(nextStep === "complete" ? "milestone" : "tutorial-step");
         telemetry.track("tutorial_step", {
           step: nextStep,
           elapsedSec: run.sim.elapsedSec
@@ -1456,6 +1521,16 @@ function frame(nowMs: number): void {
       });
       progress = record.progress;
       updateProgressUi();
+      if (
+        record.newBest ||
+        (firstReward && record.retention.totalPearls > 0) ||
+        record.retention.tideLevelAfter > record.retention.tideLevelBefore ||
+        record.retention.unlockedCosmetics.length > 0 ||
+        record.retention.completedObjectives.length > 0 ||
+        record.retention.dailyAwarded
+      ) {
+        haptics.play("milestone");
+      }
       telemetry.track("run_end", {
         seed: run.seed,
         mode: activeRunMode,
@@ -1708,7 +1783,10 @@ async function start(): Promise<void> {
     productionAssets: activeView.productionAssetStatus().glowfin === "glb",
     rendererGeneration,
     reducedMotion: accessPreferences.reducedMotion,
-    highContrast: accessPreferences.highContrast
+    highContrast: accessPreferences.highContrast,
+    nativeWrapper: wrapperRuntime.isNative,
+    platform: wrapperRuntime.platform,
+    hapticsEnabled
   });
   if (isProbeRequested()) {
     const {

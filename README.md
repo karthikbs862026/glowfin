@@ -128,9 +128,12 @@ Version 39 starts the store-ready mobile scope with a corrected tutorial:
 - a privacy-safe device-local Version 39 completion stamp and consent-gated
   tutorial start, step, skip/replay and completion instrumentation
 
-The Capacitor wrappers, complete Android/iPhone device matrix, native haptics,
-store metadata, rendered share clips, deep links and physical audio/lifecycle
-evidence remain Version 39 work in progress.
+Version 39 now also contains pinned Capacitor 8 Android/iOS projects, portrait
+and safe-area policy, native lifecycle composition, and optional Settings-
+controlled haptics for tutorial cues, near-misses, collisions, purchases,
+equips and milestone rewards. Complete Android/iPhone physical certification,
+final branded native assets/signing, store metadata, rendered share clips,
+deep links and physical audio/lifecycle evidence remain in progress.
 
 The frozen visual/gameplay baseline includes:
 
