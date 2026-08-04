@@ -6,7 +6,7 @@ if (info.size < 10_000 || info.size > 128 * 1024) {
   throw new Error(`Hosted verifier bundle is outside its 10-128KB budget (${info.size} bytes).`);
 }
 const authority = await import(`${artifact.href}?check=${Date.now()}`);
-if (authority.LEADERBOARD_VALIDATION_VERSION !== "phase4b-v1") {
+if (authority.LEADERBOARD_VALIDATION_VERSION !== "v38-signature-v2") {
   throw new Error("Hosted verifier exported an unexpected validation version.");
 }
 if (typeof authority.verifyLeaderboardSubmission !== "function") {

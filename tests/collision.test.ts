@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { tuning } from "../src/core/config";
 import { evaluateGate, evaluateStep, isNearMiss, type SweptSegment } from "../src/sim/collision";
 import type { Gate } from "../src/sim/course";
+import { planSignatureObstacle } from "../src/sim/obstacleVariety";
 
 const gate = (distance: number, gapLeft: number, gapRight: number): Gate => ({
   distance,
@@ -69,6 +70,67 @@ describe("swept gate collision", () => {
     const results = evaluateStep(seg(10, 20, 0), gates, tuning);
     expect(results).toHaveLength(1);
     expect(results[0]?.gate.distance).toBe(15);
+  });
+});
+
+describe("Version 38 authoritative obstacle geometry", () => {
+  const signatureGate = (
+    verb: "moonflash-choice" | "ceremonial-shutter"
+  ): Gate => {
+    const base = gate(100, -2.8, 2.8);
+    base.obstaclePlan = planSignatureObstacle(
+      verb,
+      { seed: 0x38c0ffee, gate: base },
+      tuning.lane.halfWidth,
+      tuning.lane.creatureRadius
+    );
+    return base;
+  };
+
+  it("resolves safe and Moonflash routes from the same multi-opening collider", () => {
+    const g = signatureGate("moonflash-choice");
+    const plan = g.obstaclePlan;
+    expect(plan?.verb).toBe("moonflash-choice");
+    if (plan?.verb !== "moonflash-choice") throw new Error("wrong plan");
+    const safe = plan.openings.find((opening) => opening.route === "safe");
+    const risk = plan.openings.find((opening) => opening.route === "moonflash");
+    if (!safe || !risk) throw new Error("missing choice route");
+
+    const safeResult = evaluateGate(seg(90, 110, (safe.left + safe.right) * 0.5), g, tuning);
+    const riskResult = evaluateGate(seg(90, 110, (risk.left + risk.right) * 0.5), g, tuning);
+    const dividerResult = evaluateGate(
+      seg(90, 110, (Math.min(safe.right, risk.right) + Math.max(safe.left, risk.left)) * 0.5),
+      g,
+      tuning
+    );
+
+    expect(safeResult).toMatchObject({ collided: false, route: "safe", scoreMultiplier: 1 });
+    expect(riskResult).toMatchObject({ collided: false, route: "moonflash", scoreMultiplier: 1.35 });
+    expect(dividerResult?.collided).toBe(true);
+  });
+
+  it("moves the shutter collider on its deterministic authored cadence", () => {
+    const g = signatureGate("ceremonial-shutter");
+    const plan = g.obstaclePlan;
+    expect(plan?.verb).toBe("ceremonial-shutter");
+    if (plan?.verb !== "ceremonial-shutter") throw new Error("wrong plan");
+    const closedAt = (1 - plan.phase) * plan.periodSec;
+    const openAt = ((0.5 - plan.phase + 1) % 1) * plan.periodSec;
+    const testLateral = plan.center + plan.minimumWidth * 0.5 - r + 0.1;
+
+    const closed = evaluateGate({
+      ...seg(90, 110, testLateral),
+      fromElapsedSec: closedAt,
+      toElapsedSec: closedAt
+    }, g, tuning);
+    const open = evaluateGate({
+      ...seg(90, 110, testLateral),
+      fromElapsedSec: openAt,
+      toElapsedSec: openAt
+    }, g, tuning);
+
+    expect(closed?.collided).toBe(true);
+    expect(open?.collided).toBe(false);
   });
 });
 

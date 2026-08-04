@@ -818,3 +818,35 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Keep all simulation, controls, lane geometry, collision, scoring, replay,
   art, audio composition and performance budgets frozen. Reserve obstacle
   verbs and living-world set pieces for Version 38.
+
+## 2026-08-04 — Begin Version 38 signature obstacle variety
+
+- Base Version 38 on merged Version 37 commit `fccb95c`; do not reopen the
+  onboarding, economy, controls, camera, cyan collider or audio decisions.
+- Introduce exactly three readable verbs: safe-versus-Moonflash route choice,
+  predictable ceremonial shutters and telegraphed lateral current lanes.
+- Derive every plan from the existing run seed and stable gate identity without
+  advancing the course RNG or using wall-clock time.
+- Keep the first slice contract-only. Do not activate a mechanic until
+  collision, rendering, independent solvability proof and replay verification
+  consume the same authoritative plan.
+- Add rare seeded ray, guardian and Moon-Bloom events; do not increase static
+  prop density to simulate variety.
+
+## 2026-08-04 — Activate and certify Version 38 obstacle variety
+
+- Ship 21 templates in three equal seven-template families; visual facade
+  variation does not count as a separate gameplay verb.
+- Resolve Moonflash openings, shutter aperture and cyan collider contours from
+  one plan. Preserve the authored opening as the guaranteed safe route and pay
+  the narrower route exactly 1.35x the discrete choice reward.
+- Apply lateral currents as deterministic environmental velocity, independent
+  of steering input, and reserve the sine-envelope maximum displacement from
+  the course transition budget.
+- Telegraph every signature mechanic at least 30 world units ahead through
+  route marks, shutter cadence bars or current arrows with phone-readable text.
+- Reuse bounded ray, guardian and shared Moon-Garden material systems for rare
+  set pieces. Keep them non-colliding, replay-neutral and free of new static
+  prop density.
+- Advance server replay validation to `v38-signature-v2` and reject older
+  validation claims rather than interpreting them under the new course truth.

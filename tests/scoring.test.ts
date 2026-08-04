@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { tuning } from "../src/core/config";
 import {
   createScoringState,
+  registerChoiceRoute,
   registerNearMiss,
   canRegisterNearMiss,
   stepScoring
@@ -142,5 +143,19 @@ describe("score accumulation", () => {
     advance(s, 120); // long safe stretch: multiplier decays all the way down
     expect(s.multiplier).toBe(tuning.scoring.multiplierStart);
     expect(s.score).toBeGreaterThanOrEqual(banked);
+  });
+});
+
+describe("Version 38 route rewards", () => {
+  it("pays the Moonflash route exactly 1.35x without changing held multiplier", () => {
+    const safeState = createScoringState(tuning);
+    const riskState = createScoringState(tuning);
+    const safeReward = registerChoiceRoute(safeState, "safe");
+    const riskReward = registerChoiceRoute(riskState, "moonflash");
+
+    expect(riskReward / safeReward).toBeCloseTo(1.35, 12);
+    expect(safeState.multiplier).toBe(riskState.multiplier);
+    expect(safeState.choiceRouteCount).toBe(1);
+    expect(riskState.moonflashRouteCount).toBe(1);
   });
 });

@@ -7,6 +7,7 @@
 import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
 import type { Gate } from "../sim/course";
+import type { ActiveLivingWorldEvent } from "../sim/obstacleVariety";
 import { forwardSpeed, type SimState } from "../sim/state";
 import {
   createCausticMaterial,
@@ -818,7 +819,8 @@ export class GameView {
     lightFraction: number,
     elapsedSec: number,
     frameSec: number,
-    ghostSim: SimState | null = null
+    ghostSim: SimState | null = null,
+    activeLivingEvents: readonly ActiveLivingWorldEvent[] = []
   ): void {
     const cfg = this.cfg;
     this.renderer.info.reset();
@@ -934,7 +936,8 @@ export class GameView {
       sim.lateralPosition,
       momentumFraction,
       presentationElapsedSec,
-      gates
+      gates,
+      activeLivingEvents
     );
 
     this.updateStripes(sim.forwardDistance);
@@ -942,7 +945,8 @@ export class GameView {
       sim.forwardDistance,
       gates,
       this.camera,
-      this.renderer.domElement.clientHeight || window.innerHeight
+      this.renderer.domElement.clientHeight || window.innerHeight,
+      elapsedSec
     );
 
     if (this.bloomEnabled) this.composer.render();

@@ -119,3 +119,15 @@ phones and a future reference iPhone before unconditional Phase 3 sign-off:
 Do not replace these rows with desktop emulation or the simulated renderer
 soak. Record OS/browser, GPU string, start/end battery, thermal warnings, audio
 route, interruption sequence, source SHA and artifact digest when executed.
+
+## Version 38 signature-obstacle device rows — AWAITING PHYSICAL EXECUTION
+
+| Device | route/shutter/current readability | living-event distraction | 30-minute thermal/audio | Result |
+|---|---|---|---|---|
+| Samsung Galaxy S22 Ultra | Not rerun for V38 | Not rerun for V38 | Not rerun for V38 | Conditional |
+| OPPO Reno3 Pro | Not rerun for V38 | Not rerun for V38 | Not rerun for V38 | Conditional |
+| Real iPhone Safari | Not available | Not available | Not run | Blocking public promotion |
+
+On each device, verify the safe and Moonflash routes are distinguishable before
+commitment, the shutter cadence is predictable, current direction is readable,
+and ray/guardian/Moon-Bloom events never obscure the cyan collision edge.

@@ -60,6 +60,8 @@ const FRAGMENT = /* glsl */ `
   uniform vec3 uGlowCentre;
   uniform float uGlowRadius;
   uniform float uMomentum;
+  uniform float uMoonBloomCentreZ;
+  uniform float uMoonBloomStrength;
   uniform vec3 uFogColor;
   uniform float uFogNear;
   uniform float uFogFar;
@@ -297,6 +299,17 @@ const FRAGMENT = /* glsl */ `
     }
     colour += awakened * coralRole * travellingWave *
       (0.095 + uMomentum * 0.085);
+    float moonBloomBand = 1.0 - smoothstep(
+      0.0,
+      22.0,
+      abs(vWorldPos.z - uMoonBloomCentreZ)
+    );
+    colour += mix(
+      vec3(0.16, 0.74, 0.88),
+      vec3(0.92, 0.25, 0.72),
+      smoothstep(0.2, 0.9, moonBloomBand)
+    ) * moonBloomBand * uMoonBloomStrength *
+      (coralRole * 0.62 + crystalRole * 0.38);
 
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
     colour = mix(colour, uFogColor, fog);
@@ -338,6 +351,8 @@ export function createMoonGardenMaterial({
       uGlowCentre: { value: new THREE.Vector3() },
       uGlowRadius: { value: glowRadius },
       uMomentum: { value: 0 },
+      uMoonBloomCentreZ: { value: -10000 },
+      uMoonBloomStrength: { value: 0 },
       uFogColor: { value: new THREE.Color(fogColor) },
       uFogNear: { value: fogNear },
       uFogFar: { value: fogFar },
@@ -354,7 +369,8 @@ export function updateMoonGardenMaterial(
   material: THREE.ShaderMaterial,
   timeSec: number,
   glowCentre: THREE.Vector3,
-  momentumFraction: number
+  momentumFraction: number,
+  moonBloom: { anchorDistance: number; strength: number } | null = null
 ): void {
   const time = material.uniforms["uTime"];
   if (time) time.value = timeSec;
@@ -362,6 +378,12 @@ export function updateMoonGardenMaterial(
   if (centre) (centre.value as THREE.Vector3).copy(glowCentre);
   const momentum = material.uniforms["uMomentum"];
   if (momentum) momentum.value = momentumFraction;
+  const bloomCentre = material.uniforms["uMoonBloomCentreZ"];
+  if (bloomCentre) bloomCentre.value = moonBloom ? -moonBloom.anchorDistance : -10000;
+  const bloomStrength = material.uniforms["uMoonBloomStrength"];
+  if (bloomStrength) bloomStrength.value = moonBloom
+    ? THREE.MathUtils.clamp(moonBloom.strength, 0, 1)
+    : 0;
 }
 
 const OBSTACLE_VERTEX = /* glsl */ `

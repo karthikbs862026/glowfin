@@ -6,7 +6,8 @@ import {
 } from "../art/premiumWorld";
 import type { Gate } from "../sim/course";
 import {
-  gateWallGeometry,
+  gateOpeningsAt,
+  gateWallSegmentsAt,
   PROCEDURAL_GATE_VISUAL
 } from "../sim/gateGeometry";
 import {
@@ -21,6 +22,7 @@ import type { RuntimeGateGeometrySet } from "./runtimeProductionAssets";
 import { createMoonstoneObstacleMaterial } from "./moonGardenMaterial";
 
 const MAX_GATE_PARTS = 32;
+const MAX_TELEGRAPH_PARTS = 64;
 
 export const GATE_PRESENTATION_CONTRACT = {
   maximumSimultaneousCeremonialCanopies: 1,
@@ -79,10 +81,12 @@ export class MoonGardenGates {
   >;
   private readonly foundations: THREE.InstancedMesh;
   private readonly contours: THREE.InstancedMesh;
+  private readonly telegraphs: THREE.InstancedMesh;
   private readonly matrix = new THREE.Matrix4();
   private readonly position = new THREE.Vector3();
   private readonly quaternion = new THREE.Quaternion();
   private readonly scale = new THREE.Vector3();
+  private readonly tint = new THREE.Color();
   private readonly disposables: Array<{ dispose(): void }> = [];
 
   constructor(
@@ -213,8 +217,13 @@ export class MoonGardenGates {
       },
       vertexShader: /* glsl */ `
         varying vec3 vLocalPosition;
+        varying vec3 vInstanceTint;
         void main() {
           vLocalPosition = position;
+          vInstanceTint = vec3(0.18, 0.9, 1.0);
+          #ifdef USE_INSTANCING_COLOR
+            vInstanceTint = instanceColor;
+          #endif
           vec4 localPosition = vec4(position, 1.0);
           #ifdef USE_INSTANCING
             localPosition = instanceMatrix * localPosition;
@@ -227,13 +236,15 @@ export class MoonGardenGates {
         uniform vec3 uDeepCyan;
         uniform vec3 uMoonCyan;
         varying vec3 vLocalPosition;
+        varying vec3 vInstanceTint;
         void main() {
           float endFade = smoothstep(-0.5, -0.42, vLocalPosition.y) *
             (1.0 - smoothstep(0.42, 0.5, vLocalPosition.y));
           float waterFlow = 0.94 + 0.06 *
             sin(vLocalPosition.y * 31.0 + vLocalPosition.z * 4.0);
+          vec3 seam = mix(uDeepCyan, uMoonCyan, endFade);
           gl_FragColor = vec4(
-            mix(uDeepCyan, uMoonCyan, endFade) * waterFlow,
+            mix(seam, vInstanceTint, 0.72) * waterFlow,
             1.0
           );
         }
@@ -254,6 +265,17 @@ export class MoonGardenGates {
     // depth testing, so the captured image remains the player's actual view.
     this.contours.renderOrder = 1000;
     this.objects.push(this.contours);
+    this.telegraphs = new THREE.InstancedMesh(
+      contourGeometry,
+      contourMaterial,
+      MAX_TELEGRAPH_PARTS
+    );
+    this.telegraphs.count = 0;
+    this.telegraphs.frustumCulled = false;
+    this.telegraphs.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.telegraphs.userData["isObstacleTelegraph"] = true;
+    this.telegraphs.renderOrder = 12;
+    this.objects.push(this.telegraphs);
     this.disposables.push(
       this.material,
       foundationGeometry,
@@ -296,7 +318,8 @@ export class MoonGardenGates {
     forwardDistance: number,
     gates: readonly Gate[],
     camera: THREE.PerspectiveCamera,
-    viewportHeightCss: number
+    viewportHeightCss: number,
+    elapsedSec = 0
   ): void {
     const emptyVariantCounts = () => Object.fromEntries(
       GATE_FAMILIES.map((family) => [
@@ -314,6 +337,7 @@ export class MoonGardenGates {
     };
     let foundationCount = 0;
     let contourCount = 0;
+    let telegraphCount = 0;
     const emptyCanopyCounts = () => Object.fromEntries(
       GATE_FAMILIES.map((family) => [family.id, 0])
     ) as Record<GateFacadeVariant, number>;
@@ -332,6 +356,29 @@ export class MoonGardenGates {
     const far = forwardDistance + this.cfg.readability.visibleAheadUnits * 1.6;
     let primaryGateClaimed = false;
 
+    const addTelegraph = (
+      centreX: number,
+      centreDistance: number,
+      width: number,
+      length: number,
+      tint: readonly [number, number, number],
+      yaw = 0
+    ) => {
+      if (
+        telegraphCount >= MAX_TELEGRAPH_PARTS ||
+        width <= 0.01 ||
+        length <= 0.01
+      ) return;
+      this.position.set(centreX, -0.935, -centreDistance);
+      this.quaternion.setFromEuler(new THREE.Euler(0, yaw, 0));
+      this.scale.set(width, 0.035, length);
+      this.matrix.compose(this.position, this.quaternion, this.scale);
+      this.telegraphs.setMatrixAt(telegraphCount, this.matrix);
+      this.tint.setRGB(tint[0], tint[1], tint[2]);
+      this.telegraphs.setColorAt(telegraphCount, this.tint);
+      telegraphCount += 1;
+    };
+
     for (const gate of gates) {
       if (gate.distance < near) continue;
       if (gate.distance > far) break;
@@ -345,7 +392,11 @@ export class MoonGardenGates {
       const distanceAhead = gate.distance - forwardDistance;
       const lod = lodForDistance(distanceAhead);
       const artVariant = gateFacadeVariant(gate);
-      const walls = gateWallGeometry(gate, this.cfg.lane.halfWidth);
+      const walls = gateWallSegmentsAt(
+        gate,
+        this.cfg.lane.halfWidth,
+        elapsedSec
+      );
       const wallHeight = PROCEDURAL_GATE_VISUAL.wallHeight *
         ([1.08, 1.12, 1.16, 1.14, 1.24][artVariant] ?? 1.12);
       const wallDepth = PROCEDURAL_GATE_VISUAL.wallDepth *
@@ -380,7 +431,7 @@ export class MoonGardenGates {
         canopyCounts[lod][artVariant] += 1;
       }
       for (const wall of walls) {
-        if (wall.width <= 0.01 || contourCount >= MAX_GATE_PARTS) continue;
+        if (wall.width <= 0.01 || foundationCount >= MAX_GATE_PARTS) continue;
         const side = wall.side;
         const target = this.lods[lod][artVariant][side];
         const index = counts[lod][artVariant][side];
@@ -406,7 +457,7 @@ export class MoonGardenGates {
         // usable clearance beyond the authoritative opening.
         const foundationWidth = wall.width * 0.94;
         this.position.set(
-          wall.colliderPlane - wall.gapDirection * wall.width * 0.5,
+          wall.centreX,
           PROCEDURAL_GATE_VISUAL.wallFloorY,
           -gate.distance + 0.08
         );
@@ -418,36 +469,103 @@ export class MoonGardenGates {
         this.matrix.compose(this.position, this.quaternion, this.scale);
         this.foundations.setMatrixAt(foundationCount, this.matrix);
         foundationCount += 1;
+      }
 
-        // The luminous strip retreats into the collidable wall instead of
-        // protruding into the safe gap. Its outer plane is exactly colliderPlane.
-        const contourWidth = contourWorldWidth(
-          this.cfg.visual.obstacleEdgeWidthPixels,
-          camera.position.z + gate.distance,
-          camera.fov,
-          viewportHeightCss
-        );
-        // The luminous water core emerges from the masonry foundation instead
-        // of continuing through the seabed. The lower dark channel and rubble
-        // still carry the wall to the floor, while the measured cyan cue starts
-        // at Glowfin's body height where lateral clearance is actually judged.
-        const contourTop =
-          PROCEDURAL_GATE_VISUAL.wallFloorY + wallHeight * 0.84 + 0.08;
-        const contourBottom = PROCEDURAL_GATE_VISUAL.wallFloorY + 1.42;
-        const contourHeight = Math.max(0.5, contourTop - contourBottom);
-        this.position.set(
-          wall.colliderPlane - wall.gapDirection * contourWidth * 0.5,
-          contourBottom + contourHeight * 0.5,
-          -gate.distance + wallDepth * 0.64 + 0.32
-        );
-        this.scale.set(
-          contourWidth,
-          contourHeight,
-          0.04
-        );
-        this.matrix.compose(this.position, this.quaternion, this.scale);
-        this.contours.setMatrixAt(contourCount, this.matrix);
-        contourCount += 1;
+      // Every playable edge gets its own contour. A Moonflash choice therefore
+      // renders four exact edges, including both sides of the real divider.
+      const openings = gateOpeningsAt(gate, elapsedSec);
+      for (const opening of openings) {
+        for (const edge of [
+          { plane: opening.left, direction: 1 },
+          { plane: opening.right, direction: -1 }
+        ] as const) {
+          if (contourCount >= MAX_GATE_PARTS) break;
+          const contourWidth = contourWorldWidth(
+            this.cfg.visual.obstacleEdgeWidthPixels,
+            camera.position.z + gate.distance,
+            camera.fov,
+            viewportHeightCss
+          );
+          // The luminous water core emerges from the masonry foundation
+          // instead of continuing through the seabed. The lower dark channel
+          // and rubble still carry the wall to the floor, while the measured
+          // cue starts at body height where clearance is actually judged.
+          const contourTop =
+            PROCEDURAL_GATE_VISUAL.wallFloorY + wallHeight * 0.84 + 0.08;
+          const contourBottom = PROCEDURAL_GATE_VISUAL.wallFloorY + 1.42;
+          const contourHeight = Math.max(0.5, contourTop - contourBottom);
+          this.position.set(
+            edge.plane - edge.direction * contourWidth * 0.5,
+            contourBottom + contourHeight * 0.5,
+            -gate.distance + wallDepth * 0.64 + 0.32
+          );
+          this.quaternion.identity();
+          this.scale.set(
+            contourWidth,
+            contourHeight,
+            0.04
+          );
+          this.matrix.compose(this.position, this.quaternion, this.scale);
+          this.contours.setMatrixAt(contourCount, this.matrix);
+          this.tint.setRGB(...(
+            opening.route === "moonflash"
+              ? [1, 0.28, 0.78]
+              : opening.route === "safe"
+                ? [0.18, 0.96, 1]
+                : [0.22, 0.88, 1]
+          ) as [number, number, number]);
+          this.contours.setColorAt(contourCount, this.tint);
+          contourCount += 1;
+        }
+      }
+
+      const plan = gate.obstaclePlan;
+      if (plan?.verb === "moonflash-choice") {
+        for (const opening of plan.openings) {
+          const centreX = (opening.left + opening.right) * 0.5;
+          const width = Math.max(0.18, (opening.right - opening.left) * 0.62);
+          const start = Math.max(plan.telegraphFromDistance, forwardDistance + 2);
+          const span = Math.max(0, gate.distance - start);
+          const dashes = 4;
+          for (let dash = 0; dash < dashes; dash++) {
+            const distance = start + span * ((dash + 0.55) / dashes);
+            addTelegraph(
+              centreX,
+              distance,
+              width,
+              Math.min(3.2, Math.max(1.2, span / (dashes * 2.1))),
+              opening.route === "moonflash"
+                ? [1, 0.24, 0.72]
+                : [0.16, 0.88, 1]
+            );
+          }
+        }
+      } else if (plan?.verb === "ceremonial-shutter") {
+        const span = gate.distance - plan.telegraphFromDistance;
+        for (let beat = 0; beat < 4; beat++) {
+          addTelegraph(
+            plan.center,
+            plan.telegraphFromDistance + span * ((beat + 0.45) / 4),
+            plan.maximumWidth * 0.92,
+            0.18,
+            [1, 0.64, 0.22]
+          );
+        }
+      } else if (plan?.verb === "current-lane") {
+        const direction = plan.lateralDriftPerSec < 0 ? -1 : 1;
+        const centreX = (plan.laneLeft + plan.laneRight) * 0.5;
+        const laneWidth = plan.laneRight - plan.laneLeft;
+        const span = plan.endDistance - plan.telegraphFromDistance;
+        for (let arrow = 0; arrow < 6; arrow++) {
+          addTelegraph(
+            centreX,
+            plan.telegraphFromDistance + span * ((arrow + 0.55) / 6),
+            laneWidth * 0.72,
+            0.17,
+            direction < 0 ? [0.28, 0.58, 1] : [0.54, 0.32, 1],
+            direction * 0.18
+          );
+        }
       }
     }
 
@@ -467,6 +585,10 @@ export class MoonGardenGates {
     this.foundations.instanceMatrix.needsUpdate = true;
     this.contours.count = contourCount;
     this.contours.instanceMatrix.needsUpdate = true;
+    if (this.contours.instanceColor) this.contours.instanceColor.needsUpdate = true;
+    this.telegraphs.count = telegraphCount;
+    this.telegraphs.instanceMatrix.needsUpdate = true;
+    if (this.telegraphs.instanceColor) this.telegraphs.instanceColor.needsUpdate = true;
   }
 
   dispose(): void {

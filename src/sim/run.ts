@@ -20,9 +20,16 @@ import {
   type ScoringState,
   createScoringState,
   cloneScoringState,
+  registerChoiceRoute,
   registerNearMiss,
   stepScoring
 } from "./scoring";
+import {
+  currentLaneForce,
+  type ActiveLivingWorldEvent,
+  type LivingWorldEventKind,
+  type SignatureObstacleVerb
+} from "./obstacleVariety";
 
 export type RunEndReason = "light-depleted";
 
@@ -41,6 +48,8 @@ export interface StepEvents {
   collisions: number;
   /** Sparse, bounded gate outcomes for replay-safe telemetry. */
   encounters: readonly RunEncounter[];
+  /** Sparse semantic Version 38 events for UI, audio and consented telemetry. */
+  signatureEvents: readonly SignatureRunEvent[];
   /** True on the step the run ended, not on subsequent steps. */
   justEnded: boolean;
 }
@@ -53,10 +62,27 @@ export interface RunEncounter {
   templateId: string;
 }
 
+export interface SignatureRunEvent {
+  kind:
+    | "safe-route"
+    | "moonflash-route"
+    | "shutter-pass"
+    | "current-lane-enter"
+    | "living-world";
+  distance: number;
+  tier: number;
+  templateId: string;
+  verb: SignatureObstacleVerb | null;
+  rewardScore?: number;
+  direction?: -1 | 1;
+  livingKind?: LivingWorldEventKind;
+}
+
 const NO_EVENTS: StepEvents = {
   nearMisses: 0,
   collisions: 0,
   encounters: [],
+  signatureEvents: [],
   justEnded: false
 };
 
@@ -79,6 +105,7 @@ export class Run {
 
   private secondsSinceCollision = Number.POSITIVE_INFINITY;
   private slowMoRemainingSec = 0;
+  private readonly activeLivingEvents: ActiveLivingWorldEvent[] = [];
   /** Scan cursor: gates before this index are behind the player. */
   private gateCursor = 0;
 
@@ -96,6 +123,10 @@ export class Run {
   /** Gates generated so far. The renderer draws from this. */
   get gates(): readonly Gate[] {
     return this.course.gates;
+  }
+
+  get activeLivingWorldEvents(): readonly ActiveLivingWorldEvent[] {
+    return this.activeLivingEvents;
   }
 
   /**
@@ -121,8 +152,23 @@ export class Run {
     const cfg = this.cfg;
     const previousDistance = this.sim.forwardDistance;
     const previousLateral = this.sim.lateralPosition;
+    const previousElapsedSec = this.sim.elapsedSec;
 
-    stepSim(this.sim, steeringTarget, dtSec, cfg);
+    // Only the nearest active current owns the player. Authored zones may
+    // overlap spatially at high tiers, but stacking two forces would exceed
+    // the closed-form reserve used by the solvability proof.
+    const currentGate = this.course.gates.find((gate) => {
+      const plan = gate.obstaclePlan;
+      return plan?.verb === "current-lane" &&
+        previousDistance >= plan.startDistance &&
+        previousDistance <= plan.endDistance;
+    });
+    const currentPlan = currentGate?.obstaclePlan;
+    const lateralDrift = currentPlan?.verb === "current-lane"
+      ? currentLaneForce(currentPlan, previousDistance, previousLateral)
+      : 0;
+
+    stepSim(this.sim, steeringTarget, dtSec, cfg, lateralDrift);
 
     const distanceTravelled = this.sim.forwardDistance - previousDistance;
 
@@ -135,13 +181,65 @@ export class Run {
     let nearMisses = 0;
     let collisions = 0;
     const encounters: RunEncounter[] = [];
+    const signatureEvents: SignatureRunEvent[] = [];
+
+    for (const gate of this.course.gates) {
+      const plan = gate.obstaclePlan;
+      if (
+        plan?.verb === "current-lane" &&
+        plan.startDistance >= previousDistance &&
+        plan.startDistance < this.sim.forwardDistance
+      ) {
+        signatureEvents.push({
+          kind: "current-lane-enter",
+          distance: plan.startDistance,
+          tier: gate.tier,
+          templateId: gate.templateId,
+          verb: plan.verb,
+          direction: plan.lateralDriftPerSec < 0 ? -1 : 1
+        });
+      }
+      const living = gate.livingEvent;
+      if (
+        living &&
+        living.triggerDistance >= previousDistance &&
+        living.triggerDistance < this.sim.forwardDistance
+      ) {
+        this.activeLivingEvents.push({
+          plan: living,
+          startedAtSec: this.sim.elapsedSec
+        });
+        signatureEvents.push({
+          kind: "living-world",
+          distance: living.triggerDistance,
+          tier: gate.tier,
+          templateId: gate.templateId,
+          verb: plan?.verb ?? null,
+          livingKind: living.kind
+        });
+      }
+      if (gate.distance > this.sim.forwardDistance + cfg.readability.visibleAheadUnits) {
+        break;
+      }
+    }
+    for (let index = this.activeLivingEvents.length - 1; index >= 0; index--) {
+      const active = this.activeLivingEvents[index];
+      if (
+        !active ||
+        this.sim.elapsedSec - active.startedAtSec > active.plan.durationSec
+      ) {
+        this.activeLivingEvents.splice(index, 1);
+      }
+    }
 
     const passes = evaluateStep(
       {
         fromDistance: previousDistance,
         toDistance: this.sim.forwardDistance,
         fromLateral: previousLateral,
-        toLateral: this.sim.lateralPosition
+        toLateral: this.sim.lateralPosition,
+        fromElapsedSec: previousElapsedSec,
+        toElapsedSec: this.sim.elapsedSec
       },
       this.course.gates,
       cfg,
@@ -168,16 +266,41 @@ export class Run {
           // A collision cancels any in-flight celebration beat.
           this.slowMoRemainingSec = 0;
         }
-      } else if (isNearMiss(pass, cfg) && registerNearMiss(this.scoring, cfg)) {
-        nearMisses++;
-        encounters.push({
-          kind: "near-miss",
-          clearance: pass.clearance,
-          distance: pass.gate.distance,
-          tier: pass.gate.tier,
-          templateId: pass.gate.templateId
-        });
-        this.slowMoRemainingSec = cfg.scoring.nearMissSlowMoDurationSec;
+      } else {
+        const plan = pass.gate.obstaclePlan;
+        if (
+          plan?.verb === "moonflash-choice" &&
+          (pass.route === "safe" || pass.route === "moonflash")
+        ) {
+          const rewardScore = registerChoiceRoute(this.scoring, pass.route);
+          signatureEvents.push({
+            kind: pass.route === "moonflash" ? "moonflash-route" : "safe-route",
+            distance: pass.gate.distance,
+            tier: pass.gate.tier,
+            templateId: pass.gate.templateId,
+            verb: plan.verb,
+            rewardScore
+          });
+        } else if (plan?.verb === "ceremonial-shutter") {
+          signatureEvents.push({
+            kind: "shutter-pass",
+            distance: pass.gate.distance,
+            tier: pass.gate.tier,
+            templateId: pass.gate.templateId,
+            verb: plan.verb
+          });
+        }
+        if (isNearMiss(pass, cfg) && registerNearMiss(this.scoring, cfg)) {
+          nearMisses++;
+          encounters.push({
+            kind: "near-miss",
+            clearance: pass.clearance,
+            distance: pass.gate.distance,
+            tier: pass.gate.tier,
+            templateId: pass.gate.templateId
+          });
+          this.slowMoRemainingSec = cfg.scoring.nearMissSlowMoDurationSec;
+        }
       }
     }
 
@@ -211,7 +334,13 @@ export class Run {
       justEnded = true;
     }
 
-    return { nearMisses, collisions, encounters, justEnded };
+    return {
+      nearMisses,
+      collisions,
+      encounters,
+      signatureEvents,
+      justEnded
+    };
   }
 
   snapshot(): RunSnapshot {

@@ -58,7 +58,7 @@ describe("Version 34 deterministic leaderboard authority", () => {
       reason: null
     });
     expect(result.verificationDigest).toMatch(/^[0-9a-f]{8}$/);
-    expect(LEADERBOARD_VALIDATION_VERSION).toBe("phase4b-v1");
+    expect(LEADERBOARD_VALIDATION_VERSION).toBe("v38-signature-v2");
   });
 
   it("rejects a re-signed score claim that disagrees with simulation", () => {

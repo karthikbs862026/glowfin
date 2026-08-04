@@ -1,6 +1,6 @@
 {
   "$comment": "Glowfin tuning data. Edited by designers, not programmers. Every value here is range-validated at load (src/core/config.ts) — a bad edit fails loudly at startup rather than producing subtly unfair gameplay. See docs/tuning-guide.md for what each value does.",
-  "version": 3,
+  "version": 4,
 
   "momentum": {
     "gainRate": 0.12,

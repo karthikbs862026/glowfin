@@ -7,9 +7,9 @@ this README covers local setup only.
 
 ## Status
 
-**Version 37 — First 10 Minutes & Economy Clarity candidate. Version 36 is the
-merged production-readiness baseline; controls, camera, collision, scoring,
-world, character and audio tuning stay frozen.**
+**Version 38 — Signature Obstacle Variety release candidate. Version 37 is the
+merged and deployed first-ten-minutes/economy baseline and remains the rollback
+artifact until Version 38 clears its immutable GitHub and hosted gates.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
@@ -99,6 +99,23 @@ Version 37 closes the expert-review first-session and economy gaps:
   tutorial completion, first reward, preview, first purchase, first equip and
   Daily Tide entry
 
+Version 38 completes the expert-review mechanical-variety scope:
+
+- 21 authored templates across exactly three obstacle verbs: safe-versus-risk
+  Moonflash choices, predictable ceremonial shutters and lateral current lanes
+- deterministic per-gate plans derived from the run seed and authored gate
+  identity without consuming or perturbing the course RNG stream
+- one authoritative geometry contract for collision, cyan/rose contours,
+  moving shutter faces, route resolution and replay validation
+- minimum opening widths, at least 30 world units of telegraphing, and
+  closed-form current-displacement reserves in the independent solvability proof
+- a real safe-versus-spectacle decision: the authored wide route stays safe and
+  the narrow Moonflash route earns exactly 1.35x its discrete route reward
+- rare seeded ray processions, guardian salutes and Moon-Bloom pulses instead
+  of additional static scenery; all remain non-colliding and pool-bounded
+- phone-readable route, cadence and direction cues, plus consent-gated semantic
+  instrumentation that does not capture steering or touch paths
+
 The frozen visual/gameplay baseline includes:
 
 - a ten-bone volumetric Glowfin loaded from a deterministic Meshopt-compressed
@@ -164,7 +181,8 @@ sharing and rewarded-provider boundaries; and ADR-0039 records the Version 35
 runtime recovery boundary. ADR-0040 records the Version 36 production policy,
 privacy, abuse, retention, artifact-seal and rollback boundary. ADR-0041 records
 the accepted expert verdict, Version 37 first-session shell, learn-by-playing
-tutorial and purchase-based cosmetic economy. Android real-time thermal/audio/recovery review,
+tutorial and purchase-based cosmetic economy. ADR-0042 records the Version 38
+signature-obstacle and living-event foundation. Android real-time thermal/audio/recovery review,
 the physical first-run-to-next-day return journey and all iOS Safari evidence
 remain outstanding. The automated certificate is therefore conditional and
 cannot replace those real-device approvals.
@@ -173,6 +191,7 @@ Certification evidence and release operations are maintained in
 `docs/phase3-exit-report.md`, `docs/phase4a-release-report.md`,
 `docs/phase4b-release-report.md`, `docs/phase5a-release-report.md`,
 `docs/phase5b-release-report.md`, `docs/version37-release-report.md`,
+`docs/version38-build-notes.md`, `docs/version38-release-report.md`,
 `docs/core-game-memory.md`,
 `docs/qa-runbook.md`, and
 `docs/release-runbook.md`.

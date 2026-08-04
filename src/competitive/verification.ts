@@ -12,7 +12,7 @@ import {
   type LeaderboardSubmissionV1
 } from "./leaderboard";
 
-export const LEADERBOARD_VALIDATION_VERSION = "phase4b-v1";
+export const LEADERBOARD_VALIDATION_VERSION = "v38-signature-v2";
 
 export interface LeaderboardVerificationResult {
   valid: boolean;

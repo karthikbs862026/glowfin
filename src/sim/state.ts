@@ -72,7 +72,8 @@ export function stepSim(
   state: SimState,
   steeringTarget: number,
   dtSec: number,
-  cfg: TuningConfig
+  cfg: TuningConfig,
+  externalLateralDriftPerSec = 0
 ): void {
   // --- timers ---
   state.stunRemainingSec = Math.max(0, state.stunRemainingSec - dtSec);
@@ -98,7 +99,15 @@ export function stepSim(
 
   // --- movement ---
   const maxOffset = cfg.lane.halfWidth - cfg.lane.creatureRadius;
-  state.lateralPosition += state.smoothedSteering * lateralSpeed(state, cfg) * dtSec;
+  // Version 38 currents add a bounded, deterministic lateral drift. It is a
+  // direct environmental velocity rather than hidden steering mutation, so
+  // player input, replay commands and the solvability reserve stay separable.
+  const drift = Number.isFinite(externalLateralDriftPerSec)
+    ? externalLateralDriftPerSec
+    : 0;
+  state.lateralPosition += (
+    state.smoothedSteering * lateralSpeed(state, cfg) + drift
+  ) * dtSec;
   if (state.lateralPosition > maxOffset) state.lateralPosition = maxOffset;
   if (state.lateralPosition < -maxOffset) state.lateralPosition = -maxOffset;
 
