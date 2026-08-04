@@ -337,12 +337,12 @@ export class Hud {
   setShareState(
     state: "ready" | "publishing" | "shared" | "unavailable" | "failed"
   ): void {
-    this.shareClip.disabled = state === "unavailable";
+    this.shareClip.disabled = state === "unavailable" || state === "publishing";
     this.shareClip.dataset["state"] = state;
     this.shareClip.textContent = state === "publishing"
       ? "Creating Moonflash…"
       : state === "shared"
-        ? "Moonflash link ready"
+        ? "Beat My Current link ready"
         : state === "failed"
           ? "Moonflash unavailable"
           : "Share best Moonflash";

@@ -39,6 +39,8 @@ describe("Version 39 Capacitor wrapper contract", () => {
     expect(android).toContain('android:screenOrientation="portrait"');
     expect(android).toContain('android:usesCleartextTraffic="false"');
     expect(android).toContain('android:allowBackup="false"');
+    expect(android).toContain('android:scheme="glowfin"');
+    expect(android).toContain('android:host="challenge"');
 
     const androidStyles = file("android/app/src/main/res/values/styles.xml");
     expect(androidStyles).toContain('android:windowLightNavigationBar" tools:targetApi="27"');
@@ -48,6 +50,11 @@ describe("Version 39 Capacitor wrapper contract", () => {
     expect(ios).toContain("UIInterfaceOrientationPortrait");
     expect(ios).not.toContain("UIInterfaceOrientationLandscape");
     expect(ios).toContain("UIStatusBarStyleLightContent");
+    expect(ios).toContain("com.karthikbs862026.glowfin.challenge");
+    expect(ios).toContain("<string>glowfin</string>");
+    const privacy = file("ios/App/App/PrivacyInfo.xcprivacy");
+    expect(privacy).toContain("NSPrivacyTracking");
+    expect(privacy).toContain("<false/>");
   });
 
   it("uses Capacitor's Android inset fallback and exposes optional haptics", () => {
@@ -56,6 +63,9 @@ describe("Version 39 Capacitor wrapper contract", () => {
     expect(html).toContain("--glowfin-safe-bottom");
     expect(html).toContain('id="hud-haptics"');
     expect(html).toContain("Haptics · On when installed");
+    expect(html).toContain('id="startup-progress"');
+    expect(html).toContain('id="network-status"');
+    expect(html).toContain('id="moonwell-challenge"');
   });
 
   it("registers only lifecycle and haptics as Version 39 native plugins", () => {

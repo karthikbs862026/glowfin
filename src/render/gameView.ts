@@ -45,6 +45,8 @@ export interface PresentationPreferences {
   highContrast: boolean;
 }
 
+export type GlowfinHeroMoment = "celebration" | "unlock" | "recovery";
+
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
@@ -69,6 +71,8 @@ export class GameView {
   private qualityBloomEnabled = true;
   private reducedMotion = false;
   private highContrast = false;
+  private heroMoment: GlowfinHeroMoment | null = null;
+  private heroMomentElapsedSec = 0;
   private readonly wallCausticBase = new THREE.Color(0x63e0ff);
   private readonly wallCausticHot = new THREE.Color(0xff6be0);
   private readonly wallCausticScratch = new THREE.Color();
@@ -780,6 +784,13 @@ export class GameView {
     this.trail.applyCosmeticPalette(palette);
   }
 
+  /** Presentation-only post-run personality pose; simulation truth is frozen. */
+  setHeroMoment(moment: GlowfinHeroMoment | null): void {
+    this.heroMoment = moment;
+    this.heroMomentElapsedSec = 0;
+    if (!moment) this.creature.group.scale.setScalar(1);
+  }
+
   /** Live draw-call and triangle counts, for the Part 4.6 budget check. */
   stats(): { drawCalls: number; triangles: number } {
     return {
@@ -850,15 +861,34 @@ export class GameView {
             cfg.momentum.invulnerabilityDurationSec
         )
         : 0;
+    this.heroMomentElapsedSec += this.heroMoment ? Math.max(0, Math.min(frameSec, 0.1)) : 0;
+    const heroRecovery = this.heroMoment === "recovery"
+      ? 0.72 + Math.sin(this.heroMomentElapsedSec * Math.PI * 2.2) * 0.18
+      : 0;
     this.creature.update(
       momentumFraction,
       speedFraction,
-      lightFraction,
+      this.heroMoment ? Math.max(lightFraction, 0.92) : lightFraction,
       sim.smoothedSteering,
       frameSec,
       collisionFraction,
-      recoveryFraction
+      Math.max(recoveryFraction, heroRecovery)
     );
+    this.creature.group.scale.setScalar(1);
+    if (this.heroMoment) {
+      const reducedScale = this.reducedMotion ? 0 : 1;
+      const pulse = Math.sin(this.heroMomentElapsedSec * Math.PI * 2.4) * reducedScale;
+      this.creature.group.rotation.y = Math.PI + pulse * 0.06;
+      this.creature.group.rotation.x = -0.05;
+      this.creature.group.rotation.z = pulse * 0.035;
+      this.creature.group.position.y = 0.18 + Math.max(0, pulse) * 0.1;
+      const scale = this.heroMoment === "unlock"
+        ? 1.12 + Math.max(0, pulse) * 0.06
+        : this.heroMoment === "celebration"
+          ? 1.08 + Math.max(0, pulse) * 0.04
+          : 1.04;
+      this.creature.group.scale.setScalar(scale);
+    }
 
     if (ghostSim) {
       const ghostMomentum = cfg.momentum.ceiling === 0

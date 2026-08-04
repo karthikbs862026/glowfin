@@ -7,6 +7,7 @@ import {
 } from "../competitive/assists";
 import {
   fetchWithPolicy,
+  READ_NETWORK_POLICY,
   WRITE_NETWORK_POLICY,
   type FetchLike
 } from "../operations/networkPolicy";
@@ -41,6 +42,48 @@ export interface PublishedMoonflashClipV1 {
   token: string;
   shareUrl: string;
   expiresAt: string;
+}
+
+export interface MoonflashChallengeV1 {
+  schemaVersion: typeof MOONFLASH_CLIP_VERSION;
+  token: string;
+  clip: MoonflashClipV1;
+  expiresAt: string;
+}
+
+const MOONFLASH_TOKEN_PATTERN = /^moonflash_[a-zA-Z0-9_-]{8,80}$/;
+
+export function isMoonflashToken(value: unknown): value is string {
+  return typeof value === "string" && MOONFLASH_TOKEN_PATTERN.test(value);
+}
+
+/**
+ * Accept both the hosted `?challenge=` handoff and the native
+ * `glowfin://challenge/<token>` scheme. No other query or path data enters the
+ * game, so opening a challenge cannot become an arbitrary navigation surface.
+ */
+export function moonflashTokenFromUrl(value: string): string | null {
+  try {
+    const url = new URL(value, "https://glowfin.invalid/");
+    const queryToken = url.searchParams.get("challenge");
+    if (isMoonflashToken(queryToken)) return queryToken;
+    if (url.protocol === "glowfin:" && url.hostname === "challenge") {
+      const pathToken = url.pathname.split("/").filter(Boolean)[0];
+      return isMoonflashToken(pathToken) ? pathToken : null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function moonflashChallengeUrl(published: PublishedMoonflashClipV1): string {
+  const url = new URL(published.shareUrl);
+  url.pathname = "/";
+  url.search = "";
+  url.hash = "";
+  url.searchParams.set("challenge", published.token);
+  return url.toString();
 }
 
 function checksumText(text: string): string {
@@ -180,7 +223,7 @@ function isPublishedClip(value: unknown): value is PublishedMoonflashClipV1 {
   const candidate = value as Partial<PublishedMoonflashClipV1>;
   if (
     candidate.schemaVersion !== MOONFLASH_CLIP_VERSION ||
-    typeof candidate.token !== "string" || !/^[a-zA-Z0-9_-]{12,80}$/.test(candidate.token) ||
+    !isMoonflashToken(candidate.token) ||
     typeof candidate.shareUrl !== "string" || candidate.shareUrl.length > 512 ||
     typeof candidate.expiresAt !== "string" || !Number.isFinite(Date.parse(candidate.expiresAt))
   ) return false;
@@ -221,5 +264,38 @@ export class HostedMoonflashClient {
     if (!response.ok) throw new Error(`Moonflash publish failed (${response.status}).`);
     if (!isPublishedClip(value)) throw new Error("Moonflash response is invalid.");
     return value;
+  }
+
+  async loadChallenge(
+    token: string,
+    signal?: AbortSignal
+  ): Promise<MoonflashChallengeV1> {
+    if (!isMoonflashToken(token)) throw new Error("Moonflash challenge token is invalid.");
+    const response = await fetchWithPolicy(this.fetcher, `${this.endpoint}/${encodeURIComponent(token)}`, {
+      method: "GET",
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: { accept: "application/json" },
+      signal
+    }, READ_NETWORK_POLICY);
+    const text = await response.text();
+    let value: unknown = null;
+    if (text.length >= 2 && text.length <= 170 * 1024) {
+      try { value = JSON.parse(text) as unknown; } catch { value = null; }
+    }
+    if (!response.ok || !value || typeof value !== "object") {
+      throw new Error(`Moonflash challenge failed (${response.status}).`);
+    }
+    const challenge = value as Partial<MoonflashChallengeV1>;
+    if (
+      challenge.schemaVersion !== MOONFLASH_CLIP_VERSION ||
+      challenge.token !== token ||
+      !validateMoonflashClip(challenge.clip) ||
+      typeof challenge.expiresAt !== "string" ||
+      !Number.isFinite(Date.parse(challenge.expiresAt))
+    ) {
+      throw new Error("Moonflash challenge response is invalid.");
+    }
+    return challenge as MoonflashChallengeV1;
   }
 }

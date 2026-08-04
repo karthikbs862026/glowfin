@@ -496,6 +496,51 @@
         font: inherit;
         cursor: pointer;
       }
+      #startup-progress {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: max(24px, var(--glowfin-safe-top)) 24px max(24px, var(--glowfin-safe-bottom));
+        background: radial-gradient(circle at 50% 34%, rgba(25, 100, 137, 0.74), rgba(4, 6, 15, 0.98) 62%);
+        box-sizing: border-box;
+        transition: opacity 220ms ease, visibility 220ms ease;
+      }
+      #startup-progress[data-ready="true"] { opacity: 0; visibility: hidden; pointer-events: none; }
+      .startup-progress-card { width: min(320px, 88vw); text-align: center; }
+      .startup-progress-mark {
+        width: 78px;
+        height: 78px;
+        margin: 0 auto 18px;
+        border: 2px solid rgba(119, 237, 255, 0.58);
+        border-radius: 46% 54% 58% 42%;
+        background: radial-gradient(circle at 40% 32%, #8bf4ff, #249cc7 48%, #41328f 76%);
+        box-shadow: 0 0 42px rgba(75, 222, 255, 0.42);
+        animation: startup-swim 1.8s ease-in-out infinite;
+      }
+      @keyframes startup-swim { 50% { transform: translateY(-6px) rotate(4deg); } }
+      .startup-progress-card strong { display: block; color: #f1fcff; font-size: 22px; }
+      #startup-progress-detail { display: block; min-height: 20px; margin-top: 7px; color: rgba(213, 244, 255, 0.74); font-size: 13px; }
+      .startup-progress-track { height: 5px; margin-top: 18px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.12); }
+      #startup-progress-fill { width: 12%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #60e7ff, #b075ff); transition: width 240ms ease; }
+      #network-status {
+        position: fixed;
+        left: max(12px, var(--glowfin-safe-left));
+        bottom: max(12px, var(--glowfin-safe-bottom));
+        z-index: 10;
+        display: none;
+        max-width: min(290px, calc(100vw - 24px));
+        padding: 7px 10px;
+        border: 1px solid rgba(255, 220, 143, 0.34);
+        border-radius: 12px;
+        background: rgba(27, 20, 42, 0.9);
+        color: #ffe7ad;
+        font-size: 11px;
+        line-height: 1.25;
+      }
+      #network-status[data-offline="true"] { display: block; }
 
       html[data-glowfin-reduced-motion="true"] #hud *,
       html[data-glowfin-reduced-motion="true"] #hud-gameover * {
@@ -638,6 +683,7 @@
       }
       .moonwell-cta,
       .moonwell-tutorial,
+      .moonwell-challenge,
       .moonwell-daily,
       .moonwell-nav button,
       .moonwell-panel-heading button,
@@ -688,6 +734,18 @@
         font-size: 10px;
         letter-spacing: 0.08em;
       }
+      .moonwell-challenge {
+        width: 100%;
+        min-height: 54px;
+        margin-top: 10px;
+        padding: 9px 14px;
+        border-color: rgba(255, 126, 223, 0.55);
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(110, 36, 128, 0.92), rgba(10, 100, 124, 0.88));
+        text-align: left;
+      }
+      .moonwell-challenge strong { display: block; color: #ffe5fb; font-size: 14px; }
+      .moonwell-challenge span { display: block; margin-top: 2px; color: rgba(225, 243, 255, 0.74); font-size: 11px; }
       .moonwell-daily {
         width: 100%;
         min-height: 48px;
@@ -982,6 +1040,15 @@
     </script>
   </head>
   <body>
+    <div id="startup-progress" data-ready="false" role="status" aria-live="polite">
+      <div class="startup-progress-card">
+        <div class="startup-progress-mark" aria-hidden="true"></div>
+        <strong>Preparing the Moon-Garden</strong>
+        <span id="startup-progress-detail">Checking this device…</span>
+        <div class="startup-progress-track"><div id="startup-progress-fill"></div></div>
+      </div>
+    </div>
+    <div id="network-status" data-offline="false" role="status">Offline mode · runs and progress stay safely on this device.</div>
     <canvas id="glowfin-canvas"></canvas>
 
     <section id="moonwell-hub" data-active="true" data-panel="home" aria-label="Moon Well">
@@ -1017,6 +1084,9 @@
           <button class="moonwell-tutorial" type="button" data-hud-action data-guided-tutorial>
             <span><strong data-tutorial-entry-title>Start guided tutorial</strong><span data-tutorial-entry-detail>New in Version 39 · six clear steps</span></span>
             <b>HOW TO PLAY</b>
+          </button>
+          <button id="moonwell-challenge" class="moonwell-challenge" type="button" data-hud-action hidden>
+            <strong>Beat My Current</strong><span>Loading verified Moonflash challenge…</span>
           </button>
           <button id="hud-daily-trial" class="moonwell-daily" type="button" data-hud-action>Daily Tide</button>
           <nav class="moonwell-nav" aria-label="Moon Well destinations">

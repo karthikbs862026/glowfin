@@ -121,11 +121,13 @@ privacy/save/performance guardrails and the Moon-Current soundtrack.
   21 templates across three replay-safe verbs, shared collision/render truth,
   closed-form current solvability reserves, exact 1.35x Moonflash route rewards
   and rare non-colliding living-world set pieces.
-- Version 39 has started from that exact Version 38 baseline. The guided
-  tutorial plus pinned Capacitor 8 Android/iOS shells, portrait/safe-area and
-  lifecycle handling, and optional presentation-only haptics are implemented
-  on its draft branch. It is not a complete store-ready release until native
-  CI, branded/signing/store work and all physical-device gates pass.
+- Version 39 is physically certified by the owner and completed from that exact
+  Version 38 baseline. Its atomic release contains the guided tutorial,
+  Capacitor 8 Android/iOS shells, presentation-only haptics, branded native
+  assets, startup/offline recovery, rendered Moonflash challenge media and deep
+  links, hero reaction polish, privacy/store metadata and consent-safe device
+  health. Unsigned store candidates are produced in CI; signing credentials
+  remain outside the repository and are applied only during store submission.
 
 ### Guardrails from the verdict
 

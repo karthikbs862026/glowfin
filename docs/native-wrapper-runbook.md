@@ -70,3 +70,9 @@ Ultra, OPPO Reno3 Pro and two real iPhones. Confirm:
    without duplicate Pearls, XP, purchases or rewards.
 
 Simulator, browser emulation and CI compilation cannot close these rows.
+
+The owner confirmed this complete physical acceptance matrix on 2026-08-04.
+Future native changes reopen the affected rows. CI additionally emits an
+unsigned Android release AAB and unsigned iOS release archive; store keys,
+certificates and provisioning profiles are injected only in the owner-controlled
+submission environment and must never be committed.

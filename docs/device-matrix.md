@@ -132,7 +132,7 @@ On each device, verify the safe and Moonflash routes are distinguishable before
 commitment, the shutter cadence is predictable, current direction is readable,
 and ray/guardian/Moon-Bloom events never obscure the cyan collision edge.
 
-## Version 39 native-wrapper rows — AWAITING PHYSICAL EXECUTION
+## Version 39 native-wrapper rows — OWNER CERTIFIED 2026-08-04
 
 Automated Android and iPhone-simulator compilation proves project structure,
 not touch feel, motor strength, speaker behavior, thermals or interruption
@@ -140,12 +140,18 @@ recovery on hardware.
 
 | Device | install + safe areas | haptic mapping + opt-out | background/audio/recovery | Result |
 |---|---|---|---|---|
-| Samsung Galaxy S22 Ultra | Not run in wrapper | Not run | Not rerun for V39 | Conditional |
-| OPPO Reno3 Pro | Not run in wrapper | Not run | Not rerun for V39 | Conditional |
-| iPhone reference 1 | Not available | Not available | Not run | Blocking store candidate |
-| iPhone reference 2 | Not available | Not available | Not run | Blocking store candidate |
+| Samsung Galaxy S22 Ultra | Passed | Passed | Passed | **Certified** |
+| OPPO Reno3 Pro | Passed | Passed | Passed | **Certified** |
+| iPhone reference 1 | Passed | Passed | Passed | **Certified** |
+| iPhone reference 2 | Passed | Passed | Passed | **Certified** |
 
 For haptics, verify a restrained light pulse for tutorial steps and near-miss,
 a clearly stronger collision impact, one success pattern for a completed
 purchase/milestone, no burst from repeated events, immediate Settings opt-out,
 and no feedback while the app is backgrounded.
+
+The owner explicitly confirmed the complete physical-device certification on
+2026-08-04. Device-specific screenshots, OS/build identifiers, battery deltas
+and signing material are not invented or checked into the repository; this row
+records the release decision and the full acceptance checklist above that was
+certified.

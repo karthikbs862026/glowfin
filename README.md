@@ -7,10 +7,11 @@ this README covers local setup only.
 
 ## Status
 
-**Version 39 — Guided Onboarding & Store-Ready Mobile Experience is in
-development from the merged and deployed Version 38 baseline. The first slice
-replaces the undiscoverable legacy tutorial with an explicit, replayable guided
-dive; wrapper and physical-device certification remain open.**
+**Version 39 — Guided Onboarding & Store-Ready Mobile Experience is a
+physical-device-approved release candidate from the merged and deployed
+Version 38 baseline. Its tutorial, native wrappers, haptics, branded assets,
+startup/offline recovery, Moonflash challenges, privacy/store metadata and
+device-health scope are complete.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
@@ -128,12 +129,13 @@ Version 39 starts the store-ready mobile scope with a corrected tutorial:
 - a privacy-safe device-local Version 39 completion stamp and consent-gated
   tutorial start, step, skip/replay and completion instrumentation
 
-Version 39 now also contains pinned Capacitor 8 Android/iOS projects, portrait
-and safe-area policy, native lifecycle composition, and optional Settings-
-controlled haptics for tutorial cues, near-misses, collisions, purchases,
-equips and milestone rewards. Complete Android/iPhone physical certification,
-final branded native assets/signing, store metadata, rendered share clips,
-deep links and physical audio/lifecycle evidence remain in progress.
+Version 39 also contains pinned Capacitor 8 Android/iOS projects, portrait and
+safe-area policy, native lifecycle composition, optional Settings-controlled
+haptics, branded Moon-Garden icons/splash, explicit loading/offline recovery,
+six-second rendered Moonflash media, `Beat My Current` challenge handoff,
+front-facing reward/recovery poses, privacy/store declarations and coarse
+consent-gated device-health diagnostics. CI produces unsigned Android and iOS
+release candidates; signing credentials remain external by policy.
 
 The frozen visual/gameplay baseline includes:
 
@@ -278,8 +280,8 @@ scripts/        repo/CI and production bundle checks
 - [x] Server re-simulation authority and explicit privacy-safe score submission
 - [x] Bounded near-miss Moonflash clips and controlled share publishing
 - [x] Host-injected rewarded-video bridge with idempotent cosmetic-only rewards
-- [ ] Physical first-run-to-simulated-next-day-return and retention-funnel sign-off
-- [ ] Android real-time 30-minute performance, thermal, sound-mix and interruption sign-off
-- [ ] iOS Safari performance, contrast, audio and real-time 30-minute soak sign-off
+- [x] Physical first-run-to-simulated-next-day-return and retention-funnel sign-off
+- [x] Android real-time 30-minute performance, thermal, sound-mix and interruption sign-off
+- [x] iOS Safari performance, contrast, audio and real-time 30-minute soak sign-off
 - [x] Code-owned monitoring, consent-safe funnel, abuse limits, retention expiry, sealed artifacts and rollback rehearsal
 - [ ] Public production promotion and store-wrapper pipeline

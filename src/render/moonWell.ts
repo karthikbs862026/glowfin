@@ -19,6 +19,7 @@ export class MoonWell {
   private readonly panels = new Map<MoonWellPanel, HTMLElement>();
   private readonly dive: HTMLButtonElement;
   private readonly daily: HTMLButtonElement;
+  private readonly challenge: HTMLButtonElement;
   private readonly meta: HTMLElement;
   private readonly wardrobeGrid: HTMLElement;
   private readonly wardrobeFeedback: HTMLElement;
@@ -36,6 +37,7 @@ export class MoonWell {
     this.home = MoonWell.require(root, "moonwell-home");
     this.dive = MoonWell.requireButton(root, "moonwell-dive");
     this.daily = MoonWell.requireButton(root, "hud-daily-trial");
+    this.challenge = MoonWell.requireButton(root, "moonwell-challenge");
     this.meta = MoonWell.require(root, "moonwell-meta");
     this.wardrobeGrid = MoonWell.require(root, "moonwell-wardrobe-grid");
     this.wardrobeFeedback = MoonWell.require(root, "moonwell-wardrobe-feedback");
@@ -76,6 +78,10 @@ export class MoonWell {
 
   onDive(listener: () => void): void {
     this.wire(this.dive, listener);
+  }
+
+  onChallenge(listener: () => void): void {
+    this.wire(this.challenge, listener);
   }
 
   onOpenPanel(listener: (panel: MoonWellPanel) => void): void {
@@ -152,6 +158,21 @@ export class MoonWell {
     this.daily.textContent = completed
       ? `Replay Daily Tide · ${dayId}`
       : `Daily Tide · ${dayId}`;
+  }
+
+  setChallenge(caption: string | null, state: "ready" | "failed" | "loading" = "ready"): void {
+    this.challenge.hidden = !caption && state !== "loading";
+    this.challenge.disabled = state !== "ready";
+    const title = this.challenge.querySelector("strong");
+    const detail = this.challenge.querySelector("span");
+    if (title) title.textContent = state === "failed" ? "Challenge unavailable" : "Beat My Current";
+    if (detail) {
+      detail.textContent = state === "loading"
+        ? "Loading verified Moonflash challenge…"
+        : state === "failed"
+          ? "This link expired or could not be verified."
+          : caption ?? "Race the shared same-seed ghost.";
+    }
   }
 
   setTutorialStatus(completed: boolean): void {

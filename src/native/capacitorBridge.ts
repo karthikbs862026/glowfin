@@ -24,6 +24,7 @@ export interface GlowfinNativeRuntime {
 
 export interface NativeLifecycleCallbacks {
   onActiveChange(active: boolean): void;
+  onOpenUrl?(url: string): void;
 }
 
 function normalizedPlatform(): GlowfinNativePlatform {
@@ -80,11 +81,14 @@ export async function installCapacitorShell(
     // The fixed dark native theme remains the safe fallback.
   }
 
-  const listener = await App.addListener("appStateChange", ({ isActive }) => {
+  const lifecycleListener = await App.addListener("appStateChange", ({ isActive }) => {
     callbacks.onActiveChange(isActive);
     if (isActive) {
       void SystemBars.setStyle({ style: SystemBarsStyle.Dark }).catch(() => undefined);
     }
+  });
+  const urlListener = await App.addListener("appUrlOpen", ({ url }) => {
+    if (typeof url === "string" && url.length <= 512) callbacks.onOpenUrl?.(url);
   });
 
   try {
@@ -94,5 +98,14 @@ export async function installCapacitorShell(
     // The listener already covers subsequent transitions.
   }
 
-  return () => listener.remove();
+  try {
+    const launch = await App.getLaunchUrl();
+    if (launch?.url && launch.url.length <= 512) callbacks.onOpenUrl?.(launch.url);
+  } catch {
+    // A normal launcher start has no URL and remains the dominant path.
+  }
+
+  return async () => {
+    await Promise.all([lifecycleListener.remove(), urlListener.remove()]);
+  };
 }

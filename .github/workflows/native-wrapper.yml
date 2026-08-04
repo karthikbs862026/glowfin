@@ -41,10 +41,15 @@ jobs:
       - name: Compile Android debug candidate
         working-directory: android
         run: ./gradlew assembleDebug lintDebug --no-daemon
+      - name: Build unsigned Play release bundle
+        working-directory: android
+        run: ./gradlew bundleRelease lintRelease --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: glowfin-v39-android-debug-${{ github.sha }}
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: glowfin-v39-android-candidates-${{ github.sha }}
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 14
 
   ios-wrapper:
@@ -77,9 +82,25 @@ jobs:
             -derivedDataPath /tmp/glowfin-ios-derived \
             CODE_SIGNING_ALLOWED=NO \
             build | tee build/ios-wrapper-build.log
+      - name: Build unsigned iOS release archive
+        shell: bash
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Glowfin-v39.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            archive | tee build/ios-wrapper-archive.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: glowfin-v39-ios-wrapper-log-${{ github.sha }}
-          path: build/ios-wrapper-build.log
+          name: glowfin-v39-ios-candidate-${{ github.sha }}
+          path: |
+            build/Glowfin-v39.xcarchive
+            build/ios-wrapper-build.log
+            build/ios-wrapper-archive.log
           retention-days: 14

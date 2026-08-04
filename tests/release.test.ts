@@ -20,6 +20,8 @@ function metadata(
 describe("Version 39 release identity", () => {
   it("accepts only Version 39 built from the merged Version 38 baseline", () => {
     expect(isGlowfinReleaseMetadata(metadata())).toBe(true);
+    expect(metadata().certification).toBe("physical-certified");
+    expect(metadata().phase).toBe("phase-store-ready-mobile");
     expect(isGlowfinReleaseMetadata(metadata({ version: 38 }))).toBe(false);
     expect(isGlowfinReleaseMetadata(metadata({ baselineCommit: "deadbeef" }))).toBe(false);
     expect(isGlowfinReleaseMetadata(metadata({ environment: "production" }))).toBe(true);

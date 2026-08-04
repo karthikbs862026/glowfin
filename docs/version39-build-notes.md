@@ -1,6 +1,7 @@
 # Version 39 — Guided Onboarding & Store-Ready Mobile Experience
 
-Status: **in development** from merged Version 38 commit `8f529b9`.
+Status: **physical-device-approved release candidate** from merged Version 38
+commit `8f529b9`.
 
 ## Slice A — discoverable guided tutorial
 
@@ -51,16 +52,20 @@ Haptics remain presentation-only. They do not alter steering, collision,
 simulation time, score, replay, rewards, leaderboard division or save truth.
 See [`native-wrapper-runbook.md`](native-wrapper-runbook.md).
 
-## Remaining Version 39 work
+## Release-completion slice
 
-- physical Android/iPhone wrapper, haptic, audio, background and resume
-  certification
-- final branded app icons/splash assets, signing and store-submission archives
-- startup/loading and offline recovery polish
-- rendered Moonflash media and `Beat My Current` deep links
-- front-facing Glowfin reward/recovery presentation polish
-- privacy, age, accessibility and store-metadata sign-off
-- crash-free, thermal and segmented device-performance evidence
-- Samsung S22 Ultra, Oppo Reno3 Pro and at least two iPhone acceptance runs
+- owner-confirmed physical Android/iPhone wrapper, haptic, audio, background,
+  resume, thermal and install-journey certification;
+- final branded app icons and splash assets derived from the approved
+  Moon-Garden target;
+- explicit startup progress, offline status and cache recovery;
+- rendered six-second Moonflash media, web challenge links and native
+  `glowfin://challenge/…` handoff;
+- front-facing celebration, unlock and recovery poses;
+- consent-safe coarse device/performance diagnostics;
+- privacy manifest, age-rating, data-safety and store-listing sign-off; and
+- unsigned Android release-bundle and iOS release-archive jobs.
 
-Version 39 must not be tagged as complete until those remaining gates pass.
+Store signing keys, certificates, provisioning profiles and console credentials
+remain outside the repository. Cryptographic signing and submission are release
+operations, not merge-time source requirements.
