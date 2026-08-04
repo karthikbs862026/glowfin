@@ -19,7 +19,9 @@ import { GlowfinAudio } from "./audio/audioEngine";
 import { mountReleaseIdentity } from "./release";
 import {
   ProgressRepository,
-  type GlowfinProgressV1
+  equippedCosmeticNames,
+  type GlowfinProgressV2,
+  type SessionObservation
 } from "./persistence/progress";
 import {
   CloudProgressConflict,
@@ -36,6 +38,18 @@ import {
   HostedTelemetryTransport,
   TelemetryClient
 } from "./telemetry/telemetry";
+import {
+  HostedDailyClockClient,
+  dailySeed,
+  isDayId,
+  resolveDailyDay,
+  type GlowfinRunMode
+} from "./meta/daily";
+import {
+  tideProgressForXp,
+  type CosmeticCategory
+} from "./meta/progression";
+import { RewardedVideoHooks } from "./monetization/rewarded";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
 if (!canvas) throw new Error("Canvas #glowfin-canvas not found");
@@ -71,12 +85,14 @@ const progressStorage = (() => {
 })();
 const progressRepository = new ProgressRepository(progressStorage);
 const progressLoad = progressRepository.load();
-let progress: GlowfinProgressV1 = progressLoad.progress;
+let progress: GlowfinProgressV2 = progressLoad.progress;
 const telemetry = new TelemetryClient(
   progress.telemetryConsent,
   new HostedTelemetryTransport()
 );
 const cloudProgress = new HostedProgressClient();
+const dailyClock = new HostedDailyClockClient();
+const rewardedVideo = new RewardedVideoHooks();
 
 let cloudRevision = 0;
 let cloudSyncInFlight: Promise<void> | null = null;
@@ -84,7 +100,12 @@ let cloudSyncRequested = false;
 let run = new Run(generateSeed(), tuning);
 let recorder = new ReplayRecorder(run.seed, tuning.version);
 let activeRunId = createRunId();
-let activeRunMode: "fresh" | "ghost" = "fresh";
+let activeRunMode: GlowfinRunMode = "fresh";
+let activeRunDayId: string | null = null;
+let authoritativeDailyDay: string | null = null;
+let observedSessionDay: string | null = null;
+let lastSessionObservation: SessionObservation | null = null;
+let preferredGhostMode: "ghost" | "daily-ghost" = "ghost";
 let simulationSteps = 0;
 let ghostRun: Run | null = null;
 let ghostReplay: ReplayPlayer | null = null;
@@ -92,12 +113,9 @@ let ghostVisible = false;
 let ghostCompletionReported = false;
 let awaitingRestart = false;
 
-hud.setBestScore(progress.bestScore);
-hud.setTelemetryConsent(progress.telemetryConsent);
-
 if (progress.telemetryConsent === "granted") {
   telemetry.track("session_start", {
-    release: 32,
+    release: 33,
     tuningVersion: tuning.version,
     saveSchemaVersion: progress.schemaVersion
   });
@@ -118,9 +136,63 @@ function raceableReplay() {
     : null;
 }
 
+function currentDailyDay() {
+  return resolveDailyDay(
+    new Date(),
+    progress.daily.trustedDay,
+    authoritativeDailyDay
+  );
+}
+
+function raceableDailyReplay(dayId: string) {
+  const record = progress.daily.bestDailyReplay;
+  const replay = record?.dayId === dayId ? record.replay : null;
+  return replay &&
+    replay.seed === dailySeed(dayId) &&
+    replay.tuningVersion === tuning.version &&
+    validateReplay(replay).valid
+    ? replay
+    : null;
+}
+
+function hudMeta() {
+  const tide = tideProgressForXp(progress.progression.tideXp);
+  return {
+    lumenPearls: progress.progression.lumenPearls,
+    tideLevel: tide.level,
+    tideXpIntoLevel: tide.xpIntoLevel,
+    tideXpForNextLevel: tide.xpForNextLevel,
+    tideFraction: tide.fraction,
+    cosmeticNames: equippedCosmeticNames(progress)
+  };
+}
+
 function updateProgressUi(): void {
   hud.setBestScore(progress.bestScore);
   hud.setTelemetryConsent(progress.telemetryConsent);
+  hud.setMeta(hudMeta());
+  view.applyCosmetics(progress.progression.equippedCosmetics);
+}
+
+function observeSessionDay(dayId: string): void {
+  if (!isDayId(dayId) || observedSessionDay === dayId) return;
+  const observation = progressRepository.observeSession(dayId);
+  lastSessionObservation = observation;
+  progress = observation.progress;
+  observedSessionDay = dayId;
+  trackRetentionReturn(observation);
+}
+
+function trackRetentionReturn(observation: SessionObservation): void {
+  if (progress.telemetryConsent === "granted") {
+    telemetry.track("retention_return", {
+      daySource: currentDailyDay().source,
+      daysSincePrevious: observation.daysSincePrevious ?? -1,
+      nextDayReturn: observation.nextDayReturn,
+      clockRollback: observation.clockRollback,
+      tideLevel: tideProgressForXp(progress.progression.tideXp).level
+    });
+  }
 }
 
 async function hydrateCloudProgress(): Promise<void> {
@@ -131,19 +203,37 @@ async function hydrateCloudProgress(): Promise<void> {
     progress = progressRepository.replaceWithMerged(remote.progress);
     telemetry.setConsent(progress.telemetryConsent);
     updateProgressUi();
+    observeSessionDay(currentDailyDay().dayId);
   } catch {
     // The standalone build and offline play remain local-first. The next run
     // completion retries cloud sync without interrupting gameplay.
   }
 }
 
+async function hydrateDailyClock(): Promise<void> {
+  try {
+    const remote = await dailyClock.load();
+    if (!remote) return;
+    authoritativeDailyDay = remote.dayId;
+    progress = progressRepository.trustCalendarDay(remote.dayId, true);
+    observeSessionDay(remote.dayId);
+    updateProgressUi();
+  } catch {
+    // Offline play uses the monotonic saved/local day and withholds rewards on
+    // rollback. The hosted UTC day is retried when the tab becomes active.
+  }
+}
+
+updateProgressUi();
+observeSessionDay(currentDailyDay().dayId);
 const cloudHydrated = hydrateCloudProgress();
+const dailyHydrated = hydrateDailyClock();
 
 async function synchronizeCloudProgress(): Promise<void> {
   cloudSyncRequested = true;
   if (cloudSyncInFlight) return cloudSyncInFlight;
   cloudSyncInFlight = (async () => {
-    await cloudHydrated;
+    await Promise.allSettled([cloudHydrated, dailyHydrated]);
     let attempts = 0;
     while (cloudSyncRequested && attempts < 3) {
       attempts += 1;
@@ -174,9 +264,21 @@ function reportRunStart(): void {
     seed: run.seed,
     mode: activeRunMode,
     tuningVersion: tuning.version,
-    hasSavedGhost: Boolean(raceableReplay())
+    hasSavedGhost: Boolean(
+      activeRunMode === "daily" || activeRunMode === "daily-ghost"
+        ? activeRunDayId && raceableDailyReplay(activeRunDayId)
+        : raceableReplay()
+    ),
+    dailyDay: activeRunDayId ?? "none"
   }, activeRunId);
-  if (activeRunMode === "ghost") {
+  if (activeRunMode === "daily" || activeRunMode === "daily-ghost") {
+    telemetry.track("daily_trial_start", {
+      day: activeRunDayId ?? "unknown",
+      seed: run.seed,
+      ghost: activeRunMode === "daily-ghost"
+    }, activeRunId);
+  }
+  if (activeRunMode === "ghost" || activeRunMode === "daily-ghost") {
     telemetry.track("replay_start", {
       seed: run.seed,
       replaySteps: ghostReplay?.replay.totalSteps ?? 0
@@ -184,10 +286,22 @@ function reportRunStart(): void {
   }
 }
 
-function startRun(mode: "fresh" | "ghost" = "fresh"): void {
-  const replay = mode === "ghost" ? raceableReplay() : null;
-  activeRunMode = replay ? "ghost" : "fresh";
-  run = new Run(replay?.seed ?? generateSeed(), tuning);
+function startRun(mode: GlowfinRunMode = "fresh"): void {
+  const day = currentDailyDay();
+  const dailyMode = mode === "daily" || mode === "daily-ghost";
+  const replay = mode === "ghost"
+    ? raceableReplay()
+    : mode === "daily-ghost"
+      ? raceableDailyReplay(day.dayId)
+      : null;
+  activeRunMode = mode === "ghost"
+    ? replay ? "ghost" : "fresh"
+    : mode === "daily-ghost"
+      ? replay ? "daily-ghost" : "daily"
+      : mode;
+  activeRunDayId = dailyMode ? day.dayId : null;
+  const seed = replay?.seed ?? (dailyMode ? dailySeed(day.dayId) : generateSeed());
+  run = new Run(seed, tuning);
   recorder = new ReplayRecorder(run.seed, tuning.version);
   activeRunId = createRunId();
   simulationSteps = 0;
@@ -210,8 +324,33 @@ function startRun(mode: "fresh" | "ghost" = "fresh"): void {
 }
 
 hud.onRaceBest(() => {
-  if (awaitingRestart && raceableReplay()) startRun("ghost");
+  if (!awaitingRestart) return;
+  const day = currentDailyDay().dayId;
+  if (preferredGhostMode === "daily-ghost" && raceableDailyReplay(day)) {
+    startRun("daily-ghost");
+  } else if (raceableReplay()) {
+    startRun("ghost");
+  }
 });
+
+hud.onDailyTrial(() => {
+  if (awaitingRestart) startRun("daily");
+});
+
+for (const category of ["glow", "fin", "trail", "aura"] as const) {
+  hud.onCosmeticCycle(category, () => {
+    if (!awaitingRestart) return;
+    progress = progressRepository.cycleCosmetic(category as CosmeticCategory);
+    updateProgressUi();
+    telemetry.track("cosmetic_equip", {
+      category,
+      cosmetic: progress.progression.equippedCosmetics[category],
+      tideLevel: tideProgressForXp(progress.progression.tideXp).level
+    });
+    void telemetry.flush();
+    void synchronizeCloudProgress();
+  });
+}
 
 hud.onTelemetryChoice(() => {
   const consent = progress.telemetryConsent === "granted" ? "denied" : "granted";
@@ -220,11 +359,12 @@ hud.onTelemetryChoice(() => {
   updateProgressUi();
   if (consent === "granted") {
     telemetry.track("session_start", {
-      release: 32,
+      release: 33,
       tuningVersion: tuning.version,
       saveSchemaVersion: progress.schemaVersion,
       consentSource: "game-over"
     });
+    if (lastSessionObservation) trackRetentionReturn(lastSessionObservation);
     void telemetry.flush();
   }
   void synchronizeCloudProgress();
@@ -242,6 +382,7 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden) {
     timestep.reset();
     lastFrameMs = performance.now();
+    void hydrateDailyClock();
   }
 });
 
@@ -347,7 +488,14 @@ function frame(nowMs: number): void {
         collisions: run.collisionCount
       };
       const replay = recorder.finish(summary);
-      const record = progressRepository.recordRun(summary, replay);
+      const day = currentDailyDay();
+      const rewardDay = activeRunDayId ?? day.dayId;
+      const record = progressRepository.recordRun(summary, replay, {
+        runId: activeRunId,
+        mode: activeRunMode,
+        dayId: rewardDay,
+        calendarRewardsAllowed: day.status !== "clock-rollback"
+      });
       progress = record.progress;
       updateProgressUi();
       telemetry.track("run_end", {
@@ -360,23 +508,105 @@ function frame(nowMs: number): void {
         collisions: summary.collisions,
         newBest: record.newBest,
         replaySaved: record.replaySaved,
-        replaySegments: replay?.commands.length ?? 0
+        replaySegments: replay?.commands.length ?? 0,
+        tideLevel: record.retention.tideLevelAfter,
+        rewardPearls: record.retention.totalPearls
       }, activeRunId);
-      void telemetry.flush();
-      void synchronizeCloudProgress();
+      telemetry.track("reward_granted", {
+        runPearls: record.retention.runRewardClaimed
+          ? record.retention.runReward.pearls
+          : 0,
+        objectivePearls: record.retention.objectiveRewardPearls,
+        dailyPearls: record.retention.dailyRewardPearls,
+        totalPearls: record.retention.totalPearls,
+        duplicatePrevented: record.retention.duplicateRewardPrevented
+      }, activeRunId);
+      if (record.retention.tideLevelAfter > record.retention.tideLevelBefore) {
+        telemetry.track("tide_level_up", {
+          from: record.retention.tideLevelBefore,
+          to: record.retention.tideLevelAfter
+        }, activeRunId);
+      }
+      for (const cosmetic of record.retention.unlockedCosmetics) {
+        telemetry.track("cosmetic_unlock", {
+          cosmetic: cosmetic.id,
+          category: cosmetic.category,
+          unlockLevel: cosmetic.unlockLevel
+        }, activeRunId);
+      }
+      for (const objective of record.retention.objectives) {
+        telemetry.track("objective_progress", {
+          objective: objective.id,
+          cadence: objective.cadence,
+          progress: objective.progress,
+          target: objective.target,
+          completed: objective.completed
+        }, activeRunId);
+      }
+      for (const objective of record.retention.completedObjectives) {
+        telemetry.track("objective_complete", {
+          objective: objective.id,
+          cadence: objective.cadence,
+          rewardPearls: objective.rewardPearls
+        }, activeRunId);
+      }
+      if (activeRunMode === "daily" || activeRunMode === "daily-ghost") {
+        telemetry.track("daily_trial_complete", {
+          day: rewardDay,
+          seed: run.seed,
+          firstCompletion: record.retention.dailyAwarded,
+          rewardRejected: record.retention.calendarRewardRejected,
+          score: summary.score
+        }, activeRunId);
+        telemetry.track("streak_update", {
+          current: record.retention.streak.current,
+          best: record.retention.streak.best,
+          graceAvailable: record.retention.streak.graceAvailable,
+          graceUsed: Boolean(record.retention.streak.graceUsedForDay)
+        }, activeRunId);
+      }
+      const endedRunId = activeRunId;
+      void rewardedVideo.offer("run-recovery", {
+        runEnded: true,
+        collisionCount: summary.collisions,
+        earnedPearls: record.retention.totalPearls
+      }).then((offer) => {
+        if (offer.eligible) {
+          telemetry.track("rewarded_offer", {
+            placement: offer.placement,
+            reason: offer.reason
+          }, endedRunId);
+        }
+      });
       hud.hideGhostGap();
-      const savedGhost = raceableReplay();
+      const dailyGhost = activeRunMode === "daily" || activeRunMode === "daily-ghost"
+        ? raceableDailyReplay(rewardDay)
+        : null;
+      const savedGhost = dailyGhost ?? raceableReplay();
+      preferredGhostMode = dailyGhost ? "daily-ghost" : "ghost";
+      const meta = hudMeta();
       hud.showGameOver(
         run.scoring.score,
         run.sim.elapsedSec,
         run.scoring.nearMissCount,
         run.collisionCount,
         {
+          ...meta,
           bestScore: progress.bestScore,
           newBest: record.newBest,
-          savedGhostScore: savedGhost?.summary.score ?? null
+          raceGhostScore: savedGhost?.summary.score ?? null,
+          raceGhostLabel: dailyGhost ? "Race today’s ghost" : "Race saved ghost",
+          rewardPearls: record.retention.totalPearls,
+          unlockedNames: record.retention.unlockedCosmetics.map((item) => item.name),
+          objectives: record.retention.objectives,
+          streak: record.retention.streak,
+          dailyDayId: rewardDay,
+          dailyCompleted: progress.daily.dailyClaims.includes(rewardDay),
+          calendarRewardRejected: record.retention.calendarRewardRejected
         }
       );
+      void telemetry.flush();
+      void synchronizeCloudProgress();
     }
   });
 

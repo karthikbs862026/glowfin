@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#04060f" />
-    <title>Glowfin — Version 32</title>
+    <title>Glowfin — Version 33</title>
     <style>
       :root {
         --ink: #cfefff;
@@ -62,6 +62,25 @@
         letter-spacing: 0.1em;
         text-transform: uppercase;
       }
+      #hud-meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: fit-content;
+      }
+      #hud-meta span {
+        padding: 3px 7px;
+        border: 1px solid rgba(154, 230, 255, 0.2);
+        border-radius: 999px;
+        background: rgba(5, 23, 42, 0.48);
+        color: rgba(213, 248, 255, 0.86);
+        font-size: 9px;
+        font-weight: 750;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        backdrop-filter: blur(3px);
+      }
+      #hud-pearls { color: #fff0bd !important; }
       #hud-ghost-gap {
         display: none;
         width: fit-content;
@@ -216,10 +235,25 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 6px;
+        padding: max(10px, env(safe-area-inset-top)) 14px max(10px, env(safe-area-inset-bottom));
         background: rgba(4, 6, 15, 0.72);
         backdrop-filter: blur(3px);
       }
+      #hud-gameover-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: min(354px, calc(100vw - 28px));
+        max-height: min(760px, calc(100dvh - 20px));
+        overflow: auto;
+        padding: 18px 17px 16px;
+        border: 1px solid rgba(137, 223, 246, 0.22);
+        border-radius: 24px;
+        background: linear-gradient(165deg, rgba(8, 32, 55, 0.94), rgba(20, 17, 55, 0.93));
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.42), 0 0 36px rgba(53, 208, 255, 0.08);
+        scrollbar-width: none;
+      }
+      #hud-gameover-card::-webkit-scrollbar { display: none; }
       #hud-gameover .label {
         font-size: 13px;
         letter-spacing: 0.16em;
@@ -227,7 +261,7 @@
         color: var(--dim);
       }
       #hud-final-score {
-        font-size: 58px;
+        font-size: 48px;
         font-weight: 700;
         letter-spacing: -0.03em;
         font-variant-numeric: tabular-nums;
@@ -245,13 +279,90 @@
         text-shadow: 0 0 18px rgba(53, 208, 255, 0.42);
       }
       #hud-new-best[data-visible="true"] { display: block; }
+      #hud-run-reward {
+        margin-top: 8px;
+        color: #fff0bd;
+        font-size: 15px;
+        font-weight: 800;
+        text-shadow: 0 0 18px rgba(255, 214, 120, 0.26);
+      }
+      #hud-tide-progress {
+        width: 100%;
+        margin-top: 9px;
+      }
+      #hud-tide-progress-label {
+        display: block;
+        margin-bottom: 5px;
+        color: rgba(207, 239, 255, 0.72);
+        font-size: 10px;
+        font-weight: 700;
+        text-align: center;
+      }
+      #hud-tide-progress-track {
+        height: 6px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+      #hud-tide-progress-fill {
+        width: 0;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #5cecff, #9b69ff, #ff8bc8);
+        box-shadow: 0 0 12px rgba(97, 226, 255, 0.32);
+      }
+      #hud-unlock-banner {
+        display: none;
+        width: 100%;
+        margin-top: 9px;
+        padding: 7px 9px;
+        border: 1px solid rgba(255, 217, 140, 0.3);
+        border-radius: 12px;
+        background: rgba(91, 57, 31, 0.28);
+        color: #ffe6a9;
+        font-size: 10px;
+        font-weight: 750;
+        line-height: 1.35;
+        text-align: center;
+      }
+      #hud-unlock-banner[data-visible="true"] { display: block; }
+      #hud-objectives {
+        display: grid;
+        width: 100%;
+        gap: 5px;
+        margin-top: 10px;
+      }
+      .hud-objective {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 30px;
+        padding: 6px 9px;
+        border-radius: 10px;
+        background: rgba(4, 18, 33, 0.44);
+        color: rgba(210, 240, 250, 0.72);
+        font-size: 9px;
+        line-height: 1.2;
+      }
+      .hud-objective span { max-width: 74%; }
+      .hud-objective strong { color: #a9efff; font-size: 9px; white-space: nowrap; }
+      .hud-objective[data-complete="true"] { background: rgba(28, 84, 77, 0.34); }
+      .hud-objective[data-complete="true"] strong { color: #aaffd9; }
+      #hud-streak {
+        margin-top: 8px;
+        color: rgba(211, 198, 255, 0.82);
+        font-size: 10px;
+        font-weight: 700;
+        text-align: center;
+      }
       #hud-gameover-actions {
         display: flex;
         flex-direction: column;
         align-items: stretch;
-        width: min(280px, calc(100vw - 48px));
+        width: 100%;
         gap: 9px;
-        margin-top: 18px;
+        margin-top: 12px;
       }
       .hud-action {
         min-height: 44px;
@@ -276,6 +387,22 @@
       .hud-action:focus-visible {
         outline: 2px solid #fff4c9;
         outline-offset: 3px;
+      }
+      #hud-wardrobe {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+      #hud-wardrobe .hud-action {
+        min-height: 38px;
+        padding: 0 9px;
+        overflow: hidden;
+        border-color: rgba(180, 236, 255, 0.2);
+        background: rgba(5, 23, 42, 0.62);
+        color: rgba(220, 246, 255, 0.8);
+        font-size: 9px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       #hud-telemetry-choice {
         border-color: rgba(180, 236, 255, 0.2);
@@ -363,27 +490,50 @@
         <div id="hud-multiplier">x1.0</div>
       </div>
       <div id="hud-best">Best 0</div>
+      <div id="hud-meta">
+        <span id="hud-tide-level">Tide 1</span>
+        <span id="hud-pearls">◇ 0</span>
+      </div>
       <div id="hud-ghost-gap" data-active="false">Ghost even</div>
       <div id="hud-light"><div id="hud-light-fill"></div></div>
       <div id="hud-momentum"><div id="hud-momentum-fill"></div></div>
-      <div id="hud-build" role="status">V32 · LOCAL · local</div>
+      <div id="hud-build" role="status">V33 · LOCAL · local</div>
     </div>
 
     <div id="hud-gameover">
-      <div class="label">Run ended</div>
-      <div id="hud-final-score">0</div>
-      <div id="hud-final-detail"></div>
-      <div id="hud-new-best" data-visible="false">New best current</div>
-      <div id="hud-gameover-actions">
-        <button id="hud-race-best" class="hud-action primary" type="button" data-hud-action disabled>
-          Race saved ghost
-        </button>
-        <button id="hud-telemetry-choice" class="hud-action" type="button" data-hud-action>
-          Anonymous playtest data: choose
-        </button>
-        <div id="hud-telemetry-note">No name, email, device fingerprint or touch path is collected.</div>
+      <div id="hud-gameover-card">
+        <div class="label">Moonwake gathered</div>
+        <div id="hud-final-score">0</div>
+        <div id="hud-final-detail"></div>
+        <div id="hud-new-best" data-visible="false">New best current</div>
+        <div id="hud-run-reward">+0 Lumen Pearls</div>
+        <div id="hud-tide-progress">
+          <span id="hud-tide-progress-label">Tide 1 · 0/90 current</span>
+          <div id="hud-tide-progress-track"><div id="hud-tide-progress-fill"></div></div>
+        </div>
+        <div id="hud-unlock-banner" data-visible="false"></div>
+        <div id="hud-objectives" aria-label="Tide objectives"></div>
+        <div id="hud-streak">0-day Tide streak · Grace day ready</div>
+        <div id="hud-gameover-actions">
+          <button id="hud-race-best" class="hud-action primary" type="button" data-hud-action disabled>
+            Race saved ghost
+          </button>
+          <button id="hud-daily-trial" class="hud-action primary" type="button" data-hud-action>
+            Daily Tide Trial
+          </button>
+          <div id="hud-wardrobe" aria-label="Moonwake wardrobe">
+            <button id="hud-cosmetic-glow" class="hud-action" type="button" data-hud-action>Glow · Moon Cyan</button>
+            <button id="hud-cosmetic-fin" class="hud-action" type="button" data-hud-action>Fins · Tideglass</button>
+            <button id="hud-cosmetic-trail" class="hud-action" type="button" data-hud-action>Trail · Moonwake</button>
+            <button id="hud-cosmetic-aura" class="hud-action" type="button" data-hud-action>Aura · Quiet Current</button>
+          </div>
+          <button id="hud-telemetry-choice" class="hud-action" type="button" data-hud-action>
+            Anonymous playtest data: choose
+          </button>
+          <div id="hud-telemetry-note">No name, email, device fingerprint or touch path is collected.</div>
+        </div>
+        <div id="hud-restart">Tap outside the buttons for a fresh current</div>
       </div>
-      <div id="hud-restart">Tap outside the buttons for a fresh current</div>
     </div>
 
     <div id="startup-error" role="alert">

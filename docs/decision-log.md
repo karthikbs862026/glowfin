@@ -725,3 +725,25 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Run the ghost in an isolated deterministic simulation and render it as a
   translucent presentation-only creature. It has no collision, scoring, audio,
   input or spawning authority.
+
+## 2026-08-04 — Add Moonwake progression and the Daily Tide return loop
+
+- Adopt ADR-0037 and label Version 33 as Phase 4A. Preserve Version 31 gameplay
+  and art tuning and Version 32 durability/replay contracts.
+- Add Lumen Pearls, quadratic Tide Levels and exactly twelve cosmetic-only
+  unlocks. Apply every cosmetic through existing body/trail shader uniforms so
+  no mesh, material, collider or gameplay authority is added.
+- Derive one Daily Tide seed from the hosted UTC day, prove its generated
+  course with the production solver and retain only a valid same-day,
+  same-seed best replay for explicit ghost racing.
+- Rotate two daily objectives and one weekly objective. Award each once and
+  permit one missed calendar day per active streak; reject calendar progress
+  when the clock rolls backward.
+- Migrate Version 31/32 saves into schema version 2 with zero starting currency,
+  bounded reward claims and idempotent cloud conflict merging.
+- Expand consent-gated events through reward, unlock, equip, daily, objective,
+  streak, rematch and next-day return. Keep rewarded-video provider and
+  recovery-placement interfaces disabled with no advertising SDK.
+- Treat the physical first-run-to-next-day-return journey, Android real-time
+  pass and iPhone Safari row as conditional acceptance evidence rather than
+  claims made by automation.

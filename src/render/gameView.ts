@@ -28,6 +28,10 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { loadRuntimeProductionGeometry } from "./runtimeProductionAssets";
+import {
+  cosmeticPalette,
+  type CosmeticLoadout
+} from "../meta/progression";
 
 /** Hard caps. Part 4.6 requires pool sizes be part of the performance budget. */
 const MAX_POOLED_STRIPES = 40;
@@ -736,6 +740,13 @@ export class GameView {
     error: string | null;
   }> {
     return this.runtimeProductionStatus;
+  }
+
+  /** Cosmetics remain presentation-only uniforms on two existing materials. */
+  applyCosmetics(loadout: CosmeticLoadout): void {
+    const palette = cosmeticPalette(loadout);
+    this.creature.applyCosmeticPalette(palette);
+    this.trail.applyCosmeticPalette(palette);
   }
 
   /** Live draw-call and triangle counts, for the Part 4.6 budget check. */

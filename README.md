@@ -7,9 +7,10 @@ this README covers local setup only.
 
 ## Status
 
-**Phase 4 foundation — Version 32 owner-approved. Version 31 is merged as the
-certified gameplay and art baseline; its controls, camera, collision, scoring,
-world, character and audio tuning remain frozen for this build.**
+**Phase 4A — Version 33 Moonwake progression and Daily Tide release candidate.
+Version 32 remains the durable save, telemetry, replay and ghost foundation;
+Version 31 remains the certified gameplay and art baseline. Controls, camera,
+collision, scoring, world, character and audio tuning stay frozen.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
@@ -25,6 +26,21 @@ first durable player-state layer around the approved Version 31 baseline:
 - fixed-step, checksummed best-run recording and explicit same-seed playback
 - a translucent, non-colliding ghost rendered by a second presentation-only
   creature while the authoritative player simulation remains unchanged
+
+Version 33 completes the Phase 4A candidate on top of that foundation:
+
+- persistent Lumen Pearls, quadratic Tide Levels and exactly twelve
+  cosmetic-only unlocks implemented through existing shader uniforms
+- one hosted-UTC, deterministic Daily Tide Trial whose shared seed is checked
+  by the production solvability proof
+- two rotating daily objectives, one rotating weekly objective and a one-day
+  streak grace rule with bounded, idempotent reward claims
+- a reward/unlock-focused post-run screen, explicit same-seed Daily Tide ghost
+  rematch and next-day return observation
+- schema-v2 progress with corruption recovery, Version 31/32 migration and
+  conflict-safe cloud merging without reward duplication
+- consent-gated retention-funnel telemetry and disabled rewarded-video
+  provider/placement interfaces, with no advertising SDK or purchases
 
 The frozen visual/gameplay baseline includes:
 
@@ -85,12 +101,14 @@ records the accepted living-district composition; ADR-0032 establishes the
 runtime GLB gate/reef contract; ADR-0033 records the cohesion scope; ADR-0034
 records the approved runtime Glowfin character; and ADR-0035 records the
 Version 31 release-certificate boundary. ADR-0036 records the Version 32 save,
-telemetry, replay and ghost contracts. Android real-time thermal/audio review
-and all iOS Safari evidence remain outstanding. The automated certificate is
-therefore conditional and cannot replace those real-device approvals.
+telemetry, replay and ghost contracts; ADR-0037 records the Version 33 Moonwake
+progression and Daily Tide contracts. Android real-time thermal/audio review,
+the physical first-run-to-next-day return journey and all iOS Safari evidence
+remain outstanding. The automated certificate is therefore conditional and
+cannot replace those real-device approvals.
 
 Certification evidence and release operations are maintained in
-`docs/phase3-exit-report.md`, `docs/qa-runbook.md`, and
+`docs/phase3-exit-report.md`, `docs/phase4a-release-report.md`, `docs/qa-runbook.md`, and
 `docs/release-runbook.md`.
 
 ## Local setup
@@ -149,6 +167,11 @@ scripts/        repo/CI and production bundle checks
 - [x] Versioned local progress with backup recovery and legacy migration
 - [x] Private conflict-safe cloud synchronization and consent-gated telemetry
 - [x] Deterministic best-run replay and explicit non-colliding ghost race
+- [x] Lumen Pearls, Tide Levels and twelve shared-material cosmetic unlocks
+- [x] Deterministic solvable Daily Tide Trial, three rotating objectives and grace-day streak
+- [x] Version 31/32-to-33 migration, duplicate-reward protection and consented retention telemetry
+- [x] Disabled rewarded-video interfaces and recovery placement hooks with no advertising SDK
+- [ ] Physical first-run-to-simulated-next-day-return and retention-funnel sign-off
 - [ ] Android real-time 30-minute performance, thermal, sound-mix and interruption sign-off
 - [ ] iOS Safari performance, contrast, audio and real-time 30-minute soak sign-off
 - [ ] Production promotion, monitoring, privacy/compliance and store-wrapper pipeline

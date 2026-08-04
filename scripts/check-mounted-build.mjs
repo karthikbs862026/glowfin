@@ -16,8 +16,16 @@ if (!index.includes('id="hud-build"')) {
 }
 
 const release = JSON.parse(await readFile(new URL("release.json", root), "utf8"));
-if (release.version !== 32 || release.phase !== "phase-4-foundation") {
-  throw new Error("Production release metadata does not identify Version 32.");
+const expectedRelease = JSON.parse(
+  await readFile(new URL("../config/release.json", import.meta.url), "utf8")
+);
+if (
+  release.version !== expectedRelease.version ||
+  release.phase !== expectedRelease.phase
+) {
+  throw new Error(
+    `Production release metadata does not identify Version ${expectedRelease.version}.`
+  );
 }
 
 const assetsUrl = new URL("assets/", root);

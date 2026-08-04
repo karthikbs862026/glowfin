@@ -28,6 +28,10 @@ clear any cached standalone/PWA copy before beginning.
 7. Run continuously for 30 real minutes with sound on; record frame behavior,
    battery change, temperature warning/throttling, blank canvas, audio doubling
    and any context loss.
+8. For Version 33+, complete a fresh first run, claim the run/daily/objective
+   rewards, equip one unlocked cosmetic, race the saved daily ghost, advance to
+   a simulated next UTC day and confirm the consented return funnel exactly
+   once. Repeat with consent denied and confirm zero telemetry is queued.
 
 Record device model, OS/browser version, GPU string, source SHA, start/end time,
 battery change, thermal observation and pass/fail in `docs/device-matrix.md`.

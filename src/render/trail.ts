@@ -20,6 +20,7 @@
  */
 import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
+import type { CosmeticPalette } from "../meta/progression";
 
 interface TrailSample {
   x: number;
@@ -100,6 +101,14 @@ export class TrailRibbon {
     this.samples.length = 0;
     this.secondsSinceSample = 0;
     this.geometry.setDrawRange(0, 0);
+  }
+
+  /** Switch colours on the existing ribbon material; zero new GPU resources. */
+  applyCosmeticPalette(palette: CosmeticPalette): void {
+    const near = this.material.uniforms["uColorNear"];
+    if (near) (near.value as THREE.Color).setHex(palette.trailNearColor);
+    const far = this.material.uniforms["uColorFar"];
+    if (far) (far.value as THREE.Color).setHex(palette.trailFarColor);
   }
 
   update(
