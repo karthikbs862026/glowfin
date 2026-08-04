@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { tuning } from "../src/core/config";
 import { FIXED_DT_SEC } from "../src/core/timestep";
-import { dailySeed } from "../src/meta/daily";
+import { createDefaultDailyRetention, dailySeed } from "../src/meta/daily";
 import {
   PROGRESS_PRIMARY_KEY,
   PROGRESS_SCHEMA_VERSION,
   VERSION_1_PRIMARY_KEY,
+  VERSION_2_PRIMARY_KEY,
   ProgressRepository,
   createDefaultProgress,
   validateProgress,
@@ -45,13 +46,16 @@ function replay(seed: number, value = summary()) {
   return recorder.finish({ ...value, elapsedSec: FIXED_DT_SEC })!;
 }
 
-describe("Version 33 first-run-to-next-day retention journey", () => {
-  it("starts with a valid schema-v2 save and unlocked default loadout", () => {
+describe("Version 37 first-run-to-next-day retention journey", () => {
+  it("starts with a valid schema-v3 save and owned default loadout", () => {
     const progress = createDefaultProgress(new Date("2026-08-04T00:00:00Z"));
     expect(progress.schemaVersion).toBe(PROGRESS_SCHEMA_VERSION);
     expect(progress.progression).toMatchObject({
       lumenPearls: 0,
+      lumenPearlsEarned: 0,
       tideXp: 0,
+      ownedCosmetics: ["aura.none", "fin.tideglass", "glow.moon-cyan", "trail.moonwake"],
+      purchasedCosmetics: [],
       equippedCosmetics: {
         glow: "glow.moon-cyan",
         fin: "fin.tideglass",
@@ -83,7 +87,7 @@ describe("Version 33 first-run-to-next-day retention journey", () => {
     const first = new ProgressRepository(storage, () => new Date("2026-08-04T00:00:00Z")).load();
     expect(first.recoveredFrom).toBe("version-1");
     expect(first.progress).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: PROGRESS_SCHEMA_VERSION,
       revision: 8,
       bestScore: 345,
       progression: { lumenPearls: 0, tideXp: 0 }
@@ -92,6 +96,51 @@ describe("Version 33 first-run-to-next-day retention journey", () => {
     const second = new ProgressRepository(storage).load();
     expect(second.recoveredFrom).toBe("primary");
     expect(second.progress.progression.lumenPearls).toBe(0);
+  });
+
+  it("migrates Version 36 progress without charging for previously unlocked cosmetics", () => {
+    const storage = new MemoryStorage();
+    const legacy = {
+      schemaVersion: 2,
+      revision: 12,
+      updatedAt: "2026-08-04T00:00:00.000Z",
+      bestScore: 900,
+      bestReplay: null,
+      totals: { runs: 6, playSeconds: 220, nearMisses: 9, collisions: 3 },
+      telemetryConsent: "granted",
+      ghostEnabled: true,
+      progression: {
+        lumenPearls: 240,
+        tideXp: 360,
+        equippedCosmetics: {
+          glow: "glow.coral-rose",
+          fin: "fin.nacre-edge",
+          trail: "trail.foam-lace",
+          aura: "aura.pearl-halo"
+        },
+        recentRewardClaims: ["run:legacy"]
+      },
+      daily: createDefaultDailyRetention()
+    } as const;
+    storage.setItem(VERSION_2_PRIMARY_KEY, JSON.stringify({
+      envelopeVersion: 2,
+      payload: legacy,
+      checksum: checksumText(JSON.stringify(legacy))
+    }));
+    const loaded = new ProgressRepository(storage).load();
+    expect(loaded.recoveredFrom).toBe("version-2");
+    expect(loaded.progress.progression).toMatchObject({
+      lumenPearls: 240,
+      lumenPearlsEarned: 240,
+      purchasedCosmetics: []
+    });
+    expect(loaded.progress.progression.ownedCosmetics).toEqual(expect.arrayContaining([
+      "glow.coral-rose",
+      "fin.nacre-edge",
+      "trail.foam-lace",
+      "aura.pearl-halo"
+    ]));
+    expect(loaded.progress.onboarding.tutorialCompleted).toBe(true);
   });
 
   it("deduplicates a repeated run reward claim while preserving the run record", () => {

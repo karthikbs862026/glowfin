@@ -7,10 +7,9 @@ this README covers local setup only.
 
 ## Status
 
-**Phase 5B — Version 36 production-readiness and release-certification
-candidate. Version 35 is the merged runtime-resilience baseline;
-controls, camera, collision, scoring, world, character and audio tuning stay
-frozen.**
+**Version 37 — First 10 Minutes & Economy Clarity candidate. Version 36 is the
+merged production-readiness baseline; controls, camera, collision, scoring,
+world, character and audio tuning stay frozen.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
@@ -82,6 +81,24 @@ Version 36 completes the code-owned Phase 5B production-readiness surface:
   staging manifests, post-gate release tags and an ancestor-verified rollback
   rehearsal to the Version 35 known-good baseline
 
+Version 37 closes the expert-review first-session and economy gaps:
+
+- a lightweight Moon Well hub with Tap to Dive, direct Daily Tide, Wardrobe,
+  Objectives, Leaderboard and Settings access before the first run
+- a gesture-bound launch that activates the existing phone-safe audio path and
+  a bounded learn-by-playing tutorial for steering, Light, near-miss scoring and
+  recoverable collisions
+- one primary post-run action (Dive Again), two secondary actions (saved ghost
+  and Moon Well), labelled Light/Flow meters and 12–14px phone-readable copy
+- a real cosmetic economy in which Tide XP unlocks availability, Lumen Pearls
+  purchase items, previews do not mutate progress and owned items equip
+  separately
+- schema-v3 save migration that grandfathers Version 36 availability and keeps
+  spent Pearls from reappearing during cloud conflict resolution
+- consent-gated first-ten-minute events covering hub entry, Tap to Dive,
+  tutorial completion, first reward, preview, first purchase, first equip and
+  Daily Tide entry
+
 The frozen visual/gameplay baseline includes:
 
 - a ten-bone volumetric Glowfin loaded from a deterministic Meshopt-compressed
@@ -145,7 +162,9 @@ telemetry, replay and ghost contracts; ADR-0037 records the Version 33 Moonwake
 progression and Daily Tide contracts; ADR-0038 records the Version 34 ranked,
 sharing and rewarded-provider boundaries; and ADR-0039 records the Version 35
 runtime recovery boundary. ADR-0040 records the Version 36 production policy,
-privacy, abuse, retention, artifact-seal and rollback boundary. Android real-time thermal/audio/recovery review,
+privacy, abuse, retention, artifact-seal and rollback boundary. ADR-0041 records
+the accepted expert verdict, Version 37 first-session shell, learn-by-playing
+tutorial and purchase-based cosmetic economy. Android real-time thermal/audio/recovery review,
 the physical first-run-to-next-day return journey and all iOS Safari evidence
 remain outstanding. The automated certificate is therefore conditional and
 cannot replace those real-device approvals.
@@ -153,7 +172,8 @@ cannot replace those real-device approvals.
 Certification evidence and release operations are maintained in
 `docs/phase3-exit-report.md`, `docs/phase4a-release-report.md`,
 `docs/phase4b-release-report.md`, `docs/phase5a-release-report.md`,
-`docs/phase5b-release-report.md`,
+`docs/phase5b-release-report.md`, `docs/version37-release-report.md`,
+`docs/core-game-memory.md`,
 `docs/qa-runbook.md`, and
 `docs/release-runbook.md`.
 

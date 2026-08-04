@@ -143,20 +143,20 @@ try {
   await page.waitForTimeout(280);
   const afterUnmute = await snapshot();
 
-  // Also retain the original game-surface gesture path. Start from a clean,
-  // unlocked preference so a canvas touch must create/resume sources and emit
-  // measurable signal without delaying the steering listener.
+  // Version 37 makes Tap to Dive the deliberate launch and audio-activation
+  // gesture. Start from a clean preference so that CTA must create/resume both
+  // audio paths before the first simulation step.
   await page.locator("#hud-audio-toggle").tap();
   await page.evaluate(() => localStorage.removeItem("glowfin-audio-muted-v1"));
   await page.reload({ waitUntil: "load" });
-  await page.locator("#glowfin-canvas").waitFor({ state: "visible" });
+  await page.locator("#moonwell-dive").waitFor({ state: "visible" });
   const beforeCanvasGesture = await snapshot();
-  await page.locator("#glowfin-canvas").tap({ position: { x: 195, y: 640 } });
-  await waitForAudioReady("touch-canvas activation");
+  await page.locator("#moonwell-dive").tap();
+  await waitForAudioReady("tap-to-dive activation");
   await page.waitForTimeout(280);
   const afterCanvasGesture = await snapshot();
 
-  // A common phone flow is canvas first, sound button second. The first
+  // A common phone flow is Dive first, sound button second. The first
   // explicit sound-button tap must confirm/replay sound, not mute the audio that
   // the canvas gesture just started.
   await page.locator("#hud-audio-toggle").tap();

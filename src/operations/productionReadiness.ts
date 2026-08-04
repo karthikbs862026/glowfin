@@ -21,10 +21,15 @@ export const RATE_LIMIT_POLICIES = Object.freeze({
 
 export const FUNNEL_STEPS = [
   "session_start",
+  "hub_view",
+  "tap_to_dive",
+  "tutorial_complete",
   "run_end",
   "reward_granted",
   "cosmetic_unlock",
+  "cosmetic_purchase",
   "cosmetic_equip",
+  "daily_entry",
   "daily_trial_complete",
   "retention_return"
 ] as const;

@@ -12,6 +12,7 @@ import { generateSeed } from "./core/rng";
 import { Run } from "./sim/run";
 import { GameView } from "./render/gameView";
 import { Hud } from "./render/hud";
+import { MoonWell, type MoonWellPanel } from "./render/moonWell";
 import { DebugOverlay } from "./render/debugOverlay";
 import { QualityController } from "./perf/quality";
 import { PerfMonitor, checkBudgets } from "./perf/metrics";
@@ -46,9 +47,17 @@ import {
   type GlowfinRunMode
 } from "./meta/daily";
 import {
+  COSMETIC_CATALOG,
+  cosmeticAvailability,
+  cosmeticDefinition,
   tideProgressForXp,
-  type CosmeticCategory
+  type CosmeticLoadout
 } from "./meta/progression";
+import {
+  FirstRunTutorial,
+  tutorialPresentation,
+  type TutorialStep
+} from "./meta/onboarding";
 import {
   BrowserRewardedVideoProvider,
   LIVE_REWARDED_VIDEO_FLAGS,
@@ -105,6 +114,7 @@ if (runtimeSupport.supported) {
   runtimeLifecycle.markUnsupported();
 }
 const hud = new Hud();
+const moonWell = new MoonWell();
 const audio = new GlowfinAudio(tuning);
 const steering = new SteeringSource({
   dragRangeFraction: tuning.input.dragRangeFraction,
@@ -224,6 +234,10 @@ let ghostReplay: ReplayPlayer | null = null;
 let ghostVisible = false;
 let ghostCompletionReported = false;
 let awaitingRestart = false;
+let gameplayActive = false;
+let firstRunTutorial: FirstRunTutorial | null = null;
+let tutorialStep: TutorialStep | null = null;
+let tutorialCompleteAtSec: number | null = null;
 
 interface CompletedCompetitiveRun {
   runId: string;
@@ -339,6 +353,56 @@ function hudMeta() {
   };
 }
 
+function objectivePresentations() {
+  return progressRepository.activeObjectives(currentDailyDay().dayId).map((objective) => ({
+    id: objective.id,
+    label: objective.label,
+    progress: objective.progress,
+    target: objective.target,
+    completed: objective.completed
+  }));
+}
+
+function refreshWardrobe(): void {
+  moonWell.renderWardrobe(
+    COSMETIC_CATALOG.map((cosmetic) => ({
+      cosmetic,
+      availability: cosmeticAvailability(
+        cosmetic,
+        progress.progression.tideXp,
+        progress.progression.ownedCosmetics,
+        progress.progression.equippedCosmetics
+      )
+    })),
+    progress.progression.lumenPearls
+  );
+}
+
+function refreshMoonWell(): void {
+  const meta = hudMeta();
+  moonWell.setMeta(meta);
+  const day = currentDailyDay().dayId;
+  moonWell.setDailyLabel(day, progress.daily.dailyClaims.includes(day));
+  moonWell.renderObjectives(objectivePresentations());
+  refreshWardrobe();
+}
+
+function showMoonWell(panel: MoonWellPanel = "home"): void {
+  gameplayActive = false;
+  steering.reset();
+  firstRunTutorial = null;
+  tutorialStep = null;
+  tutorialCompleteAtSec = null;
+  moonWell.showTutorial(null);
+  hud.hideGameOver();
+  view?.applyCosmetics(progress.progression.equippedCosmetics);
+  refreshMoonWell();
+  moonWell.show(hudMeta());
+  moonWell.showPanel(panel);
+  document.documentElement.dataset["glowfinScreen"] = "hub";
+  telemetry.track("hub_view", { panel });
+}
+
 function updateProgressUi(): void {
   hud.setBestScore(progress.bestScore);
   hud.setTelemetryConsent(progress.telemetryConsent);
@@ -351,6 +415,7 @@ function updateProgressUi(): void {
     String(accessPreferences.reducedMotion);
   document.documentElement.dataset["glowfinHighContrast"] =
     String(accessPreferences.highContrast);
+  refreshMoonWell();
 }
 
 function observeSessionDay(dayId: string): void {
@@ -543,10 +608,13 @@ function startRun(mode: GlowfinRunMode = "fresh"): void {
   ghostVisible = Boolean(ghostRun && ghostReplay && progress.ghostEnabled);
   ghostCompletionReported = false;
   awaitingRestart = false;
+  gameplayActive = true;
   completedCompetitiveRun = null;
   steering.reset();
   timestep.reset();
   view?.resetTrail();
+  view?.applyCosmetics(progress.progression.equippedCosmetics);
+  moonWell.hide();
   hud.hideGameOver();
   hud.setSubmitState("unavailable");
   hud.setShareState("unavailable");
@@ -557,8 +625,43 @@ function startRun(mode: GlowfinRunMode = "fresh"): void {
     hud.hideGhostGap();
   }
   audio.resetRun(run.scoring.multiplier);
+  document.documentElement.dataset["glowfinScreen"] = "run";
+  firstRunTutorial = activeRunMode === "fresh" && !progress.onboarding.tutorialCompleted
+    ? new FirstRunTutorial()
+    : null;
+  tutorialStep = firstRunTutorial?.step ?? null;
+  tutorialCompleteAtSec = null;
+  moonWell.showTutorial(
+    tutorialStep ? tutorialPresentation(tutorialStep) : null
+  );
+  if (firstRunTutorial) {
+    telemetry.track("tutorial_start", { source: "tap-to-dive" }, activeRunId);
+  }
   reportRunStart();
 }
+
+moonWell.onDive(() => {
+  telemetry.track("tap_to_dive", {
+    firstRun: !progress.onboarding.firstRunCompleted,
+    tutorialRequired: !progress.onboarding.tutorialCompleted
+  });
+  startRun("fresh");
+});
+
+moonWell.onOpenPanel((panel) => {
+  view?.applyCosmetics(progress.progression.equippedCosmetics);
+  moonWell.setWardrobeFeedback("");
+  refreshMoonWell();
+  moonWell.showPanel(panel);
+  telemetry.track("hub_view", { panel });
+});
+
+moonWell.onBack(() => {
+  view?.applyCosmetics(progress.progression.equippedCosmetics);
+  moonWell.setWardrobeFeedback("");
+  moonWell.showPanel("home");
+  telemetry.track("hub_view", { panel: "home" });
+});
 
 hud.onRaceBest(() => {
   if (!awaitingRestart) return;
@@ -571,7 +674,20 @@ hud.onRaceBest(() => {
 });
 
 hud.onDailyTrial(() => {
-  if (awaitingRestart) startRun("daily");
+  if (awaitingRestart || moonWell.isOpen) {
+    telemetry.track("daily_entry", {
+      source: moonWell.isOpen ? "moon-well" : "post-run"
+    });
+    startRun("daily");
+  }
+});
+
+hud.onDiveAgain(() => {
+  if (awaitingRestart) startRun("fresh");
+});
+
+hud.onOpenHub(() => {
+  if (awaitingRestart) showMoonWell("home");
 });
 
 async function loadCompetitiveBoard(state: CompletedCompetitiveRun): Promise<void> {
@@ -719,7 +835,7 @@ hud.onShareClip(() => {
 });
 
 hud.onMotorAssistToggle(() => {
-  if (!awaitingRestart) return;
+  if (!awaitingRestart && !moonWell.isOpen) return;
   accessPreferences = accessPreferenceRepository.toggleMotorAssist();
   steering.setSensitivityMultiplier(steeringSensitivityMultiplier(accessPreferences));
   updateProgressUi();
@@ -732,7 +848,7 @@ hud.onMotorAssistToggle(() => {
 });
 
 hud.onReducedMotionToggle(() => {
-  if (!awaitingRestart) return;
+  if (!awaitingRestart && !moonWell.isOpen) return;
   accessPreferences = accessPreferenceRepository.toggleReducedMotion();
   updateProgressUi();
   telemetry.track("accessibility_change", {
@@ -744,7 +860,7 @@ hud.onReducedMotionToggle(() => {
 });
 
 hud.onHighContrastToggle(() => {
-  if (!awaitingRestart) return;
+  if (!awaitingRestart && !moonWell.isOpen) return;
   accessPreferences = accessPreferenceRepository.toggleHighContrast();
   updateProgressUi();
   telemetry.track("accessibility_change", {
@@ -814,20 +930,67 @@ hud.onRewardedPearls(() => {
   });
 });
 
-for (const category of ["glow", "fin", "trail", "aura"] as const) {
-  hud.onCosmeticCycle(category, () => {
-    if (!awaitingRestart) return;
-    progress = progressRepository.cycleCosmetic(category as CosmeticCategory);
+moonWell.onWardrobePreview((cosmeticId) => {
+  const cosmetic = cosmeticDefinition(cosmeticId);
+  if (!cosmetic || tideProgressForXp(progress.progression.tideXp).level < cosmetic.unlockLevel) return;
+  const preview: CosmeticLoadout = {
+    ...progress.progression.equippedCosmetics,
+    [cosmetic.category]: cosmetic.id
+  };
+  view?.applyCosmetics(preview);
+  moonWell.setWardrobeFeedback(`Previewing ${cosmetic.name}. Purchase and equip remain separate.`);
+  telemetry.track("cosmetic_preview", {
+    cosmetic: cosmetic.id,
+    category: cosmetic.category,
+    owned: progress.progression.ownedCosmetics.includes(cosmetic.id)
+  });
+});
+
+moonWell.onWardrobeAction((cosmeticId) => {
+  const cosmetic = cosmeticDefinition(cosmeticId);
+  if (!cosmetic) return;
+  if (!progress.progression.ownedCosmetics.includes(cosmetic.id)) {
+    const firstPurchase = !progress.onboarding.firstPurchaseCompleted;
+    const result = progressRepository.purchaseCosmetic(cosmetic.id);
+    progress = result.progress;
     updateProgressUi();
-    telemetry.track("cosmetic_equip", {
-      category,
-      cosmetic: progress.progression.equippedCosmetics[category],
-      tideLevel: tideProgressForXp(progress.progression.tideXp).level
+    moonWell.showPanel("wardrobe");
+    moonWell.setWardrobeFeedback(result.status === "purchased"
+      ? `${cosmetic.name} purchased for ◇ ${result.spentPearls}. Tap Equip to wear it.`
+      : result.status === "insufficient-pearls"
+        ? `You need ◇ ${cosmetic.pricePearls} for ${cosmetic.name}. Dive again to gather more.`
+        : result.status === "locked"
+          ? `${cosmetic.name} becomes available at Tide ${cosmetic.unlockLevel}.`
+          : `${cosmetic.name} is already in your collection.`);
+    telemetry.track("cosmetic_purchase", {
+      cosmetic: cosmetic.id,
+      category: cosmetic.category,
+      result: result.status,
+      price: cosmetic.pricePearls,
+      firstPurchase: firstPurchase && result.status === "purchased"
     });
     void telemetry.flush();
-    void synchronizeCloudProgress();
+    if (result.status === "purchased") void synchronizeCloudProgress();
+    return;
+  }
+
+  const result = progressRepository.equipCosmetic(cosmetic.id);
+  progress = result.progress;
+  updateProgressUi();
+  moonWell.showPanel("wardrobe");
+  view?.applyCosmetics(progress.progression.equippedCosmetics);
+  moonWell.setWardrobeFeedback(result.equipped
+    ? `${cosmetic.name} equipped. Cosmetics never change score or steering.`
+    : `${cosmetic.name} could not be equipped.`);
+  telemetry.track("cosmetic_equip", {
+    category: cosmetic.category,
+    cosmetic: cosmetic.id,
+    tideLevel: tideProgressForXp(progress.progression.tideXp).level,
+    firstEquip: result.firstEquip
   });
-}
+  void telemetry.flush();
+  if (result.equipped) void synchronizeCloudProgress();
+});
 
 hud.onTelemetryChoice(() => {
   const consent = progress.telemetryConsent === "granted" ? "denied" : "granted";
@@ -839,7 +1002,7 @@ hud.onTelemetryChoice(() => {
       release: GLOWFIN_RELEASE.version,
       tuningVersion: tuning.version,
       saveSchemaVersion: progress.schemaVersion,
-      consentSource: "game-over"
+      consentSource: "settings"
     });
     telemetry.track("runtime_support", {
       supported: runtimeSupport.supported,
@@ -850,16 +1013,6 @@ hud.onTelemetryChoice(() => {
     void telemetry.flush();
   }
   void synchronizeCloudProgress();
-});
-
-// Restart on tap once the run has ended. Registered on the document rather than
-// the canvas so a tap on the game-over panel also counts.
-document.addEventListener("pointerdown", (event) => {
-  if (
-    runtimeLifecycle.canAdvance &&
-    awaitingRestart &&
-    !hud.isActionTarget(event.target)
-  ) startRun("fresh");
 });
 
 let lastFrameMs = performance.now();
@@ -1059,7 +1212,7 @@ function frame(nowMs: number): void {
 
   // Slow-mo is applied to wall-clock time before it reaches the accumulator, so
   // the simulation itself always steps at a fixed dt (ADR-0006).
-  if (!awaitingRestart) timestep.advance(frameSec * run.timeScale, (dt) => {
+  if (gameplayActive && !awaitingRestart) timestep.advance(frameSec * run.timeScale, (dt) => {
     if (awaitingRestart) return;
     const command = steering.getTarget();
     recorder.record(command);
@@ -1104,6 +1257,44 @@ function frame(nowMs: number): void {
         activeRunId
       );
     }
+    if (firstRunTutorial) {
+      const previousStep = firstRunTutorial.step;
+      const nextStep = firstRunTutorial.update({
+        elapsedSec: run.sim.elapsedSec,
+        steering: command,
+        nearMiss: events.encounters.some((encounter) => encounter.kind === "near-miss"),
+        collision: events.encounters.some((encounter) => encounter.kind === "collision")
+      });
+      if (nextStep !== previousStep) {
+        tutorialStep = nextStep;
+        moonWell.showTutorial(tutorialPresentation(nextStep));
+        telemetry.track("tutorial_step", {
+          step: nextStep,
+          elapsedSec: run.sim.elapsedSec
+        }, activeRunId);
+        if (nextStep === "complete") {
+          tutorialCompleteAtSec = run.sim.elapsedSec;
+          progress = progressRepository.completeTutorial();
+          updateProgressUi();
+          telemetry.track("tutorial_complete", {
+            elapsedSec: run.sim.elapsedSec,
+            collisionSeen: run.collisionCount > 0,
+            nearMisses: run.scoring.nearMissCount
+          }, activeRunId);
+          void telemetry.flush();
+          void synchronizeCloudProgress();
+        }
+      }
+      if (
+        tutorialCompleteAtSec !== null &&
+        run.sim.elapsedSec >= tutorialCompleteAtSec + 3
+      ) {
+        firstRunTutorial = null;
+        tutorialStep = null;
+        tutorialCompleteAtSec = null;
+        moonWell.showTutorial(null);
+      }
+    }
     moonflashRecorder.record(
       simulationSteps,
       run.scoring.score,
@@ -1126,6 +1317,12 @@ function frame(nowMs: number): void {
     );
     if (events.justEnded) {
       awaitingRestart = true;
+      gameplayActive = false;
+      firstRunTutorial = null;
+      tutorialStep = null;
+      tutorialCompleteAtSec = null;
+      moonWell.showTutorial(null);
+      document.documentElement.dataset["glowfinScreen"] = "post-run";
       const summary: ReplaySummary = {
         score: run.scoring.score,
         elapsedSec: run.sim.elapsedSec,
@@ -1137,6 +1334,7 @@ function frame(nowMs: number): void {
       const clip = moonflashRecorder.finish(replay, activeClassification);
       const day = currentDailyDay();
       const rewardDay = activeRunDayId ?? day.dayId;
+      const firstReward = !progress.onboarding.firstRewardSeen;
       const record = progressRepository.recordRun(summary, replay, {
         runId: activeRunId,
         mode: activeRunMode,
@@ -1168,6 +1366,12 @@ function frame(nowMs: number): void {
         totalPearls: record.retention.totalPearls,
         duplicatePrevented: record.retention.duplicateRewardPrevented
       }, activeRunId);
+      if (firstReward && record.retention.totalPearls > 0) {
+        telemetry.track("first_reward", {
+          pearls: record.retention.totalPearls,
+          tideXp: record.retention.runReward.xp
+        }, activeRunId);
+      }
       if (record.retention.tideLevelAfter > record.retention.tideLevelBefore) {
         telemetry.track("tide_level_up", {
           from: record.retention.tideLevelBefore,
@@ -1391,8 +1595,6 @@ async function start(): Promise<void> {
     reducedMotion: accessPreferences.reducedMotion,
     highContrast: accessPreferences.highContrast
   });
-  reportRunStart();
-
   if (isProbeRequested()) {
     const {
       runContrastProbe,
@@ -1404,6 +1606,7 @@ async function start(): Promise<void> {
     return;
   }
 
+  showMoonWell("home");
   requestAnimationFrame(frame);
 }
 
