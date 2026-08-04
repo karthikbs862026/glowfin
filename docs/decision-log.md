@@ -704,3 +704,24 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Preserve honest exit language: automated certification can pass, but Phase 3
   remains conditional until both Android real-time thermal/audio/interruption
   rows and one real iPhone Safari row are signed off.
+
+## 2026-08-04 — Add durable progress, consented telemetry and saved-run ghosts
+
+- Owner approved the deployed Version 32 foundation while preserving Version
+  31 as the certified gameplay, art, camera, control, collision and audio
+  baseline.
+- Adopt ADR-0036. Store one checksummed versioned progress envelope in primary
+  and backup browser slots, migrate the legacy best score, and recover from a
+  corrupt or unavailable primary without blocking play.
+- Synchronize the same validated schema through a private same-origin endpoint
+  with optimistic revisions. Resolve conflicts by preserving the strongest
+  best run and idempotent maximum totals rather than double-counting retries.
+- Collect no telemetry until explicit consent. Restrict names and payloads to a
+  bounded allowlist that excludes names, email, device fingerprints and touch
+  paths, and clear queued events when consent is withdrawn.
+- Record fixed-step steering as bounded run-length segments with checksum,
+  timestep, tuning-version and summary validation. Start playback only through
+  the explicit `Race saved ghost` action on the same seed.
+- Run the ghost in an isolated deterministic simulation and render it as a
+  translucent presentation-only creature. It has no collision, scoring, audio,
+  input or spawning authority.

@@ -1,6 +1,6 @@
 # ADR-0035: Phase 3 exit certification boundary
 
-**Status:** Implemented as the Version 31 certification candidate  
+**Status:** Owner-approved and merged as Version 31
 **Date:** 2026-08-03
 
 ## Context

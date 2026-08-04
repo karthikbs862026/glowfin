@@ -7,16 +7,26 @@ this README covers local setup only.
 
 ## Status
 
-**Phase 3 exit — Version 31 certification candidate. Version 30 is
-owner-approved and merged on `main`; its gameplay, controls, camera, collision,
-scoring, world, character and audio tuning are frozen for this build.**
+**Phase 4 foundation — Version 32 owner-approved. Version 31 is merged as the
+certified gameplay and art baseline; its controls, camera, collision, scoring,
+world, character and audio tuning remain frozen for this build.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
-trail, contrast probe and hardened art gate are in place. Version 31 adds only
-release identity, reproducible certification, staging-artifact and post-deploy
-smoke contracts around the approved Version 30 baseline. The frozen baseline
-includes:
+trail, contrast probe and hardened art gate are in place. Version 32 adds the
+first durable player-state layer around the approved Version 31 baseline:
+
+- versioned two-copy local progress with checksum validation, legacy migration
+  and corruption recovery
+- private same-origin cloud synchronization with optimistic revisions and
+  deterministic conflict merging
+- zero-collection telemetry until explicit player consent, with a bounded
+  event allowlist and privacy-safe payloads
+- fixed-step, checksummed best-run recording and explicit same-seed playback
+- a translucent, non-colliding ghost rendered by a second presentation-only
+  creature while the authoritative player simulation remains unchanged
+
+The frozen visual/gameplay baseline includes:
 
 - a ten-bone volumetric Glowfin loaded from a deterministic Meshopt-compressed
   runtime GLB with an explicit negative-Z forward axis; the chase camera sees
@@ -74,7 +84,8 @@ authority; ADR-0029 records the approved 64-second replacement score; ADR-0031
 records the accepted living-district composition; ADR-0032 establishes the
 runtime GLB gate/reef contract; ADR-0033 records the cohesion scope; ADR-0034
 records the approved runtime Glowfin character; and ADR-0035 records the
-Version 31 release-certificate boundary. Android real-time thermal/audio review
+Version 31 release-certificate boundary. ADR-0036 records the Version 32 save,
+telemetry, replay and ghost contracts. Android real-time thermal/audio review
 and all iOS Safari evidence remain outstanding. The automated certificate is
 therefore conditional and cannot replace those real-device approvals.
 
@@ -135,6 +146,9 @@ scripts/        repo/CI and production bundle checks
 - [x] Owner visual approval for the Version 30 Glowfin production-character baseline
 - [x] Version 31 source/environment fingerprint and deterministic release manifest
 - [x] Immutable main-branch staging artifact and post-deploy smoke contract
+- [x] Versioned local progress with backup recovery and legacy migration
+- [x] Private conflict-safe cloud synchronization and consent-gated telemetry
+- [x] Deterministic best-run replay and explicit non-colliding ghost race
 - [ ] Android real-time 30-minute performance, thermal, sound-mix and interruption sign-off
 - [ ] iOS Safari performance, contrast, audio and real-time 30-minute soak sign-off
 - [ ] Production promotion, monitoring, privacy/compliance and store-wrapper pipeline

@@ -1,10 +1,10 @@
 {
-  "$comment": "Version 31 release identity. Gameplay and art remain frozen to the owner-approved Version 30 baseline.",
+  "$comment": "Version 32 save, privacy-safe telemetry, deterministic replay and best-ghost foundation. Version 31 remains the certified gameplay and art baseline.",
   "schemaVersion": 1,
-  "version": 31,
-  "phase": "phase-3-exit",
-  "certification": "conditional-device-signoff",
-  "baselineVersion": 30,
-  "baselineCommit": "4e797b44053bca96fd9dfb1bbb637dbe88653219",
+  "version": 32,
+  "phase": "phase-4-foundation",
+  "certification": "save-replay-telemetry-candidate",
+  "baselineVersion": 31,
+  "baselineCommit": "6d1779ac90509aa932b78fea3b25d55d79e4b5ef",
   "artBuild": "phase3c-v30-glowfin-production"
 }

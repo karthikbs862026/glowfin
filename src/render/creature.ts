@@ -55,6 +55,7 @@ const BODY_FRAGMENT = /* glsl */ `
   uniform float uMomentum;
   uniform float uCollision;
   uniform float uRecovery;
+  uniform float uGhost;
   uniform sampler2D uSkinMap;
   varying vec3 vNormalV;
   varying vec3 vViewPosition;
@@ -173,7 +174,8 @@ const BODY_FRAGMENT = /* glsl */ `
     colour += vec3(0.16, 0.025, 0.13) * reefBounce *
       mix(0.035, 0.11, gillMask);
     colour = min(colour * 0.94, vec3(0.46, 0.9, 1.0));
-    gl_FragColor = vec4(colour, 1.0);
+    colour = mix(colour, vec3(0.34, 0.92, 1.0), uGhost * 0.58);
+    gl_FragColor = vec4(colour, mix(1.0, 0.3, uGhost));
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
@@ -199,6 +201,7 @@ export const GLOWFIN_EYE_FRAGMENT_SHADER = /* glsl */ `
   uniform float uEnergy;
   uniform float uCollision;
   uniform float uRecovery;
+  uniform float uGhost;
   uniform vec3 uLookDirection;
   varying vec3 vNormalV;
   varying vec3 vViewPosition;
@@ -243,7 +246,8 @@ export const GLOWFIN_EYE_FRAGMENT_SHADER = /* glsl */ `
     eye += edgeColour * edge * mix(0.12, 0.2, uEnergy);
     eye = mix(eye, vec3(0.16, 0.055, 0.12), uCollision * 0.54);
     eye += vec3(0.32, 0.94, 1.0) * uRecovery * irisMask * 0.22;
-    gl_FragColor = vec4(eye, 1.0);
+    eye = mix(eye, vec3(0.55, 0.96, 1.0), uGhost * 0.62);
+    gl_FragColor = vec4(eye, mix(1.0, 0.38, uGhost));
   }
 `;
 
@@ -314,6 +318,10 @@ export type GlowfinAnimationState =
   | "collision"
   | "recovery";
 
+export interface CreatureOptions {
+  ghost?: boolean;
+}
+
 /**
  * The production rig exposes five visually distinct states, but simulation
  * remains the sole authority. Collision and recovery override propulsion;
@@ -354,8 +362,10 @@ export class Creature {
 
   constructor(
     private readonly cfg: TuningConfig,
-    skinMap: THREE.Texture
+    skinMap: THREE.Texture,
+    options: CreatureOptions = {}
   ) {
+    const ghost = options.ghost === true;
     const rig = createGlowfinRigGeometry(cfg, 0);
     this.bodyMaterial = new THREE.ShaderMaterial({
       vertexColors: true,
@@ -366,10 +376,13 @@ export class Creature {
         uMomentum: { value: 0 },
         uCollision: { value: 0 },
         uRecovery: { value: 0 },
+        uGhost: { value: ghost ? 1 : 0 },
         uSkinMap: { value: skinMap }
       },
       vertexShader: BODY_VERTEX,
-      fragmentShader: BODY_FRAGMENT
+      fragmentShader: BODY_FRAGMENT,
+      transparent: ghost,
+      depthWrite: !ghost
     });
     this.eyeMaterial = new THREE.ShaderMaterial({
       uniforms: {
@@ -378,13 +391,16 @@ export class Creature {
         uEnergy: { value: 0 },
         uCollision: { value: 0 },
         uRecovery: { value: 0 },
+        uGhost: { value: ghost ? 1 : 0 },
         uLookDirection: {
           value: new THREE.Vector3(...GLOWFIN_EYE_LOOK_AXIS)
         }
       },
       vertexShader: EYE_VERTEX,
       fragmentShader: GLOWFIN_EYE_FRAGMENT_SHADER,
-      toneMapped: false
+      toneMapped: false,
+      transparent: ghost,
+      depthWrite: !ghost
     });
 
     this.rootBone.name = "GlowfinRoot";
@@ -417,8 +433,10 @@ export class Creature {
       ...this.gillBones
     ]));
     this.body.frustumCulled = false;
+    this.body.renderOrder = ghost ? 3 : 4;
 
     this.eyes = new THREE.Mesh(rig.eyes, this.eyeMaterial);
+    this.eyes.renderOrder = ghost ? 3 : 5;
     this.group.add(this.body, this.eyes);
     this.disposables.push(
       this.bodyMaterial,

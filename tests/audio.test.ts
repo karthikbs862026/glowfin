@@ -17,6 +17,7 @@ import type { StepEvents } from "../src/sim/run";
 const noEvents = (): StepEvents => ({
   nearMisses: 0,
   collisions: 0,
+  encounters: [],
   justEnded: false
 });
 

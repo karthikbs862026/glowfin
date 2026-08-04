@@ -19,29 +19,54 @@
  * reinforces the diegetic read instead of competing with it.
  */
 import { eyeHueForEnergy } from "./creature";
+import type { TelemetryConsent } from "../persistence/progress";
+
+export interface RunEndPresentation {
+  bestScore: number;
+  newBest: boolean;
+  savedGhostScore: number | null;
+}
 
 export class Hud {
   private readonly score: HTMLElement;
   private readonly multiplier: HTMLElement;
+  private readonly best: HTMLElement;
+  private readonly ghostGap: HTMLElement;
   private readonly lightBar: HTMLElement;
   private readonly momentumBar: HTMLElement;
   private readonly gameOver: HTMLElement;
   private readonly finalScore: HTMLElement;
   private readonly finalDetail: HTMLElement;
+  private readonly newBest: HTMLElement;
+  private readonly raceBest: HTMLButtonElement;
+  private readonly telemetryChoice: HTMLButtonElement;
 
   constructor(root: Document = document) {
     this.score = Hud.require(root, "hud-score");
     this.multiplier = Hud.require(root, "hud-multiplier");
+    this.best = Hud.require(root, "hud-best");
+    this.ghostGap = Hud.require(root, "hud-ghost-gap");
     this.lightBar = Hud.require(root, "hud-light-fill");
     this.momentumBar = Hud.require(root, "hud-momentum-fill");
     this.gameOver = Hud.require(root, "hud-gameover");
     this.finalScore = Hud.require(root, "hud-final-score");
     this.finalDetail = Hud.require(root, "hud-final-detail");
+    this.newBest = Hud.require(root, "hud-new-best");
+    this.raceBest = Hud.requireButton(root, "hud-race-best");
+    this.telemetryChoice = Hud.requireButton(root, "hud-telemetry-choice");
   }
 
   private static require(root: Document, id: string): HTMLElement {
     const element = root.getElementById(id);
     if (!element) throw new Error(`Hud: missing required element #${id}`);
+    return element;
+  }
+
+  private static requireButton(root: Document, id: string): HTMLButtonElement {
+    const element = root.getElementById(id);
+    if (!(element instanceof HTMLButtonElement)) {
+      throw new Error(`Hud: missing required button #${id}`);
+    }
     return element;
   }
 
@@ -77,10 +102,77 @@ export class Hud {
     this.momentumBar.style.background = `hsl(${hueDegrees.toFixed(0)}, 90%, 62%)`;
   }
 
-  showGameOver(score: number, seconds: number, nearMisses: number, collisions: number): void {
+  setBestScore(score: number): void {
+    this.best.textContent = `Best ${Math.floor(score).toLocaleString()}`;
+  }
+
+  updateGhostGap(playerDistance: number, ghostDistance: number): void {
+    const gap = playerDistance - ghostDistance;
+    const magnitude = Math.abs(gap);
+    this.ghostGap.dataset["active"] = "true";
+    this.ghostGap.textContent = magnitude < 0.5
+      ? "Ghost even"
+      : gap > 0
+        ? `You +${magnitude.toFixed(0)}m`
+        : `Ghost +${magnitude.toFixed(0)}m`;
+  }
+
+  hideGhostGap(): void {
+    this.ghostGap.dataset["active"] = "false";
+  }
+
+  setTelemetryConsent(consent: TelemetryConsent): void {
+    this.telemetryChoice.textContent = consent === "granted"
+      ? "Anonymous playtest data: On"
+      : consent === "denied"
+        ? "Anonymous playtest data: Off"
+        : "Share anonymous playtest data";
+    this.telemetryChoice.setAttribute(
+      "aria-pressed",
+      consent === "granted" ? "true" : "false"
+    );
+  }
+
+  onRaceBest(listener: () => void): void {
+    this.raceBest.addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+    });
+    this.raceBest.addEventListener("click", (event) => {
+      event.stopPropagation();
+      listener();
+    });
+  }
+
+  onTelemetryChoice(listener: () => void): void {
+    this.telemetryChoice.addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+    });
+    this.telemetryChoice.addEventListener("click", (event) => {
+      event.stopPropagation();
+      listener();
+    });
+  }
+
+  isActionTarget(target: EventTarget | null): boolean {
+    return target instanceof Element && Boolean(target.closest("[data-hud-action]"));
+  }
+
+  showGameOver(
+    score: number,
+    seconds: number,
+    nearMisses: number,
+    collisions: number,
+    presentation: RunEndPresentation
+  ): void {
     this.finalScore.textContent = Math.floor(score).toLocaleString();
     this.finalDetail.textContent =
       `${seconds.toFixed(0)}s · ${nearMisses} near-miss · ${collisions} hits`;
+    this.setBestScore(presentation.bestScore);
+    this.newBest.dataset["visible"] = presentation.newBest ? "true" : "false";
+    this.raceBest.disabled = presentation.savedGhostScore === null;
+    this.raceBest.textContent = presentation.savedGhostScore === null
+      ? "Race saved ghost"
+      : `Race ghost · ${Math.floor(presentation.savedGhostScore).toLocaleString()}`;
     this.gameOver.style.display = "flex";
   }
 

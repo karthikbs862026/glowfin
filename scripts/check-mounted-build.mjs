@@ -16,8 +16,8 @@ if (!index.includes('id="hud-build"')) {
 }
 
 const release = JSON.parse(await readFile(new URL("release.json", root), "utf8"));
-if (release.version !== 31 || release.phase !== "phase-3-exit") {
-  throw new Error("Production release metadata does not identify Version 31.");
+if (release.version !== 32 || release.phase !== "phase-4-foundation") {
+  throw new Error("Production release metadata does not identify Version 32.");
 }
 
 const assetsUrl = new URL("assets/", root);
