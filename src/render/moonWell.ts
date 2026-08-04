@@ -23,8 +23,10 @@ export class MoonWell {
   private readonly wardrobeGrid: HTMLElement;
   private readonly wardrobeFeedback: HTMLElement;
   private readonly objectiveList: HTMLElement;
+  private readonly tutorialIntro: HTMLElement;
   private readonly tutorial: HTMLElement;
   private readonly tutorialEyebrow: HTMLElement;
+  private readonly tutorialIcon: HTMLElement;
   private readonly tutorialTitle: HTMLElement;
   private readonly tutorialDetail: HTMLElement;
   private readonly tutorialFill: HTMLElement;
@@ -38,8 +40,10 @@ export class MoonWell {
     this.wardrobeGrid = MoonWell.require(root, "moonwell-wardrobe-grid");
     this.wardrobeFeedback = MoonWell.require(root, "moonwell-wardrobe-feedback");
     this.objectiveList = MoonWell.require(root, "moonwell-objectives-list");
+    this.tutorialIntro = MoonWell.require(root, "tutorial-intro");
     this.tutorial = MoonWell.require(root, "tutorial-overlay");
     this.tutorialEyebrow = MoonWell.require(root, "tutorial-eyebrow");
+    this.tutorialIcon = MoonWell.require(root, "tutorial-icon");
     this.tutorialTitle = MoonWell.require(root, "tutorial-title");
     this.tutorialDetail = MoonWell.require(root, "tutorial-detail");
     this.tutorialFill = MoonWell.require(root, "tutorial-progress-fill");
@@ -84,6 +88,18 @@ export class MoonWell {
     this.root.querySelectorAll<HTMLButtonElement>("[data-moonwell-back]").forEach((button) => {
       this.wire(button, listener);
     });
+  }
+
+  onTutorialStart(listener: () => void): void {
+    this.root.querySelectorAll<HTMLButtonElement>("[data-guided-tutorial]").forEach((button) => {
+      this.wire(button, listener);
+    });
+  }
+
+  onTutorialSkip(listener: () => void): void {
+    this.root.ownerDocument
+      .querySelectorAll<HTMLButtonElement>("[data-tutorial-skip]")
+      .forEach((button) => this.wire(button, listener));
   }
 
   onWardrobePreview(listener: (cosmeticId: string) => void): void {
@@ -136,6 +152,22 @@ export class MoonWell {
     this.daily.textContent = completed
       ? `Replay Daily Tide · ${dayId}`
       : `Daily Tide · ${dayId}`;
+  }
+
+  setTutorialStatus(completed: boolean): void {
+    this.root.querySelectorAll<HTMLElement>("[data-tutorial-entry-title]").forEach((element) => {
+      element.textContent = completed ? "Replay guided tutorial" : "Start guided tutorial";
+    });
+    this.root.querySelectorAll<HTMLElement>("[data-tutorial-entry-detail]").forEach((element) => {
+      element.textContent = completed
+        ? "Six clear steps · about 30 seconds"
+        : "New in Version 39 · six clear steps";
+    });
+  }
+
+  showTutorialIntro(visible: boolean): void {
+    this.tutorialIntro.dataset.active = String(visible);
+    this.tutorialIntro.setAttribute("aria-hidden", String(!visible));
   }
 
   renderObjectives(objectives: readonly HudObjectivePresentation[]): void {
@@ -215,6 +247,7 @@ export class MoonWell {
       return;
     }
     this.tutorialEyebrow.textContent = presentation.eyebrow;
+    this.tutorialIcon.textContent = presentation.icon;
     this.tutorialTitle.textContent = presentation.title;
     this.tutorialDetail.textContent = presentation.detail;
     this.tutorialFill.style.width = `${Math.round(presentation.progress * 100)}%`;

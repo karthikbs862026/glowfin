@@ -17,6 +17,7 @@ export const TELEMETRY_EVENT_NAMES = [
   "tutorial_start",
   "tutorial_step",
   "tutorial_complete",
+  "tutorial_skip",
   "run_start",
   "momentum_sample",
   "near_miss",

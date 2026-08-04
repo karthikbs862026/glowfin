@@ -55,6 +55,8 @@ import {
 } from "./meta/progression";
 import {
   FirstRunTutorial,
+  GuidedTutorialRepository,
+  GUIDED_TUTORIAL_VERSION,
   tutorialPresentation,
   type TutorialStep
 } from "./meta/onboarding";
@@ -143,6 +145,9 @@ const progressStorage = (() => {
   }
 })();
 const progressRepository = new ProgressRepository(progressStorage);
+const guidedTutorialRepository = new GuidedTutorialRepository(progressStorage);
+let guidedTutorialComplete = guidedTutorialRepository.isCurrentComplete();
+let tutorialIntroDismissed = false;
 const progressLoad = progressRepository.load();
 let progress: GlowfinProgressV2 = progressLoad.progress;
 const accessPreferenceRepository = new AccessPreferenceRepository(progressStorage);
@@ -238,6 +243,7 @@ let gameplayActive = false;
 let firstRunTutorial: FirstRunTutorial | null = null;
 let tutorialStep: TutorialStep | null = null;
 let tutorialCompleteAtSec: number | null = null;
+let tutorialSessionSource: "required" | "replay" | null = null;
 
 function signatureCueForRun(): SignatureCuePresentation | null {
   if (!gameplayActive || awaitingRestart || firstRunTutorial) return null;
@@ -418,6 +424,7 @@ function refreshMoonWell(): void {
   const day = currentDailyDay().dayId;
   moonWell.setDailyLabel(day, progress.daily.dailyClaims.includes(day));
   moonWell.renderObjectives(objectivePresentations());
+  moonWell.setTutorialStatus(guidedTutorialComplete);
   refreshWardrobe();
 }
 
@@ -427,12 +434,16 @@ function showMoonWell(panel: MoonWellPanel = "home"): void {
   firstRunTutorial = null;
   tutorialStep = null;
   tutorialCompleteAtSec = null;
+  tutorialSessionSource = null;
   moonWell.showTutorial(null);
   hud.hideGameOver();
   view?.applyCosmetics(progress.progression.equippedCosmetics);
   refreshMoonWell();
   moonWell.show(hudMeta());
   moonWell.showPanel(panel);
+  moonWell.showTutorialIntro(
+    panel === "home" && !guidedTutorialComplete && !tutorialIntroDismissed
+  );
   document.documentElement.dataset["glowfinScreen"] = "hub";
   telemetry.track("hub_view", { panel });
 }
@@ -616,7 +627,10 @@ function reportRunStart(): void {
   }
 }
 
-function startRun(mode: GlowfinRunMode = "fresh"): void {
+function startRun(
+  mode: GlowfinRunMode = "fresh",
+  guidedTutorialSource: "required" | "replay" | null = null
+): void {
   const day = currentDailyDay();
   const dailyMode = mode === "daily" || mode === "daily-ghost";
   const replay = mode === "ghost"
@@ -648,6 +662,7 @@ function startRun(mode: GlowfinRunMode = "fresh"): void {
   timestep.reset();
   view?.resetTrail();
   view?.applyCosmetics(progress.progression.equippedCosmetics);
+  moonWell.showTutorialIntro(false);
   moonWell.hide();
   hud.hideGameOver();
   hud.setSubmitState("unavailable");
@@ -660,7 +675,8 @@ function startRun(mode: GlowfinRunMode = "fresh"): void {
   }
   audio.resetRun(run.scoring.multiplier);
   document.documentElement.dataset["glowfinScreen"] = "run";
-  firstRunTutorial = activeRunMode === "fresh" && !progress.onboarding.tutorialCompleted
+  tutorialSessionSource = activeRunMode === "fresh" ? guidedTutorialSource : null;
+  firstRunTutorial = tutorialSessionSource
     ? new FirstRunTutorial()
     : null;
   tutorialStep = firstRunTutorial?.step ?? null;
@@ -669,7 +685,10 @@ function startRun(mode: GlowfinRunMode = "fresh"): void {
     tutorialStep ? tutorialPresentation(tutorialStep) : null
   );
   if (firstRunTutorial) {
-    telemetry.track("tutorial_start", { source: "tap-to-dive" }, activeRunId);
+    telemetry.track("tutorial_start", {
+      source: tutorialSessionSource ?? "required",
+      tutorialVersion: GUIDED_TUTORIAL_VERSION
+    }, activeRunId);
   }
   reportRunStart();
 }
@@ -677,9 +696,38 @@ function startRun(mode: GlowfinRunMode = "fresh"): void {
 moonWell.onDive(() => {
   telemetry.track("tap_to_dive", {
     firstRun: !progress.onboarding.firstRunCompleted,
-    tutorialRequired: !progress.onboarding.tutorialCompleted
+    tutorialRequired: !guidedTutorialComplete
   });
   startRun("fresh");
+});
+
+moonWell.onTutorialStart(() => {
+  const source = guidedTutorialComplete ? "replay" : "required";
+  tutorialIntroDismissed = true;
+  startRun("fresh", source);
+});
+
+moonWell.onTutorialSkip(() => {
+  if (firstRunTutorial) {
+    telemetry.track("tutorial_skip", {
+      source: "in-run",
+      step: tutorialStep ?? "unknown",
+      tutorialVersion: GUIDED_TUTORIAL_VERSION
+    }, activeRunId);
+    firstRunTutorial = null;
+    tutorialStep = null;
+    tutorialCompleteAtSec = null;
+    tutorialSessionSource = null;
+    moonWell.showTutorial(null);
+    return;
+  }
+  tutorialIntroDismissed = true;
+  moonWell.showTutorialIntro(false);
+  telemetry.track("tutorial_skip", {
+    source: "intro",
+    step: "intro",
+    tutorialVersion: GUIDED_TUTORIAL_VERSION
+  });
 });
 
 moonWell.onOpenPanel((panel) => {
@@ -1314,7 +1362,14 @@ function frame(nowMs: number): void {
       const nextStep = firstRunTutorial.update({
         elapsedSec: run.sim.elapsedSec,
         steering: command,
-        nearMiss: events.encounters.some((encounter) => encounter.kind === "near-miss"),
+        gateCleared: events.signatureEvents.some((event) => (
+          event.kind === "safe-route" ||
+          event.kind === "moonflash-route" ||
+          event.kind === "shutter-pass"
+        )),
+        nearMiss:
+          events.encounters.some((encounter) => encounter.kind === "near-miss") ||
+          events.signatureEvents.some((event) => event.kind === "moonflash-route"),
         collision: events.encounters.some((encounter) => encounter.kind === "collision")
       });
       if (nextStep !== previousStep) {
@@ -1326,12 +1381,16 @@ function frame(nowMs: number): void {
         }, activeRunId);
         if (nextStep === "complete") {
           tutorialCompleteAtSec = run.sim.elapsedSec;
+          guidedTutorialRepository.completeCurrent();
+          guidedTutorialComplete = true;
           progress = progressRepository.completeTutorial();
           updateProgressUi();
           telemetry.track("tutorial_complete", {
             elapsedSec: run.sim.elapsedSec,
             collisionSeen: run.collisionCount > 0,
-            nearMisses: run.scoring.nearMissCount
+            nearMisses: run.scoring.nearMissCount,
+            source: tutorialSessionSource ?? "required",
+            tutorialVersion: GUIDED_TUTORIAL_VERSION
           }, activeRunId);
           void telemetry.flush();
           void synchronizeCloudProgress();
@@ -1344,6 +1403,7 @@ function frame(nowMs: number): void {
         firstRunTutorial = null;
         tutorialStep = null;
         tutorialCompleteAtSec = null;
+        tutorialSessionSource = null;
         moonWell.showTutorial(null);
       }
     }
@@ -1373,6 +1433,7 @@ function frame(nowMs: number): void {
       firstRunTutorial = null;
       tutorialStep = null;
       tutorialCompleteAtSec = null;
+      tutorialSessionSource = null;
       moonWell.showTutorial(null);
       document.documentElement.dataset["glowfinScreen"] = "post-run";
       const summary: ReplaySummary = {

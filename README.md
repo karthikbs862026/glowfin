@@ -7,9 +7,10 @@ this README covers local setup only.
 
 ## Status
 
-**Version 38 — Signature Obstacle Variety release candidate. Version 37 is the
-merged and deployed first-ten-minutes/economy baseline and remains the rollback
-artifact until Version 38 clears its immutable GitHub and hosted gates.**
+**Version 39 — Guided Onboarding & Store-Ready Mobile Experience is in
+development from the merged and deployed Version 38 baseline. The first slice
+replaces the undiscoverable legacy tutorial with an explicit, replayable guided
+dive; wrapper and physical-device certification remain open.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
@@ -115,6 +116,21 @@ Version 38 completes the expert-review mechanical-variety scope:
   of additional static scenery; all remain non-colliding and pool-bounded
 - phone-readable route, cadence and direction cues, plus consent-gated semantic
   instrumentation that does not capture steering or touch paths
+
+Version 39 starts the store-ready mobile scope with a corrected tutorial:
+
+- a first-hub tutorial invitation that appears even for returning Version 38
+  saves, plus permanent replay entry points in the Moon Well and Settings
+- six short learn-by-doing lessons for automatic swimming, separate left/right
+  steering, cyan safe routes, close-pass/Moonflash reward and collision recovery
+- phone-readable action cues, visible progress, `Skip for now`, replay and
+  bounded per-step fallbacks that cannot trap a player
+- a privacy-safe device-local Version 39 completion stamp and consent-gated
+  tutorial start, step, skip/replay and completion instrumentation
+
+The Capacitor wrappers, complete Android/iPhone device matrix, native haptics,
+store metadata, rendered share clips, deep links and physical audio/lifecycle
+evidence remain Version 39 work in progress.
 
 The frozen visual/gameplay baseline includes:
 
