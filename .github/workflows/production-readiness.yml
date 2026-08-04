@@ -1,0 +1,43 @@
+name: production-readiness
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: production-readiness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fault-and-release-gate:
+    name: fault, privacy and rollback gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Deterministic fault, retention, abuse and rollback matrix
+        run: npm run production-gate
+      - name: Build and seal the immutable candidate
+        run: npm run build
+        env:
+          GLOWFIN_ENVIRONMENT: staging
+          GLOWFIN_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source and artifact fingerprint
+        run: npm run check:release-metadata
+        env:
+          GLOWFIN_EXPECTED_ENVIRONMENT: staging
+          GLOWFIN_EXPECTED_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: glowfin-sealed-manifest-${{ github.sha }}
+          path: dist/release.json
+          retention-days: 365

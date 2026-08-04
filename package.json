@@ -11,7 +11,7 @@
     "predev": "npm run art:build-runtime-glbs",
     "dev": "vite",
     "prebuild": "node scripts/clean-dist.mjs && npm run art:build-runtime-glbs",
-    "build": "tsc --noEmit && vite build --emptyOutDir",
+    "build": "tsc --noEmit && vite build --emptyOutDir && node scripts/seal-release-manifest.mjs",
     "build:hosted-verifier": "vite build --config vite.verifier.config.ts",
     "preview": "vite preview",
     "lint": "eslint . --ignore-pattern build --max-warnings=0",
@@ -39,7 +39,9 @@
     "check:release-metadata": "node scripts/check-release-metadata.mjs",
     "check:hosted-verifier": "node scripts/check-hosted-verifier.mjs",
     "smoke:deployment": "node scripts/smoke-deployment.mjs",
-    "certify:phase3": "npm run lint && npm run typecheck && npm run test -- --run && npm run build && npm run build:hosted-verifier && npm run check:hosted-verifier && npm run check:mounted-build && npm run check:bundle-size && npm run check:no-debug && npm run check:release-metadata && npm run art-gate:test && npm run art-gate:structural"
+    "check:rollback-rehearsal": "node scripts/check-rollback-rehearsal.mjs",
+    "production-gate": "vitest run tests/networkPolicy.test.ts tests/productionReadiness.test.ts tests/productionJourney.test.ts tests/rewardAuthority.test.ts tests/retentionJourney.test.ts tests/cloud.test.ts tests/rewardedIntegration.test.ts && npm run check:rollback-rehearsal",
+    "certify:phase3": "npm run lint && npm run typecheck && npm run test -- --run && npm run build && npm run build:hosted-verifier && npm run check:hosted-verifier && npm run check:mounted-build && npm run check:bundle-size && npm run check:no-debug && npm run check:release-metadata && npm run production-gate && npm run art-gate:test && npm run art-gate:structural"
   },
   "dependencies": {
     "three": "^0.165.0"

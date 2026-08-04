@@ -107,3 +107,15 @@ phones and a future reference iPhone before unconditional Phase 3 sign-off:
    the canvas generation increments exactly once after restoration, the scene
    is rebuilt without duplicate audio/input, and play resumes without a time
    jump. Confirm a permanently unsupported WebGL2 device shows the fallback.
+
+## Version 36 production-device rows — AWAITING PHYSICAL EXECUTION
+
+| Device | 30-minute thermal/battery/audio | interruption + context recovery | consent on/off next-day journey | Result |
+|---|---|---|---|---|
+| Samsung Galaxy S22 Ultra | Not rerun for V36 | Not rerun for V36 | Not run | Conditional |
+| OPPO Reno3 Pro | Not rerun for V36 | Not rerun for V36 | Not run | Conditional |
+| Real iPhone Safari | Not available | Not available | Not run | Blocking public promotion |
+
+Do not replace these rows with desktop emulation or the simulated renderer
+soak. Record OS/browser, GPU string, start/end battery, thermal warnings, audio
+route, interruption sequence, source SHA and artifact digest when executed.

@@ -35,7 +35,10 @@ describe("Version 34 rewarded-video provider bridge", () => {
         },
         async show(placement: string) {
           calls.push(`show:${placement}`);
-          return { status: "completed" as const, receipt: "host-private" };
+          return {
+            status: "completed" as const,
+            receipt: "receipt_abcdefghijklmnopqrstuvwxyz"
+          };
         }
       }
     } as unknown as typeof globalThis;
@@ -52,7 +55,10 @@ describe("Version 34 rewarded-video provider bridge", () => {
       earnedPearls: 20
     });
     expect(offer.eligible).toBe(true);
-    expect(await hooks.show(offer)).toBe("completed");
+    expect(await hooks.show(offer)).toEqual({
+      status: "completed",
+      receipt: "receipt_abcdefghijklmnopqrstuvwxyz"
+    });
     expect(calls).toEqual([
       "available:double-lumen-pearls",
       "show:double-lumen-pearls"

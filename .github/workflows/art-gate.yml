@@ -205,3 +205,33 @@ jobs:
           name: glowfin-staging-${{ github.sha }}
           path: dist
           retention-days: 30
+
+  release-tag:
+    name: immutable-release-tag
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [structural, fast, full, soak, staging-artifact]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create immutable release tag after every release gate passes
+        shell: bash
+        run: |
+          version="$(node -e 'const fs=require("fs"); process.stdout.write(String(JSON.parse(fs.readFileSync("config/release.json","utf8")).version))')"
+          tag="glowfin-v${version}"
+          remote="$(git ls-remote --tags origin "refs/tags/${tag}^{}" | cut -f1)"
+          if [[ -z "${remote}" ]]; then
+            remote="$(git ls-remote --tags origin "refs/tags/${tag}" | cut -f1)"
+          fi
+          if [[ -n "${remote}" ]]; then
+            [[ "${remote}" == "${GITHUB_SHA}" ]] || {
+              echo "${tag} already points at a different commit"
+              exit 1
+            }
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${tag}" "${GITHUB_SHA}" -m "Glowfin Version ${version}"
+          git push origin "refs/tags/${tag}"

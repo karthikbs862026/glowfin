@@ -1,4 +1,9 @@
 import type { TelemetryConsent } from "../persistence/progress";
+import {
+  fetchWithPolicy,
+  WRITE_NETWORK_POLICY,
+  type FetchLike
+} from "../operations/networkPolicy";
 
 export const TELEMETRY_SCHEMA_VERSION = 1 as const;
 export const MAX_TELEMETRY_BATCH = 32;
@@ -38,6 +43,10 @@ export const TELEMETRY_EVENT_NAMES = [
   "runtime_support",
   "runtime_pause",
   "runtime_resume",
+  "startup_failure",
+  "cloud_sync_result",
+  "service_result",
+  "release_manifest_check",
   "error",
   "rewarded_offer",
   "rewarded_start",
@@ -111,20 +120,20 @@ export function isTelemetryEvent(value: unknown): value is GlowfinTelemetryEvent
 
 export class HostedTelemetryTransport implements TelemetryTransport {
   constructor(
-    private readonly fetcher: typeof fetch = fetch,
+    private readonly fetcher: FetchLike = fetch,
     private readonly endpoint = "/api/glowfin/telemetry"
   ) {}
 
   async send(events: readonly GlowfinTelemetryEvent[]): Promise<void> {
     if (events.length < 1) return;
-    const response = await this.fetcher(this.endpoint, {
+    const response = await fetchWithPolicy(this.fetcher, this.endpoint, {
       method: "POST",
       cache: "no-store",
       credentials: "same-origin",
       keepalive: true,
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ events: events.slice(0, MAX_TELEMETRY_BATCH) })
-    });
+    }, WRITE_NETWORK_POLICY);
     if (!response.ok) {
       throw new Error(`Telemetry delivery failed (${response.status}).`);
     }

@@ -4,16 +4,17 @@ import {
   migrateProgressValue,
   validateProgress
 } from "./progress";
+import {
+  fetchWithPolicy,
+  READ_NETWORK_POLICY,
+  WRITE_NETWORK_POLICY,
+  type FetchLike
+} from "../operations/networkPolicy";
 
 export interface CloudProgressRecord {
   revision: number;
   progress: GlowfinProgressV2;
 }
-
-export type FetchLike = (
-  input: RequestInfo | URL,
-  init?: RequestInit
-) => Promise<Response>;
 
 export class CloudProgressConflict extends Error {
   constructor(readonly current: CloudProgressRecord | null) {
@@ -53,13 +54,13 @@ export class HostedProgressClient {
   ) {}
 
   async load(signal?: AbortSignal): Promise<CloudProgressRecord | null> {
-    const response = await this.fetcher(this.endpoint, {
+    const response = await fetchWithPolicy(this.fetcher, this.endpoint, {
       method: "GET",
       cache: "no-store",
       credentials: "same-origin",
       headers: { accept: "application/json" },
       signal
-    });
+    }, READ_NETWORK_POLICY);
     if (response.status === 404) return null;
     if (!response.ok) throw new Error(`Cloud progress load failed (${response.status}).`);
     const record = parseRecord(await readJson(response));
@@ -79,7 +80,7 @@ export class HostedProgressClient {
     if (body.length > MAX_PROGRESS_BYTES) {
       throw new Error("Glowfin progress is too large for cloud storage.");
     }
-    const response = await this.fetcher(this.endpoint, {
+    const response = await fetchWithPolicy(this.fetcher, this.endpoint, {
       method: "PUT",
       cache: "no-store",
       credentials: "same-origin",
@@ -89,7 +90,7 @@ export class HostedProgressClient {
       },
       body,
       signal
-    });
+    }, WRITE_NETWORK_POLICY);
     const parsed = parseRecord(await readJson(response));
     if (response.status === 409) throw new CloudProgressConflict(parsed);
     if (!response.ok) throw new Error(`Cloud progress save failed (${response.status}).`);

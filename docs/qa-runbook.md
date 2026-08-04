@@ -45,6 +45,13 @@ clear any cached standalone/PWA copy before beginning.
     and foreground mid-drag, then restore one lost WebGL context; confirm input
     resets, simulation time does not jump, the runtime overlay clears and the
     canvas renderer generation advances exactly once.
+12. For Version 36+, disconnect the network during a board read and confirm one
+    bounded recovery; repeat during save, score, Moonflash and rewarded writes
+    and confirm none are silently replayed. Exercise the published route limits,
+    expiry cleanup and operations dashboard using test-only records.
+13. Confirm `release.json`, the visible badge and response headers identify the
+    same source. Record the artifact digest, then rehearse selection of the saved
+    Version 35 checkpoint without redeploying it.
 
 Record device model, OS/browser version, GPU string, source SHA, start/end time,
 battery change, thermal observation and pass/fail in `docs/device-matrix.md`.
