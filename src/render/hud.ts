@@ -6,6 +6,14 @@ import { eyeHueForEnergy } from "./creature";
 import type { TelemetryConsent } from "../persistence/progress";
 import type { CosmeticCategory } from "../meta/progression";
 import type { StreakSummary } from "../meta/daily";
+import type {
+  LeaderboardEntryV1,
+  LeaderboardSnapshotV1
+} from "../competitive/leaderboard";
+import type {
+  LeaderboardDivision,
+  MotorAssistMode
+} from "../competitive/assists";
 
 export interface HudObjectivePresentation {
   id: string;
@@ -35,6 +43,7 @@ export interface RunEndPresentation extends HudMetaPresentation {
   dailyDayId: string;
   dailyCompleted: boolean;
   calendarRewardRejected: boolean;
+  leaderboardDivision: LeaderboardDivision;
 }
 
 export class Hud {
@@ -56,8 +65,15 @@ export class Hud {
   private readonly unlockBanner: HTMLElement;
   private readonly objectiveList: HTMLElement;
   private readonly streak: HTMLElement;
+  private readonly competitiveDivision: HTMLElement;
+  private readonly leaderboardStatus: HTMLElement;
+  private readonly leaderboardList: HTMLElement;
   private readonly raceBest: HTMLButtonElement;
   private readonly dailyTrial: HTMLButtonElement;
+  private readonly submitScore: HTMLButtonElement;
+  private readonly shareClip: HTMLButtonElement;
+  private readonly motorAssist: HTMLButtonElement;
+  private readonly rewardedPearls: HTMLButtonElement;
   private readonly telemetryChoice: HTMLButtonElement;
   private readonly wardrobe = new Map<CosmeticCategory, HTMLButtonElement>();
 
@@ -80,8 +96,15 @@ export class Hud {
     this.unlockBanner = Hud.require(root, "hud-unlock-banner");
     this.objectiveList = Hud.require(root, "hud-objectives");
     this.streak = Hud.require(root, "hud-streak");
+    this.competitiveDivision = Hud.require(root, "hud-competitive-division");
+    this.leaderboardStatus = Hud.require(root, "hud-leaderboard-status");
+    this.leaderboardList = Hud.require(root, "hud-leaderboard-list");
     this.raceBest = Hud.requireButton(root, "hud-race-best");
     this.dailyTrial = Hud.requireButton(root, "hud-daily-trial");
+    this.submitScore = Hud.requireButton(root, "hud-submit-score");
+    this.shareClip = Hud.requireButton(root, "hud-share-clip");
+    this.motorAssist = Hud.requireButton(root, "hud-motor-assist");
+    this.rewardedPearls = Hud.requireButton(root, "hud-rewarded-pearls");
     this.telemetryChoice = Hud.requireButton(root, "hud-telemetry-choice");
     for (const category of ["glow", "fin", "trail", "aura"] as const) {
       this.wardrobe.set(category, Hud.requireButton(root, `hud-cosmetic-${category}`));
@@ -195,6 +218,22 @@ export class Hud {
     this.wireAction(this.dailyTrial, listener);
   }
 
+  onSubmitScore(listener: () => void): void {
+    this.wireAction(this.submitScore, listener);
+  }
+
+  onShareClip(listener: () => void): void {
+    this.wireAction(this.shareClip, listener);
+  }
+
+  onMotorAssistToggle(listener: () => void): void {
+    this.wireAction(this.motorAssist, listener);
+  }
+
+  onRewardedPearls(listener: () => void): void {
+    this.wireAction(this.rewardedPearls, listener);
+  }
+
   onCosmeticCycle(category: CosmeticCategory, listener: () => void): void {
     const button = this.wardrobe.get(category);
     if (button) this.wireAction(button, listener);
@@ -206,6 +245,85 @@ export class Hud {
 
   isActionTarget(target: EventTarget | null): boolean {
     return target instanceof Element && Boolean(target.closest("[data-hud-action]"));
+  }
+
+  setMotorAssist(mode: MotorAssistMode): void {
+    this.motorAssist.textContent = mode === "reduced-travel"
+      ? "Steering · Reduced travel (Assisted)"
+      : "Steering · Standard division";
+    this.motorAssist.setAttribute("aria-pressed", mode === "reduced-travel" ? "true" : "false");
+  }
+
+  setSubmitState(
+    state: "ready" | "submitting" | "submitted" | "unavailable" | "rejected",
+    rank: number | null = null
+  ): void {
+    this.submitScore.disabled = state === "unavailable";
+    this.submitScore.dataset["state"] = state;
+    this.submitScore.textContent = state === "submitting"
+      ? "Validating replay…"
+      : state === "submitted"
+        ? rank ? `Ranked #${rank}` : "Score validated"
+        : state === "rejected"
+          ? "Replay was not ranked"
+          : "Submit verified score";
+  }
+
+  setShareState(
+    state: "ready" | "publishing" | "shared" | "unavailable" | "failed"
+  ): void {
+    this.shareClip.disabled = state === "unavailable";
+    this.shareClip.dataset["state"] = state;
+    this.shareClip.textContent = state === "publishing"
+      ? "Creating Moonflash…"
+      : state === "shared"
+        ? "Moonflash link ready"
+        : state === "failed"
+          ? "Moonflash unavailable"
+          : "Share best Moonflash";
+  }
+
+  setRewardedOffer(pearls: number | null, state: "ready" | "showing" | "claimed" | "failed" = "ready"): void {
+    const available = pearls !== null && pearls > 0;
+    this.rewardedPearls.disabled = !available || state === "claimed";
+    this.rewardedPearls.dataset["state"] = state;
+    this.rewardedPearls.textContent = state === "showing"
+      ? "Opening rewarded video…"
+      : state === "claimed"
+        ? "Bonus Lumen secured"
+        : state === "failed"
+          ? "Rewarded video unavailable"
+          : available
+            ? `Watch · +${pearls} bonus Lumen`
+            : "Rewarded video unavailable";
+  }
+
+  setLeaderboard(
+    snapshot: LeaderboardSnapshotV1 | null,
+    status: "loading" | "ready" | "empty" | "offline" = "ready"
+  ): void {
+    this.leaderboardStatus.textContent = status === "loading"
+      ? "Loading verified currents…"
+      : status === "offline"
+        ? "Verified board unavailable offline"
+        : status === "empty"
+          ? "No verified currents yet"
+          : snapshot
+            ? `${snapshot.scope === "daily" ? "Daily" : "Global"} · ${snapshot.division} division`
+            : "Verified currents";
+    const entries: LeaderboardEntryV1[] = snapshot?.entries ?? [];
+    this.leaderboardList.replaceChildren(...entries.map((entry) => {
+      const row = document.createElement("div");
+      row.className = "hud-leaderboard-row";
+      const rank = document.createElement("strong");
+      rank.textContent = `#${entry.rank}`;
+      const alias = document.createElement("span");
+      alias.textContent = entry.alias;
+      const score = document.createElement("b");
+      score.textContent = Math.floor(entry.score).toLocaleString();
+      row.append(rank, alias, score);
+      return row;
+    }));
   }
 
   showGameOver(
@@ -254,6 +372,9 @@ export class Hud {
     this.dailyTrial.textContent = presentation.dailyCompleted
       ? `Replay Daily Tide Trial · ${presentation.dailyDayId}`
       : `Daily Tide Trial · ${presentation.dailyDayId}`;
+    this.competitiveDivision.textContent = presentation.leaderboardDivision === "assisted"
+      ? "Assisted division · replay validated separately"
+      : "Standard division · deterministic replay validation";
     this.gameOver.style.display = "flex";
   }
 

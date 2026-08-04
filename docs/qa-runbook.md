@@ -32,6 +32,13 @@ clear any cached standalone/PWA copy before beginning.
    rewards, equip one unlocked cosmetic, race the saved daily ghost, advance to
    a simulated next UTC day and confirm the consented return funnel exactly
    once. Repeat with consent denied and confirm zero telemetry is queued.
+9. For Version 34+, submit one standard and one reduced-travel run. Confirm the
+   server-derived score appears only in its matching division, a modified
+   replay is rejected, and no identity beyond the Moonfin alias is exposed.
+10. Publish a Moonflash only from its explicit button. Verify native sharing or
+    the clipboard fallback, expiry metadata and the absence of pointer data.
+    If an approved rewarded provider is injected, complete/cancel/fail it and
+    confirm only one Lumen bonus can be granted.
 
 Record device model, OS/browser version, GPU string, source SHA, start/end time,
 battery change, thermal observation and pass/fail in `docs/device-matrix.md`.

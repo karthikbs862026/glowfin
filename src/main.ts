@@ -49,7 +49,28 @@ import {
   tideProgressForXp,
   type CosmeticCategory
 } from "./meta/progression";
-import { RewardedVideoHooks } from "./monetization/rewarded";
+import {
+  BrowserRewardedVideoProvider,
+  LIVE_REWARDED_VIDEO_FLAGS,
+  RewardedVideoHooks,
+  type RewardedOffer
+} from "./monetization/rewarded";
+import {
+  AccessPreferenceRepository,
+  classifyRunAccess,
+  steeringSensitivityMultiplier,
+  type RunAccessClassificationV1
+} from "./competitive/assists";
+import {
+  HostedLeaderboardClient,
+  type LeaderboardSubmissionV1,
+  type LeaderboardScope
+} from "./competitive/leaderboard";
+import {
+  HostedMoonflashClient,
+  MoonflashRecorder,
+  type MoonflashClipV1
+} from "./sharing/clips";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
 if (!canvas) throw new Error("Canvas #glowfin-canvas not found");
@@ -86,21 +107,32 @@ const progressStorage = (() => {
 const progressRepository = new ProgressRepository(progressStorage);
 const progressLoad = progressRepository.load();
 let progress: GlowfinProgressV2 = progressLoad.progress;
+const accessPreferenceRepository = new AccessPreferenceRepository(progressStorage);
+let accessPreferences = accessPreferenceRepository.load();
+steering.setSensitivityMultiplier(steeringSensitivityMultiplier(accessPreferences));
 const telemetry = new TelemetryClient(
   progress.telemetryConsent,
   new HostedTelemetryTransport()
 );
 const cloudProgress = new HostedProgressClient();
 const dailyClock = new HostedDailyClockClient();
-const rewardedVideo = new RewardedVideoHooks();
+const leaderboard = new HostedLeaderboardClient();
+const moonflash = new HostedMoonflashClient();
+const rewardedProvider = BrowserRewardedVideoProvider.fromGlobal();
+const rewardedVideo = new RewardedVideoHooks(
+  rewardedProvider,
+  rewardedProvider ? LIVE_REWARDED_VIDEO_FLAGS : undefined
+);
 
 let cloudRevision = 0;
 let cloudSyncInFlight: Promise<void> | null = null;
 let cloudSyncRequested = false;
 let run = new Run(generateSeed(), tuning);
 let recorder = new ReplayRecorder(run.seed, tuning.version);
+let moonflashRecorder = new MoonflashRecorder();
 let activeRunId = createRunId();
 let activeRunMode: GlowfinRunMode = "fresh";
+let activeClassification: RunAccessClassificationV1 = classifyRunAccess(accessPreferences);
 let activeRunDayId: string | null = null;
 let authoritativeDailyDay: string | null = null;
 let observedSessionDay: string | null = null;
@@ -113,9 +145,24 @@ let ghostVisible = false;
 let ghostCompletionReported = false;
 let awaitingRestart = false;
 
+interface CompletedCompetitiveRun {
+  runId: string;
+  scope: LeaderboardScope;
+  dayId: string | null;
+  submission: LeaderboardSubmissionV1 | null;
+  clip: MoonflashClipV1 | null;
+  classification: RunAccessClassificationV1;
+  rewardedPearls: number;
+  rewardedOffer: RewardedOffer | null;
+  submitted: boolean;
+  shareUrl: string | null;
+}
+
+let completedCompetitiveRun: CompletedCompetitiveRun | null = null;
+
 if (progress.telemetryConsent === "granted") {
   telemetry.track("session_start", {
-    release: 33,
+    release: 34,
     tuningVersion: tuning.version,
     saveSchemaVersion: progress.schemaVersion
   });
@@ -172,6 +219,7 @@ function updateProgressUi(): void {
   hud.setTelemetryConsent(progress.telemetryConsent);
   hud.setMeta(hudMeta());
   view.applyCosmetics(progress.progression.equippedCosmetics);
+  hud.setMotorAssist(accessPreferences.motorAssist);
 }
 
 function observeSessionDay(dayId: string): void {
@@ -269,7 +317,10 @@ function reportRunStart(): void {
         ? activeRunDayId && raceableDailyReplay(activeRunDayId)
         : raceableReplay()
     ),
-    dailyDay: activeRunDayId ?? "none"
+    dailyDay: activeRunDayId ?? "none",
+    division: activeClassification.division,
+    motorAssist: activeClassification.motorAssist,
+    reducedMotion: activeClassification.reducedMotion
   }, activeRunId);
   if (activeRunMode === "daily" || activeRunMode === "daily-ghost") {
     telemetry.track("daily_trial_start", {
@@ -303,6 +354,8 @@ function startRun(mode: GlowfinRunMode = "fresh"): void {
   const seed = replay?.seed ?? (dailyMode ? dailySeed(day.dayId) : generateSeed());
   run = new Run(seed, tuning);
   recorder = new ReplayRecorder(run.seed, tuning.version);
+  moonflashRecorder = new MoonflashRecorder();
+  activeClassification = classifyRunAccess(accessPreferences);
   activeRunId = createRunId();
   simulationSteps = 0;
   ghostRun = replay ? new Run(replay.seed, tuning) : null;
@@ -310,10 +363,14 @@ function startRun(mode: GlowfinRunMode = "fresh"): void {
   ghostVisible = Boolean(ghostRun && ghostReplay && progress.ghostEnabled);
   ghostCompletionReported = false;
   awaitingRestart = false;
+  completedCompetitiveRun = null;
   steering.reset();
   timestep.reset();
   view.resetTrail();
   hud.hideGameOver();
+  hud.setSubmitState("unavailable");
+  hud.setShareState("unavailable");
+  hud.setRewardedOffer(null);
   if (ghostVisible) {
     hud.updateGhostGap(0, 0);
   } else {
@@ -335,6 +392,153 @@ hud.onRaceBest(() => {
 
 hud.onDailyTrial(() => {
   if (awaitingRestart) startRun("daily");
+});
+
+async function loadCompetitiveBoard(state: CompletedCompetitiveRun): Promise<void> {
+  hud.setLeaderboard(null, "loading");
+  try {
+    const snapshot = await leaderboard.list(
+      state.scope,
+      state.classification.division,
+      state.dayId,
+      5
+    );
+    if (completedCompetitiveRun !== state) return;
+    hud.setLeaderboard(snapshot, snapshot.entries.length > 0 ? "ready" : "empty");
+    telemetry.track("leaderboard_view", {
+      scope: state.scope,
+      division: state.classification.division,
+      entries: snapshot.entries.length
+    }, state.runId);
+  } catch {
+    if (completedCompetitiveRun === state) hud.setLeaderboard(null, "offline");
+  }
+}
+
+hud.onSubmitScore(() => {
+  const state = completedCompetitiveRun;
+  if (!awaitingRestart || !state?.submission || state.submitted) return;
+  state.submitted = true;
+  hud.setSubmitState("submitting");
+  telemetry.track("leaderboard_submit", {
+    scope: state.scope,
+    division: state.classification.division,
+    score: state.submission.replay.summary.score
+  }, state.runId);
+  void leaderboard.submit(state.submission).then((snapshot) => {
+    if (completedCompetitiveRun !== state) return;
+    hud.setLeaderboard(snapshot, snapshot.entries.length > 0 ? "ready" : "empty");
+    hud.setSubmitState("submitted", snapshot.playerRank);
+    telemetry.track("leaderboard_result", {
+      accepted: true,
+      scope: state.scope,
+      division: state.classification.division,
+      rank: snapshot.playerRank ?? -1,
+      validationVersion: snapshot.validationVersion
+    }, state.runId);
+    void telemetry.flush();
+  }).catch(() => {
+    if (completedCompetitiveRun !== state) return;
+    hud.setSubmitState("rejected");
+    telemetry.track("leaderboard_result", {
+      accepted: false,
+      scope: state.scope,
+      division: state.classification.division
+    }, state.runId);
+    void telemetry.flush();
+  });
+});
+
+hud.onShareClip(() => {
+  const state = completedCompetitiveRun;
+  if (!awaitingRestart || !state?.clip) return;
+  if (state.shareUrl) {
+    void navigator.clipboard?.writeText(state.shareUrl);
+    return;
+  }
+  hud.setShareState("publishing");
+  telemetry.track("share_clip_create", {
+    division: state.classification.division,
+    momentStep: state.clip.momentStep,
+    multiplier: state.clip.moment.multiplier
+  }, state.runId);
+  void moonflash.publish(state.clip).then(async (published) => {
+    if (completedCompetitiveRun !== state) return;
+    state.shareUrl = published.shareUrl;
+    hud.setShareState("shared");
+    telemetry.track("share_clip_result", {
+      published: true,
+      division: state.classification.division
+    }, state.runId);
+    try {
+      if (typeof navigator.share === "function") {
+        await navigator.share({
+          title: "Glowfin Moonflash",
+          text: state.clip?.caption ?? "A Glowfin Moonflash",
+          url: published.shareUrl
+        });
+      } else {
+        await navigator.clipboard?.writeText(published.shareUrl);
+      }
+    } catch {
+      // The link is still available on the button when the native share sheet
+      // is cancelled or clipboard permission is denied.
+    }
+    void telemetry.flush();
+  }).catch(() => {
+    if (completedCompetitiveRun !== state) return;
+    hud.setShareState("failed");
+    telemetry.track("share_clip_result", {
+      published: false,
+      division: state.classification.division
+    }, state.runId);
+    void telemetry.flush();
+  });
+});
+
+hud.onMotorAssistToggle(() => {
+  if (!awaitingRestart) return;
+  accessPreferences = accessPreferenceRepository.toggleMotorAssist();
+  steering.setSensitivityMultiplier(steeringSensitivityMultiplier(accessPreferences));
+  hud.setMotorAssist(accessPreferences.motorAssist);
+  const nextClassification = classifyRunAccess(accessPreferences);
+  telemetry.track("assist_change", {
+    motorAssist: accessPreferences.motorAssist,
+    nextDivision: nextClassification.division
+  });
+  void telemetry.flush();
+});
+
+hud.onRewardedPearls(() => {
+  const state = completedCompetitiveRun;
+  const offer = state?.rewardedOffer;
+  if (!awaitingRestart || !state || !offer?.eligible || state.rewardedPearls < 1) return;
+  state.rewardedOffer = null;
+  hud.setRewardedOffer(state.rewardedPearls, "showing");
+  telemetry.track("rewarded_start", { placement: offer.placement }, state.runId);
+  void rewardedVideo.show(offer).then((result) => {
+    if (completedCompetitiveRun !== state) return;
+    telemetry.track("rewarded_complete", {
+      placement: offer.placement,
+      result
+    }, state.runId);
+    if (result !== "completed") {
+      hud.setRewardedOffer(state.rewardedPearls, "failed");
+      void telemetry.flush();
+      return;
+    }
+    const grant = progressRepository.grantRewardedPearls(state.runId, state.rewardedPearls);
+    progress = grant.progress;
+    updateProgressUi();
+    hud.setRewardedOffer(state.rewardedPearls, grant.granted ? "claimed" : "failed");
+    telemetry.track("rewarded_reward", {
+      placement: offer.placement,
+      pearls: grant.pearls,
+      duplicatePrevented: !grant.granted
+    }, state.runId);
+    void telemetry.flush();
+    void synchronizeCloudProgress();
+  });
 });
 
 for (const category of ["glow", "fin", "trail", "aura"] as const) {
@@ -359,7 +563,7 @@ hud.onTelemetryChoice(() => {
   updateProgressUi();
   if (consent === "granted") {
     telemetry.track("session_start", {
-      release: 33,
+      release: 34,
       tuningVersion: tuning.version,
       saveSchemaVersion: progress.schemaVersion,
       consentSource: "game-over"
@@ -464,6 +668,12 @@ function frame(nowMs: number): void {
         activeRunId
       );
     }
+    moonflashRecorder.record(
+      simulationSteps,
+      run.scoring.score,
+      run.scoring.multiplier,
+      events.encounters
+    );
     if (simulationSteps % 240 === 0) {
       telemetry.track("momentum_sample", {
         elapsedSec: run.sim.elapsedSec,
@@ -488,6 +698,7 @@ function frame(nowMs: number): void {
         collisions: run.collisionCount
       };
       const replay = recorder.finish(summary);
+      const clip = moonflashRecorder.finish(replay, activeClassification);
       const day = currentDailyDay();
       const rewardDay = activeRunDayId ?? day.dayId;
       const record = progressRepository.recordRun(summary, replay, {
@@ -566,18 +777,31 @@ function frame(nowMs: number): void {
         }, activeRunId);
       }
       const endedRunId = activeRunId;
-      void rewardedVideo.offer("run-recovery", {
-        runEnded: true,
-        collisionCount: summary.collisions,
-        earnedPearls: record.retention.totalPearls
-      }).then((offer) => {
-        if (offer.eligible) {
-          telemetry.track("rewarded_offer", {
-            placement: offer.placement,
-            reason: offer.reason
-          }, endedRunId);
-        }
-      });
+      const dailyCompetitive = activeRunMode === "daily" || activeRunMode === "daily-ghost";
+      const submission: LeaderboardSubmissionV1 | null = replay ? {
+        schemaVersion: 1,
+        runId: endedRunId,
+        mode: activeRunMode,
+        dayId: dailyCompetitive ? rewardDay : null,
+        replay,
+        classification: activeClassification
+      } : null;
+      const rewardedPearls = record.retention.runRewardClaimed
+        ? record.retention.runReward.pearls
+        : 0;
+      const competitiveState: CompletedCompetitiveRun = {
+        runId: endedRunId,
+        scope: dailyCompetitive ? "daily" : "global",
+        dayId: dailyCompetitive ? rewardDay : null,
+        submission,
+        clip,
+        classification: activeClassification,
+        rewardedPearls,
+        rewardedOffer: null,
+        submitted: false,
+        shareUrl: null
+      };
+      completedCompetitiveRun = competitiveState;
       hud.hideGhostGap();
       const dailyGhost = activeRunMode === "daily" || activeRunMode === "daily-ghost"
         ? raceableDailyReplay(rewardDay)
@@ -602,9 +826,30 @@ function frame(nowMs: number): void {
           streak: record.retention.streak,
           dailyDayId: rewardDay,
           dailyCompleted: progress.daily.dailyClaims.includes(rewardDay),
-          calendarRewardRejected: record.retention.calendarRewardRejected
+          calendarRewardRejected: record.retention.calendarRewardRejected,
+          leaderboardDivision: activeClassification.division
         }
       );
+      hud.setSubmitState(submission ? "ready" : "unavailable");
+      hud.setShareState(clip ? "ready" : "unavailable");
+      hud.setRewardedOffer(null);
+      void loadCompetitiveBoard(competitiveState);
+      if (rewardedPearls > 0) {
+        void rewardedVideo.offer("double-lumen-pearls", {
+          runEnded: true,
+          collisionCount: summary.collisions,
+          earnedPearls: rewardedPearls
+        }).then((offer) => {
+          if (completedCompetitiveRun !== competitiveState || !offer.eligible) return;
+          competitiveState.rewardedOffer = offer;
+          hud.setRewardedOffer(rewardedPearls);
+          telemetry.track("rewarded_offer", {
+            placement: offer.placement,
+            reason: offer.reason,
+            pearls: rewardedPearls
+          }, endedRunId);
+        });
+      }
       void telemetry.flush();
       void synchronizeCloudProgress();
     }

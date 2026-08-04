@@ -141,6 +141,12 @@ export interface RunRecordResult {
   retention: RetentionRunResult;
 }
 
+export interface RewardedPearlGrantResult {
+  progress: GlowfinProgressV2;
+  granted: boolean;
+  pearls: number;
+}
+
 export interface SessionObservation {
   progress: GlowfinProgressV2;
   dayId: string;
@@ -450,7 +456,7 @@ export function mergeProgress(
 }
 
 function safeClaimId(value: string): string {
-  const clean = value.replace(/[^a-zA-Z0-9:._-]/g, "").slice(0, 112);
+  const clean = value.replace(/[^a-zA-Z0-9:._-]/g, "").slice(0, 108);
   return clean || "unknown";
 }
 
@@ -647,6 +653,32 @@ export class ProgressRepository {
         streak
       }
     };
+  }
+
+  /**
+   * Idempotent cosmetic-economy reward. It cannot alter score, replay,
+   * collisions, Tide XP, unlock level or leaderboard classification.
+   */
+  grantRewardedPearls(runId: string, pearls: number): RewardedPearlGrantResult {
+    const amount = Math.max(0, Math.min(220, Math.floor(pearls)));
+    const claimId = `rewarded:${safeClaimId(runId)}`;
+    const claims = new Set(this.current.progression.recentRewardClaims);
+    if (amount < 1 || claims.has(claimId)) {
+      return { progress: this.snapshot(), granted: false, pearls: 0 };
+    }
+    claims.add(claimId);
+    this.current = {
+      ...this.current,
+      revision: this.current.revision + 1,
+      updatedAt: this.now().toISOString(),
+      progression: {
+        ...this.current.progression,
+        lumenPearls: clampCount(this.current.progression.lumenPearls + amount),
+        recentRewardClaims: Array.from(claims).sort().slice(-MAX_RECENT_REWARD_CLAIMS)
+      }
+    };
+    this.persist(this.current);
+    return { progress: this.snapshot(), granted: true, pearls: amount };
   }
 
   observeSession(dayId: string): SessionObservation {

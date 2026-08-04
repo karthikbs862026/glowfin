@@ -42,6 +42,7 @@ export class SteeringSource {
   private activePointerId: number | null = null;
   private anchorX = 0;
   private target = 0;
+  private sensitivityMultiplier = 1;
 
   constructor(private readonly options: SteeringOptions) {}
 
@@ -53,6 +54,23 @@ export class SteeringSource {
   /** True while a finger is actively steering. */
   isEngaged(): boolean {
     return this.activePointerId !== null;
+  }
+
+  /**
+   * Accessibility mapping applied only between runs. Values above one reduce
+   * the physical thumb travel needed for full deflection without adding input
+   * smoothing or latency. The active run snapshots this choice for assisted
+   * leaderboard classification.
+   */
+  setSensitivityMultiplier(multiplier: number): void {
+    this.sensitivityMultiplier = Number.isFinite(multiplier)
+      ? Math.max(0.5, Math.min(2, multiplier))
+      : 1;
+    this.reset();
+  }
+
+  getSensitivityMultiplier(): number {
+    return this.sensitivityMultiplier;
   }
 
   handle(event: AbstractPointerEvent): void {
@@ -95,7 +113,8 @@ export class SteeringSource {
 
   private computeTarget(normalizedX: number): number {
     const { dragRangeFraction, sensitivity, deadZone } = this.options;
-    const raw = ((normalizedX - this.anchorX) / dragRangeFraction) * sensitivity;
+    const raw = ((normalizedX - this.anchorX) / dragRangeFraction) *
+      sensitivity * this.sensitivityMultiplier;
     const clamped = Math.max(-1, Math.min(1, raw));
     const magnitude = Math.abs(clamped);
     if (magnitude < deadZone) return 0;

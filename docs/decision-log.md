@@ -747,3 +747,19 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Treat the physical first-run-to-next-day-return journey, Android real-time
   pass and iPhone Safari row as conditional acceptance evidence rather than
   claims made by automation.
+
+## 2026-08-04 — Add verified competition and controlled Moonflash sharing
+
+- Adopt ADR-0038 and label Version 34 as Phase 4B, based on merged Version 33.
+- Snapshot standard or assisted classification at run start. Reduced-motion is
+  presentation-only; reduced-travel steering receives a separate assisted
+  division without input smoothing or leaderboard exclusion.
+- Accept scores only after explicit submission and server re-simulation of the
+  checksummed replay with the exact tuning, seed, Daily day and fixed timestep.
+- Publish a privacy-safe alias and one best entry per player/board/division;
+  never return the stored user key or email-derived identity.
+- Select a bounded deterministic Moonflash from semantic near-miss events and
+  upload it only after the explicit share action. Expire hosted descriptors.
+- Keep competitive recovery disabled. Permit an injected host video provider
+  to grant one idempotent Lumen-only bonus that cannot alter score, Tide XP,
+  unlock level, collision state, replay or division.

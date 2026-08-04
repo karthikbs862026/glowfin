@@ -59,6 +59,12 @@ jobs:
           GLOWFIN_ENVIRONMENT: staging
           GLOWFIN_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
+      - name: Build hosted anti-cheat authority
+        run: npm run build:hosted-verifier
+
+      - name: Verify hosted anti-cheat authority
+        run: npm run check:hosted-verifier
+
       - name: Hosted mount safety check
         run: npm run check:mounted-build
 
@@ -77,4 +83,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: glowfin-release-metadata-${{ github.sha }}
-          path: dist/release.json
+          path: |
+            dist/release.json
+            build/hosted/glowfin-verifier.js
+            build/hosted/glowfin-verifier.js.map

@@ -7,10 +7,10 @@ this README covers local setup only.
 
 ## Status
 
-**Phase 4A — Version 33 Moonwake progression and Daily Tide release candidate.
-Version 32 remains the durable save, telemetry, replay and ghost foundation;
-Version 31 remains the certified gameplay and art baseline. Controls, camera,
-collision, scoring, world, character and audio tuning stay frozen.**
+**Phase 4B — Version 34 verified competition and controlled Moonflash sharing
+release candidate. Version 33 remains the merged progression and Daily Tide
+baseline; controls, camera, collision, scoring, world, character and audio
+tuning stay frozen.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
@@ -41,6 +41,18 @@ Version 33 completes the Phase 4A candidate on top of that foundation:
   conflict-safe cloud merging without reward duplication
 - consent-gated retention-funnel telemetry and disabled rewarded-video
   provider/placement interfaces, with no advertising SDK or purchases
+
+Version 34 completes the code-owned Phase 4B surface:
+
+- explicit standard and assisted leaderboard divisions, with reduced-motion
+  presentation remaining eligible for the standard division
+- server-authority replay validation that re-runs the fixed-step course,
+  collision and scoring simulation before a score is accepted
+- opt-in global and Daily Tide score submission with privacy-safe aliases
+- bounded deterministic Moonflash descriptors that select the strongest
+  near-miss and publish only after an explicit share action
+- a host-injected rewarded-video bridge limited to idempotent Lumen bonuses;
+  competitive recovery remains disabled and no provider SDK ships in the repo
 
 The frozen visual/gameplay baseline includes:
 
@@ -102,13 +114,15 @@ runtime GLB gate/reef contract; ADR-0033 records the cohesion scope; ADR-0034
 records the approved runtime Glowfin character; and ADR-0035 records the
 Version 31 release-certificate boundary. ADR-0036 records the Version 32 save,
 telemetry, replay and ghost contracts; ADR-0037 records the Version 33 Moonwake
-progression and Daily Tide contracts. Android real-time thermal/audio review,
+progression and Daily Tide contracts; ADR-0038 records the Version 34 ranked,
+sharing and rewarded-provider boundaries. Android real-time thermal/audio review,
 the physical first-run-to-next-day return journey and all iOS Safari evidence
 remain outstanding. The automated certificate is therefore conditional and
 cannot replace those real-device approvals.
 
 Certification evidence and release operations are maintained in
-`docs/phase3-exit-report.md`, `docs/phase4a-release-report.md`, `docs/qa-runbook.md`, and
+`docs/phase3-exit-report.md`, `docs/phase4a-release-report.md`,
+`docs/phase4b-release-report.md`, `docs/qa-runbook.md`, and
 `docs/release-runbook.md`.
 
 ## Local setup
@@ -170,7 +184,10 @@ scripts/        repo/CI and production bundle checks
 - [x] Lumen Pearls, Tide Levels and twelve shared-material cosmetic unlocks
 - [x] Deterministic solvable Daily Tide Trial, three rotating objectives and grace-day streak
 - [x] Version 31/32-to-33 migration, duplicate-reward protection and consented retention telemetry
-- [x] Disabled rewarded-video interfaces and recovery placement hooks with no advertising SDK
+- [x] Deterministic global/Daily leaderboards with standard and assisted divisions
+- [x] Server re-simulation authority and explicit privacy-safe score submission
+- [x] Bounded near-miss Moonflash clips and controlled share publishing
+- [x] Host-injected rewarded-video bridge with idempotent cosmetic-only rewards
 - [ ] Physical first-run-to-simulated-next-day-return and retention-funnel sign-off
 - [ ] Android real-time 30-minute performance, thermal, sound-mix and interruption sign-off
 - [ ] iOS Safari performance, contrast, audio and real-time 30-minute soak sign-off
