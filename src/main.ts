@@ -58,7 +58,7 @@ import {
 import { HostedRewardedAuthorityClient } from "./monetization/rewardAuthority";
 import {
   isSealedReleaseManifest,
-  shouldVerifyHostedReleaseManifest
+  shouldUseHostedServices
 } from "./operations/productionReadiness";
 import {
   AccessPreferenceRepository,
@@ -87,6 +87,10 @@ if (!initialCanvas) throw new Error("Canvas #glowfin-canvas not found");
 let canvas: HTMLCanvasElement = initialCanvas;
 
 mountReleaseIdentity();
+const hostedServicesEnabled = shouldUseHostedServices(
+  GLOWFIN_RELEASE.environment,
+  window.location.hostname
+);
 
 const runtimeLifecycle = new RuntimeLifecycle();
 const runtimeSupport = detectRuntimeSupport();
@@ -265,10 +269,7 @@ async function verifyHostedReleaseManifest(): Promise<void> {
   // Build-time checks own loopback certification because Vite's development
   // server does not expose the sealed dist manifest. Hosted checkpoints still
   // verify their top-level manifest on every fresh page load.
-  if (!shouldVerifyHostedReleaseManifest(
-    GLOWFIN_RELEASE.environment,
-    window.location.hostname
-  )) return;
+  if (!hostedServicesEnabled) return;
   let valid = false;
   try {
     const response = await fetch(new URL("./release.json", window.location.href), {
@@ -374,6 +375,7 @@ function trackRetentionReturn(observation: SessionObservation): void {
 }
 
 async function hydrateCloudProgress(): Promise<void> {
+  if (!hostedServicesEnabled) return;
   try {
     const remote = await cloudProgress.load();
     if (remote) {
@@ -401,6 +403,7 @@ async function hydrateCloudProgress(): Promise<void> {
 }
 
 async function hydrateDailyClock(): Promise<void> {
+  if (!hostedServicesEnabled) return;
   try {
     const remote = await dailyClock.load();
     if (!remote) {
@@ -437,6 +440,7 @@ const cloudHydrated = hydrateCloudProgress();
 const dailyHydrated = hydrateDailyClock();
 
 async function synchronizeCloudProgress(): Promise<void> {
+  if (!hostedServicesEnabled) return;
   cloudSyncRequested = true;
   if (cloudSyncInFlight) return cloudSyncInFlight;
   cloudSyncInFlight = (async () => {
@@ -571,6 +575,10 @@ hud.onDailyTrial(() => {
 });
 
 async function loadCompetitiveBoard(state: CompletedCompetitiveRun): Promise<void> {
+  if (!hostedServicesEnabled) {
+    hud.setLeaderboard(null, "offline");
+    return;
+  }
   hud.setLeaderboard(null, "loading");
   try {
     const snapshot = await leaderboard.list(
@@ -604,6 +612,10 @@ async function loadCompetitiveBoard(state: CompletedCompetitiveRun): Promise<voi
 hud.onSubmitScore(() => {
   const state = completedCompetitiveRun;
   if (!awaitingRestart || !state?.submission || state.submitted) return;
+  if (!hostedServicesEnabled) {
+    hud.setSubmitState("unavailable");
+    return;
+  }
   state.submitted = true;
   hud.setSubmitState("submitting");
   telemetry.track("leaderboard_submit", {
@@ -648,6 +660,10 @@ hud.onSubmitScore(() => {
 hud.onShareClip(() => {
   const state = completedCompetitiveRun;
   if (!awaitingRestart || !state?.clip) return;
+  if (!hostedServicesEnabled) {
+    hud.setShareState("unavailable");
+    return;
+  }
   if (state.shareUrl) {
     void navigator.clipboard?.writeText(state.shareUrl);
     return;

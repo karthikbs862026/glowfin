@@ -145,7 +145,7 @@ export interface SealedReleaseManifest {
   artifactFileCount: number;
 }
 
-export function shouldVerifyHostedReleaseManifest(
+export function shouldUseHostedServices(
   environment: SealedReleaseManifest["environment"],
   hostname: string
 ): boolean {
