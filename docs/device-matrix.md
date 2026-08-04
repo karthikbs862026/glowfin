@@ -53,7 +53,8 @@ Floor is 3.0:1.
 - **Android:** Chrome 90+, WebGL2 required — validated on two GPU vendors
 - **iOS:** Safari 15+, WebGL2 required — **untested**
 - Unsupported devices should get a graceful fallback message, never a broken
-  canvas. *Not yet implemented — Phase 5.*
+  canvas. **Implemented in Version 35; physical unsupported-device review is
+  still required.**
 
 ## Open risk: no iOS testing
 
@@ -102,3 +103,7 @@ phones and a future reference iPhone before unconditional Phase 3 sign-off:
 7. Compare frame time, battery and temperature with sound on versus muted over
    a real-time 30-minute run. Any monotonic memory growth or meaningful breach
    of the 30 fps floor blocks sign-off.
+8. Force or observe one graphics-context interruption. Confirm the run pauses,
+   the canvas generation increments exactly once after restoration, the scene
+   is rebuilt without duplicate audio/input, and play resumes without a time
+   jump. Confirm a permanently unsupported WebGL2 device shows the fallback.

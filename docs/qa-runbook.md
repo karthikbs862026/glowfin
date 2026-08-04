@@ -7,8 +7,9 @@ Vitest suite, production build, mounted-path safety, bundle budget, debug-strip,
 release metadata, art-gate self-tests and structural asset validation.
 
 The pull request additionally owns the full 390×844 render matrix, reduced
-touch/audio capture and 5,400-frame lifecycle soak. Any red result blocks merge;
-do not waive it as flaky without a tracking issue and replacement evidence.
+touch/audio capture, forced WebGL context rebuild, page-cache recovery and
+5,400-frame lifecycle soak. Any red result blocks merge; do not waive it as
+flaky without a tracking issue and replacement evidence.
 
 ## Manual phone pass
 
@@ -39,6 +40,11 @@ clear any cached standalone/PWA copy before beginning.
     the clipboard fallback, expiry metadata and the absence of pointer data.
     If an approved rewarded provider is injected, complete/cancel/fail it and
     confirm only one Lumen bonus can be granted.
+11. For Version 35+, toggle reduced motion and high contrast, reload, and
+    confirm both persist without changing the leaderboard division. Background
+    and foreground mid-drag, then restore one lost WebGL context; confirm input
+    resets, simulation time does not jump, the runtime overlay clears and the
+    canvas renderer generation advances exactly once.
 
 Record device model, OS/browser version, GPU string, source SHA, start/end time,
 battery change, thermal observation and pass/fail in `docs/device-matrix.md`.

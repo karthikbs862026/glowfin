@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ACCESS_PREFERENCES_KEY,
+  LEGACY_ACCESS_PREFERENCES_KEY,
   AccessPreferenceRepository,
   classifyRunAccess,
   defaultAccessPreferences,
@@ -15,7 +16,7 @@ class MemoryStorage implements PreferenceStorage {
   setItem(key: string, value: string): void { this.values.set(key, value); }
 }
 
-describe("Version 34 accessibility classification", () => {
+describe("Version 35 accessibility classification", () => {
   it("keeps presentation-only reduced motion on the standard board", () => {
     expect(classifyRunAccess({
       ...defaultAccessPreferences(false),
@@ -51,6 +52,30 @@ describe("Version 34 accessibility classification", () => {
     expect(new AccessPreferenceRepository(storage, false).load().motorAssist).toBe("reduced-travel");
     storage.setItem(ACCESS_PREFERENCES_KEY, JSON.stringify({ schemaVersion: 99 }));
     expect(new AccessPreferenceRepository(storage, false).load().motorAssist).toBe("standard");
+  });
+
+  it("migrates Version 34 access settings and persists presentation controls", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(LEGACY_ACCESS_PREFERENCES_KEY, JSON.stringify({
+      schemaVersion: 1,
+      motorAssist: "reduced-travel",
+      reducedMotion: true
+    }));
+    storage.setItem(ACCESS_PREFERENCES_KEY, "{corrupt");
+    const repository = new AccessPreferenceRepository(storage, false, false);
+    expect(repository.load()).toEqual({
+      schemaVersion: 2,
+      motorAssist: "reduced-travel",
+      reducedMotion: true,
+      highContrast: false
+    });
+    expect(repository.toggleHighContrast().highContrast).toBe(true);
+    expect(repository.toggleReducedMotion().reducedMotion).toBe(false);
+    expect(new AccessPreferenceRepository(storage, true, false).load()).toMatchObject({
+      motorAssist: "reduced-travel",
+      reducedMotion: false,
+      highContrast: true
+    });
   });
 
   it("reduces physical drag without adding smoothing or exceeding the target range", () => {

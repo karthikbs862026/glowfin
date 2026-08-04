@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#04060f" />
-    <title>Glowfin — Version 34</title>
+    <title>Glowfin — Version 35</title>
     <style>
       :root {
         --ink: #cfefff;
@@ -486,6 +486,68 @@
         font: inherit;
         cursor: pointer;
       }
+
+      html[data-glowfin-reduced-motion="true"] #hud *,
+      html[data-glowfin-reduced-motion="true"] #hud-gameover * {
+        animation: none !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+      }
+      html[data-glowfin-high-contrast="true"] {
+        --ink: #ffffff;
+        --dim: #b9d7e8;
+      }
+      html[data-glowfin-high-contrast="true"] #hud-meta span,
+      html[data-glowfin-high-contrast="true"] #hud-build,
+      html[data-glowfin-high-contrast="true"] #hud-gameover-card,
+      html[data-glowfin-high-contrast="true"] .hud-action {
+        border-color: rgba(225, 250, 255, 0.82);
+      }
+      html[data-glowfin-high-contrast="true"] #hud-gameover-card {
+        background: rgba(2, 11, 23, 0.98);
+      }
+
+      #runtime-status {
+        position: fixed;
+        inset: 0;
+        z-index: 9;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 28px;
+        background: rgba(4, 6, 15, 0.9);
+        color: var(--ink);
+        text-align: center;
+        pointer-events: auto;
+      }
+      #runtime-status[data-active="true"] { display: flex; }
+      #runtime-status-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        width: min(360px, calc(100vw - 42px));
+        padding: 24px;
+        border: 1px solid rgba(128, 218, 241, 0.46);
+        border-radius: 22px;
+        background: rgba(5, 23, 42, 0.96);
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.46);
+      }
+      #runtime-status-title { font-size: 20px; font-weight: 750; }
+      #runtime-status-detail { color: var(--dim); line-height: 1.45; }
+      #runtime-status-retry {
+        min-height: 44px;
+        margin-top: 4px;
+        padding: 0 22px;
+        border: 1px solid rgba(128, 218, 241, 0.68);
+        border-radius: 999px;
+        background: rgba(53, 208, 255, 0.14);
+        color: var(--ink);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      #runtime-status-retry[hidden] { display: none; }
     </style>
     <script>
       (() => {
@@ -536,7 +598,7 @@
       <div id="hud-ghost-gap" data-active="false">Ghost even</div>
       <div id="hud-light"><div id="hud-light-fill"></div></div>
       <div id="hud-momentum"><div id="hud-momentum-fill"></div></div>
-      <div id="hud-build" role="status">V34 · LOCAL · local</div>
+      <div id="hud-build" role="status">V35 · LOCAL · local</div>
     </div>
 
     <div id="hud-gameover">
@@ -577,6 +639,12 @@
           <button id="hud-motor-assist" class="hud-action" type="button" data-hud-action aria-pressed="false">
             Steering · Standard division
           </button>
+          <button id="hud-reduced-motion" class="hud-action" type="button" data-hud-action aria-pressed="false">
+            Motion effects · Standard
+          </button>
+          <button id="hud-high-contrast" class="hud-action" type="button" data-hud-action aria-pressed="false">
+            Contrast · Standard
+          </button>
           <div id="hud-wardrobe" aria-label="Moonwake wardrobe">
             <button id="hud-cosmetic-glow" class="hud-action" type="button" data-hud-action>Glow · Moon Cyan</button>
             <button id="hud-cosmetic-fin" class="hud-action" type="button" data-hud-action>Fins · Tideglass</button>
@@ -589,6 +657,14 @@
           <div id="hud-telemetry-note">No name, email, device fingerprint or touch path is collected.</div>
         </div>
         <div id="hud-restart">Tap outside the buttons for a fresh current</div>
+      </div>
+    </div>
+
+    <div id="runtime-status" data-active="false" data-state="running" role="status" aria-live="assertive">
+      <div id="runtime-status-card">
+        <strong id="runtime-status-title">Glowfin paused</strong>
+        <span id="runtime-status-detail">The current will resume safely when the interruption clears.</span>
+        <button id="runtime-status-retry" type="button" data-hud-action hidden>Reload game</button>
       </div>
     </div>
 

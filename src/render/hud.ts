@@ -11,6 +11,7 @@ import type {
   LeaderboardSnapshotV1
 } from "../competitive/leaderboard";
 import type {
+  AccessPreferencesV2,
   LeaderboardDivision,
   MotorAssistMode
 } from "../competitive/assists";
@@ -73,6 +74,8 @@ export class Hud {
   private readonly submitScore: HTMLButtonElement;
   private readonly shareClip: HTMLButtonElement;
   private readonly motorAssist: HTMLButtonElement;
+  private readonly reducedMotion: HTMLButtonElement;
+  private readonly highContrast: HTMLButtonElement;
   private readonly rewardedPearls: HTMLButtonElement;
   private readonly telemetryChoice: HTMLButtonElement;
   private readonly wardrobe = new Map<CosmeticCategory, HTMLButtonElement>();
@@ -104,6 +107,8 @@ export class Hud {
     this.submitScore = Hud.requireButton(root, "hud-submit-score");
     this.shareClip = Hud.requireButton(root, "hud-share-clip");
     this.motorAssist = Hud.requireButton(root, "hud-motor-assist");
+    this.reducedMotion = Hud.requireButton(root, "hud-reduced-motion");
+    this.highContrast = Hud.requireButton(root, "hud-high-contrast");
     this.rewardedPearls = Hud.requireButton(root, "hud-rewarded-pearls");
     this.telemetryChoice = Hud.requireButton(root, "hud-telemetry-choice");
     for (const category of ["glow", "fin", "trail", "aura"] as const) {
@@ -230,6 +235,14 @@ export class Hud {
     this.wireAction(this.motorAssist, listener);
   }
 
+  onReducedMotionToggle(listener: () => void): void {
+    this.wireAction(this.reducedMotion, listener);
+  }
+
+  onHighContrastToggle(listener: () => void): void {
+    this.wireAction(this.highContrast, listener);
+  }
+
   onRewardedPearls(listener: () => void): void {
     this.wireAction(this.rewardedPearls, listener);
   }
@@ -252,6 +265,25 @@ export class Hud {
       ? "Steering · Reduced travel (Assisted)"
       : "Steering · Standard division";
     this.motorAssist.setAttribute("aria-pressed", mode === "reduced-travel" ? "true" : "false");
+  }
+
+  setPresentationPreferences(
+    preferences: Pick<AccessPreferencesV2, "reducedMotion" | "highContrast">
+  ): void {
+    this.reducedMotion.textContent = preferences.reducedMotion
+      ? "Motion effects · Reduced"
+      : "Motion effects · Standard";
+    this.reducedMotion.setAttribute(
+      "aria-pressed",
+      preferences.reducedMotion ? "true" : "false"
+    );
+    this.highContrast.textContent = preferences.highContrast
+      ? "Contrast · High"
+      : "Contrast · Standard";
+    this.highContrast.setAttribute(
+      "aria-pressed",
+      preferences.highContrast ? "true" : "false"
+    );
   }
 
   setSubmitState(

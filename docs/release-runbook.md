@@ -4,7 +4,7 @@
 
 | Environment | Purpose | Required identity |
 |---|---|---|
-| `local` | developer iteration | `V34 · LOCAL · local` |
+| `local` | developer iteration | `V35 · LOCAL · local` |
 | `staging` | owner-only certification checkpoint | exact Git commit SHA |
 | `production` | promoted public release | exact tagged commit SHA |
 
