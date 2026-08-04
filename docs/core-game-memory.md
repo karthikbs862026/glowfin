@@ -38,6 +38,14 @@ privacy/save/performance guardrails and the Moon-Current soundtrack.
    purposeful living-world events.
 3. **Version 39 — Store Wrapper & Controlled Soft Launch.**
 
+### Current implementation state
+
+- Version 37 is merged at `fccb95c` and deployed as the first-ten-minutes and
+  economy baseline.
+- Version 38 has begun from that exact commit. Its first slice defines three
+  replay-safe obstacle verbs and rare living-world event plans; runtime
+  activation must wait for collider, render and solvability evidence to agree.
+
 ### Guardrails from the verdict
 
 - Do not reintroduce tap-outside-to-restart.
@@ -49,4 +57,3 @@ privacy/save/performance guardrails and the Moon-Current soundtrack.
 - Never add competitive revive advertising.
 - Do not fill space with more static coral, merfolk or architecture; prefer
   purposeful motion, reactions and authored set-piece events.
-

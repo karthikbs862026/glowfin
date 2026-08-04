@@ -818,3 +818,17 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Keep all simulation, controls, lane geometry, collision, scoring, replay,
   art, audio composition and performance budgets frozen. Reserve obstacle
   verbs and living-world set pieces for Version 38.
+
+## 2026-08-04 — Begin Version 38 signature obstacle variety
+
+- Base Version 38 on merged Version 37 commit `fccb95c`; do not reopen the
+  onboarding, economy, controls, camera, cyan collider or audio decisions.
+- Introduce exactly three readable verbs: safe-versus-Moonflash route choice,
+  predictable ceremonial shutters and telegraphed lateral current lanes.
+- Derive every plan from the existing run seed and stable gate identity without
+  advancing the course RNG or using wall-clock time.
+- Keep the first slice contract-only. Do not activate a mechanic until
+  collision, rendering, independent solvability proof and replay verification
+  consume the same authoritative plan.
+- Add rare seeded ray, guardian and Moon-Bloom events; do not increase static
+  prop density to simulate variety.

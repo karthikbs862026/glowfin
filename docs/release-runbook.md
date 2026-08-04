@@ -4,9 +4,9 @@
 
 | Environment | Purpose | Required identity |
 |---|---|---|
-| `local` | developer iteration | `V37 · LOCAL · local` |
+| `local` | developer iteration | `V38 · LOCAL · local` |
 | `staging` | owner-only certification checkpoint | exact Git commit SHA and artifact digest |
-| `production` | promoted public release | exact `glowfin-v37` tagged commit and unchanged artifact digest |
+| `production` | promoted public release | exact `glowfin-v38` tagged commit and unchanged artifact digest |
 
 Never promote an artifact by renaming its environment. Rebuild from the same
 source SHA with the intended environment and repeat the release checks.
@@ -15,7 +15,8 @@ source SHA with the intended environment and repeat the release checks.
 
 1. Merge only after the PR's Core CI, structural, phone-render, touch-audio and
    lifecycle gates are green, plus the Phase 5B fault/privacy/rollback gate and
-   Version 37 onboarding/economy journey tests.
+   Version 37 onboarding/economy journey tests and Version 38 deterministic
+   obstacle-variety tests.
 2. Use the immutable staging artifact produced from `main`, or rebuild the exact
    SHA with `GLOWFIN_ENVIRONMENT=staging` and `GLOWFIN_COMMIT_SHA=<full-sha>`.
 3. Deploy that unchanged artifact to the owner-only Glowfin checkpoint.
@@ -49,7 +50,7 @@ source SHA with the intended environment and repeat the release checks.
 3. Run the post-deploy smoke command against the previous version's expected
    source SHA.
 4. Confirm the Settings diagnostic badge and response header changed back to that SHA.
-5. Confirm the rollback manifest is the saved Version 36 artifact, not a rebuild.
+5. Confirm the rollback manifest is the saved Version 37 artifact, not a rebuild.
 6. Open a regression issue before resuming promotion.
 
 The rollback target is intentionally selected from immutable hosted version
