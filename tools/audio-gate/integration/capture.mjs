@@ -123,6 +123,10 @@ try {
   await page.waitForTimeout(280);
   const afterDiveActivation = await snapshot();
 
+  // The first corner-button tap after Dive confirms/replays the newly unlocked
+  // sound path. A second deliberate tap is the mute command.
+  await page.locator("#hud-audio-toggle").tap();
+  await waitForAudioReady("initial dive-then-button confirmation");
   await page.locator("#hud-audio-toggle").tap();
   await page.waitForFunction(
     () => document.querySelector("#hud-audio-toggle")?.getAttribute("data-audio-state") === "muted"
@@ -186,7 +190,7 @@ try {
         state.signal !== "generated" ||
         Number(state.rms) <= 0
       ) ||
-    Object.keys(readinessProofs).length !== 4 ||
+    Object.keys(readinessProofs).length !== 5 ||
     Object.values(readinessProofs).some((proof) =>
       !proof ||
       proof.nativeMediaTime <= 0 ||
