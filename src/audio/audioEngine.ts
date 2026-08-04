@@ -190,6 +190,11 @@ export class GlowfinAudio {
     this.applyAmbientMix(false);
   }
 
+  /** Native wrappers do not always mirror Activity state into visibilitychange. */
+  setAppActive(active: boolean): Promise<void> {
+    return this.handleVisibilityChange(!active);
+  }
+
   private static requireElement(root: Document, id: string): HTMLElement {
     const element = root.getElementById(id);
     if (!element) throw new Error(`GlowfinAudio: missing required element #${id}`);

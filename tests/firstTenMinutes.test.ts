@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
-describe("Version 37 first-ten-minute player shell", () => {
+describe("Version 39 first-ten-minute player shell", () => {
   it("starts at a complete Moon Well with direct Dive and Daily Tide access", () => {
     expect(html).toContain('id="moonwell-hub" data-active="true"');
     expect(html).toContain('id="moonwell-dive"');
@@ -11,6 +11,17 @@ describe("Version 37 first-ten-minute player shell", () => {
     for (const panel of ["wardrobe", "objectives", "leaderboard", "settings"]) {
       expect(html).toContain(`id="moonwell-panel-${panel}"`);
     }
+  });
+
+  it("makes the guided tutorial impossible to miss and replayable later", () => {
+    expect(html).toContain('id="tutorial-intro" data-active="false"');
+    expect(html).toContain('id="tutorial-intro-start"');
+    expect(html).toContain('id="tutorial-intro-skip"');
+    expect(html.match(/data-guided-tutorial/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(html).toContain("New in Version 39 · about 30 seconds");
+    expect(html).toContain("Guided Dive · 1/6");
+    expect(html).toContain('id="tutorial-skip"');
+    expect(html).toContain("six clear steps");
   });
 
   it("keeps post-run to one primary CTA and two secondary actions", () => {
@@ -31,5 +42,6 @@ describe("Version 37 first-ten-minute player shell", () => {
     expect(settingsIndex).toBeGreaterThan(0);
     expect(badgeIndex).toBeGreaterThan(settingsIndex);
     expect(html).toContain(".hud-objective, .hud-objective strong { font-size: 12px; }");
+    expect(html).toContain('id="hud-haptics"');
   });
 });

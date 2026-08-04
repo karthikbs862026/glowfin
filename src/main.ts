@@ -31,6 +31,7 @@ import {
 import {
   ReplayPlayer,
   ReplayRecorder,
+  type GlowfinReplayV1,
   type ReplaySummary,
   validateReplay
 } from "./replay/replay";
@@ -55,6 +56,8 @@ import {
 } from "./meta/progression";
 import {
   FirstRunTutorial,
+  GuidedTutorialRepository,
+  GUIDED_TUTORIAL_VERSION,
   tutorialPresentation,
   type TutorialStep
 } from "./meta/onboarding";
@@ -83,13 +86,28 @@ import {
 import {
   HostedMoonflashClient,
   MoonflashRecorder,
+  moonflashChallengeUrl,
+  moonflashTokenFromUrl,
+  type MoonflashChallengeV1,
   type MoonflashClipV1
 } from "./sharing/clips";
+import { renderMoonflashMedia } from "./sharing/media";
 import {
   RuntimeLifecycle,
+  type RuntimeInterruptionReason,
   type RuntimeLifecycleSnapshot
 } from "./resilience/runtimeLifecycle";
 import { detectRuntimeSupport } from "./resilience/runtimeSupport";
+import {
+  capacitorHapticDriver,
+  installCapacitorShell,
+  nativeRuntime
+} from "./native/capacitorBridge";
+import {
+  HapticDirector,
+  HapticPreferenceRepository
+} from "./native/haptics";
+import { deviceHealthPayload } from "./operations/deviceHealth";
 
 const initialCanvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
 if (!initialCanvas) throw new Error("Canvas #glowfin-canvas not found");
@@ -143,11 +161,21 @@ const progressStorage = (() => {
   }
 })();
 const progressRepository = new ProgressRepository(progressStorage);
+const guidedTutorialRepository = new GuidedTutorialRepository(progressStorage);
+let guidedTutorialComplete = guidedTutorialRepository.isCurrentComplete();
+let tutorialIntroDismissed = false;
 const progressLoad = progressRepository.load();
 let progress: GlowfinProgressV2 = progressLoad.progress;
 const accessPreferenceRepository = new AccessPreferenceRepository(progressStorage);
 let accessPreferences = accessPreferenceRepository.load();
 steering.setSensitivityMultiplier(steeringSensitivityMultiplier(accessPreferences));
+const wrapperRuntime = nativeRuntime();
+const hapticPreferenceRepository = new HapticPreferenceRepository(progressStorage);
+let hapticsEnabled = hapticPreferenceRepository.load();
+const haptics = new HapticDirector({
+  enabled: hapticsEnabled,
+  driver: capacitorHapticDriver(wrapperRuntime)
+});
 const telemetry = new TelemetryClient(
   progress.telemetryConsent,
   new HostedTelemetryTransport()
@@ -155,7 +183,12 @@ const telemetry = new TelemetryClient(
 const cloudProgress = new HostedProgressClient();
 const dailyClock = new HostedDailyClockClient();
 const leaderboard = new HostedLeaderboardClient();
-const moonflash = new HostedMoonflashClient();
+const moonflash = new HostedMoonflashClient(
+  fetch,
+  wrapperRuntime.isNative
+    ? "https://glowfin-phase-3b.karthik-bs86.chatgpt.site/api/glowfin/share"
+    : "/api/glowfin/share"
+);
 const rewardedProvider = BrowserRewardedVideoProvider.fromGlobal();
 const rewardedVideo = new RewardedVideoHooks(
   rewardedProvider,
@@ -173,6 +206,30 @@ const runtimeStatus = requiredElement<HTMLElement>("runtime-status");
 const runtimeStatusTitle = requiredElement<HTMLElement>("runtime-status-title");
 const runtimeStatusDetail = requiredElement<HTMLElement>("runtime-status-detail");
 const runtimeStatusRetry = requiredElement<HTMLButtonElement>("runtime-status-retry");
+const startupProgress = requiredElement<HTMLElement>("startup-progress");
+const startupProgressDetail = requiredElement<HTMLElement>("startup-progress-detail");
+const startupProgressFill = requiredElement<HTMLElement>("startup-progress-fill");
+const networkStatus = requiredElement<HTMLElement>("network-status");
+
+function setStartupProgress(percent: number, detail: string): void {
+  const bounded = Math.max(0, Math.min(100, Math.round(percent)));
+  startupProgressDetail.textContent = detail;
+  startupProgressFill.style.width = `${bounded}%`;
+  startupProgress.setAttribute("aria-valuenow", String(bounded));
+}
+
+function setNetworkState(): void {
+  const offline = navigator.onLine === false;
+  networkStatus.dataset["offline"] = String(offline);
+  document.documentElement.dataset["glowfinOnline"] = String(!offline);
+}
+
+setStartupProgress(26, runtimeSupport.supported
+  ? "Loading Glowfin and the first current…"
+  : "This device needs a supported graphics path.");
+setNetworkState();
+window.addEventListener("online", setNetworkState);
+window.addEventListener("offline", setNetworkState);
 
 function publishRuntimeState(
   snapshot: RuntimeLifecycleSnapshot = runtimeLifecycle.snapshot()
@@ -238,6 +295,9 @@ let gameplayActive = false;
 let firstRunTutorial: FirstRunTutorial | null = null;
 let tutorialStep: TutorialStep | null = null;
 let tutorialCompleteAtSec: number | null = null;
+let tutorialSessionSource: "required" | "replay" | null = null;
+let activeChallenge: MoonflashChallengeV1 | null = null;
+let challengeRunActive = false;
 
 function signatureCueForRun(): SignatureCuePresentation | null {
   if (!gameplayActive || awaitingRestart || firstRunTutorial) return null;
@@ -284,6 +344,7 @@ interface CompletedCompetitiveRun {
   rewardedOffer: RewardedOffer | null;
   submitted: boolean;
   shareUrl: string | null;
+  media: Promise<File | null> | null;
 }
 
 let completedCompetitiveRun: CompletedCompetitiveRun | null = null;
@@ -292,7 +353,9 @@ if (progress.telemetryConsent === "granted") {
   telemetry.track("session_start", {
     release: GLOWFIN_RELEASE.version,
     tuningVersion: tuning.version,
-    saveSchemaVersion: progress.schemaVersion
+    saveSchemaVersion: progress.schemaVersion,
+    nativeWrapper: wrapperRuntime.isNative,
+    platform: wrapperRuntime.platform
   });
   telemetry.track("runtime_support", {
     supported: runtimeSupport.supported,
@@ -346,6 +409,42 @@ async function verifyHostedReleaseManifest(): Promise<void> {
 }
 
 void verifyHostedReleaseManifest();
+
+async function loadMoonflashChallenge(url: string): Promise<void> {
+  const token = moonflashTokenFromUrl(url);
+  if (!token) return;
+  moonWell.setChallenge(null, "loading");
+  telemetry.track("share_challenge_open", {
+    source: url.startsWith("glowfin:") ? "native-deep-link" : "web-deep-link"
+  });
+  try {
+    const challenge = await moonflash.loadChallenge(token);
+    if (
+      challenge.clip.replay.tuningVersion !== tuning.version ||
+      !validateReplay(challenge.clip.replay).valid
+    ) {
+      throw new Error("Moonflash challenge uses an incompatible replay.");
+    }
+    activeChallenge = challenge;
+    moonWell.setChallenge(challenge.clip.caption, "ready");
+    telemetry.track("service_result", {
+      service: "moonflash-challenge",
+      operation: "load",
+      success: true
+    });
+  } catch {
+    activeChallenge = null;
+    moonWell.setChallenge("expired", "failed");
+    telemetry.track("service_result", {
+      service: "moonflash-challenge",
+      operation: "load",
+      success: false
+    });
+  }
+  void telemetry.flush();
+}
+
+void loadMoonflashChallenge(window.location.href);
 
 function raceableReplay() {
   const replay = progress.bestReplay;
@@ -418,6 +517,7 @@ function refreshMoonWell(): void {
   const day = currentDailyDay().dayId;
   moonWell.setDailyLabel(day, progress.daily.dailyClaims.includes(day));
   moonWell.renderObjectives(objectivePresentations());
+  moonWell.setTutorialStatus(guidedTutorialComplete);
   refreshWardrobe();
 }
 
@@ -427,12 +527,16 @@ function showMoonWell(panel: MoonWellPanel = "home"): void {
   firstRunTutorial = null;
   tutorialStep = null;
   tutorialCompleteAtSec = null;
+  tutorialSessionSource = null;
   moonWell.showTutorial(null);
   hud.hideGameOver();
   view?.applyCosmetics(progress.progression.equippedCosmetics);
   refreshMoonWell();
   moonWell.show(hudMeta());
   moonWell.showPanel(panel);
+  moonWell.showTutorialIntro(
+    panel === "home" && !guidedTutorialComplete && !tutorialIntroDismissed
+  );
   document.documentElement.dataset["glowfinScreen"] = "hub";
   telemetry.track("hub_view", { panel });
 }
@@ -445,6 +549,9 @@ function updateProgressUi(): void {
   view?.setPresentationPreferences(accessPreferences);
   hud.setMotorAssist(accessPreferences.motorAssist);
   hud.setPresentationPreferences(accessPreferences);
+  hud.setHapticsPreference(hapticsEnabled, wrapperRuntime.isNative);
+  document.documentElement.dataset["glowfinNativePlatform"] = wrapperRuntime.platform;
+  document.documentElement.dataset["glowfinHaptics"] = String(hapticsEnabled);
   document.documentElement.dataset["glowfinReducedMotion"] =
     String(accessPreferences.reducedMotion);
   document.documentElement.dataset["glowfinHighContrast"] =
@@ -591,7 +698,9 @@ function reportRunStart(): void {
     mode: activeRunMode,
     tuningVersion: tuning.version,
     hasSavedGhost: Boolean(
-      activeRunMode === "daily" || activeRunMode === "daily-ghost"
+      challengeRunActive
+        ? ghostReplay
+        : activeRunMode === "daily" || activeRunMode === "daily-ghost"
         ? activeRunDayId && raceableDailyReplay(activeRunDayId)
         : raceableReplay()
     ),
@@ -611,16 +720,22 @@ function reportRunStart(): void {
   if (activeRunMode === "ghost" || activeRunMode === "daily-ghost") {
     telemetry.track("replay_start", {
       seed: run.seed,
-      replaySteps: ghostReplay?.replay.totalSteps ?? 0
+      replaySteps: ghostReplay?.replay.totalSteps ?? 0,
+      source: challengeRunActive ? "shared-challenge" : "saved-ghost"
     }, activeRunId);
   }
 }
 
-function startRun(mode: GlowfinRunMode = "fresh"): void {
+function startRun(
+  mode: GlowfinRunMode = "fresh",
+  guidedTutorialSource: "required" | "replay" | null = null,
+  replayOverride: GlowfinReplayV1 | null = null,
+  forceGhost = false
+): void {
   const day = currentDailyDay();
   const dailyMode = mode === "daily" || mode === "daily-ghost";
   const replay = mode === "ghost"
-    ? raceableReplay()
+    ? replayOverride ?? raceableReplay()
     : mode === "daily-ghost"
       ? raceableDailyReplay(day.dayId)
       : null;
@@ -630,6 +745,7 @@ function startRun(mode: GlowfinRunMode = "fresh"): void {
       ? replay ? "daily-ghost" : "daily"
       : mode;
   activeRunDayId = dailyMode ? day.dayId : null;
+  challengeRunActive = Boolean(mode === "ghost" && replayOverride);
   const seed = replay?.seed ?? (dailyMode ? dailySeed(day.dayId) : generateSeed());
   run = new Run(seed, tuning);
   recorder = new ReplayRecorder(run.seed, tuning.version);
@@ -639,7 +755,7 @@ function startRun(mode: GlowfinRunMode = "fresh"): void {
   simulationSteps = 0;
   ghostRun = replay ? new Run(replay.seed, tuning) : null;
   ghostReplay = replay ? new ReplayPlayer(replay) : null;
-  ghostVisible = Boolean(ghostRun && ghostReplay && progress.ghostEnabled);
+  ghostVisible = Boolean(ghostRun && ghostReplay && (progress.ghostEnabled || forceGhost));
   ghostCompletionReported = false;
   awaitingRestart = false;
   gameplayActive = true;
@@ -647,7 +763,9 @@ function startRun(mode: GlowfinRunMode = "fresh"): void {
   steering.reset();
   timestep.reset();
   view?.resetTrail();
+  view?.setHeroMoment(null);
   view?.applyCosmetics(progress.progression.equippedCosmetics);
+  moonWell.showTutorialIntro(false);
   moonWell.hide();
   hud.hideGameOver();
   hud.setSubmitState("unavailable");
@@ -660,7 +778,8 @@ function startRun(mode: GlowfinRunMode = "fresh"): void {
   }
   audio.resetRun(run.scoring.multiplier);
   document.documentElement.dataset["glowfinScreen"] = "run";
-  firstRunTutorial = activeRunMode === "fresh" && !progress.onboarding.tutorialCompleted
+  tutorialSessionSource = activeRunMode === "fresh" ? guidedTutorialSource : null;
+  firstRunTutorial = tutorialSessionSource
     ? new FirstRunTutorial()
     : null;
   tutorialStep = firstRunTutorial?.step ?? null;
@@ -669,7 +788,11 @@ function startRun(mode: GlowfinRunMode = "fresh"): void {
     tutorialStep ? tutorialPresentation(tutorialStep) : null
   );
   if (firstRunTutorial) {
-    telemetry.track("tutorial_start", { source: "tap-to-dive" }, activeRunId);
+    haptics.play("tutorial-step");
+    telemetry.track("tutorial_start", {
+      source: tutorialSessionSource ?? "required",
+      tutorialVersion: GUIDED_TUTORIAL_VERSION
+    }, activeRunId);
   }
   reportRunStart();
 }
@@ -677,9 +800,49 @@ function startRun(mode: GlowfinRunMode = "fresh"): void {
 moonWell.onDive(() => {
   telemetry.track("tap_to_dive", {
     firstRun: !progress.onboarding.firstRunCompleted,
-    tutorialRequired: !progress.onboarding.tutorialCompleted
+    tutorialRequired: !guidedTutorialComplete
   });
   startRun("fresh");
+});
+
+moonWell.onTutorialStart(() => {
+  const source = guidedTutorialComplete ? "replay" : "required";
+  tutorialIntroDismissed = true;
+  startRun("fresh", source);
+});
+
+moonWell.onTutorialSkip(() => {
+  if (firstRunTutorial) {
+    telemetry.track("tutorial_skip", {
+      source: "in-run",
+      step: tutorialStep ?? "unknown",
+      tutorialVersion: GUIDED_TUTORIAL_VERSION
+    }, activeRunId);
+    firstRunTutorial = null;
+    tutorialStep = null;
+    tutorialCompleteAtSec = null;
+    tutorialSessionSource = null;
+    moonWell.showTutorial(null);
+    return;
+  }
+  tutorialIntroDismissed = true;
+  moonWell.showTutorialIntro(false);
+  telemetry.track("tutorial_skip", {
+    source: "intro",
+    step: "intro",
+    tutorialVersion: GUIDED_TUTORIAL_VERSION
+  });
+});
+
+moonWell.onChallenge(() => {
+  const challenge = activeChallenge;
+  if (!challenge) return;
+  telemetry.track("share_challenge_start", {
+    division: challenge.clip.classification.division,
+    replaySteps: challenge.clip.replay.totalSteps
+  });
+  void telemetry.flush();
+  startRun("ghost", null, challenge.clip.replay, true);
 });
 
 moonWell.onOpenPanel((panel) => {
@@ -815,7 +978,15 @@ hud.onShareClip(() => {
     return;
   }
   if (state.shareUrl) {
-    void navigator.clipboard?.writeText(state.shareUrl);
+    if (typeof navigator.share === "function") {
+      void navigator.share({
+        title: "Beat My Current · Glowfin",
+        text: state.clip.caption,
+        url: state.shareUrl
+      }).catch(() => navigator.clipboard?.writeText(state.shareUrl ?? ""));
+    } else {
+      void navigator.clipboard?.writeText(state.shareUrl);
+    }
     return;
   }
   hud.setShareState("publishing");
@@ -826,11 +997,14 @@ hud.onShareClip(() => {
   }, state.runId);
   void moonflash.publish(state.clip).then(async (published) => {
     if (completedCompetitiveRun !== state) return;
-    state.shareUrl = published.shareUrl;
+    const challengeUrl = moonflashChallengeUrl(published);
+    state.shareUrl = challengeUrl;
     hud.setShareState("shared");
+    const media = await state.media?.catch(() => null) ?? null;
     telemetry.track("share_clip_result", {
       published: true,
-      division: state.classification.division
+      division: state.classification.division,
+      renderedMedia: Boolean(media)
     }, state.runId);
     telemetry.track("service_result", {
       service: "moonflash",
@@ -839,13 +1013,21 @@ hud.onShareClip(() => {
     }, state.runId);
     try {
       if (typeof navigator.share === "function") {
-        await navigator.share({
+        const shareData: ShareData = {
           title: "Glowfin Moonflash",
-          text: state.clip?.caption ?? "A Glowfin Moonflash",
-          url: published.shareUrl
-        });
+          text: `${state.clip?.caption ?? "A Glowfin Moonflash"} · Beat my current`,
+          url: challengeUrl
+        };
+        if (
+          media &&
+          typeof navigator.canShare === "function" &&
+          navigator.canShare({ files: [media] })
+        ) {
+          shareData.files = [media];
+        }
+        await navigator.share(shareData);
       } else {
-        await navigator.clipboard?.writeText(published.shareUrl);
+        await navigator.clipboard?.writeText(challengeUrl);
       }
     } catch {
       // The link is still available on the button when the native share sheet
@@ -901,6 +1083,20 @@ hud.onHighContrastToggle(() => {
     setting: "high-contrast",
     enabled: accessPreferences.highContrast,
     nextDivision: classifyRunAccess(accessPreferences).division
+  });
+  void telemetry.flush();
+});
+
+hud.onHapticsToggle(() => {
+  if (!awaitingRestart && !moonWell.isOpen) return;
+  hapticsEnabled = hapticPreferenceRepository.toggle();
+  haptics.setEnabled(hapticsEnabled);
+  updateProgressUi();
+  if (hapticsEnabled) haptics.play("setting");
+  telemetry.track("accessibility_change", {
+    setting: "haptics",
+    enabled: hapticsEnabled,
+    nativeAvailable: wrapperRuntime.isNative
   });
   void telemetry.flush();
 });
@@ -1003,6 +1199,7 @@ moonWell.onWardrobeAction((cosmeticId) => {
       price: cosmetic.pricePearls,
       firstPurchase: firstPurchase && result.status === "purchased"
     });
+    if (result.status === "purchased") haptics.play("purchase");
     void telemetry.flush();
     if (result.status === "purchased") void synchronizeCloudProgress();
     return;
@@ -1022,6 +1219,7 @@ moonWell.onWardrobeAction((cosmeticId) => {
     tideLevel: tideProgressForXp(progress.progression.tideXp).level,
     firstEquip: result.firstEquip
   });
+  if (result.equipped) haptics.play("equip");
   void telemetry.flush();
   if (result.equipped) void synchronizeCloudProgress();
 });
@@ -1036,7 +1234,9 @@ hud.onTelemetryChoice(() => {
       release: GLOWFIN_RELEASE.version,
       tuningVersion: tuning.version,
       saveSchemaVersion: progress.schemaVersion,
-      consentSource: "settings"
+      consentSource: "settings",
+      nativeWrapper: wrapperRuntime.isNative,
+      platform: wrapperRuntime.platform
     });
     telemetry.track("runtime_support", {
       supported: runtimeSupport.supported,
@@ -1050,10 +1250,10 @@ hud.onTelemetryChoice(() => {
 });
 
 let lastFrameMs = performance.now();
-const interruptionStartedAt = new Map<"visibility" | "page-cache", number>();
+const interruptionStartedAt = new Map<RuntimeInterruptionReason, number>();
 
 function pauseForInterruption(
-  reason: "visibility" | "page-cache",
+  reason: RuntimeInterruptionReason,
   source: string
 ): void {
   const alreadyPaused = runtimeLifecycle.snapshot().blockers.includes(reason);
@@ -1072,7 +1272,7 @@ function pauseForInterruption(
 }
 
 function resumeFromInterruption(
-  reason: "visibility" | "page-cache",
+  reason: RuntimeInterruptionReason,
   source: string
 ): void {
   const wasPaused = runtimeLifecycle.snapshot().blockers.includes(reason);
@@ -1104,6 +1304,31 @@ document.addEventListener("visibilitychange", () => {
     resumeFromInterruption("visibility", "visibilitychange");
     void hydrateDailyClock();
   }
+});
+
+let nativeAppInterrupted = false;
+void installCapacitorShell({
+  onActiveChange(active) {
+    if (!active) {
+      nativeAppInterrupted = true;
+      haptics.setActive(false);
+      void audio.setAppActive(false);
+      pauseForInterruption("native-app", "capacitor-app-state");
+      return;
+    }
+    if (!nativeAppInterrupted) return;
+    nativeAppInterrupted = false;
+    haptics.setActive(true);
+    resumeFromInterruption("native-app", "capacitor-app-state");
+    void audio.setAppActive(!document.hidden);
+    void hydrateDailyClock();
+  },
+  onOpenUrl(url) {
+    void loadMoonflashChallenge(url);
+  }
+}, wrapperRuntime).catch(() => {
+  telemetry.track("error", { source: "capacitor-shell", phase: "startup" });
+  void telemetry.flush();
 });
 
 let rendererGeneration = view ? 1 : 0;
@@ -1278,6 +1503,7 @@ function frame(nowMs: number): void {
     }
 
     for (const encounter of events.encounters) {
+      haptics.play(encounter.kind === "collision" ? "collision" : "near-miss");
       telemetry.track(
         encounter.kind === "collision" ? "collision" : "near_miss",
         {
@@ -1314,24 +1540,36 @@ function frame(nowMs: number): void {
       const nextStep = firstRunTutorial.update({
         elapsedSec: run.sim.elapsedSec,
         steering: command,
-        nearMiss: events.encounters.some((encounter) => encounter.kind === "near-miss"),
+        gateCleared: events.signatureEvents.some((event) => (
+          event.kind === "safe-route" ||
+          event.kind === "moonflash-route" ||
+          event.kind === "shutter-pass"
+        )),
+        nearMiss:
+          events.encounters.some((encounter) => encounter.kind === "near-miss") ||
+          events.signatureEvents.some((event) => event.kind === "moonflash-route"),
         collision: events.encounters.some((encounter) => encounter.kind === "collision")
       });
       if (nextStep !== previousStep) {
         tutorialStep = nextStep;
         moonWell.showTutorial(tutorialPresentation(nextStep));
+        haptics.play(nextStep === "complete" ? "milestone" : "tutorial-step");
         telemetry.track("tutorial_step", {
           step: nextStep,
           elapsedSec: run.sim.elapsedSec
         }, activeRunId);
         if (nextStep === "complete") {
           tutorialCompleteAtSec = run.sim.elapsedSec;
+          guidedTutorialRepository.completeCurrent();
+          guidedTutorialComplete = true;
           progress = progressRepository.completeTutorial();
           updateProgressUi();
           telemetry.track("tutorial_complete", {
             elapsedSec: run.sim.elapsedSec,
             collisionSeen: run.collisionCount > 0,
-            nearMisses: run.scoring.nearMissCount
+            nearMisses: run.scoring.nearMissCount,
+            source: tutorialSessionSource ?? "required",
+            tutorialVersion: GUIDED_TUTORIAL_VERSION
           }, activeRunId);
           void telemetry.flush();
           void synchronizeCloudProgress();
@@ -1344,6 +1582,7 @@ function frame(nowMs: number): void {
         firstRunTutorial = null;
         tutorialStep = null;
         tutorialCompleteAtSec = null;
+        tutorialSessionSource = null;
         moonWell.showTutorial(null);
       }
     }
@@ -1373,6 +1612,7 @@ function frame(nowMs: number): void {
       firstRunTutorial = null;
       tutorialStep = null;
       tutorialCompleteAtSec = null;
+      tutorialSessionSource = null;
       moonWell.showTutorial(null);
       document.documentElement.dataset["glowfinScreen"] = "post-run";
       const summary: ReplaySummary = {
@@ -1395,6 +1635,23 @@ function frame(nowMs: number): void {
       });
       progress = record.progress;
       updateProgressUi();
+      if (
+        record.newBest ||
+        (firstReward && record.retention.totalPearls > 0) ||
+        record.retention.tideLevelAfter > record.retention.tideLevelBefore ||
+        record.retention.unlockedCosmetics.length > 0 ||
+        record.retention.completedObjectives.length > 0 ||
+        record.retention.dailyAwarded
+      ) {
+        haptics.play("milestone");
+      }
+      activeView.setHeroMoment(
+        record.retention.unlockedCosmetics.length > 0
+          ? "unlock"
+          : record.newBest || record.retention.completedObjectives.length > 0 || record.retention.dailyAwarded
+            ? "celebration"
+            : "recovery"
+      );
       telemetry.track("run_end", {
         seed: run.seed,
         mode: activeRunMode,
@@ -1418,6 +1675,18 @@ function frame(nowMs: number): void {
         totalPearls: record.retention.totalPearls,
         duplicatePrevented: record.retention.duplicateRewardPrevented
       }, activeRunId);
+      const rendererStats = activeView.stats();
+      const deviceNavigator = navigator as Navigator & { deviceMemory?: number };
+      telemetry.track("device_health", deviceHealthPayload({
+        runtime: wrapperRuntime,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+        deviceMemoryGb: deviceNavigator.deviceMemory ?? null,
+        hardwareConcurrency: navigator.hardwareConcurrency,
+        online: navigator.onLine !== false,
+        quality: quality.current,
+        sample: perf.sample(rendererStats.drawCalls, rendererStats.triangles, activeView.gpuName)
+      }), activeRunId);
       if (firstReward && record.retention.totalPearls > 0) {
         telemetry.track("first_reward", {
           pearls: record.retention.totalPearls,
@@ -1491,7 +1760,8 @@ function frame(nowMs: number): void {
         rewardedPearls,
         rewardedOffer: null,
         submitted: false,
-        shareUrl: null
+        shareUrl: null,
+        media: clip ? renderMoonflashMedia(clip).catch(() => null) : null
       };
       completedCompetitiveRun = competitiveState;
       hud.hideGhostGap();
@@ -1614,9 +1884,24 @@ function isProbeRequested(): boolean {
   return new URLSearchParams(window.location.search).get("probe") === "contrast";
 }
 
+function installOfflineRecovery(): void {
+  if (
+    !hostedServicesEnabled ||
+    wrapperRuntime.isNative ||
+    !("serviceWorker" in navigator)
+  ) return;
+  void navigator.serviceWorker.register("/glowfin-sw.js", { scope: "/" }).catch(() => {
+    // The local-first game remains playable even when a browser or host blocks
+    // service-worker installation; the visible network status still explains
+    // which hosted features are unavailable.
+  });
+}
+
 async function start(): Promise<void> {
+  setStartupProgress(48, "Building the first Moon-Garden district…");
   if (!runtimeSupport.supported || !view) {
     publishRuntimeState();
+    startupProgress.dataset["ready"] = "true";
     return;
   }
 
@@ -1634,12 +1919,16 @@ async function start(): Promise<void> {
     publishRuntimeState();
     telemetry.track("error", { source: "startup", phase: "renderer-ready" });
     void telemetry.flush();
+    startupProgress.dataset["ready"] = "true";
     return;
   }
   if (!activeView) {
     publishRuntimeState();
+    startupProgress.dataset["ready"] = "true";
     return;
   }
+
+  setStartupProgress(88, "Opening the Moon Well…");
 
   telemetry.track("load_complete", {
     loadMs: performance.now(),
@@ -1647,7 +1936,10 @@ async function start(): Promise<void> {
     productionAssets: activeView.productionAssetStatus().glowfin === "glb",
     rendererGeneration,
     reducedMotion: accessPreferences.reducedMotion,
-    highContrast: accessPreferences.highContrast
+    highContrast: accessPreferences.highContrast,
+    nativeWrapper: wrapperRuntime.isNative,
+    platform: wrapperRuntime.platform,
+    hapticsEnabled
   });
   if (isProbeRequested()) {
     const {
@@ -1661,6 +1953,11 @@ async function start(): Promise<void> {
   }
 
   showMoonWell("home");
+  setStartupProgress(100, navigator.onLine === false
+    ? "Ready offline · hosted boards will return with the network."
+    : "Ready to dive.");
+  startupProgress.dataset["ready"] = "true";
+  installOfflineRecovery();
   requestAnimationFrame(frame);
 }
 

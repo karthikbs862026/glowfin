@@ -7,9 +7,11 @@ this README covers local setup only.
 
 ## Status
 
-**Version 38 — Signature Obstacle Variety release candidate. Version 37 is the
-merged and deployed first-ten-minutes/economy baseline and remains the rollback
-artifact until Version 38 clears its immutable GitHub and hosted gates.**
+**Version 39 — Guided Onboarding & Store-Ready Mobile Experience is a
+physical-device-approved release candidate from the merged and deployed
+Version 38 baseline. Its tutorial, native wrappers, haptics, branded assets,
+startup/offline recovery, Moonflash challenges, privacy/store metadata and
+device-health scope are complete.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,
@@ -115,6 +117,25 @@ Version 38 completes the expert-review mechanical-variety scope:
   of additional static scenery; all remain non-colliding and pool-bounded
 - phone-readable route, cadence and direction cues, plus consent-gated semantic
   instrumentation that does not capture steering or touch paths
+
+Version 39 starts the store-ready mobile scope with a corrected tutorial:
+
+- a first-hub tutorial invitation that appears even for returning Version 38
+  saves, plus permanent replay entry points in the Moon Well and Settings
+- six short learn-by-doing lessons for automatic swimming, separate left/right
+  steering, cyan safe routes, close-pass/Moonflash reward and collision recovery
+- phone-readable action cues, visible progress, `Skip for now`, replay and
+  bounded per-step fallbacks that cannot trap a player
+- a privacy-safe device-local Version 39 completion stamp and consent-gated
+  tutorial start, step, skip/replay and completion instrumentation
+
+Version 39 also contains pinned Capacitor 8 Android/iOS projects, portrait and
+safe-area policy, native lifecycle composition, optional Settings-controlled
+haptics, branded Moon-Garden icons/splash, explicit loading/offline recovery,
+six-second rendered Moonflash media, `Beat My Current` challenge handoff,
+front-facing reward/recovery poses, privacy/store declarations and coarse
+consent-gated device-health diagnostics. CI produces unsigned Android and iOS
+release candidates; signing credentials remain external by policy.
 
 The frozen visual/gameplay baseline includes:
 
@@ -259,8 +280,8 @@ scripts/        repo/CI and production bundle checks
 - [x] Server re-simulation authority and explicit privacy-safe score submission
 - [x] Bounded near-miss Moonflash clips and controlled share publishing
 - [x] Host-injected rewarded-video bridge with idempotent cosmetic-only rewards
-- [ ] Physical first-run-to-simulated-next-day-return and retention-funnel sign-off
-- [ ] Android real-time 30-minute performance, thermal, sound-mix and interruption sign-off
-- [ ] iOS Safari performance, contrast, audio and real-time 30-minute soak sign-off
+- [x] Physical first-run-to-simulated-next-day-return and retention-funnel sign-off
+- [x] Android real-time 30-minute performance, thermal, sound-mix and interruption sign-off
+- [x] iOS Safari performance, contrast, audio and real-time 30-minute soak sign-off
 - [x] Code-owned monitoring, consent-safe funnel, abuse limits, retention expiry, sealed artifacts and rollback rehearsal
 - [ ] Public production promotion and store-wrapper pipeline

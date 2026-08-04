@@ -7,11 +7,16 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#04060f" />
-    <title>Glowfin — Version 38</title>
+    <title>Glowfin — Version 39</title>
     <style>
       :root {
         --ink: #cfefff;
         --dim: #6c8ba5;
+        --glowfin-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+        --glowfin-safe-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+        --glowfin-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+        --glowfin-safe-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+        color-scheme: dark;
       }
       html, body {
         margin: 0;
@@ -23,14 +28,16 @@
         -webkit-user-select: none;
         user-select: none;
         -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        overscroll-behavior: none;
       }
-      canvas { display: block; width: 100vw; height: 100vh; }
+      canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
 
       #hud {
         position: fixed;
         inset: 0;
         pointer-events: none;
-        padding: max(14px, env(safe-area-inset-top)) 16px 16px;
+        padding: max(14px, var(--glowfin-safe-top)) max(16px, var(--glowfin-safe-right)) max(16px, var(--glowfin-safe-bottom)) max(16px, var(--glowfin-safe-left));
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -126,8 +133,8 @@
       }
       #hud-build {
         position: absolute;
-        left: max(12px, env(safe-area-inset-left));
-        bottom: max(10px, env(safe-area-inset-bottom));
+        left: max(12px, var(--glowfin-safe-left));
+        bottom: max(10px, var(--glowfin-safe-bottom));
         padding: 4px 7px;
         border: 1px solid rgba(180, 236, 255, 0.16);
         border-radius: 999px;
@@ -143,8 +150,8 @@
 
       #hud-audio-toggle {
         position: absolute;
-        top: max(10px, env(safe-area-inset-top));
-        right: max(12px, env(safe-area-inset-right));
+        top: max(10px, var(--glowfin-safe-top));
+        right: max(12px, var(--glowfin-safe-right));
         width: 44px;
         height: 44px;
         display: grid;
@@ -197,8 +204,8 @@
       #hud-audio-toggle:disabled { opacity: 0.34; cursor: default; }
       #hud-audio-feedback {
         position: absolute;
-        top: max(58px, calc(env(safe-area-inset-top) + 48px));
-        right: max(10px, env(safe-area-inset-right));
+        top: max(58px, calc(var(--glowfin-safe-top) + 48px));
+        right: max(10px, var(--glowfin-safe-right));
         max-width: min(190px, 54vw);
         padding: 5px 9px;
         border: 1px solid rgba(180, 236, 255, 0.24);
@@ -236,7 +243,8 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: max(10px, env(safe-area-inset-top)) 14px max(10px, env(safe-area-inset-bottom));
+        padding: max(10px, var(--glowfin-safe-top)) max(14px, var(--glowfin-safe-right)) max(10px, var(--glowfin-safe-bottom)) max(14px, var(--glowfin-safe-left));
+        box-sizing: border-box;
         background: rgba(4, 6, 15, 0.72);
         backdrop-filter: blur(3px);
       }
@@ -468,7 +476,8 @@
         align-items: center;
         justify-content: center;
         gap: 12px;
-        padding: 32px;
+        padding: max(32px, var(--glowfin-safe-top)) max(32px, var(--glowfin-safe-right)) max(32px, var(--glowfin-safe-bottom)) max(32px, var(--glowfin-safe-left));
+        box-sizing: border-box;
         background: rgba(4, 6, 15, 0.94);
         color: var(--ink);
         text-align: center;
@@ -487,6 +496,51 @@
         font: inherit;
         cursor: pointer;
       }
+      #startup-progress {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: max(24px, var(--glowfin-safe-top)) 24px max(24px, var(--glowfin-safe-bottom));
+        background: radial-gradient(circle at 50% 34%, rgba(25, 100, 137, 0.74), rgba(4, 6, 15, 0.98) 62%);
+        box-sizing: border-box;
+        transition: opacity 220ms ease, visibility 220ms ease;
+      }
+      #startup-progress[data-ready="true"] { opacity: 0; visibility: hidden; pointer-events: none; }
+      .startup-progress-card { width: min(320px, 88vw); text-align: center; }
+      .startup-progress-mark {
+        width: 78px;
+        height: 78px;
+        margin: 0 auto 18px;
+        border: 2px solid rgba(119, 237, 255, 0.58);
+        border-radius: 46% 54% 58% 42%;
+        background: radial-gradient(circle at 40% 32%, #8bf4ff, #249cc7 48%, #41328f 76%);
+        box-shadow: 0 0 42px rgba(75, 222, 255, 0.42);
+        animation: startup-swim 1.8s ease-in-out infinite;
+      }
+      @keyframes startup-swim { 50% { transform: translateY(-6px) rotate(4deg); } }
+      .startup-progress-card strong { display: block; color: #f1fcff; font-size: 22px; }
+      #startup-progress-detail { display: block; min-height: 20px; margin-top: 7px; color: rgba(213, 244, 255, 0.74); font-size: 13px; }
+      .startup-progress-track { height: 5px; margin-top: 18px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.12); }
+      #startup-progress-fill { width: 12%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #60e7ff, #b075ff); transition: width 240ms ease; }
+      #network-status {
+        position: fixed;
+        left: max(12px, var(--glowfin-safe-left));
+        bottom: max(12px, var(--glowfin-safe-bottom));
+        z-index: 10;
+        display: none;
+        max-width: min(290px, calc(100vw - 24px));
+        padding: 7px 10px;
+        border: 1px solid rgba(255, 220, 143, 0.34);
+        border-radius: 12px;
+        background: rgba(27, 20, 42, 0.9);
+        color: #ffe7ad;
+        font-size: 11px;
+        line-height: 1.25;
+      }
+      #network-status[data-offline="true"] { display: block; }
 
       html[data-glowfin-reduced-motion="true"] #hud *,
       html[data-glowfin-reduced-motion="true"] #hud-gameover * {
@@ -515,7 +569,8 @@
         display: none;
         align-items: center;
         justify-content: center;
-        padding: 28px;
+        padding: max(28px, var(--glowfin-safe-top)) max(28px, var(--glowfin-safe-right)) max(28px, var(--glowfin-safe-bottom)) max(28px, var(--glowfin-safe-left));
+        box-sizing: border-box;
         background: rgba(4, 6, 15, 0.9);
         color: var(--ink);
         text-align: center;
@@ -550,7 +605,7 @@
       }
       #runtime-status-retry[hidden] { display: none; }
 
-      /* Version 37 — first-ten-minutes shell. */
+      /* Version 39 — store-ready shell and guided onboarding. */
       #moonwell-hub {
         position: fixed;
         inset: 0;
@@ -558,7 +613,7 @@
         display: none;
         align-items: stretch;
         justify-content: center;
-        padding: max(18px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+        padding: max(18px, var(--glowfin-safe-top)) max(14px, var(--glowfin-safe-right)) max(14px, var(--glowfin-safe-bottom)) max(14px, var(--glowfin-safe-left));
         overflow: hidden;
         background:
           radial-gradient(circle at 50% 8%, rgba(75, 226, 255, 0.17), transparent 36%),
@@ -569,6 +624,7 @@
       }
       #moonwell-hub[data-active="true"] { display: flex; }
       .moonwell-shell {
+        position: relative;
         width: min(420px, 100%);
         height: 100%;
         display: flex;
@@ -626,6 +682,8 @@
         text-align: center;
       }
       .moonwell-cta,
+      .moonwell-tutorial,
+      .moonwell-challenge,
       .moonwell-daily,
       .moonwell-nav button,
       .moonwell-panel-heading button,
@@ -651,6 +709,43 @@
       }
       .moonwell-cta span { font-size: 22px; font-weight: 850; letter-spacing: -0.02em; }
       .moonwell-cta small { color: rgba(236, 253, 255, 0.74); font-size: 12px; }
+      .moonwell-tutorial {
+        width: 100%;
+        min-height: 58px;
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 10px 15px;
+        border-color: rgba(255, 219, 137, 0.56);
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(66, 54, 114, 0.88), rgba(18, 91, 111, 0.82));
+        text-align: left;
+      }
+      .moonwell-tutorial strong { display: block; color: #fff0bf; font-size: 14px; }
+      .moonwell-tutorial span { display: block; margin-top: 2px; color: rgba(219, 246, 255, 0.72); font-size: 12px; }
+      .moonwell-tutorial b {
+        flex: 0 0 auto;
+        padding: 5px 8px;
+        border-radius: 999px;
+        background: rgba(255, 221, 142, 0.16);
+        color: #ffe7a8;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+      }
+      .moonwell-challenge {
+        width: 100%;
+        min-height: 54px;
+        margin-top: 10px;
+        padding: 9px 14px;
+        border-color: rgba(255, 126, 223, 0.55);
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(110, 36, 128, 0.92), rgba(10, 100, 124, 0.88));
+        text-align: left;
+      }
+      .moonwell-challenge strong { display: block; color: #ffe5fb; font-size: 14px; }
+      .moonwell-challenge span { display: block; margin-top: 2px; color: rgba(225, 243, 255, 0.74); font-size: 11px; }
       .moonwell-daily {
         width: 100%;
         min-height: 48px;
@@ -760,33 +855,127 @@
         margin: 18px auto 0;
         font-size: 11px;
       }
+      #tutorial-intro {
+        position: absolute;
+        inset: 0;
+        z-index: 8;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        border-radius: inherit;
+        background: rgba(2, 10, 26, 0.92);
+        backdrop-filter: blur(10px);
+        box-sizing: border-box;
+      }
+      #tutorial-intro[data-active="true"] { display: flex; }
+      .tutorial-intro-card {
+        width: min(350px, 100%);
+        max-height: 100%;
+        overflow: auto;
+        padding: 22px 18px 18px;
+        border: 1px solid rgba(145, 231, 255, 0.35);
+        border-radius: 24px;
+        background: linear-gradient(165deg, rgba(10, 46, 69, 0.98), rgba(24, 18, 58, 0.98));
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
+        box-sizing: border-box;
+      }
+      .tutorial-intro-kicker {
+        color: #8eeeff;
+        font-size: 11px;
+        font-weight: 850;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+      .tutorial-intro-card h2 { margin: 5px 0 6px; color: #f4fcff; font-size: 27px; line-height: 1.05; }
+      .tutorial-intro-card > p { margin: 0 0 14px; color: rgba(220, 246, 255, 0.78); font-size: 14px; line-height: 1.45; }
+      .tutorial-intro-lessons { display: grid; gap: 8px; margin-bottom: 16px; }
+      .tutorial-intro-lesson {
+        display: grid;
+        grid-template-columns: 34px 1fr;
+        gap: 10px;
+        align-items: center;
+        padding: 9px 10px;
+        border-radius: 14px;
+        background: rgba(4, 23, 42, 0.64);
+      }
+      .tutorial-intro-lesson b {
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(91, 225, 255, 0.14);
+        color: #a5f4ff;
+        font-size: 16px;
+      }
+      .tutorial-intro-lesson strong { display: block; color: #f0fbff; font-size: 14px; }
+      .tutorial-intro-lesson span { display: block; margin-top: 1px; color: rgba(210, 239, 250, 0.68); font-size: 12px; line-height: 1.3; }
+      .tutorial-intro-actions { display: grid; gap: 8px; }
+      .tutorial-intro-actions button,
+      #tutorial-skip {
+        min-height: 46px;
+        border: 1px solid rgba(145, 231, 255, 0.35);
+        border-radius: 15px;
+        color: #effcff;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 780;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      #tutorial-intro-start {
+        background: linear-gradient(135deg, rgba(15, 163, 187, 0.96), rgba(83, 72, 184, 0.96));
+      }
+      #tutorial-intro-skip { background: rgba(4, 24, 43, 0.72); }
       #tutorial-overlay {
         position: fixed;
         left: 50%;
-        bottom: max(22px, env(safe-area-inset-bottom));
-        z-index: 4;
+        bottom: max(22px, var(--glowfin-safe-bottom));
+        z-index: 8;
         width: min(380px, calc(100vw - 28px));
         display: none;
         transform: translateX(-50%);
-        padding: 14px 16px 13px;
+        padding: 12px 14px 11px;
         border: 1px solid rgba(157, 234, 255, 0.38);
         border-radius: 18px;
         background: rgba(4, 20, 39, 0.88);
         box-shadow: 0 14px 44px rgba(0, 0, 0, 0.38);
         backdrop-filter: blur(7px);
         box-sizing: border-box;
-        pointer-events: none;
+        pointer-events: auto;
       }
       #tutorial-overlay[data-active="true"] { display: block; }
+      .tutorial-overlay-row { display: grid; grid-template-columns: 44px 1fr; gap: 11px; align-items: center; }
+      #tutorial-icon {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: rgba(94, 228, 255, 0.14);
+        color: #c5f8ff;
+        font-size: 17px;
+        font-weight: 850;
+      }
       #tutorial-eyebrow { display: block; color: #91edff; font-size: 11px; font-weight: 850; letter-spacing: 0.12em; text-transform: uppercase; }
       #tutorial-title { display: block; margin-top: 2px; color: #f3fcff; font-size: 19px; }
       #tutorial-detail { margin: 4px 0 9px; color: rgba(222, 246, 255, 0.78); font-size: 13px; line-height: 1.35; }
       #tutorial-progress { height: 4px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.1); }
       #tutorial-progress-fill { width: 25%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #58e9ff, #a36fff); }
+      #tutorial-skip {
+        min-height: 34px;
+        margin-top: 9px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: rgba(5, 29, 49, 0.72);
+        color: rgba(226, 247, 255, 0.78);
+        font-size: 12px;
+      }
       #hud-signature-cue {
         position: fixed;
         left: 50%;
-        bottom: max(104px, calc(env(safe-area-inset-bottom) + 88px));
+        bottom: max(104px, calc(var(--glowfin-safe-bottom) + 88px));
         z-index: 3;
         width: min(340px, calc(100vw - 42px));
         display: none;
@@ -851,6 +1040,15 @@
     </script>
   </head>
   <body>
+    <div id="startup-progress" data-ready="false" role="status" aria-live="polite">
+      <div class="startup-progress-card">
+        <div class="startup-progress-mark" aria-hidden="true"></div>
+        <strong>Preparing the Moon-Garden</strong>
+        <span id="startup-progress-detail">Checking this device…</span>
+        <div class="startup-progress-track"><div id="startup-progress-fill"></div></div>
+      </div>
+    </div>
+    <div id="network-status" data-offline="false" role="status">Offline mode · runs and progress stay safely on this device.</div>
     <canvas id="glowfin-canvas"></canvas>
 
     <section id="moonwell-hub" data-active="true" data-panel="home" aria-label="Moon Well">
@@ -861,10 +1059,34 @@
           <p id="moonwell-meta">Tide 1 · 0 Lumen Pearls</p>
         </header>
 
+        <section id="tutorial-intro" data-active="false" aria-hidden="true" aria-label="Glowfin guided tutorial">
+          <div class="tutorial-intro-card">
+            <span class="tutorial-intro-kicker">New in Version 39 · about 30 seconds</span>
+            <h2>Learn Glowfin step by step</h2>
+            <p>Try each move in the water. Clear instructions stay on screen, and every step continues automatically if you need more time.</p>
+            <div class="tutorial-intro-lessons" aria-label="Tutorial lessons">
+              <div class="tutorial-intro-lesson"><b>↔</b><span><strong>Drag to steer</strong><span>Practise left and right separately.</span></span></div>
+              <div class="tutorial-intro-lesson"><b>◇</b><span><strong>Follow cyan</strong><span>Wide cyan openings are the safe route.</span></span></div>
+              <div class="tutorial-intro-lesson"><b>↻</b><span><strong>Recover from bumps</strong><span>Keep steering while Light and Flow rebuild.</span></span></div>
+            </div>
+            <div class="tutorial-intro-actions">
+              <button id="tutorial-intro-start" type="button" data-hud-action data-guided-tutorial>Start guided tutorial</button>
+              <button id="tutorial-intro-skip" type="button" data-hud-action data-tutorial-skip>Skip for now</button>
+            </div>
+          </div>
+        </section>
+
         <div id="moonwell-home" class="moonwell-view">
           <p class="moonwell-invitation">Follow the current. Thread the cyan gates. Gather a brighter Moonwake.</p>
           <button id="moonwell-dive" class="moonwell-cta" type="button" data-hud-action>
             <span>Tap to Dive</span><small>Starts sound and the current</small>
+          </button>
+          <button class="moonwell-tutorial" type="button" data-hud-action data-guided-tutorial>
+            <span><strong data-tutorial-entry-title>Start guided tutorial</strong><span data-tutorial-entry-detail>New in Version 39 · six clear steps</span></span>
+            <b>HOW TO PLAY</b>
+          </button>
+          <button id="moonwell-challenge" class="moonwell-challenge" type="button" data-hud-action hidden>
+            <strong>Beat My Current</strong><span>Loading verified Moonflash challenge…</span>
           </button>
           <button id="hud-daily-trial" class="moonwell-daily" type="button" data-hud-action>Daily Tide</button>
           <nav class="moonwell-nav" aria-label="Moon Well destinations">
@@ -905,18 +1127,26 @@
           <button id="hud-motor-assist" class="hud-action" type="button" data-hud-action aria-pressed="false">Steering · Standard division</button>
           <button id="hud-reduced-motion" class="hud-action" type="button" data-hud-action aria-pressed="false">Motion effects · Standard</button>
           <button id="hud-high-contrast" class="hud-action" type="button" data-hud-action aria-pressed="false">Contrast · Standard</button>
+          <button id="hud-haptics" class="hud-action" type="button" data-hud-action aria-pressed="true">Haptics · On when installed</button>
+          <button class="hud-action" type="button" data-hud-action data-guided-tutorial><span data-tutorial-entry-title>Start guided tutorial</span> · 30 seconds</button>
           <button id="hud-telemetry-choice" class="hud-action" type="button" data-hud-action>Anonymous playtest data: choose</button>
           <div id="hud-telemetry-note">No name, email, device fingerprint or touch path is collected.</div>
-          <div id="hud-build" role="status">V38 · LOCAL · local</div>
+          <div id="hud-build" role="status">V39 · LOCAL · local</div>
         </section>
       </div>
     </section>
 
-    <aside id="tutorial-overlay" data-active="false" data-step="steer" aria-live="polite">
-      <span id="tutorial-eyebrow">Learn the current · 1/4</span>
-      <strong id="tutorial-title">Swipe to steer</strong>
-      <p id="tutorial-detail">Drag left and right. Glowfin follows your finger while the current carries you forward.</p>
+    <aside id="tutorial-overlay" data-active="false" data-step="auto-swim" aria-live="polite">
+      <div class="tutorial-overlay-row">
+        <span id="tutorial-icon" aria-hidden="true">↑</span>
+        <div>
+          <span id="tutorial-eyebrow">Guided Dive · 1/6</span>
+          <strong id="tutorial-title">Glowfin swims forward</strong>
+          <p id="tutorial-detail">No need to push ahead. Keep one finger on the water and get ready to guide Glowfin.</p>
+        </div>
+      </div>
       <div id="tutorial-progress"><div id="tutorial-progress-fill"></div></div>
+      <button id="tutorial-skip" type="button" data-hud-action data-tutorial-skip>End tutorial · keep diving</button>
     </aside>
 
     <aside id="hud-signature-cue" data-active="false" data-verb="moonflash-choice" aria-live="polite">

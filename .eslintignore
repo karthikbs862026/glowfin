@@ -1,0 +1,6 @@
+build/
+dist/
+android/app/src/main/assets/
+android/app/build/
+ios/App/App/public/
+ios/App/build/

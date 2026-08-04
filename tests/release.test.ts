@@ -12,15 +12,17 @@ function metadata(
   return {
     ...releaseConfig,
     environment: "staging",
-    sourceCommit: "fccb95c86f15903e0d6c6850f66e5c200c9dc8fe",
+    sourceCommit: "8f529b9bd5f2e2c42e4aa27d24a88441d564b291",
     ...overrides
   };
 }
 
-describe("Version 38 release identity", () => {
-  it("accepts only Version 38 built from the merged Version 37 baseline", () => {
+describe("Version 39 release identity", () => {
+  it("accepts only Version 39 built from the merged Version 38 baseline", () => {
     expect(isGlowfinReleaseMetadata(metadata())).toBe(true);
-    expect(isGlowfinReleaseMetadata(metadata({ version: 37 }))).toBe(false);
+    expect(metadata().certification).toBe("physical-certified");
+    expect(metadata().phase).toBe("phase-store-ready-mobile");
+    expect(isGlowfinReleaseMetadata(metadata({ version: 38 }))).toBe(false);
     expect(isGlowfinReleaseMetadata(metadata({ baselineCommit: "deadbeef" }))).toBe(false);
     expect(isGlowfinReleaseMetadata(metadata({ environment: "production" }))).toBe(true);
   });
@@ -32,10 +34,10 @@ describe("Version 38 release identity", () => {
   });
 
   it("formats a compact phone-readable build label", () => {
-    expect(formatReleaseLabel(metadata())).toBe("V38 · STAGING · fccb95c");
+    expect(formatReleaseLabel(metadata())).toBe("V39 · STAGING · 8f529b9");
     expect(formatReleaseLabel(metadata({
       environment: "local",
       sourceCommit: "local"
-    }))).toBe("V38 · LOCAL · local");
+    }))).toBe("V39 · LOCAL · local");
   });
 });

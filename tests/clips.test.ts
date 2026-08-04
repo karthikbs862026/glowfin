@@ -6,6 +6,8 @@ import { ReplayRecorder } from "../src/replay/replay";
 import {
   HostedMoonflashClient,
   MoonflashRecorder,
+  moonflashChallengeUrl,
+  moonflashTokenFromUrl,
   validateMoonflashClip
 } from "../src/sharing/clips";
 
@@ -87,5 +89,40 @@ describe("Version 34 controlled Moonflash clips", () => {
     expect(requests).toBe(0);
     expect((await client.publish(clip)).token).toBe("moonflash_12345678");
     expect(requests).toBe(1);
+  });
+
+  it("builds bounded web/native Beat My Current links and loads a verified replay", async () => {
+    const recorder = new MoonflashRecorder();
+    recorder.record(400, 100, 2, [{
+      kind: "near-miss",
+      clearance: 0.1,
+      distance: 300,
+      tier: 1,
+      templateId: "straight"
+    }]);
+    const clip = recorder.finish(replay(), classifyRunAccess(defaultAccessPreferences(false)))!;
+    const token = "moonflash_12345678";
+    const published = {
+      schemaVersion: 1 as const,
+      token,
+      shareUrl: `https://glowfin.example/share/${token}`,
+      expiresAt: "2026-09-03T00:00:00.000Z"
+    };
+    const challengeUrl = moonflashChallengeUrl(published);
+    expect(moonflashTokenFromUrl(challengeUrl)).toBe(token);
+    expect(moonflashTokenFromUrl(`glowfin://challenge/${token}`)).toBe(token);
+    expect(moonflashTokenFromUrl("glowfin://settings/not-a-token")).toBeNull();
+
+    const client = new HostedMoonflashClient(async (input, init) => {
+      expect(String(input)).toContain(`/api/glowfin/share/${token}`);
+      expect(init).toMatchObject({ method: "GET", cache: "no-store" });
+      return Response.json({
+        schemaVersion: 1,
+        token,
+        clip,
+        expiresAt: published.expiresAt
+      });
+    });
+    expect((await client.loadChallenge(token)).clip.checksum).toBe(clip.checksum);
   });
 });

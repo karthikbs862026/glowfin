@@ -19,12 +19,15 @@ export class MoonWell {
   private readonly panels = new Map<MoonWellPanel, HTMLElement>();
   private readonly dive: HTMLButtonElement;
   private readonly daily: HTMLButtonElement;
+  private readonly challenge: HTMLButtonElement;
   private readonly meta: HTMLElement;
   private readonly wardrobeGrid: HTMLElement;
   private readonly wardrobeFeedback: HTMLElement;
   private readonly objectiveList: HTMLElement;
+  private readonly tutorialIntro: HTMLElement;
   private readonly tutorial: HTMLElement;
   private readonly tutorialEyebrow: HTMLElement;
+  private readonly tutorialIcon: HTMLElement;
   private readonly tutorialTitle: HTMLElement;
   private readonly tutorialDetail: HTMLElement;
   private readonly tutorialFill: HTMLElement;
@@ -34,12 +37,15 @@ export class MoonWell {
     this.home = MoonWell.require(root, "moonwell-home");
     this.dive = MoonWell.requireButton(root, "moonwell-dive");
     this.daily = MoonWell.requireButton(root, "hud-daily-trial");
+    this.challenge = MoonWell.requireButton(root, "moonwell-challenge");
     this.meta = MoonWell.require(root, "moonwell-meta");
     this.wardrobeGrid = MoonWell.require(root, "moonwell-wardrobe-grid");
     this.wardrobeFeedback = MoonWell.require(root, "moonwell-wardrobe-feedback");
     this.objectiveList = MoonWell.require(root, "moonwell-objectives-list");
+    this.tutorialIntro = MoonWell.require(root, "tutorial-intro");
     this.tutorial = MoonWell.require(root, "tutorial-overlay");
     this.tutorialEyebrow = MoonWell.require(root, "tutorial-eyebrow");
+    this.tutorialIcon = MoonWell.require(root, "tutorial-icon");
     this.tutorialTitle = MoonWell.require(root, "tutorial-title");
     this.tutorialDetail = MoonWell.require(root, "tutorial-detail");
     this.tutorialFill = MoonWell.require(root, "tutorial-progress-fill");
@@ -74,6 +80,10 @@ export class MoonWell {
     this.wire(this.dive, listener);
   }
 
+  onChallenge(listener: () => void): void {
+    this.wire(this.challenge, listener);
+  }
+
   onOpenPanel(listener: (panel: MoonWellPanel) => void): void {
     this.root.querySelectorAll<HTMLButtonElement>("[data-moonwell-panel]").forEach((button) => {
       this.wire(button, () => listener(button.dataset.moonwellPanel as MoonWellPanel));
@@ -84,6 +94,18 @@ export class MoonWell {
     this.root.querySelectorAll<HTMLButtonElement>("[data-moonwell-back]").forEach((button) => {
       this.wire(button, listener);
     });
+  }
+
+  onTutorialStart(listener: () => void): void {
+    this.root.querySelectorAll<HTMLButtonElement>("[data-guided-tutorial]").forEach((button) => {
+      this.wire(button, listener);
+    });
+  }
+
+  onTutorialSkip(listener: () => void): void {
+    this.root.ownerDocument
+      .querySelectorAll<HTMLButtonElement>("[data-tutorial-skip]")
+      .forEach((button) => this.wire(button, listener));
   }
 
   onWardrobePreview(listener: (cosmeticId: string) => void): void {
@@ -136,6 +158,37 @@ export class MoonWell {
     this.daily.textContent = completed
       ? `Replay Daily Tide · ${dayId}`
       : `Daily Tide · ${dayId}`;
+  }
+
+  setChallenge(caption: string | null, state: "ready" | "failed" | "loading" = "ready"): void {
+    this.challenge.hidden = !caption && state !== "loading";
+    this.challenge.disabled = state !== "ready";
+    const title = this.challenge.querySelector("strong");
+    const detail = this.challenge.querySelector("span");
+    if (title) title.textContent = state === "failed" ? "Challenge unavailable" : "Beat My Current";
+    if (detail) {
+      detail.textContent = state === "loading"
+        ? "Loading verified Moonflash challenge…"
+        : state === "failed"
+          ? "This link expired or could not be verified."
+          : caption ?? "Race the shared same-seed ghost.";
+    }
+  }
+
+  setTutorialStatus(completed: boolean): void {
+    this.root.querySelectorAll<HTMLElement>("[data-tutorial-entry-title]").forEach((element) => {
+      element.textContent = completed ? "Replay guided tutorial" : "Start guided tutorial";
+    });
+    this.root.querySelectorAll<HTMLElement>("[data-tutorial-entry-detail]").forEach((element) => {
+      element.textContent = completed
+        ? "Six clear steps · about 30 seconds"
+        : "New in Version 39 · six clear steps";
+    });
+  }
+
+  showTutorialIntro(visible: boolean): void {
+    this.tutorialIntro.dataset.active = String(visible);
+    this.tutorialIntro.setAttribute("aria-hidden", String(!visible));
   }
 
   renderObjectives(objectives: readonly HudObjectivePresentation[]): void {
@@ -215,6 +268,7 @@ export class MoonWell {
       return;
     }
     this.tutorialEyebrow.textContent = presentation.eyebrow;
+    this.tutorialIcon.textContent = presentation.icon;
     this.tutorialTitle.textContent = presentation.title;
     this.tutorialDetail.textContent = presentation.detail;
     this.tutorialFill.style.width = `${Math.round(presentation.progress * 100)}%`;

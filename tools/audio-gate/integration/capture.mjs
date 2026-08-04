@@ -98,6 +98,15 @@ try {
     }
   };
 
+  const dismissVersion39TutorialIntro = async () => {
+    const intro = page.locator("#tutorial-intro");
+    if (await intro.getAttribute("data-active") !== "true") return;
+    await page.locator("#tutorial-intro-skip").tap();
+    await page.waitForFunction(
+      () => document.querySelector("#tutorial-intro")?.getAttribute("data-active") === "false"
+    );
+  };
+
   await page.goto(baseUrl, { waitUntil: "load" });
   await page.locator("#glowfin-canvas").waitFor({ state: "visible" });
   await page.locator("#hud-audio-toggle").waitFor({ state: "visible" });
@@ -115,9 +124,10 @@ try {
     );
   }
 
-  // Version 37 deliberately unlocks sound and begins simulation through the
-  // Moon Well CTA. The corner sound control becomes actionable after the hub
-  // closes, avoiding a competing first-run gesture.
+  // Version 39 first exposes the guided-tutorial invitation. This audio-only
+  // gate deliberately chooses its visible Skip path before exercising the
+  // Moon Well audio gesture; it never taps through the modal.
+  await dismissVersion39TutorialIntro();
   await page.locator("#moonwell-dive").tap();
   await waitForAudioReady("initial tap-to-dive activation");
   await page.waitForTimeout(280);
@@ -142,19 +152,23 @@ try {
     );
   }
 
+  await dismissVersion39TutorialIntro();
   await page.locator("#moonwell-dive").tap();
   await page.locator("#hud-audio-toggle").tap();
   await waitForAudioReady("unmute activation");
   await page.waitForTimeout(280);
   const afterUnmute = await snapshot();
 
-  // Version 37 makes Tap to Dive the deliberate launch and audio-activation
-  // gesture. Start from a clean preference so that CTA must create/resume both
-  // audio paths before the first simulation step.
+  // Start from a clean preference. Version 39's tutorial choice is now the
+  // first visible trusted gesture, so it must activate both audio paths; the
+  // following Dive gesture must preserve them into the first simulation step.
   await page.locator("#hud-audio-toggle").tap();
   await page.evaluate(() => localStorage.removeItem("glowfin-audio-muted-v1"));
   await page.reload({ waitUntil: "load" });
   await page.locator("#moonwell-dive").waitFor({ state: "visible" });
+  const beforeTutorialChoice = await snapshot();
+  await dismissVersion39TutorialIntro();
+  await waitForAudioReady("tutorial choice activation before second dive");
   const beforeSecondDive = await snapshot();
   await page.locator("#moonwell-dive").tap();
   await waitForAudioReady("second tap-to-dive activation");
@@ -179,8 +193,10 @@ try {
     afterDiveActivation.label !== "Mute sound" ||
     afterMute.pressed !== "false" ||
     afterUnmute.pressed !== "true" ||
-    beforeSecondDive.state !== "locked" ||
-    beforeSecondDive.pressed !== "false" ||
+    beforeTutorialChoice.state !== "locked" ||
+    beforeTutorialChoice.pressed !== "false" ||
+    beforeSecondDive.state !== "active" ||
+    beforeSecondDive.pressed !== "true" ||
     afterSecondDive.pressed !== "true" ||
     afterDiveThenButton.state !== "active" ||
     afterDiveThenButton.pressed !== "true" ||
@@ -190,14 +206,14 @@ try {
         state.signal !== "generated" ||
         Number(state.rms) <= 0
       ) ||
-    Object.keys(readinessProofs).length !== 5 ||
+    Object.keys(readinessProofs).length !== 6 ||
     Object.values(readinessProofs).some((proof) =>
       !proof ||
       proof.nativeMediaTime <= 0 ||
       proof.nativePaused ||
       proof.signalRms <= 0
     ) ||
-    [beforeGesture, afterDiveActivation, afterMute, afterReload, afterUnmute, beforeSecondDive, afterSecondDive, afterDiveThenButton]
+    [beforeGesture, afterDiveActivation, afterMute, afterReload, afterUnmute, beforeTutorialChoice, beforeSecondDive, afterSecondDive, afterDiveThenButton]
       .some((state) => state.startupError)
   ) {
     throw new Error(
@@ -207,6 +223,7 @@ try {
         afterMute,
         afterReload,
         afterUnmute,
+        beforeTutorialChoice,
         beforeSecondDive,
         afterSecondDive,
         afterDiveThenButton,
@@ -226,6 +243,7 @@ try {
     afterMute,
     afterReload,
     afterUnmute,
+    beforeTutorialChoice,
     beforeSecondDive,
     afterSecondDive,
     afterDiveThenButton,
