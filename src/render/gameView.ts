@@ -45,6 +45,7 @@ export class GameView {
   private readonly renderer: THREE.WebGLRenderer;
 
   private readonly creature: Creature;
+  private readonly ghostCreature: Creature;
   private readonly environment: Environment;
   private readonly gates: MoonGardenGates;
   private readonly floorMaterial: THREE.ShaderMaterial;
@@ -400,6 +401,9 @@ export class GameView {
     // --- creature (Part 3.1) ---
     this.creature = new Creature(cfg, glowfinSurface);
     this.scene.add(this.creature.group);
+    this.ghostCreature = new Creature(cfg, glowfinSurface, { ghost: true });
+    this.ghostCreature.group.visible = false;
+    this.scene.add(this.ghostCreature.group);
 
     // --- drowned city, god-rays, responsive coral (Part 3.2 #3 and #5) ---
     this.environment = new Environment(cfg, {
@@ -414,7 +418,14 @@ export class GameView {
     // so the fallback cannot masquerade as production evidence.
     const productionGeometryReady = loadRuntimeProductionGeometry()
       .then((assets) => {
+        const ghostGeometry = {
+          body: assets.glowfin.body.clone(),
+          eyes: assets.glowfin.eyes.clone(),
+          clips: [...assets.glowfin.clips],
+          bones: assets.glowfin.bones
+        };
         this.creature.installRuntimeGeometry(assets.glowfin);
+        this.ghostCreature.installRuntimeGeometry(ghostGeometry);
         this.environment.installRuntimeReefGeometry(assets.reef);
         this.gates.installRuntimeGeometry(assets.gates);
         this.runtimeProductionStatus = {
@@ -765,7 +776,8 @@ export class GameView {
     gates: readonly Gate[],
     lightFraction: number,
     elapsedSec: number,
-    frameSec: number
+    frameSec: number,
+    ghostSim: SimState | null = null
   ): void {
     const cfg = this.cfg;
     this.renderer.info.reset();
@@ -803,6 +815,45 @@ export class GameView {
       collisionFraction,
       recoveryFraction
     );
+
+    if (ghostSim) {
+      const ghostMomentum = cfg.momentum.ceiling === 0
+        ? 0
+        : ghostSim.momentum / cfg.momentum.ceiling;
+      const ghostSpeed = speedRange <= 0
+        ? 0
+        : (forwardSpeed(ghostSim, cfg) - cfg.speed.forwardAtZeroMomentum) /
+          speedRange;
+      const ghostCollision = cfg.momentum.stunDurationSec <= 0
+        ? 0
+        : Math.min(1, ghostSim.stunRemainingSec / cfg.momentum.stunDurationSec);
+      const ghostRecovery =
+        ghostSim.stunRemainingSec <= 0 &&
+        cfg.momentum.invulnerabilityDurationSec > 0
+          ? Math.min(
+            1,
+            ghostSim.invulnerableRemainingSec /
+              cfg.momentum.invulnerabilityDurationSec
+          )
+          : 0;
+      this.ghostCreature.group.visible = true;
+      this.ghostCreature.group.position.set(
+        ghostSim.lateralPosition,
+        0.025,
+        -ghostSim.forwardDistance
+      );
+      this.ghostCreature.update(
+        ghostMomentum,
+        ghostSpeed,
+        1,
+        ghostSim.smoothedSteering,
+        frameSec,
+        ghostCollision,
+        ghostRecovery
+      );
+    } else {
+      this.ghostCreature.group.visible = false;
+    }
 
     // --- camera (Part 4.5: readability at speed) ---
     const behind = lerp(
@@ -875,6 +926,7 @@ export class GameView {
     for (const item of this.disposables) item.dispose();
     this.trail.dispose();
     this.creature.dispose();
+    this.ghostCreature.dispose();
     this.environment.dispose();
     this.gates.dispose();
     this.maskObstacle.dispose();

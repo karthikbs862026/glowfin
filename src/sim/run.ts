@@ -39,11 +39,26 @@ export interface RunSnapshot {
 export interface StepEvents {
   nearMisses: number;
   collisions: number;
+  /** Sparse, bounded gate outcomes for replay-safe telemetry. */
+  encounters: readonly RunEncounter[];
   /** True on the step the run ended, not on subsequent steps. */
   justEnded: boolean;
 }
 
-const NO_EVENTS: StepEvents = { nearMisses: 0, collisions: 0, justEnded: false };
+export interface RunEncounter {
+  kind: "near-miss" | "collision";
+  clearance: number;
+  distance: number;
+  tier: number;
+  templateId: string;
+}
+
+const NO_EVENTS: StepEvents = {
+  nearMisses: 0,
+  collisions: 0,
+  encounters: [],
+  justEnded: false
+};
 
 /**
  * How far behind the player gates are kept before disposal. Generous enough
@@ -119,6 +134,7 @@ export class Run {
     // --- resolve gates crossed this step ---
     let nearMisses = 0;
     let collisions = 0;
+    const encounters: RunEncounter[] = [];
 
     const passes = evaluateStep(
       {
@@ -142,11 +158,25 @@ export class Run {
           this.secondsSinceCollision = 0;
           this.collisionCount++;
           collisions++;
+          encounters.push({
+            kind: "collision",
+            clearance: pass.clearance,
+            distance: pass.gate.distance,
+            tier: pass.gate.tier,
+            templateId: pass.gate.templateId
+          });
           // A collision cancels any in-flight celebration beat.
           this.slowMoRemainingSec = 0;
         }
       } else if (isNearMiss(pass, cfg) && registerNearMiss(this.scoring, cfg)) {
         nearMisses++;
+        encounters.push({
+          kind: "near-miss",
+          clearance: pass.clearance,
+          distance: pass.gate.distance,
+          tier: pass.gate.tier,
+          templateId: pass.gate.templateId
+        });
         this.slowMoRemainingSec = cfg.scoring.nearMissSlowMoDurationSec;
       }
     }
@@ -181,7 +211,7 @@ export class Run {
       justEnded = true;
     }
 
-    return { nearMisses, collisions, justEnded };
+    return { nearMisses, collisions, encounters, justEnded };
   }
 
   snapshot(): RunSnapshot {

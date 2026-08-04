@@ -55,6 +55,7 @@ const BODY_FRAGMENT = /* glsl */ `
   uniform float uMomentum;
   uniform float uCollision;
   uniform float uRecovery;
+  uniform float uGhost;
   uniform sampler2D uSkinMap;
   varying vec3 vNormalV;
   varying vec3 vViewPosition;
@@ -173,7 +174,8 @@ const BODY_FRAGMENT = /* glsl */ `
     colour += vec3(0.16, 0.025, 0.13) * reefBounce *
       mix(0.035, 0.11, gillMask);
     colour = min(colour * 0.94, vec3(0.46, 0.9, 1.0));
-    gl_FragColor = vec4(colour, 1.0);
+    colour = mix(colour, vec3(0.34, 0.92, 1.0), uGhost * 0.58);
+    gl_FragColor = vec4(colour, mix(1.0, 0.3, uGhost));
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
@@ -199,6 +201,7 @@ export const GLOWFIN_EYE_FRAGMENT_SHADER = /* glsl */ `
   uniform float uEnergy;
   uniform float uCollision;
   uniform float uRecovery;
+  uniform float uGhost;
   uniform vec3 uLookDirection;
   varying vec3 vNormalV;
   varying vec3 vViewPosition;
@@ -243,7 +246,8 @@ export const GLOWFIN_EYE_FRAGMENT_SHADER = /* glsl */ `
     eye += edgeColour * edge * mix(0.12, 0.2, uEnergy);
     eye = mix(eye, vec3(0.16, 0.055, 0.12), uCollision * 0.54);
     eye += vec3(0.32, 0.94, 1.0) * uRecovery * irisMask * 0.22;
-    gl_FragColor = vec4(eye, 1.0);
+    eye = mix(eye, vec3(0.55, 0.96, 1.0), uGhost * 0.62);
+    gl_FragColor = vec4(eye, mix(1.0, 0.38, uGhost));
   }
 `;
 
@@ -314,6 +318,10 @@ export type GlowfinAnimationState =
   | "collision"
   | "recovery";
 
+export interface CreatureOptions {
+  ghost?: boolean;
+}
+
 /**
  * The production rig exposes five visually distinct states, but simulation
  * remains the sole authority. Collision and recovery override propulsion;
@@ -354,8 +362,10 @@ export class Creature {
 
   constructor(
     private readonly cfg: TuningConfig,
-    skinMap: THREE.Texture
+    skinMap: THREE.Texture,
+    options: CreatureOptions = {}
   ) {
+    const ghost = options.ghost === true;
     const rig = createGlowfinRigGeometry(cfg, 0);
     this.bodyMaterial = new THREE.ShaderMaterial({
       vertexColors: true,
@@ -366,26 +376,37 @@ export class Creature {
         uMomentum: { value: 0 },
         uCollision: { value: 0 },
         uRecovery: { value: 0 },
+        uGhost: { value: ghost ? 1 : 0 },
         uSkinMap: { value: skinMap }
       },
       vertexShader: BODY_VERTEX,
-      fragmentShader: BODY_FRAGMENT
+      fragmentShader: BODY_FRAGMENT,
+      transparent: ghost,
+      depthWrite: !ghost
     });
-    this.eyeMaterial = new THREE.ShaderMaterial({
-      uniforms: {
-        uColor: { value: new THREE.Color(0x3aa6ff) },
-        uGlow: { value: 1 },
-        uEnergy: { value: 0 },
-        uCollision: { value: 0 },
-        uRecovery: { value: 0 },
-        uLookDirection: {
-          value: new THREE.Vector3(...GLOWFIN_EYE_LOOK_AXIS)
-        }
-      },
-      vertexShader: EYE_VERTEX,
-      fragmentShader: GLOWFIN_EYE_FRAGMENT_SHADER,
-      toneMapped: false
-    });
+    // The saved-run competitor shares its spectral body material across both
+    // primitives. This preserves the complete eye/body silhouette while
+    // costing only one additional active material; a second translucent eye
+    // material would exceed the established mobile scene ceiling. The live
+    // player keeps the authored eye shader and its obstacle-facing gaze.
+    this.eyeMaterial = ghost
+      ? this.bodyMaterial
+      : new THREE.ShaderMaterial({
+        uniforms: {
+          uColor: { value: new THREE.Color(0x3aa6ff) },
+          uGlow: { value: 1 },
+          uEnergy: { value: 0 },
+          uCollision: { value: 0 },
+          uRecovery: { value: 0 },
+          uGhost: { value: 0 },
+          uLookDirection: {
+            value: new THREE.Vector3(...GLOWFIN_EYE_LOOK_AXIS)
+          }
+        },
+        vertexShader: EYE_VERTEX,
+        fragmentShader: GLOWFIN_EYE_FRAGMENT_SHADER,
+        toneMapped: false
+      });
 
     this.rootBone.name = "GlowfinRoot";
     this.finLeftBone.name = "FinLeft";
@@ -417,13 +438,15 @@ export class Creature {
       ...this.gillBones
     ]));
     this.body.frustumCulled = false;
+    this.body.renderOrder = ghost ? 3 : 4;
 
     this.eyes = new THREE.Mesh(rig.eyes, this.eyeMaterial);
+    this.eyes.renderOrder = ghost ? 3 : 5;
     this.group.add(this.body, this.eyes);
-    this.disposables.push(
-      this.bodyMaterial,
-      this.eyeMaterial
-    );
+    this.disposables.push(this.bodyMaterial);
+    if (this.eyeMaterial !== this.bodyMaterial) {
+      this.disposables.push(this.eyeMaterial);
+    }
   }
 
   /**
@@ -577,32 +600,34 @@ export class Creature {
     const recovery = this.bodyMaterial.uniforms["uRecovery"];
     if (recovery) recovery.value = recoveryFraction;
 
-    const eyeColour = this.eyeMaterial.uniforms["uColor"];
-    if (eyeColour) {
-      (eyeColour.value as THREE.Color).setHSL(
-        eyeHueForEnergy(
-          this.eyeEnergy,
-          cfg.eyeHueCalm,
-          cfg.eyeHueCruise,
-          cfg.eyeHueFast,
-          cfg.eyeHueMax
-        ),
-        lerp(0.84, 0.94, this.eyeEnergy),
-        lerp(0.4, 0.58, this.eyeEnergy)
-      );
+    if (this.eyeMaterial !== this.bodyMaterial) {
+      const eyeColour = this.eyeMaterial.uniforms["uColor"];
+      if (eyeColour) {
+        (eyeColour.value as THREE.Color).setHSL(
+          eyeHueForEnergy(
+            this.eyeEnergy,
+            cfg.eyeHueCalm,
+            cfg.eyeHueCruise,
+            cfg.eyeHueFast,
+            cfg.eyeHueMax
+          ),
+          lerp(0.84, 0.94, this.eyeEnergy),
+          lerp(0.4, 0.58, this.eyeEnergy)
+        );
+      }
+      const eyeGlow = this.eyeMaterial.uniforms["uGlow"];
+      if (eyeGlow) {
+        eyeGlow.value =
+          lerp(0.88, 1.04, clamp01(lightFraction)) *
+          lerp(0.92, 1.08, this.eyeEnergy);
+      }
+      const eyeEnergy = this.eyeMaterial.uniforms["uEnergy"];
+      if (eyeEnergy) eyeEnergy.value = this.eyeEnergy;
+      const eyeCollision = this.eyeMaterial.uniforms["uCollision"];
+      if (eyeCollision) eyeCollision.value = collisionFraction;
+      const eyeRecovery = this.eyeMaterial.uniforms["uRecovery"];
+      if (eyeRecovery) eyeRecovery.value = recoveryFraction;
     }
-    const eyeGlow = this.eyeMaterial.uniforms["uGlow"];
-    if (eyeGlow) {
-      eyeGlow.value =
-        lerp(0.88, 1.04, clamp01(lightFraction)) *
-        lerp(0.92, 1.08, this.eyeEnergy);
-    }
-    const eyeEnergy = this.eyeMaterial.uniforms["uEnergy"];
-    if (eyeEnergy) eyeEnergy.value = this.eyeEnergy;
-    const eyeCollision = this.eyeMaterial.uniforms["uCollision"];
-    if (eyeCollision) eyeCollision.value = collisionFraction;
-    const eyeRecovery = this.eyeMaterial.uniforms["uRecovery"];
-    if (eyeRecovery) eyeRecovery.value = recoveryFraction;
   }
 
   animationState(): GlowfinAnimationState {

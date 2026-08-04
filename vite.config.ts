@@ -27,7 +27,7 @@ function releaseMetadataPlugin(metadata: ReleaseMetadata): Plugin {
   return {
     name: "glowfin-release-metadata",
     transformIndexHtml(html) {
-      return html.replace("V31 · LOCAL · local", label);
+      return html.replace("V32 · LOCAL · local", label);
     },
     generateBundle() {
       this.emitFile({

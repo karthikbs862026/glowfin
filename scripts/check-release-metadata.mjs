@@ -41,7 +41,7 @@ if (release.sourceCommit !== expectedCommit) {
   );
 }
 if (!index.includes('id="hud-build"')) {
-  throw new Error("Production HTML omits the visible Version 31 release badge.");
+  throw new Error("Production HTML omits the visible Version 32 release badge.");
 }
 const shortCommit = expectedCommit === "local"
   ? "local"
@@ -52,8 +52,8 @@ if (!index.includes(`id="hud-build" role="status">${expectedLabel}</div>`)) {
     `Production HTML initial release badge does not identify ${expectedLabel}.`
   );
 }
-if (!index.includes("Glowfin — Version 31")) {
-  throw new Error("Production HTML title does not identify Version 31.");
+if (!index.includes("Glowfin — Version 32")) {
+  throw new Error("Production HTML title does not identify Version 32.");
 }
 
 console.log(
