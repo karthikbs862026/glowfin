@@ -86,6 +86,19 @@
 - Guardrails preserved: the 2.00 MB threshold remains unchanged, the browser gate must validate the compacted HTML, and no runtime test, persistence requirement or Version 40 audit surface is removed
 - Waiver: none
 
+## Iteration 8 — 2026-08-05
+
+### Finding: the Expedition deep link could click Dive before the Moon Well registered its handler
+
+- Source: dedicated mobile Chromium Version 41 journey
+- Severity: release-blocking startup-order race
+- Evidence: the Version 41 HUD activated, but the test timed out waiting for `follow-light`; no gameplay segment or screenshot was produced
+- Root cause: the dynamically loaded Expedition module could process `?expedition=missing-moonseed` before the main application had finished wiring the Moon Well Dive listener
+- Resolution: deep-link and rematch auto-start now wait for both the running runtime state and the visibly active Moon Well hub before invoking Dive
+- Failure mode: polling is bounded to ten seconds and does not bypass the unsupported/recovery surfaces
+- Guardrail preserved: normal manual entry is unchanged, and the same mobile browser journey must now prove all six segments, completion, persistence, restoration, Version 40 isolation, reduced motion and high contrast
+- Waiver: none
+
 ### Rerun policy
 
 All core CI, production-readiness, native-wrapper and art/render jobs are rerun from each corrected head. Later findings are appended as separate iterations; no failed check is waived.
