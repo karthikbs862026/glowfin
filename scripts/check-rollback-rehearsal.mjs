@@ -27,14 +27,32 @@ const releaseConfigDirty = execFileSync(
   ["status", "--porcelain", "--", "config/release.json"],
   { cwd: root, encoding: "utf8" }
 ).trim().length > 0;
+
+const deferredVersions = Array.isArray(current.deferredVersions)
+  ? current.deferredVersions
+  : [];
+const expectedDeferredVersions = [];
+for (let version = Number(baseline.version) + 1; version < Number(current.version); version++) {
+  expectedDeferredVersions.push(version);
+}
+const validDeferredVersions =
+  deferredVersions.every((version) => Number.isInteger(version)) &&
+  new Set(deferredVersions).size === deferredVersions.length &&
+  JSON.stringify([...deferredVersions].sort((a, b) => a - b)) ===
+    JSON.stringify(expectedDeferredVersions);
+
 if (
   baseline.version !== current.baselineVersion ||
-  current.version !== baseline.version + 1 ||
+  current.version <= baseline.version ||
+  !validDeferredVersions ||
   (baselineCommit === headCommit && !releaseConfigDirty)
 ) {
-  throw new Error("Rollback rehearsal rejected a mismatched or self-referential baseline.");
+  throw new Error("Rollback rehearsal rejected a mismatched, undeclared-gap, or self-referential baseline.");
 }
 
+const deferredSummary = deferredVersions.length > 0
+  ? `; deferred V${deferredVersions.join(", V")}`
+  : "";
 console.log(
-  `Rollback rehearsal passed: V${current.version} -> V${baseline.version} (${baselineCommit.slice(0, 7)}).`
+  `Rollback rehearsal passed: V${current.version} -> V${baseline.version} (${baselineCommit.slice(0, 7)})${deferredSummary}.`
 );
