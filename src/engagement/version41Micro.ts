@@ -781,7 +781,22 @@ function install(): void {
   const queryStart = new URLSearchParams(location.search).get("expedition") === C.expeditionId;
   const rematch = sessionStorage.getItem(AUTO) === "1";
   if (rematch) sessionStorage.removeItem(AUTO);
-  if (queryStart || rematch) setTimeout(start, 0);
+  if (queryStart || rematch) {
+  let attempts = 0;
+  const autoStart = (): void => {
+    const hub = element("moonwell-hub");
+    if (
+      document.documentElement.dataset["glowfinRuntime"] === "running" &&
+      hub?.dataset["active"] === "true"
+    ) {
+      start();
+      return;
+    }
+    attempts += 1;
+    if (attempts < 200) setTimeout(autoStart, 50);
+  };
+  setTimeout(autoStart, 0);
+}
 }
 
 if (document.readyState === "loading") {
