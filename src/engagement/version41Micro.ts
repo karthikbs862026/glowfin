@@ -212,8 +212,10 @@ function hit(distance: number, lateral: number, targetDistance: number, targetLa
 function moteX(index: number): number {
   return Math.sin(index * 0.58) * 2.65 + Math.sin(index * 0.21 + 0.8) * 0.82;
 }
-function segmentAt(time: number) {
-  return S.find((segment) => time >= segment.startSec && time < segment.endSec) ?? S[S.length - 1];
+function segmentAt(time: number): typeof S[number] {
+  const segment = S.find((entry) => time >= entry.startSec && time < entry.endSec) ?? S[S.length - 1];
+  if (!segment) throw new Error("Version 41 encounter plan is empty.");
+  return segment;
 }
 function toast(value: string): void {
   const node = element("v41-toast");
