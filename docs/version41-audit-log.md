@@ -19,6 +19,18 @@
 - Release fingerprint: deferred versions are now included in runtime metadata validation and sealed-manifest comparison
 - Waiver: none
 
+## Iteration 2 — 2026-08-05
+
+### Finding: the release metadata module imported browser-only Expedition bootstrap code during Node tests
+
+- Source: complete unit-test matrix, `tests/release.test.ts`
+- Severity: release-blocking environment-boundary defect
+- Evidence: 393 tests passed, but the release suite failed during module collection with `ReferenceError: document is not defined`
+- Resolution: keep release metadata universally importable and load the Version 41 runtime module only when both `window` and `document` exist
+- Guardrail preserved: the existing release suite remains enabled; no browser globals were mocked and no test was excluded
+- Browser assurance: the phone-viewport Version 41 gate must still prove that the dynamically isolated module loads before the Expedition starts and reaches all six beats
+- Waiver: none
+
 ### Rerun policy
 
-All core CI, production-readiness, native-wrapper and art/render jobs are rerun from the corrected head. Later findings are appended as separate iterations; no failed check is waived.
+All core CI, production-readiness, native-wrapper and art/render jobs are rerun from each corrected head. Later findings are appended as separate iterations; no failed check is waived.
