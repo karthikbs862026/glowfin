@@ -57,7 +57,11 @@ function compactCss(source: string): string {
       continue;
     }
     if (character === "\"" || character === "'") {
-      if (pendingSpace && compact && !"{}:;,".includes(compact.at(-1) ?? "")) {
+      if (
+        pendingSpace &&
+        compact &&
+        !"{}:;,".includes(compact.charAt(compact.length - 1))
+      ) {
         compact += " ";
       }
       pendingSpace = false;
@@ -80,13 +84,17 @@ function compactCss(source: string): string {
       pendingSpace = false;
       continue;
     }
-    if (pendingSpace && compact && !"{}:;,(".includes(compact.at(-1) ?? "")) {
+    if (
+      pendingSpace &&
+      compact &&
+      !"{}:;,(".includes(compact.charAt(compact.length - 1))
+    ) {
       compact += " ";
     }
     pendingSpace = false;
     compact += character;
   }
-  return compact.trim().replace(/;}+/g, "}");
+  return compact.trim().replace(/;}/g, "}");
 }
 
 function shippedHtmlBudgetPlugin(): Plugin {
