@@ -6,7 +6,7 @@
   "title": "The Missing Moonseed",
   "seed": 1196577101,
   "durationSec": 180,
-  "qaTimeScale": 18,
+  "qaTimeScale": 8,
   "segments": [
     {
       "kind": "follow-light",
