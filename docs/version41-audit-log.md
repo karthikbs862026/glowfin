@@ -99,6 +99,20 @@
 - Guardrail preserved: normal manual entry is unchanged, and the same mobile browser journey must now prove all six segments, completion, persistence, restoration, Version 40 isolation, reduced motion and high contrast
 - Waiver: none
 
+## Iteration 9 — 2026-08-05
+
+### Finding: the mobile audit sampled only the instantaneous encounter while screenshots consumed part of a shortened QA segment
+
+- Source: dedicated mobile Chromium Version 41 journey rerun
+- Severity: release-blocking nondeterministic test-observation defect
+- Evidence: audio and runtime-recovery checks passed, but the journey timed out inside the per-segment wait and emitted no complete Version 41 evidence set
+- Resolution: the primary journey now uses the real player action by tapping the visible `The Missing Moonseed` card; the runtime records an append-only ordered encounter history for QA; and loopback-only acceleration is reduced from 18× to 8× so each beat remains visually capturable
+- Deep-link assurance: a separate browser page still verifies that the direct Expedition URL reaches `follow-light` safely
+- Version 40 assurance: the normal-mode page now checks the actual Version 41 card ID while continuing to require Daily Tide, Wardrobe, Leaderboard and disabled rewarded video
+- Accessibility assurance: reduced-motion/high-contrast validation also starts through the real Expedition card and requires the ordered history to reach the Duskmaw chase
+- Guardrail preserved: production timing remains exactly three minutes; only loopback QA acceleration changed, and deterministic encounter order is strengthened rather than inferred from screenshots
+- Waiver: none
+
 ### Rerun policy
 
 All core CI, production-readiness, native-wrapper and art/render jobs are rerun from each corrected head. Later findings are appended as separate iterations; no failed check is waived.
