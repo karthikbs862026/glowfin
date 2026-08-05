@@ -54,6 +54,16 @@
 - Rendering improvement: the lean layer uses eight additional draws, two materials and substantially fewer than the 8,000 allowed additional triangles
 - Waiver: none
 
+## Iteration 5 — 2026-08-05
+
+### Finding: strict TypeScript rejected one unused type carried into the lean runtime
+
+- Source: production-readiness candidate build
+- Severity: release-blocking code hygiene defect
+- Resolution: remove the exact unused import; no compiler option, lint rule or build step was relaxed
+- Preserved evidence: all Version 40 production-policy tests and the explicit Version 39 rollback with deferred Version 40 passed before this build-only finding
+- Waiver: none
+
 ### Rerun policy
 
 All core CI, production-readiness, native-wrapper and art/render jobs are rerun from each corrected head. Later findings are appended as separate iterations; no failed check is waived.
