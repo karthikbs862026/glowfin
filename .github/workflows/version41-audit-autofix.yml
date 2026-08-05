@@ -1,0 +1,49 @@
+name: version41-audit-autofix
+
+on:
+  push:
+    branches: [agent/version41-living-current]
+
+permissions:
+  contents: write
+
+jobs:
+  remove-dead-state:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/version41-living-current
+          fetch-depth: 0
+      - name: Apply exact reviewed source correction
+        shell: python
+        run: |
+          from pathlib import Path
+
+          source = Path("src/engagement/version41.ts")
+          text = source.read_text(encoding="utf-8")
+          replacements = [
+              ("  private elapsedSec = 0;\n", ""),
+              ("    this.elapsedSec = effectiveElapsed;\n", ""),
+              ("    this.elapsedSec = 0;\n", ""),
+              (
+                  "      (effectiveElapsed + 0.1 < this.previousElapsedSec || sim.forwardDistance < 1)\n",
+                  "      (effectiveElapsed + 0.1 < this.previousElapsedSec ||\n"
+                  "        (this.previousElapsedSec > 1 && sim.forwardDistance < 1))\n"
+              )
+          ]
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"Expected one exact occurrence, found {count}: {old!r}")
+              text = text.replace(old, new, 1)
+          source.write_text(text, encoding="utf-8")
+          Path(".github/workflows/version41-audit-autofix.yml").unlink()
+      - name: Commit the audited correction and remove this one-shot workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/engagement/version41.ts .github/workflows/version41-audit-autofix.yml
+          git commit -m "Version 41: remove dead expedition timing state"
+          git push origin HEAD:agent/version41-living-current
