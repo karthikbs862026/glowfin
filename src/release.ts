@@ -1,4 +1,5 @@
 import releaseConfig from "../config/release.json";
+import "./engagement/version41";
 
 export const GLOWFIN_ENVIRONMENTS = [
   "local",
