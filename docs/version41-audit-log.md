@@ -64,6 +64,17 @@
 - Preserved evidence: all Version 40 production-policy tests and the explicit Version 39 rollback with deferred Version 40 passed before this build-only finding
 - Waiver: none
 
+## Iteration 6 — 2026-08-05
+
+### Finding: the first lean rewrite remained 0.02 MB above the unchanged shipped-bundle cap
+
+- Source: core CI bundle-size gate
+- Severity: release-blocking mobile-load regression
+- Evidence: lint, strict TypeScript, all 396 tests, production build, hosted anti-cheat authority and mount safety passed; total non-map payload measured 2.02 MB
+- Resolution: consolidate the Expedition runtime a second time, remove the superseded runtime chunk, reduce object families from eight to seven additive draws, and compress the UI/event layer while retaining every browser-gated encounter, persistence, restoration, Atlas, telemetry and accessibility contract
+- Guardrail preserved: the 2.00 MB threshold, source maps accounting rule and file classes remain unchanged
+- Waiver: none
+
 ### Rerun policy
 
 All core CI, production-readiness, native-wrapper and art/render jobs are rerun from each corrected head. Later findings are appended as separate iterations; no failed check is waived.
