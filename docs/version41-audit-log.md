@@ -75,6 +75,17 @@
 - Guardrail preserved: the 2.00 MB threshold, source maps accounting rule and file classes remain unchanged
 - Waiver: none
 
+## Iteration 7 — 2026-08-05
+
+### Finding: HTML compaction alone left the candidate at 2.01 MB and the micro-runtime fallback needed an explicit empty-plan invariant
+
+- Source: bundle-size gate followed by strict TypeScript
+- Severity: release-blocking mobile-load and fail-closed typing defects
+- Resolution: production-only HTML/CSS compaction removed comments and formatting without changing semantics; the runtime then stopped importing the duplicate production validator/progress implementation and retained the same plan hash and checksummed two-copy envelope locally
+- Type safety: the final encounter lookup now throws on an impossible empty plan instead of propagating an optional segment
+- Guardrails preserved: the 2.00 MB threshold remains unchanged, the browser gate must validate the compacted HTML, and no runtime test, persistence requirement or Version 40 audit surface is removed
+- Waiver: none
+
 ### Rerun policy
 
 All core CI, production-readiness, native-wrapper and art/render jobs are rerun from each corrected head. Later findings are appended as separate iterations; no failed check is waived.
