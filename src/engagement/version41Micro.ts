@@ -231,6 +231,9 @@ function showSegment(kind: Kind, elapsed: number): void {
   const hud = element("v41-hud");
   if (!segment || !hud) return;
   hud.dataset.segment = kind;
+  const history = (hud.dataset["segmentHistory"] ?? "").split("|").filter(Boolean);
+  if (history[history.length - 1] !== kind) history.push(kind);
+  hud.dataset["segmentHistory"] = history.join("|");
   hud.dataset.state = "active";
   text("v41-segment-title", segment.title);
   text("v41-objective", segment.objective);
