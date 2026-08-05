@@ -204,6 +204,10 @@ function qaScale(): number {
   const local = location.hostname === "localhost" || location.hostname === "127.0.0.1";
   return local && new URLSearchParams(location.search).get("v41qa") === "1" ? C.qaTimeScale : 1;
 }
+function qaHeld(): boolean {
+  return qaScale() !== 1 &&
+    document.documentElement.dataset["glowfinV41QaHold"] === "true";
+}
 function hit(distance: number, lateral: number, targetDistance: number, targetLateral: number, radius: number): boolean {
   const forward = distance - targetDistance;
   const side = lateral - targetLateral;
@@ -410,6 +414,10 @@ class Layer {
   show(value: boolean): void { this.group.visible = value; }
 
   update(sim: SimState, frame: number): void {
+    // Loopback evidence may briefly hold the Adventure layer after an encounter
+    // boundary so a slow software renderer captures that exact beat. This is
+    // unreachable in production and never alters the underlying core lifecycle.
+    if (qaHeld()) return;
     const previousElapsed = this.expeditionElapsed;
     // Advance from active render time rather than rendered-frame count. The core
     // lifecycle resets frame delta after backgrounding/context recovery, so a

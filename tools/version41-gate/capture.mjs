@@ -100,11 +100,15 @@ try {
   const snapshots = [];
   for (const segment of expectedSegments) {
     await page.waitForFunction(
-      (expected) => (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
-        .split("|")
-        .includes(expected),
+      (expected) => {
+        const reached = (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
+          .split("|")
+          .includes(expected);
+        if (reached) document.documentElement.dataset.glowfinV41QaHold = "true";
+        return reached;
+      },
       segment,
-      { timeout: 8_000 }
+      { timeout: 12_000 }
     );
     const snapshot = await page.evaluate(() => {
       const hud = document.querySelector("#v41-hud");
@@ -135,6 +139,9 @@ try {
     await page.screenshot({
       path: resolve(screenshotDir, `${String(snapshots.length).padStart(2, "0")}-${segment}.png`),
       fullPage: true
+    });
+    await page.evaluate(() => {
+      delete document.documentElement.dataset.glowfinV41QaHold;
     });
   }
 
@@ -223,11 +230,15 @@ try {
   await accessPage.goto(expeditionUrl.toString(), { waitUntil: "domcontentloaded", timeout: 90_000 });
   await startFromExpeditionCard(accessPage);
   await accessPage.waitForFunction(
-    () => (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
-      .split("|")
-      .includes("duskmaw-chase"),
+    () => {
+      const reached = (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
+        .split("|")
+        .includes("duskmaw-chase");
+      if (reached) document.documentElement.dataset.glowfinV41QaHold = "true";
+      return reached;
+    },
     undefined,
-    { timeout: 25_000 }
+    { timeout: 30_000 }
   );
   const accessSnapshot = await accessPage.evaluate(() => ({
     reducedMotion: document.documentElement.dataset.glowfinReducedMotion === "true",
@@ -242,12 +253,18 @@ try {
     path: resolve(screenshotDir, "08-reduced-motion-high-contrast-chase.png"),
     fullPage: true
   });
+  await accessPage.evaluate(() => {
+    delete document.documentElement.dataset.glowfinV41QaHold;
+  });
   await accessContext.close();
 
   const issues = [];
   const observedHistory = completion.segmentHistory.split("|").filter(Boolean);
   if (observedHistory.join("|") !== expectedSegments.join("|")) {
     issues.push("encounter order was not deterministic");
+  }
+  if (snapshots.some((entry, index) => entry.segment !== expectedSegments[index])) {
+    issues.push("an encounter screenshot did not capture its named active beat");
   }
   if (snapshots.some((entry) => !entry.title || !entry.objective)) {
     issues.push("an encounter lacked explicit phone-readable purpose");
