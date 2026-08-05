@@ -168,10 +168,22 @@ text = replace_once(
 )
 text = replace_once(
     text,
-    '''    startupError: document.body.dataset.startupError === "true"
+    '''  const deepLinkStart = await deepLinkPage.evaluate(() => ({
+    hudActive: document.querySelector("#v41-hud")?.getAttribute("data-active") === "true",
+    mode: document.documentElement.dataset.glowfinMode ?? null,
+    firstSegmentObserved: (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
+      .split("|")
+      .includes("follow-light"),
+    startupError: document.body.dataset.startupError === "true"
   }));
 ''',
-    '''    startupError: document.body.dataset.startupError === "true",
+    '''  const deepLinkStart = await deepLinkPage.evaluate(() => ({
+    hudActive: document.querySelector("#v41-hud")?.getAttribute("data-active") === "true",
+    mode: document.documentElement.dataset.glowfinMode ?? null,
+    firstSegmentObserved: (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
+      .split("|")
+      .includes("follow-light"),
+    startupError: document.body.dataset.startupError === "true",
     autoStart: document.documentElement.dataset.glowfinV41AutoStart ?? null
   }));
 ''',
