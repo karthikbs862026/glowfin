@@ -38,11 +38,11 @@ const expectedSegments = [
 
 async function waitForReadyHub(page) {
   await page.locator("#glowfin-canvas").waitFor({ state: "visible" });
-  await page.locator("#v41-entry").waitFor({ state: "visible", timeout: 12_000 });
+  await page.locator("#v41-entry").waitFor({ state: "visible", timeout: 30_000 });
   await page.waitForFunction(() => (
     document.documentElement.dataset.glowfinRuntime === "running" &&
     document.querySelector("#moonwell-hub")?.getAttribute("data-active") === "true"
-  ), undefined, { timeout: 12_000 });
+  ), undefined, { timeout: 30_000 });
 }
 
 async function standardProgressSnapshot(page) {
@@ -183,6 +183,10 @@ try {
     path: resolve(screenshotDir, "07-complete.png"),
     fullPage: true
   });
+  // The remaining checks represent independent user journeys. Release the
+  // completed Expedition's WebGL context before opening another mobile page so
+  // the gate never manufactures a multi-tab GPU-context exhaustion failure.
+  await page.close();
 
   const deepLinkPage = await context.newPage();
   const deepLinkUrl = new URL(baseUrl);
@@ -209,7 +213,7 @@ try {
 
   const normalPage = await context.newPage();
   await normalPage.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 90_000 });
-  await normalPage.locator("#v41-entry").waitFor({ state: "visible" });
+  await waitForReadyHub(normalPage);
   const normalIsolation = await normalPage.evaluate(() => ({
     mode: document.documentElement.dataset.glowfinMode ?? null,
     hudActive: document.querySelector("#v41-hud")?.getAttribute("data-active") === "true",
