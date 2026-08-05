@@ -28,7 +28,8 @@ jobs:
             mode: "fresh" | "ghost" | "daily" | "daily-ghost" = "fresh",
             daily: { dayId: string; seed: number } | null = null,
             challengeGhost: GlowfinReplayV1 | null = null,
-            tutorial = false
+            tutorial = false,
+            reuseRunId = false
           ): void {
           '''
           new = '''function version41ExpeditionActive(): boolean {
@@ -40,6 +41,7 @@ jobs:
             daily: { dayId: string; seed: number } | null = null,
             challengeGhost: GlowfinReplayV1 | null = null,
             tutorial = false,
+            reuseRunId = false,
             suppressRunStart = false
           ): void {
           '''
@@ -47,16 +49,40 @@ jobs:
               raise SystemExit(f"Expected one startRun signature, found {text.count(old)}")
           text = text.replace(old, new, 1)
 
-          old = '''  reportRunStart();
+          old = '''  if (reuseRunId) {
+              telemetry.track("run_start", {
+                mode: activeRunMode,
+                dayId: activeRunDayId,
+                ghostVisible,
+                tutorial: false,
+                challenge: challengeRunActive,
+                recovery: "first-frame-fallback"
+              }, activeRunId);
+              void telemetry.flush();
+            } else {
+              reportRunStart();
+            }
           }
-
-          async function startDailyRun'''
-          new = '''  if (!suppressRunStart) reportRunStart();
+          '''
+          new = '''  if (!suppressRunStart) {
+              if (reuseRunId) {
+                telemetry.track("run_start", {
+                  mode: activeRunMode,
+                  dayId: activeRunDayId,
+                  ghostVisible,
+                  tutorial: false,
+                  challenge: challengeRunActive,
+                  recovery: "first-frame-fallback"
+                }, activeRunId);
+                void telemetry.flush();
+              } else {
+                reportRunStart();
+              }
+            }
           }
-
-          async function startDailyRun'''
+          '''
           if text.count(old) != 1:
-              raise SystemExit(f"Expected one reportRunStart tail, found {text.count(old)}")
+              raise SystemExit(f"Expected one startRun telemetry tail, found {text.count(old)}")
           text = text.replace(old, new, 1)
 
           old = '''moonWell.onDive(() => {
@@ -85,7 +111,7 @@ jobs:
                 firstRun: !progress.onboarding.firstRunCompleted
               });
             }
-            startRun("fresh", null, null, false, expedition);
+            startRun("fresh", null, null, false, false, expedition);
           });
           '''
           if text.count(old) != 1:
@@ -108,7 +134,7 @@ jobs:
                     document.documentElement.dataset["glowfinExpeditionRecoveries"] = String(recoveries);
                     queueMicrotask(() => {
                       if (!version41ExpeditionActive()) return;
-                      startRun("fresh", null, null, false, true);
+                      startRun("fresh", null, null, false, false, true);
                       window.dispatchEvent(new Event("glowfin:v41-current-recovered"));
                     });
                     return;
@@ -162,10 +188,9 @@ jobs:
           text = text.replace(old, new, 1)
 
           pattern = re.compile(r'''\n  private reset\(sim: SimState\): void \{.*?\n  \}\n\n  private updateMotes''', re.S)
-          replacement = '''
+          text, count = pattern.subn('''
 
-            private updateMotes'''
-          text, count = pattern.subn(replacement, text, count=1)
+            private updateMotes''', text, count=1)
           if count != 1:
               raise SystemExit(f"Expected one obsolete Layer reset method, found {count}")
 
