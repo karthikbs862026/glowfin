@@ -31,6 +31,17 @@
 - Browser assurance: the phone-viewport Version 41 gate must still prove that the dynamically isolated module loads before the Expedition starts and reaches all six beats
 - Waiver: none
 
+## Iteration 3 — 2026-08-05
+
+### Finding: two release assertions still described the superseded Version 39 certificate
+
+- Source: complete unit-test matrix, `tests/release.test.ts`
+- Severity: release-blocking stale contract test
+- Evidence: 394 tests passed; two assertions expected Version 39, `physical-certified`, and the Version 39 phone label
+- Resolution: update the release contract test to require Version 41, the Living Current phase, automated-candidate status, Version 39 baseline, and exact `[40]` deferral
+- Guardrail strengthened: malformed, missing, duplicate or expanded deferred-version declarations are explicitly rejected
+- Waiver: none
+
 ### Rerun policy
 
 All core CI, production-readiness, native-wrapper and art/render jobs are rerun from each corrected head. Later findings are appended as separate iterations; no failed check is waived.
