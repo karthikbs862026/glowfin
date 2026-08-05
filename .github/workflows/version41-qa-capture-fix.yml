@@ -1,0 +1,31 @@
+name: version41-qa-capture-fix
+
+on:
+  push:
+    branches: [agent/version41-living-current]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: version41-qa-capture-fix
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/version41-living-current
+          fetch-depth: 0
+      - name: Apply the audited exact-beat capture correction
+        run: python scripts/fix-v41-qa-capture.py
+      - name: Commit correction and remove one-shot tooling
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "test: capture every Version 41 encounter exactly"
+          git push origin HEAD:agent/version41-living-current
