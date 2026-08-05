@@ -18,6 +18,7 @@ export interface GlowfinReleaseMetadata {
   sourceCommit: string;
   baselineVersion: number;
   baselineCommit: string;
+  deferredVersions: number[];
   artBuild: string;
   productionPolicyVersion: number;
 }
@@ -29,6 +30,14 @@ const localFallback: GlowfinReleaseMetadata = {
   environment: "local",
   sourceCommit: "local"
 };
+
+function sameDeferredVersions(value: unknown): boolean {
+  return Array.isArray(value) &&
+    value.length === releaseConfig.deferredVersions.length &&
+    value.every((entry, index) => (
+      Number.isInteger(entry) && entry === releaseConfig.deferredVersions[index]
+    ));
+}
 
 export function isGlowfinReleaseMetadata(
   value: unknown
@@ -47,6 +56,7 @@ export function isGlowfinReleaseMetadata(
       : /^[0-9a-f]{40}$/.test(candidate.sourceCommit)) &&
     candidate.baselineVersion === releaseConfig.baselineVersion &&
     candidate.baselineCommit === releaseConfig.baselineCommit &&
+    sameDeferredVersions(candidate.deferredVersions) &&
     candidate.artBuild === releaseConfig.artBuild &&
     candidate.productionPolicyVersion === releaseConfig.productionPolicyVersion
   );
