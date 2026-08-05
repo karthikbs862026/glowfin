@@ -1,0 +1,768 @@
+3. New core engagement architecture
+
+Glowfin should have four connected loops.
+
+Moment-to-moment loop
+
+Read the current → choose safe or risky route → collect a satisfying line of objects → encounter a character or threat → perform a skillful escape → receive an immediate audiovisual payoff.
+
+Run loop
+
+Choose a mission → enter a realm → complete several encounters → face a race, rescue, chase, or leviathan climax → reach a finish or environment transition → earn a visible restoration reward.
+
+Long-term loop
+
+Discover relics → unlock characters and relationships → restore Moon Well districts → complete realm collections → pursue harder expeditions and seasonal goals.
+
+Social loop
+
+Race verified ghosts → challenge friends → represent a character or realm in community events → compare collections and finishes without introducing pay-to-win power.
+
+4. The most important new system: Encounter Director
+
+Glowfin currently generates course obstacles, but it now needs a higher-level Encounter Director that determines what each segment of the run is emotionally and mechanically about.
+
+The director should schedule deterministic, replay-safe beats rather than simply spawning more objects.
+
+Approximate run time	Player purpose	Example
+0–20 seconds	Immediate satisfaction	Collect a luminous mote trail
+20–45 seconds	Meaningful choice	Safe route versus rare relic route
+45–75 seconds	Character interaction	Meet, follow, rescue, or overtake another swimmer
+75–110 seconds	Competition	Short rival sprint
+110–140 seconds	Pressure	Duskmaw pursuit or collapsing current
+140–180 seconds	Resolution	Finish gate, leviathan escape, or realm transition
+Beyond 180 seconds	Escalation cycle	New biome, stronger rival, altered objective
+
+These are starting targets rather than rigid timers. The important rules are:
+
+No purposeless stretch longer than approximately 25 seconds.
+Never repeat the same encounter type back-to-back.
+Place a calm recovery beat after a chase or high-pressure race.
+Telegraph every hazard within the established reaction-window rules.
+Keep every competitive encounter deterministic and verifiable.
+Use skill adaptation only in unranked Adventure modes.
+Never secretly change the cyan collision truth.
+
+This system is the foundation for races, chases, rescue missions, collectibles, environments, and story. Without it, those additions will feel like disconnected features.
+
+5. In-run collectibles that feel satisfying
+
+Glowfin needs objects that players can see, pursue, collect, hear, and remember during the swim.
+
+5.1 Lumen Motes
+
+These are the primary common collectible.
+
+They should appear in flowing underwater formations:
+
+Curved ribbons leading toward safe routes.
+Spirals around risky openings.
+Waves that encourage smooth steering.
+Two-way forks showing safe and high-reward paths.
+Character-shaped constellations during special events.
+
+Collecting consecutive motes builds a Lumen Chain with escalating sound, glow, trail width, haptic rhythm, and score feedback. Missing one should break the perfect chain but not punish the player severely.
+
+Lumen Motes should contribute to score and a small capped portion of the existing Lumen Pearl reward. They must not become a new currency.
+
+5.2 Lost Relic Shards
+
+Relic Shards are rare persistent discoveries tied to each environment.
+
+Examples:
+
+Moonseed Fragment
+Tidekeeper Crest
+Crystal Song
+Mermaid Crown Piece
+Leviathan Scale Echo
+Astral Observatory Lens
+
+They should not be randomly sold, placed in loot boxes, or duplicated indefinitely. A player should understand where a missing relic can be found and what objective is needed to obtain it.
+
+Each completed relic set restores a visible piece of the Moon Well or another kingdom district.
+
+5.3 Mission objects
+
+These exist only for a particular encounter:
+
+Rescue Lights that release a trapped manta.
+Moon Seals used during a leviathan escape.
+Lost market cargo.
+Constellation stars in an Astral Trial.
+Current Beacons that create distance from a chaser.
+
+They give each run a specific purpose without introducing another economy.
+
+5.4 Optional deterministic Current Rings
+
+Current Rings can provide a short burst of speed, brighter trail, stronger music, and cinematic camera response. In competitive modes, they must be identical for everyone and included in replay verification. Random consumable power-ups should remain outside ranked and Daily Tide modes.
+
+6. The Duskmaw pursuit system
+
+A recurring chaser is one of the highest-impact ways to give Glowfin urgency and personality.
+
+Duskmaw is a working name for a large magical shadow-eel or ancient abyssal guardian. It should feel mysterious and exciting rather than violent or frightening.
+
+Chase structure
+
+A chase lasts approximately 18–25 seconds:
+
+The environment darkens and nearby creatures flee.
+Glowfin looks back; the soundtrack adds percussion and a low-current pulse.
+Duskmaw enters behind the player but never obscures the safe path.
+Three or four telegraphed chase obstacles appear.
+Passing through cyan Current Breaks creates distance.
+Near misses produce stronger escape bursts.
+The chase ends with a dramatic narrow passage, Moon Seal, or guardian intervention.
+
+Duskmaw should have three initial attack patterns, all compatible with left-right steering:
+
+Shadow Sweep: a dark wave covers one side of the corridor.
+Vacuum Wake: a lateral pull gradually drags Glowfin toward Duskmaw’s path.
+Ruins Collapse: debris falls outside a clearly revealed opening.
+
+A failed chase should not immediately invalidate Glowfin’s forgiving identity. The first catch can drain Light and produce a dramatic recovery state. Only a subsequent failure at critically low Light should end the run.
+
+When the chaser appears
+
+Duskmaw should not follow the player constantly. Constant pursuit would destroy the Moon-Garden’s wonder and make the game exhausting.
+
+Recommended frequency:
+
+Authored climax in finite Expeditions.
+Rare seeded encounter after approximately 90–150 seconds in Endless Dive.
+A consequence of a special cursed relic route.
+A weekly “Shadow Tide” challenge.
+A rescue encounter in which Glowfin and another character escape together.
+
+Later chapters can reveal that Duskmaw is not simply evil, allowing it to become a story character or even an eventual unlockable companion form.
+
+7. Races that use Glowfin’s existing strengths
+
+Glowfin already possesses one of the hardest parts of a fair racing game: deterministic courses, replay recording, verified ghosts, score authority, and separate standard and assisted divisions.
+
+The first racing expansion should therefore be asynchronous rather than real-time.
+
+Tide Sprint
+
+A Tide Sprint is a finite 60–90-second race with:
+
+The player.
+One named rival.
+Two verified or simulated ghost competitors.
+Three race sections.
+A visible finish line.
+Final placement and podium presentation.
+One immediate rematch button.
+
+Rivals remain non-colliding. Their bodies can be rendered slightly translucent when near the player so they never hide cyan openings.
+
+Race types
+
+Practice Sprint: skill-banded opponents and gentle comeback tuning.
+
+Ranked Current: no rubber-banding, verified fixed course, leaderboard-eligible.
+
+Daily Sprint: same course for all players for one hosted UTC day.
+
+Beat My Current: friend challenge using the existing deep-link and ghost infrastructure.
+
+Realm Cup: weekly sequence of three finite races across different environments.
+
+What should decide the race
+
+Placement should be driven by:
+
+Maintaining momentum.
+Selecting faster Moonflash routes.
+Avoiding collisions.
+Holding collectible chains.
+Cleanly navigating currents.
+
+There should be no purchasable speed, character statistics, equipment advantage, or competitive revive.
+
+Real-time multiplayer should remain deferred until asynchronous racing proves that players repeatedly choose race mode and request direct competition.
+
+8. More characters—with personality, not statistics
+
+Adding twelve visual skins will not create attachment. Glowfin needs a small cast with clear silhouettes, personalities, relationships, animation languages, and individual quests.
+
+Initial Glowkin crew
+
+These are working concepts:
+
+Glowfin — The Lightbearer
+
+Curious, kind, expressive, and brave. The emotional centre of the game.
+
+Neri — The Indigo Scout
+
+Playful, competitive, and slightly mischievous. Neri becomes Glowfin’s first racing rival and later a friend.
+
+Coralyn — The Reef Protector
+
+Bold coral-pink fins, powerful movement language, and a protective relationship with smaller sea creatures. Introduced through rescue missions.
+
+Solara — The Astral Explorer
+
+Pearl-gold and violet visual language. Interested in lost observatories, relics, and constellation trials.
+
+Kelpip — The Young Current Rider
+
+Leafy green silhouette, comic reactions, and unpredictable but charming movement. Suitable for younger-player appeal.
+
+Competitive fairness
+
+Every playable character must have identical:
+
+Collider radius
+Forward-speed curve
+Lateral authority
+Momentum behaviour
+Light capacity
+Collision rules
+Score logic
+
+Characters differ through:
+
+Body and fin silhouette within the same collision envelope.
+Idle, banking, collision, recovery, and celebration animation.
+Eye and facial expression.
+Vocal chirps and sound motifs.
+Cosmetic catalogue.
+Story role and Bond Path.
+Unique front-facing podium and hub presentation.
+
+The best implementation path is a shared Glowkin rig and material family rather than completely independent character pipelines.
+
+Companion creatures
+
+Later additions can include Miri the baby manta, Pip the lanternfish, and Tiko the seahorse courier. They should react, celebrate, guide story, and accompany the player, but they must not provide hidden collection magnets or score advantages in competitive modes.
+
+9. Environments that change gameplay, not only colour
+
+The current five gate districts are visually distinct, but the next environment expansion must create genuinely different experiences.
+
+Each new realm requires:
+
+A unique visual and musical identity.
+Two environment-specific gameplay verbs.
+One hero encounter.
+A relic collection page.
+Unique ambient character behaviour.
+A recognisable transition into and out of the realm.
+Proposed world sequence
+1. Moon-Garden Ruins — existing foundation
+
+Mechanics: ceremonial gates, Moonflash choices, guardian salutes, current lanes.
+Hero event: first rival encounter and Moon Well restoration.
+
+2. Kelp Cathedral
+
+Towering kelp columns, filtered emerald light, shell bells, sea-dragon residents.
+
+New verbs:
+
+Swaying Frond Windows that open rhythmically.
+Current Tunnels that temporarily narrow or reverse lateral drift.
+
+Hero event: rescue a baby manta from a collapsing kelp chamber.
+
+3. Crystal Trench
+
+Deep indigo caverns, reflective crystal forests, refracted moonbeams.
+
+New verbs:
+
+Prism Pulses that reveal the true cyan route while false reflections fade.
+Sliding Crystal Plates with deterministic opening sequences.
+
+Hero event: race Neri through a mirror-current cavern.
+
+4. Sunken Market
+
+A lively drowned marketplace with merchant rays, cargo shells, moving processions, and crowds reacting to Glowfin.
+
+New verbs:
+
+Moving Caravan Lanes.
+Lost Cargo collection routes with safe and high-value branches.
+
+Hero event: recover ceremonial cargo before a closing market gate.
+
+5. Leviathan Graveyard
+
+Massive rib arches, glowing fossils, echo currents, darker blue-violet lighting.
+
+New verbs:
+
+Rib-Cage Slalom.
+Echo Pulses that reveal openings only in timed waves.
+
+Hero event: the first full Duskmaw pursuit and a leviathan awakening.
+
+6. Storm-Crown Reef
+
+Energetic water movement, silver-blue flashes, wave walls, storm rays.
+
+New verbs:
+
+Surge Windows that shift the whole current laterally.
+Lightning Reveal routes where the safe path is shown in repeated pulses.
+
+Hero event: escape or calm a colossal Storm Ray.
+
+Only the first two new environments should be produced initially. The others remain on the roadmap until engagement results justify the content cost.
+
+10. Finite Expeditions: give the player endings and victories
+
+Endless Dive should remain Glowfin’s high-score mastery mode, but it should no longer carry the whole game.
+
+Glowfin needs three-to-five-minute Expeditions with a clear objective, climax, and finish.
+
+Example Version 41 Expedition
+“The Missing Moonseed”
+
+0:00–0:25 — Follow the Light
+Collect a Lumen Mote ribbon and meet Neri.
+
+0:25–0:55 — Relic Fork
+Choose the wide safe route or a narrow route containing a Moonseed Fragment.
+
+0:55–1:25 — Rescue Miri
+Pass through three Rescue Lights to free a trapped baby manta.
+
+1:25–1:55 — Race Neri
+Compete in a short non-colliding sprint.
+
+1:55–2:25 — Duskmaw Appears
+Escape through three Current Breaks.
+
+2:25–3:00 — Return to the Moon Well
+Reach a ceremonial finish and use the recovered Moonseed to restore part of the hub.
+
+This single Expedition would test almost the entire new direction without requiring several environments or a large cast.
+
+Expedition goals
+
+Each chapter can offer three permanent completion marks:
+
+Complete the primary objective.
+Find the hidden relic.
+Finish with a clean or high-skill performance.
+
+These are completion records, not another spendable currency.
+
+11. Restoration, collections, and character bonds
+Relic Atlas
+
+Each realm receives one clear collection page, for example six or nine relics. Players always see:
+
+What has been discovered.
+Where undiscovered relics may be found.
+Which mission or challenge contains them.
+What visual restoration the completed page unlocks.
+
+There should be no random duplicate frustration.
+
+Moon Well restoration
+
+The Moon Well should visibly evolve:
+
+Dark sections gain light.
+Statues awaken.
+Characters move into restored districts.
+Conch fountains activate.
+Music gains new layers.
+New Expedition portals open.
+The hero cast gathers around the Well.
+
+This gives the player a persistent emotional reason for every run.
+
+Character Bond Paths
+
+Completing races, rescues, and Expeditions with a character builds a short Bond Path. Rewards remain cosmetic and narrative:
+
+New animation.
+Hub interaction.
+Dialogue memory.
+Character-specific trail.
+Celebration pose.
+Profile emblem.
+
+Character Bonds must not increase speed, Light, or score.
+
+12. Living-world reactions
+
+Glowfin’s world already contains merfolk, fish schools, mantas, jellies, guardians, and environmental motion. The next step is to make them react to gameplay.
+
+Examples:
+
+Citizens cheer after a perfect Moonflash.
+Guardians open a shortcut after a completed relic set.
+Fish schools scatter before Duskmaw arrives.
+A manta briefly swims alongside Glowfin after being rescued.
+Neri gestures toward the risky route before a race.
+Conch heralds announce the start of a Realm Cup.
+Market crowds recoil from a collision and celebrate recovery.
+A restored district becomes more populated in future runs.
+
+This makes the kingdom feel alive without violating the existing instruction not to add more purposeless static scenery.
+
+13. Live operations after the core fun is proven
+
+Version 40 is already defined as controlled soft launch and retention validation. It should remain bounded rather than being overloaded with this content expansion. Rewarded video also remains disabled until Pearl demand, privacy, consent, and provider certification are demonstrated; competitive revive advertising remains prohibited.
+
+After the new engagement systems prove themselves, Glowfin can support a lightweight live-operations structure.
+
+Weekly Living Tide
+
+Each week combines:
+
+One featured realm.
+One character quest.
+One altered Expedition.
+One collectible page or milestone track.
+One Tide Sprint cup.
+One rare living-world event.
+Seasonal structure
+
+A season can last four to six weeks and introduce:
+
+One character or major cosmetic set.
+One realm story arc.
+One collection page.
+One new race or encounter variant.
+Several remixed existing challenges.
+A community restoration goal after the player population is large enough.
+
+Seasonal collections should remain deterministic and achievement-based rather than gacha-driven.
+
+14. Prioritisation by player impact
+Feature	Engagement impact	Implementation risk	Recommended timing
+Encounter Director	Very high	Medium	Version 41
+Lumen Motes and Relic Shards	High	Low–medium	Version 41
+Short Duskmaw chase	Very high	Medium	Version 41
+Finite Expedition	Very high	Medium	Version 41
+Tide Sprint ghost races	High	Medium	Version 42
+Three-character crew	High	Medium–high	Version 42
+Two genuinely new realms	High	High	Version 43
+Leviathan/boss encounters	High	High	Version 44
+Full restoration and Relic Atlas	Medium–high	Medium	Versions 41 and 45
+Seasonal Living Tide	High long-term	Medium	Version 46
+Community events	Medium–high at scale	High operationally	Version 47
+Real-time multiplayer	Unknown before demand proof	Very high	Defer
+Combat and equipment statistics	Conflicts with identity	Very high	Do not pursue now
+15. Recommended version roadmap
+Version 40 — Controlled Soft Launch & Retention Validation
+
+Keep the approved scope:
+
+Seven-day newcomer journey.
+Tiered Daily Tide.
+Remote configuration and bounded experiments.
+Funnel and device-health dashboards.
+Economy validation.
+Formal go/no-go review.
+
+Do not insert several new environments or character systems into Version 40.
+
+Version 41 — Living Current Vertical Slice
+
+This should be the first major engagement build.
+
+Scope
+Deterministic Encounter Director.
+Lumen Motes and collectible chains.
+Six-item first Relic Atlas page.
+“The Missing Moonseed” three-minute Expedition.
+Neri rival cameo.
+Miri rescue sequence.
+One production-quality Duskmaw chase.
+First visible Moon Well restoration.
+Full telemetry and replay compatibility.
+No new environment, currency, real-time multiplayer, or combat control.
+Decision targets
+No purposeless interval longer than 25 seconds.
+At least 80% of test players understand each encounter objective without reading a long explanation.
+Chase success between 65% and 85%.
+At least 30% immediate Expedition rematch.
+First-session three-run rate improves meaningfully over the Version 40 holdout.
+No regression to tutorial completion, first-run completion, crash-free sessions, or device performance.
+Version 42 — Tide Sprint & Glowkin Crew
+Scope
+Finite four-swimmer Tide Sprint.
+Practice, Ranked Current, and friend-challenge variants.
+Glowfin, Neri, and Coralyn as selectable characters.
+Shared competitive collider and statistics.
+Character selection and Bond Paths.
+Podium, finish-line, and rivalry presentation.
+One weekly Realm Cup.
+Race rematch and character-affinity telemetry.
+Decision targets
+Race completion at least 80%.
+Race rematch at least 30%.
+At least 35% of active players deliberately switch or select a non-default character.
+No measurable competitive advantage by character.
+Rival visibility never obscures collision contours.
+Version 43 — Realms of the Lost Kingdom
+Scope
+Kelp Cathedral.
+Crystal Trench.
+Data-driven biome definition system.
+Two new gameplay verbs per realm.
+One relic page per realm.
+Environment transitions in Endless Dive.
+Realm-selectable Expeditions.
+Shared material and asset-pooling strategy.
+
+No additional realm should be approved unless both new realms are mechanically recognisable during blind player testing.
+
+Version 44 — Duskmaw & Leviathan Encounters
+Scope
+Expanded Duskmaw story.
+Three production chase variants.
+First multi-phase leviathan encounter.
+Rescue and escort Expeditions.
+Adventure-mode adaptive difficulty.
+Reduced-motion chase presentation.
+Boss-specific audio and haptic language.
+
+This remains steering-led. No attack button is required: Glowfin activates seals, escapes attacks, or redirects light automatically through correct navigation.
+
+Version 45 — Moon Well Restoration & Relic Atlas
+Scope
+Multiple restorable districts.
+Full relic collections.
+Character residency and hub reactions.
+Realm completion presentation.
+Short story memories.
+Collection completion rewards.
+Clear “next discovery” guidance.
+Version 46 — Living Tide Season One
+Scope
+Four-to-six-week season.
+Weekly race cup.
+Featured Expedition.
+Seasonal collection page.
+One character questline.
+Remote event scheduling.
+Content cadence and production-cost validation.
+Version 47 — Social Currents
+Scope
+Friend race leagues.
+Small asynchronous crews.
+Community restoration goals.
+Realm-versus-realm participation event.
+Privacy-safe social identity.
+No mandatory chat and no open communication system for young players.
+Version 48 — Commercial Content Scale
+Scope
+Refine the successful systems rather than adding new ones indiscriminately.
+Formal content-production calendar.
+Downloadable or sealed realm-pack strategy if required.
+Cosmetic-only monetisation experiments.
+Broader market rollout based on retention and performance evidence.
+16. Technical implementation architecture
+Encounter plan
+
+Introduce a deterministic structure such as:
+
+EncounterDirector
+EncounterPlan
+EncounterKind
+EncounterIntensity
+EncounterObjective
+ActorPlan
+CollectiblePlan
+BiomeDefinition
+ModeRules
+
+The director should generate one immutable plan from the run seed, mode, realm, content version, and permitted difficulty band. The simulation, renderer, replay recorder, and verifier must consume that same plan.
+
+Competitive versus Adventure rules
+
+Ranked, Daily Tide, and verified races
+
+Fixed deterministic schedule.
+No hidden difficulty changes.
+No companion advantages.
+No random consumable power.
+Server re-simulation required.
+Character selection is presentation-only.
+
+Adventure and Expeditions
+
+May adjust telegraph duration, event density, rival pace, and chase pressure.
+May include accessibility fallbacks.
+Must still preserve cyan collider truth and solvability.
+Difficulty band must be saved in the replay.
+
+Research on mobile-game flow has found that matching challenge more closely to perceived skill is associated with stronger flow and urge to continue playing. Glowfin should therefore use bounded rule-based adaptation in unranked Adventure content, while keeping competitive modes fixed and transparent.
+
+Progress schema
+
+A future save schema should add:
+
+Owned and selected character IDs.
+Character Bond progress.
+Discovered relic sets.
+Expedition completion marks.
+Restored district IDs.
+Season participation.
+Idempotent encounter and collection claims.
+
+Cloud merging should use set union for discoveries, maximum values for chapter completion and Bonds, and claim IDs for rewards. It must never restore spent Pearls or duplicate a relic-completion reward.
+
+Replay and verification
+
+The next replay version should include:
+
+Mode.
+Realm.
+Content-pack version.
+Encounter-plan hash.
+Collectible-plan hash.
+Character ID.
+Race roster hashes.
+Chaser-event state.
+Assist and difficulty division.
+
+Any mismatch between client plan and authority plan must invalidate competitive submission.
+
+17. Performance and art guardrails
+
+Glowfin’s current hard limits include 90 draw calls, 150,000 triangles, 48 MB of texture memory, fewer than 12 active art materials, a 700 ms minimum reaction window, and a 30 fps performance floor. These limits should remain binding rather than being relaxed to accommodate content.
+
+Recommended implementation constraints:
+
+One instanced draw family for common collectibles.
+One shared material for rare collectible variants.
+Maximum three visible race rivals.
+Rival LODs simpler than the player character.
+Only one large chaser or leviathan active at a time.
+Chaser unloads completely outside its encounter.
+Shared Glowkin skeleton and material family.
+Only current and next realm kept resident during transitions.
+No more than two new environment-specific material responses per realm.
+New realm identity should come from silhouette, layout, lighting, motion, and encounters—not many unique textures.
+The initial downloadable build should remain within the existing compressed-art constraint; larger on-demand realm packs should be considered only after retention validation.
+18. New QA gates
+
+The enhancement programme needs new automated and physical-device checks.
+
+Engagement cadence gate
+
+Fails if:
+
+No encounter or purposeful collectible choice occurs within the opening 20 seconds.
+A run contains more than 25–30 seconds without a new objective.
+The same encounter verb repeats too frequently.
+A high-pressure chase is immediately followed by another high-pressure event.
+Collectible fairness gate
+
+Validates that:
+
+Safe-route collections remain achievable.
+Rare-route collections never create false cyan clearance.
+Collection paths do not force impossible last-second steering.
+High-contrast and reduced-effects versions remain readable.
+Race gate
+
+Validates that:
+
+Rivals never collide with the player.
+Rival opacity prevents route occlusion.
+All ranked participants receive identical course and encounter plans.
+Race result re-simulation matches the client result.
+Chase gate
+
+Validates that:
+
+Chaser geometry never covers the corridor.
+Every attack has sufficient telegraphing.
+Failure states remain recoverable as designed.
+Reduced motion removes aggressive camera shake.
+Audio-off and haptics-off players still receive visual warnings.
+Content-repeat gate
+
+Detects:
+
+Excessive reuse of the same encounter sequence.
+Identical environmental set-piece ordering.
+Repeated relic placements.
+Long stretches with no character presence.
+Migration gate
+
+Tests Version 31–40 saves through every new schema, including corruption recovery, cloud conflict, duplicate reward prevention, and partial-season state.
+
+19. Measurement framework
+
+Version 40’s current targets remain the baseline: tutorial completion of at least 85%, first-run completion of at least 75%, three runs in the first session of at least 50%, first cosmetic purchase and equip of at least 35%, Daily Tide participation of at least 25%, D1 retention of at least 30%, D7 retention of 10–12%, and crash-free sessions of at least 99.5%.
+
+After Versions 41–42, the stretch targets should be:
+
+Metric	Post-enhancement target
+Three runs in first session	58–60%
+D1 retention	35% or better
+D7 retention	13–15%
+Players collecting a full Lumen Chain	60%+
+Expedition completion	70%+
+Immediate Expedition rematch	30%+
+Tide Sprint completion	80%+
+Tide Sprint rematch	30%+
+Non-default character selected by day 3	35%+
+Chase success	65–85%
+Crash-free sessions	At least 99.5%
+Performance-budget regressions	Zero
+
+Telemetry should record semantic events only:
+
+Encounter seen, started, completed, or failed.
+Collectible chain length.
+Relic discovered.
+Rescue success.
+Chase outcome band.
+Race placement and rematch.
+Realm selected.
+Character selected.
+Restoration viewed.
+Expedition voluntarily abandoned.
+
+It should continue avoiding touch paths, raw steering coordinates, personal identity, and collection before consent.
+
+20. What Glowfin should not become
+
+Glowfin should not become a clone of Hungry Shark, Sonic Dash, or Subway Surfers.
+
+Do not add ten shallow characters at once, stat-based character powers, multiple new currencies, random card packs, gear upgrades, combat tapping, constant pursuit, real-time multiplayer before demand is proven, visual-only environment reskins, or another broad density pass filled with static merfolk and coral.
+
+The game’s enduring distinction should remain:
+
+Beautiful one-swipe underwater movement, readable fair currents, recoverable mistakes, expressive bioluminescence, and emotionally warm adventure.
+
+Final recommendation
+
+The immediate enhancement should not begin by building five new environments.
+
+The highest-value first step is:
+
+Version 41 — Living Current Vertical Slice
+
+Build one exceptional three-minute Expedition containing:
+
+One satisfying collectible chain.
+One rare relic.
+One named rival.
+One rescued creature.
+One short race.
+One Duskmaw chase.
+One visible Moon Well restoration.
+
+That vertical slice will reveal whether Glowfin’s boredom problem is solved by the proposed character, collection, competition, pressure, and resolution structure before the team incurs the cost of multiple environments and a large cast.
+
+The next two recommended content builds after Version 40 are therefore:
+
+Version 41 — Living Current Vertical Slice
+Version 42 — Tide Sprint & Glowkin Crew
