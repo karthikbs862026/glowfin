@@ -27,10 +27,9 @@ function releaseMetadataPlugin(metadata: ReleaseMetadata): Plugin {
   return {
     name: "glowfin-release-metadata",
     transformIndexHtml(html) {
-      return html.replace(
-        `V${metadata.version} · LOCAL · local`,
-        label
-      );
+      return html
+        .replace(/Glowfin — Version \d+/, `Glowfin — Version ${metadata.version}`)
+        .replace(/V\d+ · LOCAL · local/, label);
     },
     generateBundle() {
       this.emitFile({
