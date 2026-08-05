@@ -1,0 +1,335 @@
+name: version41-expedition-authority-fix
+
+on:
+  push:
+    branches: [agent/version41-living-current]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-expedition-authority:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/version41-living-current
+          fetch-depth: 0
+      - name: Apply reviewed Expedition authority and recovery corrections
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          main = Path("src/main.ts")
+          text = main.read_text(encoding="utf-8")
+
+          old = '''function startRun(
+            mode: "fresh" | "ghost" | "daily" | "daily-ghost" = "fresh",
+            daily: { dayId: string; seed: number } | null = null,
+            challengeGhost: GlowfinReplayV1 | null = null,
+            tutorial = false
+          ): void {
+          '''
+          new = '''function version41ExpeditionActive(): boolean {
+            return document.documentElement.dataset["glowfinMode"] === "expedition-v41";
+          }
+
+          function startRun(
+            mode: "fresh" | "ghost" | "daily" | "daily-ghost" = "fresh",
+            daily: { dayId: string; seed: number } | null = null,
+            challengeGhost: GlowfinReplayV1 | null = null,
+            tutorial = false,
+            suppressRunStart = false
+          ): void {
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one startRun signature, found {text.count(old)}")
+          text = text.replace(old, new, 1)
+
+          old = '''  reportRunStart();
+          }
+
+          async function startDailyRun'''
+          new = '''  if (!suppressRunStart) reportRunStart();
+          }
+
+          async function startDailyRun'''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one reportRunStart tail, found {text.count(old)}")
+          text = text.replace(old, new, 1)
+
+          old = '''moonWell.onDive(() => {
+            telemetry.track("tap_to_dive", {
+              source: "moon-well",
+              firstRun: !progress.onboarding.firstRunCompleted
+            });
+            startRun("fresh");
+          });
+          '''
+          new = '''window.addEventListener("glowfin:v41-complete", () => {
+            if (!version41ExpeditionActive()) return;
+            gameplayActive = false;
+            awaitingRestart = false;
+            steering.reset();
+            timestep.reset();
+            audio.endRun();
+            view?.setHeroMoment("celebration");
+          });
+
+          moonWell.onDive(() => {
+            const expedition = version41ExpeditionActive();
+            if (!expedition) {
+              telemetry.track("tap_to_dive", {
+                source: "moon-well",
+                firstRun: !progress.onboarding.firstRunCompleted
+              });
+            }
+            startRun("fresh", null, null, false, expedition);
+          });
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one Moon Well Dive handler, found {text.count(old)}")
+          text = text.replace(old, new, 1)
+
+          old = '''      if (events.justEnded) {
+                  awaitingRestart = true;
+                  gameplayActive = false;
+          '''
+          new = '''      if (events.justEnded) {
+                  if (version41ExpeditionActive()) {
+                    awaitingRestart = true;
+                    gameplayActive = false;
+                    steering.reset();
+                    hud.hideGameOver();
+                    const recoveries = Number(
+                      document.documentElement.dataset["glowfinExpeditionRecoveries"] ?? "0"
+                    ) + 1;
+                    document.documentElement.dataset["glowfinExpeditionRecoveries"] = String(recoveries);
+                    queueMicrotask(() => {
+                      if (!version41ExpeditionActive()) return;
+                      startRun("fresh", null, null, false, true);
+                      window.dispatchEvent(new Event("glowfin:v41-current-recovered"));
+                    });
+                    return;
+                  }
+                  awaitingRestart = true;
+                  gameplayActive = false;
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one run-end branch, found {text.count(old)}")
+          text = text.replace(old, new, 1)
+          main.write_text(text, encoding="utf-8")
+
+          runtime = Path("src/engagement/version41Micro.ts")
+          text = runtime.read_text(encoding="utf-8")
+
+          old = '''  private kind: Kind | null = null;
+            private previous = -1;
+            private moteOrigin = 16;
+          '''
+          new = '''  private kind: Kind | null = null;
+            private expeditionElapsed = 0;
+            private lastDistance = 0;
+            private moteOrigin = 16;
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one Layer clock field block, found {text.count(old)}")
+          text = text.replace(old, new, 1)
+
+          old = '''  update(sim: SimState, frame: number): void {
+              const elapsed = sim.elapsedSec * qaScale();
+              if (this.previous > 1 && (elapsed + .1 < this.previous || sim.forwardDistance < 1)) this.reset(sim);
+              this.previous = elapsed;
+              const segment = segmentAt(elapsed);
+              if (segment.kind !== this.kind) {
+          '''
+          new = '''  update(sim: SimState, frame: number): void {
+              this.expeditionElapsed += Math.max(0, Math.min(frame, .1)) * qaScale();
+              const elapsed = this.expeditionElapsed;
+              const segment = segmentAt(elapsed);
+              if (sim.forwardDistance + 1 < this.lastDistance) {
+                this.origins.set(segment.kind, sim.forwardDistance);
+                this.moteOrigin = sim.forwardDistance + 16;
+                this.nextMiss = 0;
+                this.resolved.clear();
+              }
+              this.lastDistance = sim.forwardDistance;
+              if (segment.kind !== this.kind) {
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one Layer update clock block, found {text.count(old)}")
+          text = text.replace(old, new, 1)
+
+          pattern = re.compile(r'''\n  private reset\(sim: SimState\): void \{.*?\n  \}\n\n  private updateMotes''', re.S)
+          replacement = '''
+
+            private updateMotes'''
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f"Expected one obsolete Layer reset method, found {count}")
+
+          old = '''function finish(result: Result, elapsed: number): void {
+            if (finished) return;
+            finished = true;
+            progress = save(result);
+          '''
+          new = '''function finish(result: Result, elapsed: number): void {
+            if (finished) return;
+            finished = true;
+            playing = false;
+            window.dispatchEvent(new Event("glowfin:v41-complete"));
+            progress = save(result);
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one finish header, found {text.count(old)}")
+          text = text.replace(old, new, 1)
+
+          old = '''    track("tap_to_dive", {
+                mode: "expedition",
+                expedition: C.expeditionId,
+                contentVersion: 41,
+                planHash: PLAN_HASH
+              });
+              (element("moonwell-dive") as HTMLButtonElement | null)?.click();
+          '''
+          new = '''    document.documentElement.dataset["glowfinExpeditionRecoveries"] = "0";
+              element("v41-hud")?.setAttribute("data-segment-history", "");
+              track("tap_to_dive", {
+                mode: "expedition",
+                expedition: C.expeditionId,
+                contentVersion: 41,
+                planHash: PLAN_HASH
+              });
+              track("run_start", {
+                mode: "expedition",
+                expedition: C.expeditionId,
+                contentVersion: 41,
+                planHash: PLAN_HASH
+              });
+              (element("moonwell-dive") as HTMLButtonElement | null)?.click();
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one Expedition start telemetry block, found {text.count(old)}")
+          text = text.replace(old, new, 1)
+
+          old = '''  entry.addEventListener("click", (event) => {
+              event.stopPropagation();
+              start();
+            });
+          '''
+          new = '''  entry.addEventListener("click", (event) => {
+              event.stopPropagation();
+              start();
+            });
+            addEventListener("glowfin:v41-current-recovered", () => {
+              toast("Moon guardian restores your Light");
+            });
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one Expedition entry listener, found {text.count(old)}")
+          text = text.replace(old, new, 1)
+          runtime.write_text(text, encoding="utf-8")
+
+          gate = Path("tools/version41-gate/capture.mjs")
+          text = gate.read_text(encoding="utf-8")
+
+          marker = '''async function startFromExpeditionCard(page) {
+          '''
+          helper = '''async function standardProgressSnapshot(page) {
+            return page.evaluate(() => Object.fromEntries([
+              "glowfin.progress.v3.primary",
+              "glowfin.progress.v3.backup"
+            ].map((key) => [key, localStorage.getItem(key)])));
+          }
+
+          async function startFromExpeditionCard(page) {
+          '''
+          if text.count(marker) != 1:
+              raise SystemExit(f"Expected one startFromExpeditionCard helper, found {text.count(marker)}")
+          text = text.replace(marker, helper, 1)
+
+          old = '''  await page.goto(expeditionUrl.toString(), { waitUntil: "load" });
+            await startFromExpeditionCard(page);
+
+            const snapshots = [];
+          '''
+          new = '''  await page.goto(expeditionUrl.toString(), { waitUntil: "load" });
+            await waitForReadyHub(page);
+            const standardProgressBefore = await standardProgressSnapshot(page);
+            await startFromExpeditionCard(page);
+
+            const snapshots = [];
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one primary journey start, found {text.count(old)}")
+          text = text.replace(old, new, 1)
+
+          old = '''        startupError: document.body.dataset.startupError === "true",
+                canvasVisible: getComputedStyle(document.querySelector("#glowfin-canvas")).display !== "none"
+          '''
+          new = '''        startupError: document.body.dataset.startupError === "true",
+                canvasVisible: getComputedStyle(document.querySelector("#glowfin-canvas")).display !== "none",
+                corePostRunVisible: getComputedStyle(document.querySelector("#hud-gameover")).display !== "none",
+                recoveries: Number(document.documentElement.dataset.glowfinExpeditionRecoveries ?? "0")
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one snapshot runtime tail, found {text.count(old)}")
+          text = text.replace(old, new, 1)
+
+          old = '''    segmentHistory: document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? ""
+            }));
+          '''
+          new = '''    segmentHistory: document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "",
+              corePostRunVisible: getComputedStyle(document.querySelector("#hud-gameover")).display !== "none",
+              recoveries: Number(document.documentElement.dataset.glowfinExpeditionRecoveries ?? "0")
+            }));
+            const standardProgressAfter = await standardProgressSnapshot(page);
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one completion tail, found {text.count(old)}")
+          text = text.replace(old, new, 1)
+
+          old = '''  if (snapshots.some((entry) => entry.runtime !== "running" || entry.startupError || !entry.canvasVisible)) {
+              issues.push("the runtime or canvas failed during an encounter");
+            }
+          '''
+          new = '''  if (snapshots.some((entry) => entry.runtime !== "running" || entry.startupError || !entry.canvasVisible)) {
+              issues.push("the runtime or canvas failed during an encounter");
+            }
+            if (snapshots.some((entry) => entry.corePostRunVisible) || completion.corePostRunVisible) {
+              issues.push("the standard post-run reward screen leaked into the Expedition");
+            }
+            if (completion.recoveries < 1) {
+              issues.push("the unattended phone journey did not exercise guardian recovery");
+            }
+            if (JSON.stringify(standardProgressBefore) !== JSON.stringify(standardProgressAfter)) {
+              issues.push("the Expedition mutated standard progress, rewards, or run counters");
+            }
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one runtime issue block, found {text.count(old)}")
+          text = text.replace(old, new, 1)
+
+          old = '''    completion,
+              deepLinkStart,
+          '''
+          new = '''    completion,
+              standardProgressBefore,
+              standardProgressAfter,
+              deepLinkStart,
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one report completion field, found {text.count(old)}")
+          text = text.replace(old, new, 1)
+          gate.write_text(text, encoding="utf-8")
+
+          Path(".github/workflows/version41-expedition-authority-fix.yml").unlink()
+      - name: Commit the audited correction and remove this one-shot workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/main.ts src/engagement/version41Micro.ts tools/version41-gate/capture.mjs .github/workflows/version41-expedition-authority-fix.yml
+          git commit -m "Version 41: quarantine Expedition recovery and rewards"
+          git push origin HEAD:agent/version41-living-current
