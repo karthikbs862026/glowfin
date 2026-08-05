@@ -726,11 +726,16 @@ function reportRunStart(): void {
   }
 }
 
+function version41ExpeditionActive(): boolean {
+  return document.documentElement.dataset["glowfinMode"] === "expedition-v41";
+}
+
 function startRun(
   mode: GlowfinRunMode = "fresh",
   guidedTutorialSource: "required" | "replay" | null = null,
   replayOverride: GlowfinReplayV1 | null = null,
-  forceGhost = false
+  forceGhost = false,
+  suppressRunStart = false
 ): void {
   const day = currentDailyDay();
   const dailyMode = mode === "daily" || mode === "daily-ghost";
@@ -794,15 +799,27 @@ function startRun(
       tutorialVersion: GUIDED_TUTORIAL_VERSION
     }, activeRunId);
   }
-  reportRunStart();
+  if (!suppressRunStart) reportRunStart();
 }
 
+window.addEventListener("glowfin:v41-complete", () => {
+  if (!version41ExpeditionActive()) return;
+  gameplayActive = false;
+  awaitingRestart = false;
+  steering.reset();
+  timestep.reset();
+  view?.setHeroMoment("celebration");
+});
+
 moonWell.onDive(() => {
-  telemetry.track("tap_to_dive", {
-    firstRun: !progress.onboarding.firstRunCompleted,
-    tutorialRequired: !guidedTutorialComplete
-  });
-  startRun("fresh");
+  const expedition = version41ExpeditionActive();
+  if (!expedition) {
+    telemetry.track("tap_to_dive", {
+      firstRun: !progress.onboarding.firstRunCompleted,
+      tutorialRequired: !guidedTutorialComplete
+    });
+  }
+  startRun("fresh", null, null, false, expedition);
 });
 
 moonWell.onTutorialStart(() => {
@@ -1607,6 +1624,22 @@ function frame(nowMs: number): void {
       run.scoring.multiplier
     );
     if (events.justEnded) {
+      if (version41ExpeditionActive()) {
+        awaitingRestart = true;
+        gameplayActive = false;
+        steering.reset();
+        hud.hideGameOver();
+        const recoveries = Number(
+          document.documentElement.dataset["glowfinExpeditionRecoveries"] ?? "0"
+        ) + 1;
+        document.documentElement.dataset["glowfinExpeditionRecoveries"] = String(recoveries);
+        queueMicrotask(() => {
+          if (!version41ExpeditionActive()) return;
+          startRun("fresh", null, null, false, true);
+          window.dispatchEvent(new Event("glowfin:v41-current-recovered"));
+        });
+        return;
+      }
       awaitingRestart = true;
       gameplayActive = false;
       firstRunTutorial = null;

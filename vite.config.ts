@@ -27,10 +27,9 @@ function releaseMetadataPlugin(metadata: ReleaseMetadata): Plugin {
   return {
     name: "glowfin-release-metadata",
     transformIndexHtml(html) {
-      return html.replace(
-        `V${metadata.version} · LOCAL · local`,
-        label
-      );
+      return html
+        .replace(/Glowfin — Version \d+/, `Glowfin — Version ${metadata.version}`)
+        .replace(/V\d+ · LOCAL · local/, label);
     },
     generateBundle() {
       this.emitFile({
@@ -38,6 +37,79 @@ function releaseMetadataPlugin(metadata: ReleaseMetadata): Plugin {
         fileName: "release.json",
         source: `${JSON.stringify(metadata, null, 2)}\n`
       });
+    }
+  };
+}
+
+function compactCss(source: string): string {
+  let compact = "";
+  let quote: "\"" | "'" | null = null;
+  let escaped = false;
+  let pendingSpace = false;
+  for (let index = 0; index < source.length; index++) {
+    const character = source[index] ?? "";
+    const next = source[index + 1] ?? "";
+    if (quote) {
+      compact += character;
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === quote) quote = null;
+      continue;
+    }
+    if (character === "\"" || character === "'") {
+      if (
+        pendingSpace &&
+        compact &&
+        !"{}:;,".includes(compact.charAt(compact.length - 1))
+      ) {
+        compact += " ";
+      }
+      pendingSpace = false;
+      quote = character;
+      compact += character;
+      continue;
+    }
+    if (character === "/" && next === "*") {
+      const end = source.indexOf("*/", index + 2);
+      index = end < 0 ? source.length : end + 1;
+      continue;
+    }
+    if (/\s/.test(character)) {
+      pendingSpace = true;
+      continue;
+    }
+    if ("{}:;,".includes(character)) {
+      compact = compact.replace(/ $/, "");
+      compact += character;
+      pendingSpace = false;
+      continue;
+    }
+    if (
+      pendingSpace &&
+      compact &&
+      !"{}:;,(".includes(compact.charAt(compact.length - 1))
+    ) {
+      compact += " ";
+    }
+    pendingSpace = false;
+    compact += character;
+  }
+  return compact.trim().replace(/;}/g, "}");
+}
+
+function shippedHtmlBudgetPlugin(): Plugin {
+  return {
+    name: "glowfin-shipped-html-budget",
+    apply: "build",
+    enforce: "post",
+    transformIndexHtml(html) {
+      return html
+        .replace(/<!--(?!\[if)[\s\S]*?-->/g, "")
+        .replace(/<style([^>]*)>([\s\S]*?)<\/style>/gi, (_match, attributes: string, css: string) => (
+          `<style${attributes}>${compactCss(css)}</style>`
+        ))
+        .replace(/>\s+</g, "><")
+        .trim();
     }
   };
 }
@@ -75,7 +147,10 @@ export default defineConfig(({ command }) => {
     // Keep the production bundle mount-safe. The same immutable build runs at
     // repository root locally and under /game in the hosted playtest shell.
     base: "./",
-    plugins: [releaseMetadataPlugin(releaseMetadata)],
+    plugins: [
+      releaseMetadataPlugin(releaseMetadata),
+      shippedHtmlBudgetPlugin()
+    ],
     define: {
       __GLOWFIN_RELEASE__: JSON.stringify(releaseMetadata)
     },

@@ -28,6 +28,7 @@
     "art-gate:soak": "node --experimental-strip-types tools/art-gate/integration/soak.mjs --minutes 30 --render-fps 3 --output build/art-gate-soak.json --report build/art-gate-soak-report.txt",
     "audio-gate:browser": "node tools/audio-gate/integration/capture.mjs",
     "runtime-gate:browser": "node scripts/check-runtime-recovery.mjs",
+    "version41-gate:browser": "node tools/version41-gate/capture.mjs",
     "art:export-glbs": "node --experimental-strip-types tools/art/exportProductionGlbs.mjs",
     "art:pack-runtime-glbs": "node --experimental-strip-types tools/art/packRuntimeGlbs.mjs",
     "art:publish-runtime-glbs": "node tools/art/publishRuntimeGlbs.mjs",

@@ -1,11 +1,12 @@
 {
-  "$comment": "Version 39 Store-Ready Mobile Experience build: mandatory discoverable guided onboarding plus wrapper, device, sharing and store-readiness work.",
+  "$comment": "Version 41 Living Current Vertical Slice. Version 40 soft launch is paused and moved to the end of the owner-approved roadmap; every relevant Version 40 retention, economy, privacy, replay, accessibility, device-health and performance guardrail remains a mandatory audit gate.",
   "schemaVersion": 1,
-  "version": 39,
-  "phase": "phase-store-ready-mobile",
-  "certification": "physical-certified",
-  "baselineVersion": 38,
-  "baselineCommit": "8f529b9bd5f2e2c42e4aa27d24a88441d564b291",
+  "version": 41,
+  "phase": "phase-living-current-vertical-slice",
+  "certification": "automated-candidate",
+  "baselineVersion": 39,
+  "baselineCommit": "266b7900294f81e174134337a9d14b5951efcf30",
+  "deferredVersions": [40],
   "artBuild": "phase3c-v30-glowfin-production",
   "productionPolicyVersion": 1
 }

@@ -1,0 +1,100 @@
+{
+  "$comment": "Version 41 Living Current vertical-slice tuning. These values are validated at module load; malformed or unsafe values fail closed before the Expedition entry point is enabled.",
+  "schemaVersion": 1,
+  "contentVersion": 41,
+  "expeditionId": "missing-moonseed",
+  "title": "The Missing Moonseed",
+  "seed": 1196577101,
+  "durationSec": 180,
+  "qaTimeScale": 8,
+  "segments": [
+    {
+      "kind": "follow-light",
+      "startSec": 0,
+      "endSec": 25,
+      "title": "Follow the Light",
+      "objective": "Gather the golden Lumen ribbon and meet Neri."
+    },
+    {
+      "kind": "relic-fork",
+      "startSec": 25,
+      "endSec": 55,
+      "title": "Relic Fork",
+      "objective": "Choose the risky outer current for the Moonseed Fragment."
+    },
+    {
+      "kind": "rescue-miri",
+      "startSec": 55,
+      "endSec": 85,
+      "title": "Rescue Miri",
+      "objective": "Swim through three Rescue Lights to free the baby manta."
+    },
+    {
+      "kind": "race-neri",
+      "startSec": 85,
+      "endSec": 115,
+      "title": "Race Neri",
+      "objective": "Hold Flow, avoid collisions and reach the final marker first."
+    },
+    {
+      "kind": "duskmaw-chase",
+      "startSec": 115,
+      "endSec": 145,
+      "title": "Duskmaw Appears",
+      "objective": "Pass through three Current Breaks to widen the escape gap."
+    },
+    {
+      "kind": "return-moonwell",
+      "startSec": 145,
+      "endSec": 180,
+      "title": "Return to the Moon Well",
+      "objective": "Reach the ceremonial Moonseed portal and restore its light."
+    }
+  ],
+  "collectibles": {
+    "motePool": 48,
+    "moteSpacingUnits": 18,
+    "moteCollectRadius": 1.2,
+    "moteMissDistanceUnits": 2.5,
+    "relicCollectRadius": 1.35,
+    "rescueCollectRadius": 1.55,
+    "currentBreakCollectRadius": 1.8,
+    "relicAheadUnits": 108,
+    "rescueAheadUnits": [72, 148, 226],
+    "currentBreakAheadUnits": [92, 190, 294]
+  },
+  "race": {
+    "targetSpeedUnitsPerSec": 34,
+    "visualGapLimitUnits": 18,
+    "collisionPenaltyUnits": 12,
+    "cleanFinishBonusUnits": 9
+  },
+  "chase": {
+    "initialGapUnits": 18,
+    "minimumGapUnits": 7,
+    "maximumGapUnits": 34,
+    "closingUnitsPerSec": 0.28,
+    "breakGainUnits": 7,
+    "successGapUnits": 17
+  },
+  "presentation": {
+    "maxVisibleAheadUnits": 96,
+    "maxVisibleBehindUnits": 24,
+    "moteScale": 0.22,
+    "rescueScale": 0.46,
+    "ringRadius": 1.5,
+    "rivalLateralOffset": -2.8,
+    "miriLateralOffset": 2.9,
+    "duskmawHeight": 0.3,
+    "finishAheadUnits": 78,
+    "finishFallbackSec": 188
+  },
+  "budgets": {
+    "maxAdditionalDrawCalls": 10,
+    "maxAdditionalTriangles": 8000,
+    "maxAdditionalMaterials": 2,
+    "maxPurposeGapSec": 25,
+    "minReactionWindowMs": 700,
+    "performanceFloorFps": 30
+  }
+}

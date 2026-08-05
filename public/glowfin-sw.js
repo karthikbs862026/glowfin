@@ -1,4 +1,4 @@
-const CACHE = "glowfin-v39-runtime";
+const CACHE = "glowfin-v41-runtime";
 const CORE = ["/", "/release.json"];
 
 self.addEventListener("install", (event) => {
