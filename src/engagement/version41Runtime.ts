@@ -22,7 +22,6 @@ import {
   segmentAtTime,
   validateVersion41Plan,
   version41QaTimeScale,
-  type Version41Progress,
   type Version41Segment,
   type Version41SegmentKind,
   type Version41Storage
