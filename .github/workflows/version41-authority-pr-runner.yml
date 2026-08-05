@@ -1,0 +1,40 @@
+name: version41-authority-pr-runner
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-authority-remediation:
+    if: github.head_ref == 'agent/version41-living-current'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/version41-living-current
+          fetch-depth: 0
+      - name: Execute the reviewed remediation script
+        shell: python
+        run: |
+          from pathlib import Path
+          import textwrap
+
+          workflow = Path('.github/workflows/version41-expedition-authority-fix.yml')
+          source = workflow.read_text(encoding='utf-8')
+          start_marker = '        run: |\n'
+          end_marker = '      - name: Commit the audited correction'
+          start = source.index(start_marker) + len(start_marker)
+          end = source.index(end_marker, start)
+          script = textwrap.dedent(source[start:end])
+          exec(compile(script, str(workflow), 'exec'))
+          Path('.github/workflows/version41-authority-pr-runner.yml').unlink()
+      - name: Commit the corrected runtime and remove one-shot workflows
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Version 41: quarantine Expedition recovery and rewards"
+          git push origin HEAD:agent/version41-living-current
