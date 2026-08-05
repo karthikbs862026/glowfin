@@ -253,6 +253,8 @@ function showSegment(kind: Kind, elapsed: number): void {
 function finish(result: Result, elapsed: number): void {
   if (finished) return;
   finished = true;
+  playing = false;
+  window.dispatchEvent(new Event("glowfin:v41-complete"));
   progress = save(result);
   element("moonwell-hub")?.setAttribute("data-v41-restored", "true");
   element("v41-hud")?.setAttribute("data-state", "complete");
@@ -359,7 +361,8 @@ class Layer {
   private readonly rescue = new Set<number>();
   private readonly breaks = new Set<number>();
   private kind: Kind | null = null;
-  private previous = -1;
+  private expeditionElapsed = 0;
+  private lastDistance = 0;
   private moteOrigin = 16;
   private nextMiss = 0;
   private chain = 0;
@@ -407,10 +410,19 @@ class Layer {
   show(value: boolean): void { this.group.visible = value; }
 
   update(sim: SimState, frame: number): void {
-    const elapsed = sim.elapsedSec * qaScale();
-    if (this.previous > 1 && (elapsed + .1 < this.previous || sim.forwardDistance < 1)) this.reset(sim);
-    this.previous = elapsed;
+    this.expeditionElapsed += Math.max(0, Math.min(frame, .1)) * qaScale();
+    const elapsed = this.expeditionElapsed;
     const segment = segmentAt(elapsed);
+    if (sim.forwardDistance + 1 < this.lastDistance) {
+      this.origins.set(segment.kind, sim.forwardDistance);
+      this.moteOrigin = sim.forwardDistance + 16;
+      this.nextMiss = 0;
+      this.resolved.clear();
+      this.chain = 0;
+      this.portalDistance = null;
+      text("v41-chain", `Chain 0 · Best ${this.bestChain}`);
+    }
+    this.lastDistance = sim.forwardDistance;
     if (segment.kind !== this.kind) {
       this.kind = segment.kind;
       this.origins.set(segment.kind, sim.forwardDistance);
@@ -422,22 +434,6 @@ class Layer {
     if (segment.kind === "return-moonwell") this.updateFinish(sim, elapsed, frame);
   }
 
-  private reset(sim: SimState): void {
-    this.origins.clear();
-    this.resolved.clear();
-    this.rescue.clear();
-    this.breaks.clear();
-    this.kind = null;
-    this.previous = -1;
-    this.moteOrigin = sim.forwardDistance + 16;
-    this.nextMiss = this.chain = this.bestChain = this.raceGap = 0;
-    this.relicFound = this.relicDone = this.raceDone = this.chaseDone = finished = false;
-    this.chaseGap = C.chase.initialGapUnits;
-    this.portalDistance = null;
-    this.neri.visible = this.miri.visible = this.dusk.visible = this.relic.visible = this.portal.visible = false;
-    this.rings.count = 0;
-    element("v41-complete")?.setAttribute("data-active", "false");
-  }
 
   private updateMotes(sim: SimState, elapsed: number): void {
     const spacing = C.collectibles.moteSpacingUnits;
@@ -749,7 +745,15 @@ function install(): void {
     document.documentElement.dataset["glowfinMode"] = MODE;
     element("v41-hud")?.setAttribute("data-active", "true");
     element("v41-complete")?.setAttribute("data-active", "false");
+    document.documentElement.dataset["glowfinExpeditionRecoveries"] = "0";
+    element("v41-hud")?.setAttribute("data-segment-history", "");
     track("tap_to_dive", {
+      mode: "expedition",
+      expedition: C.expeditionId,
+      contentVersion: 41,
+      planHash: PLAN_HASH
+    });
+    track("run_start", {
       mode: "expedition",
       expedition: C.expeditionId,
       contentVersion: 41,
@@ -760,6 +764,9 @@ function install(): void {
   entry.addEventListener("click", (event) => {
     event.stopPropagation();
     start();
+  });
+  addEventListener("glowfin:v41-current-recovered", () => {
+    toast("Moon guardian restores your Light");
   });
   element("v41-rematch")?.addEventListener("click", () => {
     sessionStorage.setItem(AUTO, "1");

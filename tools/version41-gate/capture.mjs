@@ -45,6 +45,13 @@ async function waitForReadyHub(page) {
   ), undefined, { timeout: 12_000 });
 }
 
+async function standardProgressSnapshot(page) {
+  return page.evaluate(() => Object.fromEntries([
+    "glowfin.progress.v3.primary",
+    "glowfin.progress.v3.backup"
+  ].map((key) => [key, localStorage.getItem(key)])));
+}
+
 async function startFromExpeditionCard(page) {
   await waitForReadyHub(page);
   await page.locator("#v41-entry").click();
@@ -85,7 +92,9 @@ try {
 
   const expeditionUrl = new URL(baseUrl);
   expeditionUrl.searchParams.set("v41qa", "1");
-  await page.goto(expeditionUrl.toString(), { waitUntil: "load" });
+  await page.goto(expeditionUrl.toString(), { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await waitForReadyHub(page);
+  const standardProgressBefore = await standardProgressSnapshot(page);
   await startFromExpeditionCard(page);
 
   const snapshots = [];
@@ -117,7 +126,9 @@ try {
         additionalMaterials: Number(hud?.getAttribute("data-additional-materials") ?? "999"),
         runtime: document.documentElement.dataset.glowfinRuntime ?? null,
         startupError: document.body.dataset.startupError === "true",
-        canvasVisible: getComputedStyle(document.querySelector("#glowfin-canvas")).display !== "none"
+        canvasVisible: getComputedStyle(document.querySelector("#glowfin-canvas")).display !== "none",
+        corePostRunVisible: getComputedStyle(document.querySelector("#hud-gameover")).display !== "none",
+        recoveries: Number(document.documentElement.dataset.glowfinExpeditionRecoveries ?? "0")
       };
     });
     snapshots.push(snapshot);
@@ -139,8 +150,11 @@ try {
     restored: document.querySelector("#moonwell-hub")?.getAttribute("data-v41-restored") === "true",
     storedPrimary: localStorage.getItem("glowfin.version41.v1.primary") !== null,
     startupError: document.body.dataset.startupError === "true",
-    segmentHistory: document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? ""
+    segmentHistory: document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "",
+    corePostRunVisible: getComputedStyle(document.querySelector("#hud-gameover")).display !== "none",
+    recoveries: Number(document.documentElement.dataset.glowfinExpeditionRecoveries ?? "0")
   }));
+  const standardProgressAfter = await standardProgressSnapshot(page);
   await page.screenshot({
     path: resolve(screenshotDir, "07-complete.png"),
     fullPage: true
@@ -150,7 +164,7 @@ try {
   const deepLinkUrl = new URL(baseUrl);
   deepLinkUrl.searchParams.set("expedition", "missing-moonseed");
   deepLinkUrl.searchParams.set("v41qa", "1");
-  await deepLinkPage.goto(deepLinkUrl.toString(), { waitUntil: "load" });
+  await deepLinkPage.goto(deepLinkUrl.toString(), { waitUntil: "domcontentloaded", timeout: 90_000 });
   await deepLinkPage.waitForFunction(
     () => (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
       .split("|")
@@ -169,7 +183,7 @@ try {
   await deepLinkPage.close();
 
   const normalPage = await context.newPage();
-  await normalPage.goto(baseUrl, { waitUntil: "load" });
+  await normalPage.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await normalPage.locator("#v41-entry").waitFor({ state: "visible" });
   const normalIsolation = await normalPage.evaluate(() => ({
     mode: document.documentElement.dataset.glowfinMode ?? null,
@@ -181,6 +195,8 @@ try {
     rewardedStillDisabled: document.querySelector("#hud-rewarded-pearls")?.hasAttribute("disabled") ?? false,
     startupError: document.body.dataset.startupError === "true"
   }));
+
+  await context.close();
 
   const accessContext = await browser.newContext({
     viewport: { width: 390, height: 844 },
@@ -204,7 +220,7 @@ try {
   accessPage.on("console", (message) => {
     if (message.type() === "error") accessErrors.push(`console error: ${message.text()}`);
   });
-  await accessPage.goto(expeditionUrl.toString(), { waitUntil: "load" });
+  await accessPage.goto(expeditionUrl.toString(), { waitUntil: "domcontentloaded", timeout: 90_000 });
   await startFromExpeditionCard(accessPage);
   await accessPage.waitForFunction(
     () => (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
@@ -254,6 +270,15 @@ try {
   if (snapshots.some((entry) => entry.runtime !== "running" || entry.startupError || !entry.canvasVisible)) {
     issues.push("the runtime or canvas failed during an encounter");
   }
+  if (snapshots.some((entry) => entry.corePostRunVisible) || completion.corePostRunVisible) {
+    issues.push("the standard post-run reward screen leaked into the Expedition");
+  }
+  if (completion.recoveries < 1) {
+    issues.push("the unattended phone journey did not exercise guardian recovery");
+  }
+  if (JSON.stringify(standardProgressBefore) !== JSON.stringify(standardProgressAfter)) {
+    issues.push("the Expedition mutated standard progress, rewards, or run counters");
+  }
   if (!completion.active || completion.heading !== "Moonseed restored" || completion.resultCards !== 6 || !completion.restored || !completion.storedPrimary || completion.startupError) {
     issues.push("the finite Expedition did not finish, persist and visibly restore the Moon Well");
   }
@@ -290,6 +315,8 @@ try {
     observedHistory,
     snapshots,
     completion,
+    standardProgressBefore,
+    standardProgressAfter,
     deepLinkStart,
     normalIsolation,
     accessSnapshot,
