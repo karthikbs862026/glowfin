@@ -1,0 +1,36 @@
+name: version41-runtime-import-fix
+
+on:
+  push:
+    branches: [agent/version41-living-current]
+
+permissions:
+  contents: write
+
+jobs:
+  remove-unused-import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/version41-living-current
+          fetch-depth: 0
+      - name: Remove the exact unused type import
+        shell: python
+        run: |
+          from pathlib import Path
+          source = Path("src/engagement/version41Runtime.ts")
+          text = source.read_text(encoding="utf-8")
+          old = "  type Version41Progress,\n"
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one exact unused import, found {text.count(old)}")
+          source.write_text(text.replace(old, "", 1), encoding="utf-8")
+          Path(".github/workflows/version41-runtime-import-fix.yml").unlink()
+      - name: Commit the audited correction and remove this one-shot workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/engagement/version41Runtime.ts .github/workflows/version41-runtime-import-fix.yml
+          git commit -m "Version 41: remove unused lean-runtime type"
+          git push origin HEAD:agent/version41-living-current
