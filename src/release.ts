@@ -1,7 +1,7 @@
 import releaseConfig from "../config/release.json";
 
 if (typeof window !== "undefined" && typeof document !== "undefined") {
-  void import("./engagement/version41Lite");
+  void import("./engagement/version41Micro");
 }
 
 export const GLOWFIN_ENVIRONMENTS = [
