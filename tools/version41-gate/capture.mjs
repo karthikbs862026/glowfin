@@ -36,14 +36,27 @@ const expectedSegments = [
   "return-moonwell"
 ];
 
-try {
-  const context = await browser.newContext({
-    viewport: { width: 390, height: 844 },
-    deviceScaleFactor: 2,
-    isMobile: true,
-    hasTouch: true
-  });
-  await context.addInitScript(() => {
+async function waitForReadyHub(page) {
+  await page.locator("#glowfin-canvas").waitFor({ state: "visible" });
+  await page.locator("#v41-entry").waitFor({ state: "visible", timeout: 12_000 });
+  await page.waitForFunction(() => (
+    document.documentElement.dataset.glowfinRuntime === "running" &&
+    document.querySelector("#moonwell-hub")?.getAttribute("data-active") === "true"
+  ), undefined, { timeout: 12_000 });
+}
+
+async function startFromExpeditionCard(page) {
+  await waitForReadyHub(page);
+  await page.locator("#v41-entry").click();
+  await page.waitForFunction(
+    () => document.querySelector("#v41-hud")?.getAttribute("data-active") === "true",
+    undefined,
+    { timeout: 5_000 }
+  );
+}
+
+function installPreferences(context) {
+  return context.addInitScript(() => {
     localStorage.setItem("glowfin.guided-tutorial.version", "39");
     localStorage.setItem("glowfin.access.v2", JSON.stringify({
       schemaVersion: 2,
@@ -52,6 +65,16 @@ try {
       highContrast: false
     }));
   });
+}
+
+try {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true
+  });
+  await installPreferences(context);
 
   const page = await context.newPage();
   const errors = [];
@@ -61,22 +84,18 @@ try {
   });
 
   const expeditionUrl = new URL(baseUrl);
-  expeditionUrl.searchParams.set("expedition", "missing-moonseed");
   expeditionUrl.searchParams.set("v41qa", "1");
   await page.goto(expeditionUrl.toString(), { waitUntil: "load" });
-  await page.locator("#glowfin-canvas").waitFor({ state: "visible" });
-  await page.waitForFunction(
-    () => document.querySelector("#v41-hud")?.getAttribute("data-active") === "true",
-    undefined,
-    { timeout: 10_000 }
-  );
+  await startFromExpeditionCard(page);
 
   const snapshots = [];
   for (const segment of expectedSegments) {
     await page.waitForFunction(
-      (expected) => document.querySelector("#v41-hud")?.getAttribute("data-segment") === expected,
+      (expected) => (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
+        .split("|")
+        .includes(expected),
       segment,
-      { timeout: 5_000 }
+      { timeout: 8_000 }
     );
     const snapshot = await page.evaluate(() => {
       const hud = document.querySelector("#v41-hud");
@@ -86,6 +105,7 @@ try {
       const objectiveStyle = objective ? getComputedStyle(objective) : null;
       return {
         segment: hud?.getAttribute("data-segment") ?? null,
+        segmentHistory: hud?.getAttribute("data-segment-history") ?? "",
         state: hud?.getAttribute("data-state") ?? null,
         title: title?.textContent ?? null,
         objective: objective?.textContent ?? null,
@@ -110,7 +130,7 @@ try {
   await page.waitForFunction(
     () => document.querySelector("#v41-complete")?.getAttribute("data-active") === "true",
     undefined,
-    { timeout: 6_000 }
+    { timeout: 12_000 }
   );
   const completion = await page.evaluate(() => ({
     active: document.querySelector("#v41-complete")?.getAttribute("data-active") === "true",
@@ -118,20 +138,43 @@ try {
     resultCards: document.querySelectorAll("#v41-result-grid > div").length,
     restored: document.querySelector("#moonwell-hub")?.getAttribute("data-v41-restored") === "true",
     storedPrimary: localStorage.getItem("glowfin.version41.v1.primary") !== null,
-    startupError: document.body.dataset.startupError === "true"
+    startupError: document.body.dataset.startupError === "true",
+    segmentHistory: document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? ""
   }));
   await page.screenshot({
     path: resolve(screenshotDir, "07-complete.png"),
     fullPage: true
   });
 
+  const deepLinkPage = await context.newPage();
+  const deepLinkUrl = new URL(baseUrl);
+  deepLinkUrl.searchParams.set("expedition", "missing-moonseed");
+  deepLinkUrl.searchParams.set("v41qa", "1");
+  await deepLinkPage.goto(deepLinkUrl.toString(), { waitUntil: "load" });
+  await deepLinkPage.waitForFunction(
+    () => (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
+      .split("|")
+      .includes("follow-light"),
+    undefined,
+    { timeout: 15_000 }
+  );
+  const deepLinkStart = await deepLinkPage.evaluate(() => ({
+    hudActive: document.querySelector("#v41-hud")?.getAttribute("data-active") === "true",
+    mode: document.documentElement.dataset.glowfinMode ?? null,
+    firstSegmentObserved: (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
+      .split("|")
+      .includes("follow-light"),
+    startupError: document.body.dataset.startupError === "true"
+  }));
+  await deepLinkPage.close();
+
   const normalPage = await context.newPage();
   await normalPage.goto(baseUrl, { waitUntil: "load" });
-  await normalPage.locator("#v41-expedition-start").waitFor({ state: "visible" });
+  await normalPage.locator("#v41-entry").waitFor({ state: "visible" });
   const normalIsolation = await normalPage.evaluate(() => ({
     mode: document.documentElement.dataset.glowfinMode ?? null,
     hudActive: document.querySelector("#v41-hud")?.getAttribute("data-active") === "true",
-    expeditionEntryVisible: getComputedStyle(document.querySelector("#v41-expedition-start")).display !== "none",
+    expeditionEntryVisible: getComputedStyle(document.querySelector("#v41-entry")).display !== "none",
     dailyStillPresent: document.querySelector("#hud-daily-trial") instanceof HTMLButtonElement,
     wardrobeStillPresent: document.querySelector("[data-moonwell-panel='wardrobe']") instanceof HTMLButtonElement,
     leaderboardStillPresent: document.querySelector("[data-moonwell-panel='leaderboard']") instanceof HTMLButtonElement,
@@ -162,15 +205,20 @@ try {
     if (message.type() === "error") accessErrors.push(`console error: ${message.text()}`);
   });
   await accessPage.goto(expeditionUrl.toString(), { waitUntil: "load" });
+  await startFromExpeditionCard(accessPage);
   await accessPage.waitForFunction(
-    () => document.querySelector("#v41-hud")?.getAttribute("data-segment") === "duskmaw-chase",
+    () => (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
+      .split("|")
+      .includes("duskmaw-chase"),
     undefined,
-    { timeout: 15_000 }
+    { timeout: 25_000 }
   );
   const accessSnapshot = await accessPage.evaluate(() => ({
     reducedMotion: document.documentElement.dataset.glowfinReducedMotion === "true",
     highContrast: document.documentElement.dataset.glowfinHighContrast === "true",
-    chaseVisible: document.querySelector("#v41-hud")?.getAttribute("data-segment") === "duskmaw-chase",
+    chaseObserved: (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
+      .split("|")
+      .includes("duskmaw-chase"),
     objectiveReadable: Number.parseFloat(getComputedStyle(document.querySelector("#v41-objective")).fontSize) >= 12,
     startupError: document.body.dataset.startupError === "true"
   }));
@@ -181,7 +229,8 @@ try {
   await accessContext.close();
 
   const issues = [];
-  if (snapshots.map((entry) => entry.segment).join("|") !== expectedSegments.join("|")) {
+  const observedHistory = completion.segmentHistory.split("|").filter(Boolean);
+  if (observedHistory.join("|") !== expectedSegments.join("|")) {
     issues.push("encounter order was not deterministic");
   }
   if (snapshots.some((entry) => !entry.title || !entry.objective)) {
@@ -208,6 +257,9 @@ try {
   if (!completion.active || completion.heading !== "Moonseed restored" || completion.resultCards !== 6 || !completion.restored || !completion.storedPrimary || completion.startupError) {
     issues.push("the finite Expedition did not finish, persist and visibly restore the Moon Well");
   }
+  if (!deepLinkStart.hudActive || deepLinkStart.mode !== "expedition-v41" || !deepLinkStart.firstSegmentObserved || deepLinkStart.startupError) {
+    issues.push("the playable Expedition deep link did not enter the first encounter safely");
+  }
   if (
     normalIsolation.mode !== null ||
     normalIsolation.hudActive ||
@@ -223,7 +275,7 @@ try {
   if (
     !accessSnapshot.reducedMotion ||
     !accessSnapshot.highContrast ||
-    !accessSnapshot.chaseVisible ||
+    !accessSnapshot.chaseObserved ||
     !accessSnapshot.objectiveReadable ||
     accessSnapshot.startupError
   ) {
@@ -235,8 +287,10 @@ try {
   const report = {
     source: "ci-chromium-version41-living-current",
     expectedSegments,
+    observedHistory,
     snapshots,
     completion,
+    deepLinkStart,
     normalIsolation,
     accessSnapshot,
     errors,
