@@ -42,6 +42,18 @@
 - Guardrail strengthened: malformed, missing, duplicate or expanded deferred-version declarations are explicitly rejected
 - Waiver: none
 
+## Iteration 4 — 2026-08-05
+
+### Finding: the first complete Version 41 runtime exceeded the unchanged 2.00 MB shipped-bundle cap
+
+- Source: core CI bundle-size gate
+- Severity: release-blocking mobile-load regression
+- Evidence: all 396 tests, build, hosted authority and mount checks passed, but the non-map production payload measured 2.03 MB
+- Resolution: replace the oversized prototype runtime with a lean, data-driven implementation that retains all six encounters, collectibles, Neri, Miri, Duskmaw, restoration, Atlas, persistence, telemetry and accessibility surfaces
+- Guardrail preserved: the 2.00 MB budget is unchanged; no file class is excluded and no threshold is raised
+- Rendering improvement: the lean layer uses eight additional draws, two materials and substantially fewer than the 8,000 allowed additional triangles
+- Waiver: none
+
 ### Rerun policy
 
 All core CI, production-readiness, native-wrapper and art/render jobs are rerun from each corrected head. Later findings are appended as separate iterations; no failed check is waived.
