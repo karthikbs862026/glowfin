@@ -91,14 +91,18 @@ text = replace_once(
 text = replace_once(
     text,
     '''  await accessPage.waitForFunction(
-    () => document.querySelector("#v41-hud")?.getAttribute("data-segment") === "duskmaw-chase",
+    () => (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
+      .split("|")
+      .includes("duskmaw-chase"),
     undefined,
-    { timeout: 15_000 }
+    { timeout: 25_000 }
   );
 ''',
     '''  await accessPage.waitForFunction(
     () => {
-      const reached = document.querySelector("#v41-hud")?.getAttribute("data-segment") === "duskmaw-chase";
+      const reached = (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
+        .split("|")
+        .includes("duskmaw-chase");
       if (reached) document.documentElement.dataset.glowfinV41QaHold = "true";
       return reached;
     },
@@ -129,11 +133,11 @@ text = replace_once(
 )
 text = replace_once(
     text,
-    '''  if (snapshots.map((entry) => entry.segmentHistory.split("|")).flat().filter((value, index, all) => all.indexOf(value) === index).join("|") !== expectedSegments.join("|")) {
+    '''  if (observedHistory.join("|") !== expectedSegments.join("|")) {
     issues.push("encounter order was not deterministic");
   }
 ''',
-    '''  if (snapshots.map((entry) => entry.segmentHistory.split("|")).flat().filter((value, index, all) => all.indexOf(value) === index).join("|") !== expectedSegments.join("|")) {
+    '''  if (observedHistory.join("|") !== expectedSegments.join("|")) {
     issues.push("encounter order was not deterministic");
   }
   if (snapshots.some((entry, index) => entry.segment !== expectedSegments[index])) {
