@@ -813,17 +813,23 @@ function install(): void {
   if (rematch) sessionStorage.removeItem(AUTO);
   if (queryStart || rematch) {
   let attempts = 0;
+  document.documentElement.dataset["glowfinV41AutoStart"] = "waiting";
   const autoStart = (): void => {
     const hub = element("moonwell-hub");
     if (
       document.documentElement.dataset["glowfinRuntime"] === "running" &&
       hub?.dataset["active"] === "true"
     ) {
+      document.documentElement.dataset["glowfinV41AutoStart"] = "started";
       start();
       return;
     }
     attempts += 1;
-    if (attempts < 200) setTimeout(autoStart, 50);
+    if (attempts < 600) {
+      setTimeout(autoStart, 50);
+    } else {
+      document.documentElement.dataset["glowfinV41AutoStart"] = "timed-out";
+    }
   };
   setTimeout(autoStart, 0);
 }

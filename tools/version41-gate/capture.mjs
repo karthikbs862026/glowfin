@@ -52,6 +52,30 @@ async function standardProgressSnapshot(page) {
   ].map((key) => [key, localStorage.getItem(key)])));
 }
 
+async function installEncounterCaptureHold(page) {
+  await page.evaluate(() => {
+    const hud = document.querySelector("#v41-hud");
+    if (!hud) throw new Error("Version 41 HUD was unavailable before capture arming.");
+    let previous = hud.getAttribute("data-segment");
+    const observer = new MutationObserver(() => {
+      const current = hud.getAttribute("data-segment");
+      if (!current || current === previous) return;
+      previous = current;
+      document.documentElement.dataset.glowfinV41QaHold = "true";
+    });
+    observer.observe(hud, {
+      attributes: true,
+      attributeFilter: ["data-segment"]
+    });
+  });
+}
+
+async function releaseEncounterCaptureHold(page) {
+  await page.evaluate(() => {
+    delete document.documentElement.dataset.glowfinV41QaHold;
+  });
+}
+
 async function startFromExpeditionCard(page) {
   await waitForReadyHub(page);
   await page.locator("#v41-entry").click();
@@ -95,20 +119,15 @@ try {
   await page.goto(expeditionUrl.toString(), { waitUntil: "domcontentloaded", timeout: 90_000 });
   await waitForReadyHub(page);
   const standardProgressBefore = await standardProgressSnapshot(page);
+  await installEncounterCaptureHold(page);
   await startFromExpeditionCard(page);
 
   const snapshots = [];
   for (const segment of expectedSegments) {
     await page.waitForFunction(
-      (expected) => {
-        const reached = (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
-          .split("|")
-          .includes(expected);
-        if (reached) document.documentElement.dataset.glowfinV41QaHold = "true";
-        return reached;
-      },
+      (expected) => document.querySelector("#v41-hud")?.getAttribute("data-segment") === expected,
       segment,
-      { timeout: 12_000 }
+      { timeout: 20_000 }
     );
     const snapshot = await page.evaluate(() => {
       const hud = document.querySelector("#v41-hud");
@@ -140,9 +159,7 @@ try {
       path: resolve(screenshotDir, `${String(snapshots.length).padStart(2, "0")}-${segment}.png`),
       fullPage: true
     });
-    await page.evaluate(() => {
-      delete document.documentElement.dataset.glowfinV41QaHold;
-    });
+    await releaseEncounterCaptureHold(page);
   }
 
   await page.waitForFunction(
@@ -177,7 +194,7 @@ try {
       .split("|")
       .includes("follow-light"),
     undefined,
-    { timeout: 15_000 }
+    { timeout: 45_000 }
   );
   const deepLinkStart = await deepLinkPage.evaluate(() => ({
     hudActive: document.querySelector("#v41-hud")?.getAttribute("data-active") === "true",
@@ -185,7 +202,8 @@ try {
     firstSegmentObserved: (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
       .split("|")
       .includes("follow-light"),
-    startupError: document.body.dataset.startupError === "true"
+    startupError: document.body.dataset.startupError === "true",
+    autoStart: document.documentElement.dataset.glowfinV41AutoStart ?? null
   }));
   await deepLinkPage.close();
 
@@ -228,18 +246,18 @@ try {
     if (message.type() === "error") accessErrors.push(`console error: ${message.text()}`);
   });
   await accessPage.goto(expeditionUrl.toString(), { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await waitForReadyHub(accessPage);
+  await installEncounterCaptureHold(accessPage);
   await startFromExpeditionCard(accessPage);
-  await accessPage.waitForFunction(
-    () => {
-      const reached = (document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "")
-        .split("|")
-        .includes("duskmaw-chase");
-      if (reached) document.documentElement.dataset.glowfinV41QaHold = "true";
-      return reached;
-    },
-    undefined,
-    { timeout: 30_000 }
-  );
+  for (const segment of expectedSegments) {
+    await accessPage.waitForFunction(
+      (expected) => document.querySelector("#v41-hud")?.getAttribute("data-segment") === expected,
+      segment,
+      { timeout: 20_000 }
+    );
+    if (segment === "duskmaw-chase") break;
+    await releaseEncounterCaptureHold(accessPage);
+  }
   const accessSnapshot = await accessPage.evaluate(() => ({
     reducedMotion: document.documentElement.dataset.glowfinReducedMotion === "true",
     highContrast: document.documentElement.dataset.glowfinHighContrast === "true",
@@ -253,9 +271,7 @@ try {
     path: resolve(screenshotDir, "08-reduced-motion-high-contrast-chase.png"),
     fullPage: true
   });
-  await accessPage.evaluate(() => {
-    delete document.documentElement.dataset.glowfinV41QaHold;
-  });
+  await releaseEncounterCaptureHold(accessPage);
   await accessContext.close();
 
   const issues = [];
@@ -299,7 +315,7 @@ try {
   if (!completion.active || completion.heading !== "Moonseed restored" || completion.resultCards !== 6 || !completion.restored || !completion.storedPrimary || completion.startupError) {
     issues.push("the finite Expedition did not finish, persist and visibly restore the Moon Well");
   }
-  if (!deepLinkStart.hudActive || deepLinkStart.mode !== "expedition-v41" || !deepLinkStart.firstSegmentObserved || deepLinkStart.startupError) {
+  if (!deepLinkStart.hudActive || deepLinkStart.mode !== "expedition-v41" || !deepLinkStart.firstSegmentObserved || deepLinkStart.autoStart !== "started" || deepLinkStart.startupError) {
     issues.push("the playable Expedition deep link did not enter the first encounter safely");
   }
   if (
