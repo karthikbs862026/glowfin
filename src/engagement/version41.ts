@@ -317,7 +317,6 @@ class Version41Layer {
   private readonly currentBreaksCollected = new Set<number>();
   private readonly segmentOrigins = new Map<Version41SegmentKind, number>();
   private activeSegment: Version41SegmentKind | null = null;
-  private elapsedSec = 0;
   private previousElapsedSec = -1;
   private nextMoteToResolve = 0;
   private moteOriginDistance = 16;
@@ -462,12 +461,12 @@ class Version41Layer {
     const effectiveElapsed = sim.elapsedSec * qaScale;
     if (
       this.previousElapsedSec >= 0 &&
-      (effectiveElapsed + 0.1 < this.previousElapsedSec || sim.forwardDistance < 1)
+      (effectiveElapsed + 0.1 < this.previousElapsedSec ||
+        (this.previousElapsedSec > 1 && sim.forwardDistance < 1))
     ) {
       this.reset(sim);
     }
     this.previousElapsedSec = effectiveElapsed;
-    this.elapsedSec = effectiveElapsed;
 
     const segment = segmentAtTime(this.plan, effectiveElapsed);
     if (segment.kind !== this.activeSegment) {
@@ -502,7 +501,6 @@ class Version41Layer {
     this.currentBreaksCollected.clear();
     this.segmentOrigins.clear();
     this.activeSegment = null;
-    this.elapsedSec = 0;
     this.previousElapsedSec = -1;
     this.nextMoteToResolve = 0;
     this.moteOriginDistance = sim.forwardDistance + 16;
