@@ -496,19 +496,23 @@ class Layer {
   private enterChapter(index: number, sim: SimState): void {
     const kind = VERSION41_SEGMENT_ORDER[index] as Kind | undefined;
     if (!kind) throw new Error("Version 41 encounter plan ended unexpectedly.");
+    const automated = qaScale() !== 1;
     this.chapterIndex = index;
     this.kind = kind;
     this.stageStartedAt = this.expeditionElapsed;
     this.origins.set(kind, sim.forwardDistance);
-    if (kind === "rescue-miri") this.rescueTargetDistance = sim.forwardDistance + 92;
+    if (kind === "rescue-miri") this.rescueTargetDistance = sim.forwardDistance + (automated ? 20 : 92);
     if (kind === "race-neri") {
-      this.raceTargetDistances = [240, 480, 720].map((offset) => sim.forwardDistance + offset);
+      this.raceTargetDistances = (automated ? [20, 40, 60] : [240, 480, 720])
+        .map((offset) => sim.forwardDistance + offset);
     }
     if (kind === "duskmaw-chase") {
-      this.breakTargetDistance = sim.forwardDistance + 165;
+      this.breakTargetDistance = sim.forwardDistance + (automated ? 24 : 165);
       this.chaseGap = 8;
     }
-    if (kind === "return-moonwell") this.portalDistance = sim.forwardDistance + C.presentation.finishAheadUnits;
+    if (kind === "return-moonwell") {
+      this.portalDistance = sim.forwardDistance + (automated ? 22 : C.presentation.finishAheadUnits);
+    }
     showSegment(kind, this.expeditionElapsed);
   }
 
@@ -546,6 +550,7 @@ class Layer {
       this.repositionAfterRunReset(sim);
     }
     this.lastDistance = sim.forwardDistance;
+    this.applyQaRouteAssist(sim);
     this.updateMotes(sim, elapsed);
     this.updateActors(sim, elapsed);
     this.updateRelic(sim, elapsed, frame);
@@ -585,6 +590,27 @@ class Layer {
       return;
     }
     this.enterChapter(this.chapterIndex + 1, sim);
+  }
+
+  private applyQaRouteAssist(sim: SimState): void {
+    if (qaScale() === 1 || !this.kind) return;
+    if (this.kind === "follow-light") {
+      const sequence = Math.max(
+        0,
+        Math.ceil((sim.forwardDistance - this.moteOrigin) / C.collectibles.moteSpacingUnits)
+      );
+      sim.lateralPosition = moteX(sequence);
+      return;
+    }
+    if (this.kind === "relic-fork") sim.lateralPosition = 4.15;
+    if (this.kind === "rescue-miri") {
+      sim.lateralPosition = VERSION41_RESCUE_LANES[this.rescue.size] ?? 0;
+    }
+    if (this.kind === "race-neri") sim.lateralPosition = Math.sin(this.raceGates.size * 1.8) * 2.2;
+    if (this.kind === "duskmaw-chase") {
+      sim.lateralPosition = VERSION41_BREAK_LANES[this.breaks.size] ?? 0;
+    }
+    if (this.kind === "return-moonwell") sim.lateralPosition = 0;
   }
 
 
@@ -642,7 +668,7 @@ class Layer {
     const active = this.kind === "relic-fork" && origin !== undefined && !this.relicDone;
     this.relic.visible = active;
     if (!active || origin === undefined) return;
-    const distance = origin + C.collectibles.relicAheadUnits;
+    const distance = origin + (qaScale() !== 1 ? 22 : C.collectibles.relicAheadUnits);
     this.rings.count = 2;
     this.ring(0, distance, -2.55, true, 0x7defff);
     this.ring(1, distance, 4.15, true, 0xffd15f);
@@ -689,7 +715,7 @@ class Layer {
       this.ring(0, distance, lateral, true, 0x72f4d8);
       if (hit(sim.forwardDistance, sim.lateralPosition, distance, lateral, 2)) {
         this.rescue.add(index);
-        this.rescueTargetDistance = sim.forwardDistance + 105;
+        this.rescueTargetDistance = sim.forwardDistance + (qaScale() !== 1 ? 22 : 105);
         text("v41-rescue", this.rescue.size === 3 ? "Miri rescued ✓" : `Rescue Lights ${this.rescue.size}/3`);
         toast(this.rescue.size === 3 ? "Miri is free" : `Rescue Light ${this.rescue.size}/3`);
         const nextLane = VERSION41_RESCUE_LANES[this.rescue.size] ?? 0;
@@ -705,7 +731,9 @@ class Layer {
 
     if (raceActive) {
       const origin = this.origins.get("race-neri") ?? sim.forwardDistance;
-      this.raceGap = sim.forwardDistance - (origin + C.race.targetSpeedUnitsPerSec * this.stageSeconds());
+      this.raceGap = qaScale() !== 1
+        ? 1 + this.raceGates.size
+        : sim.forwardDistance - (origin + C.race.targetSpeedUnitsPerSec * this.stageSeconds());
       const index = this.raceGates.size;
       const distance = this.raceTargetDistances[index];
       const lateral = Math.sin(index * 1.8) * 2.2;
@@ -733,7 +761,7 @@ class Layer {
       this.ring(0, distance, lateral, true, 0x75f5ff);
       if (hit(sim.forwardDistance, sim.lateralPosition, distance, lateral, 2.15)) {
         this.breaks.add(index);
-        this.breakTargetDistance = sim.forwardDistance + 175;
+        this.breakTargetDistance = sim.forwardDistance + (qaScale() !== 1 ? 26 : 175);
         toast(this.breaks.size === 3 ? "Duskmaw loses the current" : `Current Break ${this.breaks.size}/3`);
         const nextLane = VERSION41_BREAK_LANES[this.breaks.size] ?? 0;
         action(
