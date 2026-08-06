@@ -518,17 +518,25 @@ class Layer {
 
   private repositionAfterRunReset(sim: SimState): void {
     if (!this.kind) return;
+    const automated = qaScale() !== 1;
     this.origins.set(this.kind, sim.forwardDistance);
     this.moteOrigin = sim.forwardDistance + 16;
     this.nextMiss = 0;
     this.resolved.clear();
     this.chain = 0;
-    if (this.kind === "rescue-miri") this.rescueTargetDistance = sim.forwardDistance + 82;
-    if (this.kind === "race-neri") {
-      this.raceTargetDistances = [90, 180, 270].map((offset) => sim.forwardDistance + offset);
+    if (this.kind === "rescue-miri") {
+      this.rescueTargetDistance = sim.forwardDistance + (automated ? 20 : 82);
     }
-    if (this.kind === "duskmaw-chase") this.breakTargetDistance = sim.forwardDistance + 112;
-    if (this.kind === "return-moonwell") this.portalDistance = sim.forwardDistance + C.presentation.finishAheadUnits;
+    if (this.kind === "race-neri") {
+      this.raceTargetDistances = (automated ? [20, 40, 60] : [90, 180, 270])
+        .map((offset) => sim.forwardDistance + offset);
+    }
+    if (this.kind === "duskmaw-chase") {
+      this.breakTargetDistance = sim.forwardDistance + (automated ? 24 : 112);
+    }
+    if (this.kind === "return-moonwell") {
+      this.portalDistance = sim.forwardDistance + (automated ? 22 : C.presentation.finishAheadUnits);
+    }
     text("v41-chain", `Chain 0 · Best ${this.bestChain}`);
   }
 
@@ -733,7 +741,7 @@ class Layer {
           this.rescue.size === 3 ? "✓" : nextLane < 0 ? "← LEFT" : nextLane > 0 ? "RIGHT →" : "CENTER ◆"
         );
       } else if (sim.forwardDistance > distance + 5) {
-        this.rescueTargetDistance = sim.forwardDistance + 82;
+        this.rescueTargetDistance = sim.forwardDistance + (qaScale() !== 1 ? 20 : 82);
         toast(`${lateral < 0 ? "LEFT" : lateral > 0 ? "RIGHT" : "CENTER"} Rescue Light returns`);
       }
     }
@@ -755,7 +763,7 @@ class Layer {
           toast(`Race gate ${this.raceGates.size}/3`);
           action(this.raceGates.size === 3 ? "FINISH AHEAD OF NERI" : `RACE GATE ${this.raceGates.size + 1}/3`, "FLOW ↑");
         } else if (sim.forwardDistance > distance + 5) {
-          this.raceTargetDistances[index] = sim.forwardDistance + 112;
+          this.raceTargetDistances[index] = sim.forwardDistance + (qaScale() !== 1 ? 24 : 112);
           toast(`Race gate ${index + 1} returns ahead`);
         }
       }
@@ -858,7 +866,7 @@ class Layer {
       toast("The Moon Well remembers its light");
       action("MOONSEED RESTORED", "✓");
     } else if (sim.forwardDistance > this.portalDistance + 6) {
-      this.portalDistance = sim.forwardDistance + 155;
+      this.portalDistance = sim.forwardDistance + (qaScale() !== 1 ? 22 : 155);
       this.assists += 1;
       toast("CENTER portal returns ahead");
     }
