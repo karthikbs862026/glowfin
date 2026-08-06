@@ -1,5 +1,5 @@
 {
-  "$comment": "Version 41 Living Current vertical-slice tuning. These values are validated at module load; malformed or unsafe values fail closed before the Expedition entry point is enabled.",
+  "$comment": "Version 41.2 Living Current plan-compliance tuning. Every chapter is objective-gated; elapsed time alone cannot complete the expedition.",
   "schemaVersion": 1,
   "contentVersion": 41,
   "expeditionId": "missing-moonseed",
@@ -52,14 +52,14 @@
     }
   ],
   "collectibles": {
-    "motePool": 48,
-    "moteSpacingUnits": 18,
-    "moteCollectRadius": 1.2,
+    "motePool": 72,
+    "moteSpacingUnits": 7.6,
+    "moteCollectRadius": 1.45,
     "moteMissDistanceUnits": 2.5,
-    "relicCollectRadius": 1.35,
+    "relicCollectRadius": 1.75,
     "rescueCollectRadius": 1.55,
     "currentBreakCollectRadius": 1.8,
-    "relicAheadUnits": 108,
+    "relicAheadUnits": 210,
     "rescueAheadUnits": [72, 148, 226],
     "currentBreakAheadUnits": [92, 190, 294]
   },
@@ -78,15 +78,15 @@
     "successGapUnits": 17
   },
   "presentation": {
-    "maxVisibleAheadUnits": 96,
+    "maxVisibleAheadUnits": 112,
     "maxVisibleBehindUnits": 24,
-    "moteScale": 0.22,
+    "moteScale": 1.12,
     "rescueScale": 0.46,
     "ringRadius": 1.5,
     "rivalLateralOffset": -2.8,
     "miriLateralOffset": 2.9,
     "duskmawHeight": 0.3,
-    "finishAheadUnits": 78,
+    "finishAheadUnits": 470,
     "finishFallbackSec": 188
   },
   "budgets": {

@@ -79,6 +79,11 @@ async function releaseEncounterCaptureHold(page) {
 async function startFromExpeditionCard(page) {
   await waitForReadyHub(page);
   await page.locator("#v41-entry").click();
+  await page.locator('#v41-briefing[data-active="true"]').waitFor({
+    state: "visible",
+    timeout: 5_000
+  });
+  await page.locator("#v41-briefing-start").click();
   await page.waitForFunction(
     () => document.querySelector("#v41-hud")?.getAttribute("data-active") === "true",
     undefined,
@@ -150,6 +155,7 @@ try {
         runtime: document.documentElement.dataset.glowfinRuntime ?? null,
         startupError: document.body.dataset.startupError === "true",
         canvasVisible: getComputedStyle(document.querySelector("#glowfin-canvas")).display !== "none",
+        legacyCueVisible: getComputedStyle(document.querySelector("#hud-signature-cue")).display !== "none",
         corePostRunVisible: getComputedStyle(document.querySelector("#hud-gameover")).display !== "none",
         recoveries: Number(document.documentElement.dataset.glowfinExpeditionRecoveries ?? "0")
       };
@@ -176,7 +182,8 @@ try {
     startupError: document.body.dataset.startupError === "true",
     segmentHistory: document.querySelector("#v41-hud")?.getAttribute("data-segment-history") ?? "",
     corePostRunVisible: getComputedStyle(document.querySelector("#hud-gameover")).display !== "none",
-    recoveries: Number(document.documentElement.dataset.glowfinExpeditionRecoveries ?? "0")
+    recoveries: Number(document.documentElement.dataset.glowfinExpeditionRecoveries ?? "0"),
+    shieldRecoveries: Number(document.documentElement.dataset.glowfinV41ShieldRecoveries ?? "0")
   }));
   const standardProgressAfter = await standardProgressSnapshot(page);
   await page.screenshot({
@@ -310,13 +317,16 @@ try {
   if (snapshots.some((entry) => entry.corePostRunVisible) || completion.corePostRunVisible) {
     issues.push("the standard post-run reward screen leaked into the Expedition");
   }
-  if (completion.recoveries < 1) {
-    issues.push("the unattended phone journey did not exercise guardian recovery");
+  if (snapshots.some((entry) => entry.legacyCueVisible)) {
+    issues.push("a legacy Classic Current cue obscured the guided Expedition HUD");
+  }
+  if (completion.shieldRecoveries < 1) {
+    issues.push("the unattended phone journey did not exercise Moon Shield recovery");
   }
   if (JSON.stringify(standardProgressBefore) !== JSON.stringify(standardProgressAfter)) {
     issues.push("the Expedition mutated standard progress, rewards, or run counters");
   }
-  if (!completion.active || completion.heading !== "Moonseed restored" || completion.resultCards !== 6 || !completion.restored || !completion.storedPrimary || completion.startupError) {
+  if (!completion.active || completion.heading !== "Moonseed restored" || completion.resultCards !== 3 || !completion.restored || !completion.storedPrimary || completion.startupError) {
     issues.push("the finite Expedition did not finish, persist and visibly restore the Moon Well");
   }
   if (!deepLinkStart.hudActive || deepLinkStart.mode !== "expedition-v41" || !deepLinkStart.firstSegmentObserved || deepLinkStart.autoStart !== "started" || deepLinkStart.startupError) {

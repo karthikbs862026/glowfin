@@ -322,6 +322,129 @@ function checksumText(text: string): string {
   return hash.toString(16).padStart(8, "0");
 }
 
+export const VERSION41_EXPERIENCE_REVISION = "v41.2-plan-compliance-rebuild";
+export const VERSION41_TOTAL_SECONDS = 180;
+export const VERSION41_FIXED_SEED = VERSION41_CONFIG.seed;
+export const VERSION41_PERFORMANCE_BUDGETS = Object.freeze({
+  totalDrawCalls: 90,
+  totalTriangles: 150000,
+  textureMemoryMB: 48,
+  totalMaterials: 12,
+  reactionLatencyMs: 700,
+  frameRateFloor: 30
+});
+export const VERSION41_CHAPTERS = Object.freeze([
+  { kind: "follow-light", title: "Follow the Light", objective: "Collect six golden Lumen Motes and follow Neri.", minimumSeconds: 20, targetSeconds: 25, pressure: "calm" },
+  { kind: "relic-fork", title: "Claim the Fragment", objective: "Choose the outer-right relic current or continue on the wide cyan route.", minimumSeconds: 22, targetSeconds: 30, pressure: "choice" },
+  { kind: "rescue-miri", title: "Rescue Miri", objective: "Reach three Rescue Lights: left, right, then center.", minimumSeconds: 25, targetSeconds: 30, pressure: "character" },
+  { kind: "race-neri", title: "Race Neri", objective: "Hold Flow through three race gates and reach the finish first.", minimumSeconds: 28, targetSeconds: 30, pressure: "competition" },
+  { kind: "duskmaw-chase", title: "Escape Duskmaw", objective: "Reach three Current Breaks while the safe cyan route remains visible.", minimumSeconds: 22, targetSeconds: 25, pressure: "high" },
+  { kind: "return-moonwell", title: "Restore the Moon Well", objective: "Center on the ceremonial portal and carry the Moonseed home.", minimumSeconds: 20, targetSeconds: 40, pressure: "recovery" }
+] as const);
+export const VERSION41_SEGMENT_ORDER = Object.freeze(
+  VERSION41_CHAPTERS.map((chapter) => chapter.kind)
+);
+export const VERSION41_RESCUE_LANES = Object.freeze([-3.15, 3.15, 0]);
+export const VERSION41_BREAK_LANES = Object.freeze([-3.05, 3.05, 3.35]);
+export const VERSION41_CHASE_PATTERNS = Object.freeze([
+  "Shadow Sweep",
+  "Vacuum Wake",
+  "Ruins Collapse"
+]);
+export const VERSION41_PLAN_HASH = checksumText(JSON.stringify({
+  schemaVersion: 2,
+  contentVersion: 41,
+  revision: VERSION41_EXPERIENCE_REVISION,
+  fixedSeed: VERSION41_FIXED_SEED,
+  durationSec: VERSION41_TOTAL_SECONDS,
+  chapters: VERSION41_CHAPTERS,
+  rescueLanes: VERSION41_RESCUE_LANES,
+  breakLanes: VERSION41_BREAK_LANES,
+  chasePatterns: VERSION41_CHASE_PATTERNS
+}));
+
+export interface Version41ChapterState {
+  stageSeconds?: number;
+  bestChain?: number;
+  relicResolved?: boolean;
+  rescueLights?: number;
+  raceGates?: number;
+  raceGap?: number;
+  currentBreaks?: number;
+  portalReached?: boolean;
+}
+
+export function shouldAdvanceChapter(
+  kind: Version41SegmentKind,
+  state: Version41ChapterState
+): boolean {
+  const seconds = Math.max(0, Number(state.stageSeconds ?? 0));
+  switch (kind) {
+    case "follow-light": return seconds >= 20 && Number(state.bestChain ?? 0) >= 6;
+    case "relic-fork": return seconds >= 22 && Boolean(state.relicResolved);
+    case "rescue-miri": return seconds >= 25 && Number(state.rescueLights ?? 0) >= 3;
+    case "race-neri": return seconds >= 28 && Number(state.raceGates ?? 0) >= 3 && Number(state.raceGap ?? -1) >= 0;
+    case "duskmaw-chase": return seconds >= 22 && Number(state.currentBreaks ?? 0) >= 3;
+    case "return-moonwell": return seconds >= 20 && Boolean(state.portalReached);
+  }
+}
+
+export interface Version41CompletionResult {
+  portalReached?: boolean;
+  rescueLights?: number;
+  raceGates?: number;
+  raceGap?: number;
+  currentBreaks?: number;
+  relicFound?: boolean;
+  bestChain?: number;
+  recoveries?: number;
+  assists?: number;
+}
+
+export function completionMarks(result: Version41CompletionResult): Array<{
+  id: "mission-complete" | "hidden-relic" | "clean-current";
+  label: string;
+  earned: boolean;
+}> {
+  const primary = Boolean(
+    result.portalReached &&
+    Number(result.rescueLights ?? 0) >= 3 &&
+    Number(result.raceGates ?? 0) >= 3 &&
+    Number(result.currentBreaks ?? 0) >= 3
+  );
+  const relic = Boolean(result.relicFound);
+  const clean = Boolean(
+    primary &&
+    Number(result.bestChain ?? 0) >= 12 &&
+    Number(result.raceGap ?? -1) >= 0 &&
+    Number(result.recoveries ?? 0) === 0 &&
+    Number(result.assists ?? 0) === 0
+  );
+  return [
+    { id: "mission-complete", label: "Moonseed returned", earned: primary },
+    { id: "hidden-relic", label: "Fragment found", earned: relic },
+    { id: "clean-current", label: "Clean current", earned: clean }
+  ];
+}
+
+export function auditVersion41ExperiencePlan(): string[] {
+  const issues: string[] = [];
+  if (VERSION41_CHAPTERS.length !== 6) issues.push("expected six encounter chapters");
+  if (VERSION41_CHAPTERS.reduce((total, chapter) => total + chapter.targetSeconds, 0) !== 180) {
+    issues.push("chapter targets do not resolve at three minutes");
+  }
+  if (
+    VERSION41_SEGMENT_ORDER[VERSION41_SEGMENT_ORDER.length - 2] !== "duskmaw-chase" ||
+    VERSION41_SEGMENT_ORDER[VERSION41_SEGMENT_ORDER.length - 1] !== "return-moonwell"
+  ) {
+    issues.push("high pressure is not followed by recovery");
+  }
+  if (!Number.isInteger(VERSION41_FIXED_SEED)) issues.push("expedition seed is not deterministic");
+  if (VERSION41_PERFORMANCE_BUDGETS.reactionLatencyMs > 700) issues.push("reaction cue exceeds 700ms");
+  if (VERSION41_PERFORMANCE_BUDGETS.frameRateFloor < 30) issues.push("frame-rate floor is below 30fps");
+  return issues;
+}
+
 function purposeBeats(segments: readonly Version41Segment[], maxGapSec: number): number[] {
   const beats = new Set<number>([0]);
   for (const segment of segments) {
@@ -719,3 +842,4 @@ export class Version41ProgressRepository {
     }
   }
 }
+

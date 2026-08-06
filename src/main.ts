@@ -730,6 +730,10 @@ function version41ExpeditionActive(): boolean {
   return document.documentElement.dataset["glowfinMode"] === "expedition-v41";
 }
 
+// Mirrored by VERSION41_FIXED_SEED in the lazy-loaded plan. Keeping the value
+// local avoids pulling the complete expedition plan into Glowfin's initial JS.
+const VERSION41_EXPEDITION_SEED = 1196577101;
+
 function startRun(
   mode: GlowfinRunMode = "fresh",
   guidedTutorialSource: "required" | "replay" | null = null,
@@ -751,7 +755,13 @@ function startRun(
       : mode;
   activeRunDayId = dailyMode ? day.dayId : null;
   challengeRunActive = Boolean(mode === "ghost" && replayOverride);
-  const seed = replay?.seed ?? (dailyMode ? dailySeed(day.dayId) : generateSeed());
+  const seed = replay?.seed ?? (
+    version41ExpeditionActive()
+      ? VERSION41_EXPEDITION_SEED
+      : dailyMode
+        ? dailySeed(day.dayId)
+        : generateSeed()
+  );
   run = new Run(seed, tuning);
   recorder = new ReplayRecorder(run.seed, tuning.version);
   moonflashRecorder = new MoonflashRecorder();
