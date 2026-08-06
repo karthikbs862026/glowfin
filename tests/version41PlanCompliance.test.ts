@@ -80,6 +80,7 @@ describe("Version 41.2 enhancement-plan compliance", () => {
     expect(runtime).toContain("data-encounter-director=\"objective-gated-v2\"");
     expect(runtime).toContain("Moon Shield caught the shadow");
     expect(runtime).toContain("sim.forwardDistance + 16");
+    expect(runtime).toContain("#hud-signature-cue");
     expect(finishBody).not.toContain("elapsed >= C.durationSec");
     expect(finishBody).not.toContain("finishFallbackSec");
   });
