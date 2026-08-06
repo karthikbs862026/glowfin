@@ -900,18 +900,30 @@ GameView.prototype.render = function version41Render(
   ghost: SimState | null = null,
   events: readonly ActiveLivingWorldEvent[] = []
 ): void {
-  const active = document.documentElement.dataset["glowfinMode"] === MODE &&
-    element("moonwell-hub")?.dataset["active"] !== "true";
-  let layer = layers.get(this);
-  if (active) {
-    if (!layer) {
-      layer = new Layer(this);
-      layers.set(this, layer);
+  try {
+    const active = document.documentElement.dataset["glowfinMode"] === MODE &&
+      element("moonwell-hub")?.dataset["active"] !== "true";
+    let layer = layers.get(this);
+    if (active) {
+      if (!layer) {
+        layer = new Layer(this);
+        layers.set(this, layer);
+      }
+      layer.show(true);
+      layer.update(sim, frame);
+    } else {
+      layer?.show(false);
     }
-    layer.show(true);
-    layer.update(sim, frame);
-  } else {
-    layer?.show(false);
+  } catch (error: unknown) {
+    const root = document.documentElement;
+    const failures = Number(root.dataset["glowfinMissionFrameErrors"] ?? "0") + 1;
+    root.dataset["glowfinMissionFrameErrors"] = String(failures);
+    window.dispatchEvent(new CustomEvent("glowfin:mission-frame-error", {
+      detail: {
+        count: failures,
+        message: error instanceof Error ? error.message : String(error)
+      }
+    }));
   }
   originalRender.call(this, sim, gates, light, elapsed, frame, ghost, events);
 };
