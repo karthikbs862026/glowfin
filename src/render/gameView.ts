@@ -19,6 +19,7 @@ import {
   type QualityTier,
   type TierSettings
 } from "../perf/quality";
+import { initialRendererPixelRatioCap } from "../perf/mobileStartup";
 import { readGpuName } from "../perf/metrics";
 import { TrailRibbon } from "./trail";
 import { Creature } from "./creature";
@@ -198,7 +199,11 @@ export class GameView {
     // instead, so the counters accumulate across every pass. Post-processing
     // draws are real draws and belong in the budget.
     this.renderer.info.autoReset = false;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+    this.renderer.setPixelRatio(Math.min(
+      window.devicePixelRatio,
+      initialRendererPixelRatioCap(coarsePointer)
+    ));
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
 
     const loadingManager = new THREE.LoadingManager();
