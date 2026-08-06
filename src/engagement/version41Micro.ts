@@ -20,7 +20,8 @@ import {
   VERSION41_RESCUE_LANES,
   VERSION41_SEGMENT_ORDER,
   completionMarks,
-  shouldAdvanceChapter
+  shouldAdvanceChapter,
+  type Version41SegmentKind
 } from "./version41Plan";
 import { VERSION41_CHARACTER_PORTRAITS } from "./version41Characters";
 
@@ -40,7 +41,7 @@ const RELICS = [
   ["astral-observatory-lens", "Astral Observatory Lens", "The archless observatory is still sleeping."]
 ] as const;
 
-type Kind = typeof S[number]["kind"];
+type Kind = Version41SegmentKind;
 type Result = {
   chain: number;
   relic: boolean;
@@ -279,7 +280,7 @@ function showSegment(kind: Kind, elapsed: number): void {
   hud.dataset.state = "active";
   text("v41-segment-title", segment.title);
   text("v41-objective", segment.objective);
-  const guidance = GUIDANCE[kind];
+  const guidance = GUIDANCE[kind] ?? GUIDANCE["follow-light"];
   action(guidance.action, guidance.direction);
   text("v41-character-name", guidance.characterLabel);
   const portrait = element("v41-character-portrait") as HTMLImageElement | null;
