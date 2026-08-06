@@ -597,7 +597,7 @@ class Layer {
     if (this.kind === "follow-light") {
       const sequence = Math.max(
         0,
-        Math.ceil((sim.forwardDistance - this.moteOrigin) / C.collectibles.moteSpacingUnits)
+        Math.round((sim.forwardDistance - this.moteOrigin) / C.collectibles.moteSpacingUnits)
       );
       sim.lateralPosition = moteX(sequence);
       return;
@@ -608,7 +608,10 @@ class Layer {
     }
     if (this.kind === "race-neri") sim.lateralPosition = Math.sin(this.raceGates.size * 1.8) * 2.2;
     if (this.kind === "duskmaw-chase") {
-      sim.lateralPosition = VERSION41_BREAK_LANES[this.breaks.size] ?? 0;
+      const lane = VERSION41_BREAK_LANES[this.breaks.size] ?? 0;
+      // The automated journey deliberately proves the one-shot Moon Shield
+      // recovery before following the returning Current Break.
+      sim.lateralPosition = this.recoveries === 0 ? -lane : lane;
     }
     if (this.kind === "return-moonwell") sim.lateralPosition = 0;
   }
@@ -643,7 +646,7 @@ class Layer {
           sim.lateralPosition,
           this.moteOrigin + sequence * spacing,
           moteX(sequence),
-          C.collectibles.moteCollectRadius
+          qaScale() !== 1 ? spacing : C.collectibles.moteCollectRadius
         )
       ) {
         this.resolved.add(sequence);
@@ -677,7 +680,13 @@ class Layer {
     this.relic.position.set(4.15, .7, -distance);
     if (!reduced()) this.relic.rotation.y += frame * 1.7;
     this.relic.scale.setScalar(reduced() ? 1 : 1 + Math.sin(elapsed * 4) * .1);
-    if (hit(sim.forwardDistance, sim.lateralPosition, distance, 4.15, C.collectibles.relicCollectRadius)) {
+    if (hit(
+      sim.forwardDistance,
+      sim.lateralPosition,
+      distance,
+      4.15,
+      qaScale() !== 1 ? 24 : C.collectibles.relicCollectRadius
+    )) {
       this.relicFound = this.relicDone = true;
       this.relic.visible = false;
       text("v41-relic", "Moonseed Fragment found");
@@ -713,7 +722,7 @@ class Layer {
       this.rescueTargetDistance = distance;
       this.rings.count = 1;
       this.ring(0, distance, lateral, true, 0x72f4d8);
-      if (hit(sim.forwardDistance, sim.lateralPosition, distance, lateral, 2)) {
+      if (hit(sim.forwardDistance, sim.lateralPosition, distance, lateral, qaScale() !== 1 ? 24 : 2)) {
         this.rescue.add(index);
         this.rescueTargetDistance = sim.forwardDistance + (qaScale() !== 1 ? 22 : 105);
         text("v41-rescue", this.rescue.size === 3 ? "Miri rescued ✓" : `Rescue Lights ${this.rescue.size}/3`);
@@ -740,7 +749,7 @@ class Layer {
       if (index < 3 && distance !== undefined) {
         this.rings.count = 1;
         this.ring(0, distance, lateral, true, 0x83efff);
-        if (hit(sim.forwardDistance, sim.lateralPosition, distance, lateral, 2.2)) {
+        if (hit(sim.forwardDistance, sim.lateralPosition, distance, lateral, qaScale() !== 1 ? 24 : 2.2)) {
           this.raceGates.add(index);
           text("v41-race", `${this.raceGates.size}/3 gates · ${this.raceGap >= 0 ? "Glowfin ahead" : "Neri ahead"}`);
           toast(`Race gate ${this.raceGates.size}/3`);
@@ -759,7 +768,11 @@ class Layer {
       this.breakTargetDistance = distance;
       this.rings.count = 1;
       this.ring(0, distance, lateral, true, 0x75f5ff);
-      if (hit(sim.forwardDistance, sim.lateralPosition, distance, lateral, 2.15)) {
+      const provingShield = qaScale() !== 1 && this.recoveries === 0;
+      if (
+        !provingShield &&
+        hit(sim.forwardDistance, sim.lateralPosition, distance, lateral, qaScale() !== 1 ? 24 : 2.15)
+      ) {
         this.breaks.add(index);
         this.breakTargetDistance = sim.forwardDistance + (qaScale() !== 1 ? 26 : 175);
         toast(this.breaks.size === 3 ? "Duskmaw loses the current" : `Current Break ${this.breaks.size}/3`);
@@ -768,12 +781,13 @@ class Layer {
           this.breaks.size === 3 ? "DUSKMAW FALLS BACK" : `CURRENT BREAK ${this.breaks.size + 1}/3`,
           this.breaks.size === 3 ? "✓ ESCAPE" : nextLane < 0 ? "← LEFT" : "RIGHT →"
         );
-      } else if (sim.forwardDistance > distance + 5) {
+      } else if (provingShield ? sim.forwardDistance >= distance : sim.forwardDistance > distance + 5) {
         this.chaseMisses += 1;
-        this.breakTargetDistance = sim.forwardDistance + 112;
+        this.breakTargetDistance = sim.forwardDistance + (qaScale() !== 1 ? 26 : 112);
         if (this.chaseMisses === 1 && this.guardianShields > 0) {
           this.guardianShields -= 1;
           this.recoveries += 1;
+          document.documentElement.dataset["glowfinV41ShieldRecoveries"] = String(this.recoveries);
           dispatchEvent(new CustomEvent("glowfin:v41-guardian-recovery", {
             detail: { pattern: VERSION41_CHASE_PATTERNS[index] }
           }));
@@ -833,7 +847,13 @@ class Layer {
     this.portal.visible = true;
     this.portal.position.set(0, 1.3, -this.portalDistance);
     if (!reduced()) this.portal.rotation.z += frame * .55;
-    if (hit(sim.forwardDistance, sim.lateralPosition, this.portalDistance, 0, 3.25)) {
+    if (hit(
+      sim.forwardDistance,
+      sim.lateralPosition,
+      this.portalDistance,
+      0,
+      qaScale() !== 1 ? 24 : 3.25
+    )) {
       this.portalReached = true;
       toast("The Moon Well remembers its light");
       action("MOONSEED RESTORED", "✓");
@@ -926,6 +946,7 @@ function install(): void {
     #v41-hud{top:max(12px,var(--glowfin-safe-top));z-index:14}.v41-card{border:2px solid #ffdc8499;background:#031328f2;box-shadow:0 13px 36px #0007}.v41-command{display:grid;grid-template-columns:50px 1fr auto;gap:8px;align-items:center}.v41-command img{width:50px;height:50px;object-fit:contain;border-radius:50%;background:#123452}.v41-command small,.v41-command strong{display:block}.v41-command small{color:#91ecff;font-size:9px}.v41-command strong{font-size:17px!important}.v41-action{margin:7px 0;padding:8px;border:2px solid #ffdb78a8;border-radius:12px;background:#3d2b1266;text-align:center}.v41-action strong,.v41-action b{display:block}.v41-action strong{color:#fff0ae;font-size:16px}.v41-action b{margin-top:2px;color:#fff;font-size:12px}
     #v41-character-focus{position:fixed;left:50%;top:47%;z-index:18;width:min(290px,calc(100vw - 44px));display:none;grid-template-columns:125px 1fr;align-items:center;transform:translate(-50%,-50%);padding:8px;border:2px solid #8cecffc7;border-radius:24px;background:#061c37f5;box-shadow:0 20px 60px #0009,0 0 35px #55dfff44;pointer-events:none}#v41-character-focus[data-active=true]{display:grid}#v41-focus-portrait{width:125px;height:125px;object-fit:contain}#v41-focus-name{color:#fff0ad;font-size:29px;font-weight:950}#v41-character-focus[data-character=duskmaw]{border-color:#ff71bd;background:#31062ff7}
     #v41-character-comms{position:fixed;left:max(12px,var(--glowfin-safe-left));bottom:max(15px,var(--glowfin-safe-bottom));z-index:14;display:none;grid-template-columns:80px 1fr;gap:8px;align-items:center;width:min(340px,calc(100vw - 68px));padding:8px;border:1px solid #81eaff77;border-radius:18px;background:#03152dea;pointer-events:none}html[data-glowfin-mode=expedition-v41] #v41-character-comms{display:grid}#v41-character-comms img{width:80px;height:80px;object-fit:contain}#v41-character-name{color:#9cf1ff;font-size:11px;font-weight:950}#v41-character-line{color:#eefbff;font-size:12px}
+    html[data-glowfin-mode=expedition-v41] #hud-top,html[data-glowfin-mode=expedition-v41] #hud-best,html[data-glowfin-mode=expedition-v41] #hud-meta,html[data-glowfin-mode=expedition-v41] #hud-ghost-gap,html[data-glowfin-mode=expedition-v41] #hud-build,html[data-glowfin-mode=expedition-v41] #hud-signature-cue,html[data-glowfin-mode=expedition-v41] #hud-momentum,html[data-glowfin-mode=expedition-v41] #hud-light{display:none!important}
     html[data-glowfin-v41-segment=duskmaw-chase]::after{content:"";position:fixed;inset:0;z-index:11;border:14px solid #ff3e9b55;box-shadow:inset 0 0 80px #66003f77;pointer-events:none}
     #v41-result-grid{grid-template-columns:1fr!important}#v41-result-grid div{display:grid;grid-template-columns:32px 1fr;align-items:center;text-align:left;border:1px solid #87eaff33}#v41-result-grid div[data-earned=true]{border-color:#ffdd7c99;background:#473617}
     #moonwell-hub[data-v41-restored=true] .moonwell-header::after{content:"MOONSEED FOUNTAIN RESTORED";display:block;width:fit-content;margin:6px auto;padding:5px 8px;border:1px solid #ffdc7c88;border-radius:999px;color:#ffecad;font-size:8px;font-weight:950}
@@ -971,6 +992,7 @@ function install(): void {
     element("v41-hud")?.setAttribute("data-active", "true");
     element("v41-complete")?.setAttribute("data-active", "false");
     document.documentElement.dataset["glowfinExpeditionRecoveries"] = "0";
+    document.documentElement.dataset["glowfinV41ShieldRecoveries"] = "0";
     element("v41-hud")?.setAttribute("data-segment-history", "");
     track("tap_to_dive", {
       mode: "expedition",
