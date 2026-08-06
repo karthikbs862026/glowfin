@@ -79,6 +79,11 @@ async function releaseEncounterCaptureHold(page) {
 async function startFromExpeditionCard(page) {
   await waitForReadyHub(page);
   await page.locator("#v41-entry").click();
+  await page.locator('#v41-briefing[data-active="true"]').waitFor({
+    state: "visible",
+    timeout: 5_000
+  });
+  await page.locator("#v41-briefing-start").click();
   await page.waitForFunction(
     () => document.querySelector("#v41-hud")?.getAttribute("data-active") === "true",
     undefined,
