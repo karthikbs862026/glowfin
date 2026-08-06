@@ -15,6 +15,7 @@ import { Hud, type SignatureCuePresentation } from "./render/hud";
 import { MoonWell, type MoonWellPanel } from "./render/moonWell";
 import { DebugOverlay } from "./render/debugOverlay";
 import { QualityController } from "./perf/quality";
+import { initialMobileQualityTier } from "./perf/mobileStartup";
 import { PerfMonitor, checkBudgets } from "./perf/metrics";
 import { GlowfinAudio } from "./audio/audioEngine";
 import { GLOWFIN_RELEASE, mountReleaseIdentity } from "./release";
@@ -143,10 +144,20 @@ let detachPointerInput: () => void = view
   ? attachPointerInput(canvas, steering)
   : () => undefined;
 
-const quality = new QualityController();
+const quality = new QualityController(initialMobileQualityTier({
+  coarsePointer: window.matchMedia("(pointer: coarse)").matches,
+  viewportWidth: window.innerWidth,
+  viewportHeight: window.innerHeight
+}));
 const perf = new PerfMonitor();
 const overlay = new DebugOverlay();
 view?.setQuality(quality.settings);
+document.documentElement.dataset["glowfinInitialQuality"] = quality.current;
+window.addEventListener("glowfin:force-low-quality", () => {
+  quality.forceTier("low");
+  view?.setQuality(quality.settings);
+  document.documentElement.dataset["glowfinInitialQuality"] = quality.current;
+});
 
 const timestep = new FixedTimestepRunner(FIXED_DT_SEC);
 const progressStorage = (() => {
@@ -1488,13 +1499,18 @@ document.addEventListener("resume", () => {
 });
 
 function frame(nowMs: number): void {
+  // Schedule first: an exception in rendering or an optional presentation
+  // layer must not permanently kill the only simulation/input heartbeat.
+  requestAnimationFrame(frame);
+  const root = document.documentElement;
+  root.dataset["glowfinFrameHeartbeat"] = String(
+    Number(root.dataset["glowfinFrameHeartbeat"] ?? "0") + 1
+  );
+  try {
   const frameSec = (nowMs - lastFrameMs) / 1000;
   lastFrameMs = nowMs;
   const activeView = view;
-  if (!runtimeLifecycle.canAdvance || !activeView) {
-    requestAnimationFrame(frame);
-    return;
-  }
+  if (!runtimeLifecycle.canAdvance || !activeView) return;
 
   // Slow-mo is applied to wall-clock time before it reaches the accumulator, so
   // the simulation itself always steps at a fixed dt (ADR-0006).
@@ -1908,7 +1924,26 @@ function frame(nowMs: number): void {
     overlay.update(sample, quality.current, checkBudgets(sample));
   }
 
-  requestAnimationFrame(frame);
+  root.dataset["glowfinSimulationSteps"] = String(simulationSteps);
+  root.dataset["glowfinFrameErrors"] = "0";
+  } catch (error: unknown) {
+    const frameErrors = Number(root.dataset["glowfinFrameErrors"] ?? "0") + 1;
+    root.dataset["glowfinFrameErrors"] = String(frameErrors);
+    window.dispatchEvent(new CustomEvent("glowfin:frame-error", {
+      detail: {
+        count: frameErrors,
+        message: error instanceof Error ? error.message : String(error)
+      }
+    }));
+    if (frameErrors >= 2 && quality.current !== "low") {
+      quality.forceTier("low");
+      view?.setQuality(quality.settings);
+      root.dataset["glowfinInitialQuality"] = quality.current;
+    }
+    if (frameErrors <= 3) {
+      console.error("Glowfin frame recovered after error", error);
+    }
+  }
 }
 
 /**
