@@ -9,6 +9,7 @@ import { tuning } from "./core/config";
 import { FIXED_DT_SEC, FixedTimestepRunner } from "./core/timestep";
 import { SteeringSource, attachPointerInput } from "./input/steering";
 import { generateSeed } from "./core/rng";
+import { VERSION41_FIXED_SEED } from "./engagement/version41Plan";
 import { Run } from "./sim/run";
 import { GameView } from "./render/gameView";
 import { Hud, type SignatureCuePresentation } from "./render/hud";
@@ -751,7 +752,13 @@ function startRun(
       : mode;
   activeRunDayId = dailyMode ? day.dayId : null;
   challengeRunActive = Boolean(mode === "ghost" && replayOverride);
-  const seed = replay?.seed ?? (dailyMode ? dailySeed(day.dayId) : generateSeed());
+  const seed = replay?.seed ?? (
+    version41ExpeditionActive()
+      ? VERSION41_FIXED_SEED
+      : dailyMode
+        ? dailySeed(day.dayId)
+        : generateSeed()
+  );
   run = new Run(seed, tuning);
   recorder = new ReplayRecorder(run.seed, tuning.version);
   moonflashRecorder = new MoonflashRecorder();
