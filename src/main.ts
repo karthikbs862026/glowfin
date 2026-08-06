@@ -9,7 +9,6 @@ import { tuning } from "./core/config";
 import { FIXED_DT_SEC, FixedTimestepRunner } from "./core/timestep";
 import { SteeringSource, attachPointerInput } from "./input/steering";
 import { generateSeed } from "./core/rng";
-import { VERSION41_FIXED_SEED } from "./engagement/version41Plan";
 import { Run } from "./sim/run";
 import { GameView } from "./render/gameView";
 import { Hud, type SignatureCuePresentation } from "./render/hud";
@@ -731,6 +730,10 @@ function version41ExpeditionActive(): boolean {
   return document.documentElement.dataset["glowfinMode"] === "expedition-v41";
 }
 
+// Mirrored by VERSION41_FIXED_SEED in the lazy-loaded plan. Keeping the value
+// local avoids pulling the complete expedition plan into Glowfin's initial JS.
+const VERSION41_EXPEDITION_SEED = 1196577101;
+
 function startRun(
   mode: GlowfinRunMode = "fresh",
   guidedTutorialSource: "required" | "replay" | null = null,
@@ -754,7 +757,7 @@ function startRun(
   challengeRunActive = Boolean(mode === "ghost" && replayOverride);
   const seed = replay?.seed ?? (
     version41ExpeditionActive()
-      ? VERSION41_FIXED_SEED
+      ? VERSION41_EXPEDITION_SEED
       : dailyMode
         ? dailySeed(day.dayId)
         : generateSeed()
