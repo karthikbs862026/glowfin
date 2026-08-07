@@ -6,6 +6,7 @@ import {
   reduceExpeditionUiState,
 } from "../src/expedition/chapterOne";
 import { tuning } from "../src/core/config";
+import { isSealedReleaseManifest } from "../src/operations/productionReadiness";
 import { Run } from "../src/sim/run";
 
 describe("Version 41-R1 Chapter 1 contract", () => {
@@ -36,5 +37,23 @@ describe("Version 41-R1 Chapter 1 contract", () => {
     expect(second.sim).toEqual(first.sim);
     expect(second.gates).toEqual(first.gates);
     expect(second.scoring.score).toBe(first.scoring.score);
+  });
+
+  it("recognizes the intentional certified-V39 recovery baseline", () => {
+    expect(isSealedReleaseManifest({
+      schemaVersion: 1,
+      version: 41,
+      phase: "phase-living-current-r1",
+      certification: "device-candidate",
+      environment: "production",
+      sourceCommit: "a".repeat(40),
+      baselineVersion: 39,
+      baselineCommit: "b".repeat(40),
+      artBuild: "phase3c-v30-glowfin-production",
+      productionPolicyVersion: 1,
+      sealSchemaVersion: 1,
+      artifactDigest: "c".repeat(64),
+      artifactFileCount: 19,
+    })).toBe(true);
   });
 });
