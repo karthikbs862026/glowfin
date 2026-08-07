@@ -1,11 +1,11 @@
 {
-  "$comment": "Version 39 Store-Ready Mobile Experience build: mandatory discoverable guided onboarding plus wrapper, device, sharing and store-readiness work.",
+  "$comment": "Version 41-R1 clean rebuild: same-app mission card, in-game briefing and fixed-seed playable current.",
   "schemaVersion": 1,
-  "version": 39,
-  "phase": "phase-store-ready-mobile",
-  "certification": "physical-certified",
-  "baselineVersion": 38,
-  "baselineCommit": "8f529b9bd5f2e2c42e4aa27d24a88441d564b291",
+  "version": 41,
+  "phase": "living-current-r1",
+  "certification": "device-candidate",
+  "baselineVersion": 39,
+  "baselineCommit": "266b7900294f81e174134337a9d14b5951efcf30",
   "artBuild": "phase3c-v30-glowfin-production",
   "productionPolicyVersion": 1
 }
