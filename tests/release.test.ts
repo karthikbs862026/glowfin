@@ -17,12 +17,17 @@ function metadata(
   };
 }
 
-describe("Version 39 release identity", () => {
-  it("accepts only Version 39 built from the merged Version 38 baseline", () => {
+describe("Version 41-R1 release identity", () => {
+  it("accepts only the clean R1 rebuild rooted at the certified Version 39 baseline", () => {
     expect(isGlowfinReleaseMetadata(metadata())).toBe(true);
-    expect(metadata().certification).toBe("physical-certified");
-    expect(metadata().phase).toBe("phase-store-ready-mobile");
-    expect(isGlowfinReleaseMetadata(metadata({ version: 38 }))).toBe(false);
+    expect(metadata().certification).toBe("physical-android-certified");
+    expect(metadata().phase).toBe("phase-living-current-r1");
+    expect(metadata().baselineVersion).toBe(39);
+    expect(metadata().baselineCommit).toBe(
+      "266b7900294f81e174134337a9d14b5951efcf30"
+    );
+    expect(releaseConfig.deferredVersions).toEqual([40]);
+    expect(isGlowfinReleaseMetadata(metadata({ version: 40 }))).toBe(false);
     expect(isGlowfinReleaseMetadata(metadata({ baselineCommit: "deadbeef" }))).toBe(false);
     expect(isGlowfinReleaseMetadata(metadata({ environment: "production" }))).toBe(true);
   });
@@ -34,10 +39,10 @@ describe("Version 39 release identity", () => {
   });
 
   it("formats a compact phone-readable build label", () => {
-    expect(formatReleaseLabel(metadata())).toBe("V39 · STAGING · 8f529b9");
+    expect(formatReleaseLabel(metadata())).toBe("V41 · STAGING · 8f529b9");
     expect(formatReleaseLabel(metadata({
       environment: "local",
       sourceCommit: "local"
-    }))).toBe("V39 · LOCAL · local");
+    }))).toBe("V41 · LOCAL · local");
   });
 });

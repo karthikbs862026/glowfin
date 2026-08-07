@@ -44,7 +44,7 @@ describe("Version 41-R1 Chapter 1 contract", () => {
       schemaVersion: 1,
       version: 41,
       phase: "phase-living-current-r1",
-      certification: "device-candidate",
+      certification: "physical-android-certified",
       environment: "production",
       sourceCommit: "a".repeat(40),
       baselineVersion: 39,

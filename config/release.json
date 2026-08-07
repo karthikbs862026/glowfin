@@ -3,9 +3,10 @@
   "schemaVersion": 1,
   "version": 41,
   "phase": "phase-living-current-r1",
-  "certification": "device-candidate",
+  "certification": "physical-android-certified",
   "baselineVersion": 39,
   "baselineCommit": "266b7900294f81e174134337a9d14b5951efcf30",
+  "deferredVersions": [40],
   "artBuild": "phase3c-v30-glowfin-production",
   "productionPolicyVersion": 1
 }
