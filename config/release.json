@@ -1,9 +1,10 @@
 {
-  "$comment": "Version 41 Living Current Vertical Slice. Version 40 soft launch is paused and moved to the end of the owner-approved roadmap; every relevant Version 40 retention, economy, privacy, replay, accessibility, device-health and performance guardrail remains a mandatory audit gate.",
+  "$comment": "Version 41-R1 clean rebuild: same-app mission card, in-game briefing and fixed-seed playable current.",
   "schemaVersion": 1,
   "version": 41,
-  "phase": "phase-living-current-vertical-slice",
-  "certification": "automated-candidate",
+  "phase": "phase-living-current-r1",
+  "releaseTag": "glowfin-v41-r1",
+  "certification": "physical-android-certified",
   "baselineVersion": 39,
   "baselineCommit": "266b7900294f81e174134337a9d14b5951efcf30",
   "deferredVersions": [40],

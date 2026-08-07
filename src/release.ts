@@ -1,9 +1,5 @@
 import releaseConfig from "../config/release.json";
 
-if (typeof window !== "undefined" && typeof document !== "undefined") {
-  void import("./engagement/version41Micro");
-}
-
 export const GLOWFIN_ENVIRONMENTS = [
   "local",
   "staging",
@@ -16,12 +12,12 @@ export interface GlowfinReleaseMetadata {
   schemaVersion: number;
   version: number;
   phase: string;
+  releaseTag: string;
   certification: string;
   environment: GlowfinEnvironment;
   sourceCommit: string;
   baselineVersion: number;
   baselineCommit: string;
-  deferredVersions: number[];
   artBuild: string;
   productionPolicyVersion: number;
 }
@@ -34,14 +30,6 @@ const localFallback: GlowfinReleaseMetadata = {
   sourceCommit: "local"
 };
 
-function sameDeferredVersions(value: unknown): boolean {
-  return Array.isArray(value) &&
-    value.length === releaseConfig.deferredVersions.length &&
-    value.every((entry, index) => (
-      Number.isInteger(entry) && entry === releaseConfig.deferredVersions[index]
-    ));
-}
-
 export function isGlowfinReleaseMetadata(
   value: unknown
 ): value is GlowfinReleaseMetadata {
@@ -51,6 +39,7 @@ export function isGlowfinReleaseMetadata(
     candidate.schemaVersion === releaseConfig.schemaVersion &&
     candidate.version === releaseConfig.version &&
     candidate.phase === releaseConfig.phase &&
+    candidate.releaseTag === releaseConfig.releaseTag &&
     candidate.certification === releaseConfig.certification &&
     GLOWFIN_ENVIRONMENTS.some((entry) => entry === candidate.environment) &&
     typeof candidate.sourceCommit === "string" &&
@@ -59,7 +48,6 @@ export function isGlowfinReleaseMetadata(
       : /^[0-9a-f]{40}$/.test(candidate.sourceCommit)) &&
     candidate.baselineVersion === releaseConfig.baselineVersion &&
     candidate.baselineCommit === releaseConfig.baselineCommit &&
-    sameDeferredVersions(candidate.deferredVersions) &&
     candidate.artBuild === releaseConfig.artBuild &&
     candidate.productionPolicyVersion === releaseConfig.productionPolicyVersion
   );

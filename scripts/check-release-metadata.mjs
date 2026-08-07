@@ -19,14 +19,14 @@ for (const key of [
   "schemaVersion",
   "version",
   "phase",
+  "releaseTag",
   "certification",
   "baselineVersion",
   "baselineCommit",
-  "deferredVersions",
   "artBuild",
   "productionPolicyVersion"
 ]) {
-  if (JSON.stringify(release[key]) !== JSON.stringify(config[key])) {
+  if (release[key] !== config[key]) {
     throw new Error(
       `dist/release.json ${key}=${JSON.stringify(release[key])}; expected ${JSON.stringify(config[key])}.`
     );

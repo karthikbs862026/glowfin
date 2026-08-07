@@ -108,6 +108,11 @@ import {
   HapticPreferenceRepository
 } from "./native/haptics";
 import { deviceHealthPayload } from "./operations/deviceHealth";
+import {
+  CHAPTER_ONE_MISSION,
+  type ExpeditionExperience
+} from "./expedition/chapterOne";
+import { ExpeditionDirector } from "./expedition/expeditionDirector";
 
 const initialCanvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
 if (!initialCanvas) throw new Error("Canvas #glowfin-canvas not found");
@@ -118,6 +123,10 @@ const hostedServicesEnabled = shouldUseHostedServices(
   GLOWFIN_RELEASE.environment,
   window.location.hostname
 );
+// Version 41-R1 remains network-cache-free until its production journey is
+// physically certified. The host still serves the self-deactivating V39
+// recovery worker so an older registration cannot regain startup ownership.
+const SERVICE_WORKER_CACHING_CERTIFIED = false;
 
 const runtimeLifecycle = new RuntimeLifecycle();
 const runtimeSupport = detectRuntimeSupport();
@@ -133,6 +142,7 @@ if (runtimeSupport.supported) {
 }
 const hud = new Hud();
 const moonWell = new MoonWell();
+const expedition = new ExpeditionDirector();
 const audio = new GlowfinAudio(tuning);
 const steering = new SteeringSource({
   dragRangeFraction: tuning.input.dragRangeFraction,
@@ -298,6 +308,40 @@ let tutorialCompleteAtSec: number | null = null;
 let tutorialSessionSource: "required" | "replay" | null = null;
 let activeChallenge: MoonflashChallengeV1 | null = null;
 let challengeRunActive = false;
+let activeExperience: ExpeditionExperience = "classic";
+
+interface GlowfinCertificationSnapshot {
+  schemaVersion: 1;
+  releaseVersion: number;
+  experience: ExpeditionExperience;
+  screen: "hub" | "run" | "post-run";
+  seed: number;
+  simulationSteps: number;
+  forwardDistance: number;
+  lateralPosition: number;
+  smoothedSteering: number;
+  gameplayActive: boolean;
+  awaitingRestart: boolean;
+  runtimeState: RuntimeLifecycleSnapshot["state"];
+}
+
+function publishCertificationState(): void {
+  const screen = document.documentElement.dataset["glowfinScreen"];
+  window.__GLOWFIN_CERTIFICATION__ = {
+    schemaVersion: 1,
+    releaseVersion: GLOWFIN_RELEASE.version,
+    experience: activeExperience,
+    screen: screen === "run" || screen === "post-run" ? screen : "hub",
+    seed: run.seed,
+    simulationSteps,
+    forwardDistance: run.sim.forwardDistance,
+    lateralPosition: run.sim.lateralPosition,
+    smoothedSteering: run.sim.smoothedSteering,
+    gameplayActive,
+    awaitingRestart,
+    runtimeState: runtimeLifecycle.snapshot().state
+  };
+}
 
 function signatureCueForRun(): SignatureCuePresentation | null {
   if (!gameplayActive || awaitingRestart || firstRunTutorial) return null;
@@ -523,6 +567,8 @@ function refreshMoonWell(): void {
 
 function showMoonWell(panel: MoonWellPanel = "home"): void {
   gameplayActive = false;
+  activeExperience = "classic";
+  expedition.reset();
   steering.reset();
   firstRunTutorial = null;
   tutorialStep = null;
@@ -538,6 +584,8 @@ function showMoonWell(panel: MoonWellPanel = "home"): void {
     panel === "home" && !guidedTutorialComplete && !tutorialIntroDismissed
   );
   document.documentElement.dataset["glowfinScreen"] = "hub";
+  document.documentElement.dataset["glowfinMode"] = activeExperience;
+  publishCertificationState();
   telemetry.track("hub_view", { panel });
 }
 
@@ -696,6 +744,7 @@ function reportRunStart(): void {
   telemetry.track("run_start", {
     seed: run.seed,
     mode: activeRunMode,
+    experience: activeExperience,
     tuningVersion: tuning.version,
     hasSavedGhost: Boolean(
       challengeRunActive
@@ -726,21 +775,21 @@ function reportRunStart(): void {
   }
 }
 
-function version41ExpeditionActive(): boolean {
-  return document.documentElement.dataset["glowfinMode"] === "expedition-v41";
+interface StartRunOptions {
+  guidedTutorialSource?: "required" | "replay" | null;
+  replayOverride?: GlowfinReplayV1 | null;
+  forceGhost?: boolean;
+  seedOverride?: number;
+  experience?: ExpeditionExperience;
 }
-
-// Mirrored by VERSION41_FIXED_SEED in the lazy-loaded plan. Keeping the value
-// local avoids pulling the complete expedition plan into Glowfin's initial JS.
-const VERSION41_EXPEDITION_SEED = 1196577101;
 
 function startRun(
   mode: GlowfinRunMode = "fresh",
-  guidedTutorialSource: "required" | "replay" | null = null,
-  replayOverride: GlowfinReplayV1 | null = null,
-  forceGhost = false,
-  suppressRunStart = false
+  options: StartRunOptions = {}
 ): void {
+  const guidedTutorialSource = options.guidedTutorialSource ?? null;
+  const replayOverride = options.replayOverride ?? null;
+  const forceGhost = options.forceGhost ?? false;
   const day = currentDailyDay();
   const dailyMode = mode === "daily" || mode === "daily-ghost";
   const replay = mode === "ghost"
@@ -755,13 +804,9 @@ function startRun(
       : mode;
   activeRunDayId = dailyMode ? day.dayId : null;
   challengeRunActive = Boolean(mode === "ghost" && replayOverride);
-  const seed = replay?.seed ?? (
-    version41ExpeditionActive()
-      ? VERSION41_EXPEDITION_SEED
-      : dailyMode
-        ? dailySeed(day.dayId)
-        : generateSeed()
-  );
+  const seed = replay?.seed ?? options.seedOverride ??
+    (dailyMode ? dailySeed(day.dayId) : generateSeed());
+  activeExperience = options.experience ?? "classic";
   run = new Run(seed, tuning);
   recorder = new ReplayRecorder(run.seed, tuning.version);
   moonflashRecorder = new MoonflashRecorder();
@@ -775,6 +820,11 @@ function startRun(
   awaitingRestart = false;
   gameplayActive = true;
   completedCompetitiveRun = null;
+  if (activeExperience === "chapter-one-r1") {
+    expedition.beginRun();
+  } else {
+    expedition.reset();
+  }
   steering.reset();
   timestep.reset();
   view?.resetTrail();
@@ -793,7 +843,10 @@ function startRun(
   }
   audio.resetRun(run.scoring.multiplier);
   document.documentElement.dataset["glowfinScreen"] = "run";
-  tutorialSessionSource = activeRunMode === "fresh" ? guidedTutorialSource : null;
+  document.documentElement.dataset["glowfinMode"] = activeExperience;
+  tutorialSessionSource = activeRunMode === "fresh" && activeExperience === "classic"
+    ? guidedTutorialSource
+    : null;
   firstRunTutorial = tutorialSessionSource
     ? new FirstRunTutorial()
     : null;
@@ -809,33 +862,53 @@ function startRun(
       tutorialVersion: GUIDED_TUTORIAL_VERSION
     }, activeRunId);
   }
-  if (!suppressRunStart) reportRunStart();
+  reportRunStart();
+  publishCertificationState();
 }
 
-window.addEventListener("glowfin:v41-complete", () => {
-  if (!version41ExpeditionActive()) return;
-  gameplayActive = false;
-  awaitingRestart = false;
-  steering.reset();
-  timestep.reset();
-  view?.setHeroMoment("celebration");
+function startExpedition(): void {
+  telemetry.track("expedition_start", {
+    mission: CHAPTER_ONE_MISSION.id,
+    chapter: CHAPTER_ONE_MISSION.chapter,
+    revision: CHAPTER_ONE_MISSION.revision,
+    objective: CHAPTER_ONE_MISSION.objective,
+    seed: CHAPTER_ONE_MISSION.seed
+  });
+  startRun("fresh", {
+    seedOverride: CHAPTER_ONE_MISSION.seed,
+    experience: "chapter-one-r1"
+  });
+}
+
+expedition.onMissionSelected(() => {
+  telemetry.track("expedition_briefing", {
+    mission: CHAPTER_ONE_MISSION.id,
+    chapter: CHAPTER_ONE_MISSION.chapter,
+    revision: CHAPTER_ONE_MISSION.revision
+  });
+});
+
+expedition.onStart(startExpedition);
+
+expedition.onBack(() => {
+  telemetry.track("expedition_briefing_close", {
+    mission: CHAPTER_ONE_MISSION.id,
+    chapter: CHAPTER_ONE_MISSION.chapter
+  });
 });
 
 moonWell.onDive(() => {
-  const expedition = version41ExpeditionActive();
-  if (!expedition) {
-    telemetry.track("tap_to_dive", {
-      firstRun: !progress.onboarding.firstRunCompleted,
-      tutorialRequired: !guidedTutorialComplete
-    });
-  }
-  startRun("fresh", null, null, false, expedition);
+  telemetry.track("tap_to_dive", {
+    firstRun: !progress.onboarding.firstRunCompleted,
+    tutorialRequired: !guidedTutorialComplete
+  });
+  startRun("fresh");
 });
 
 moonWell.onTutorialStart(() => {
   const source = guidedTutorialComplete ? "replay" : "required";
   tutorialIntroDismissed = true;
-  startRun("fresh", source);
+  startRun("fresh", { guidedTutorialSource: source });
 });
 
 moonWell.onTutorialSkip(() => {
@@ -869,7 +942,10 @@ moonWell.onChallenge(() => {
     replaySteps: challenge.clip.replay.totalSteps
   });
   void telemetry.flush();
-  startRun("ghost", null, challenge.clip.replay, true);
+  startRun("ghost", {
+    replayOverride: challenge.clip.replay,
+    forceGhost: true
+  });
 });
 
 moonWell.onOpenPanel((panel) => {
@@ -907,7 +983,12 @@ hud.onDailyTrial(() => {
 });
 
 hud.onDiveAgain(() => {
-  if (awaitingRestart) startRun("fresh");
+  if (!awaitingRestart) return;
+  if (activeExperience === "chapter-one-r1") {
+    startExpedition();
+  } else {
+    startRun("fresh");
+  }
 });
 
 hud.onOpenHub(() => {
@@ -1634,24 +1715,9 @@ function frame(nowMs: number): void {
       run.scoring.multiplier
     );
     if (events.justEnded) {
-      if (version41ExpeditionActive()) {
-        awaitingRestart = true;
-        gameplayActive = false;
-        steering.reset();
-        hud.hideGameOver();
-        const recoveries = Number(
-          document.documentElement.dataset["glowfinExpeditionRecoveries"] ?? "0"
-        ) + 1;
-        document.documentElement.dataset["glowfinExpeditionRecoveries"] = String(recoveries);
-        queueMicrotask(() => {
-          if (!version41ExpeditionActive()) return;
-          startRun("fresh", null, null, false, true);
-          window.dispatchEvent(new Event("glowfin:v41-current-recovered"));
-        });
-        return;
-      }
       awaitingRestart = true;
       gameplayActive = false;
+      if (activeExperience === "chapter-one-r1") expedition.finishRun();
       firstRunTutorial = null;
       tutorialStep = null;
       tutorialCompleteAtSec = null;
@@ -1698,6 +1764,7 @@ function frame(nowMs: number): void {
       telemetry.track("run_end", {
         seed: run.seed,
         mode: activeRunMode,
+        experience: activeExperience,
         score: summary.score,
         elapsedSec: summary.elapsedSec,
         distance: summary.forwardDistance,
@@ -1860,6 +1927,8 @@ function frame(nowMs: number): void {
     }
   });
 
+  publishCertificationState();
+
   const lightFraction = run.light / tuning.light.max;
   activeView.render(
     run.sim,
@@ -1929,6 +1998,7 @@ function isProbeRequested(): boolean {
 
 function installOfflineRecovery(): void {
   if (
+    !SERVICE_WORKER_CACHING_CERTIFIED ||
     !hostedServicesEnabled ||
     wrapperRuntime.isNative ||
     !("serviceWorker" in navigator)
@@ -2009,5 +2079,6 @@ void start();
 declare global {
   interface Window {
     __GLOWFIN_RUNTIME__?: RuntimeLifecycleSnapshot;
+    __GLOWFIN_CERTIFICATION__?: GlowfinCertificationSnapshot;
   }
 }

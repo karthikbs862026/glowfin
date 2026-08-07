@@ -1,14 +1,14 @@
 // Part 4.6 / 6.8 — initial load time / bundle size budget, enforced at build time.
-// Version 41.2 preserves the original 2 MiB baseline and has one separately
-// recorded, reviewable additive allowance. See the ADR named below.
+// This is a Phase 0 stub with a placeholder budget. Replace BUDGET_BYTES with the
+// real number once Part 4.6 budgets are defined and recorded in the decision log,
+// and expand this to break down per-chunk (vendor/three vs game code) as the
+// bundle grows.
 
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const DIST_DIR = "dist";
-const BASE_BUDGET_BYTES = 2 * 1024 * 1024;
-const VERSION41_2_ADDITIVE_BUDGET_BYTES = 32 * 1024;
-const BUDGET_BYTES = BASE_BUDGET_BYTES + VERSION41_2_ADDITIVE_BUDGET_BYTES;
+const BUDGET_BYTES = 2 * 1024 * 1024; // 2MB placeholder — TUNE AND RECORD IN ADR
 
 function totalSize(dir) {
   let total = 0;
@@ -36,10 +36,7 @@ try {
     console.error(`Bundle size ${sizeMB}MB exceeds budget ${budgetMB}MB.`);
     process.exit(1);
   }
-  console.log(
-    `Bundle size ${sizeMB}MB within ${budgetMB}MB budget ` +
-    `(2.00MiB baseline + 32KiB Version 41.2 allowance).`
-  );
+  console.log(`Bundle size ${sizeMB}MB within budget ${budgetMB}MB.`);
 } catch (err) {
   console.error(`Could not measure bundle size in "${DIST_DIR}":`, err.message);
   process.exit(1);

@@ -73,8 +73,6 @@ jobs:
         run: npm run audio-gate:browser
       - name: Validate context rebuild and interruption recovery
         run: npm run runtime-gate:browser
-      - name: Validate Version 41 engagement, isolation and accessibility
-        run: npm run version41-gate:browser
       - run: npm run art-gate:capture:fast
       - name: Validate reduced PR matrix
         run: |
@@ -93,8 +91,6 @@ jobs:
             build/art-gate-fast-report.txt
             build/audio-gate-browser.json
             build/runtime-recovery-browser.json
-            build/version41-browser.json
-            build/version41-browser
 
   full:
     name: full-render
@@ -222,8 +218,7 @@ jobs:
       - name: Create immutable release tag after every release gate passes
         shell: bash
         run: |
-          version="$(node -e 'const fs=require("fs"); process.stdout.write(String(JSON.parse(fs.readFileSync("config/release.json","utf8")).version))')"
-          tag="glowfin-v${version}"
+          tag="$(node -e 'const fs=require("fs"); const release=JSON.parse(fs.readFileSync("config/release.json","utf8")); process.stdout.write(String(release.releaseTag || `glowfin-v${release.version}`))')"
           remote="$(git ls-remote --tags origin "refs/tags/${tag}^{}" | cut -f1)"
           if [[ -z "${remote}" ]]; then
             remote="$(git ls-remote --tags origin "refs/tags/${tag}" | cut -f1)"

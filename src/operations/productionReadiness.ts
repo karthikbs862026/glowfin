@@ -165,6 +165,12 @@ export function shouldUseHostedServices(
 export function isSealedReleaseManifest(value: unknown): value is SealedReleaseManifest {
   if (!value || typeof value !== "object") return false;
   const manifest = value as Partial<SealedReleaseManifest>;
+  const baselineVersion = Number(manifest.baselineVersion);
+  const version = Number(manifest.version);
+  const recoveryBaseline =
+    version === 41 &&
+    manifest.phase === "phase-living-current-r1" &&
+    baselineVersion === 39;
   return (
     Number.isInteger(manifest.schemaVersion) && Number(manifest.schemaVersion) >= 1 &&
     Number.isInteger(manifest.version) && Number(manifest.version) >= 35 &&
@@ -175,7 +181,8 @@ export function isSealedReleaseManifest(value: unknown): value is SealedReleaseM
     (manifest.environment === "local"
       ? manifest.sourceCommit === "local" || /^[0-9a-f]{40}$/.test(manifest.sourceCommit)
       : /^[0-9a-f]{40}$/.test(manifest.sourceCommit)) &&
-    Number.isInteger(manifest.baselineVersion) && Number(manifest.baselineVersion) === Number(manifest.version) - 1 &&
+    Number.isInteger(manifest.baselineVersion) &&
+    (baselineVersion === version - 1 || recoveryBaseline) &&
     typeof manifest.baselineCommit === "string" && /^[0-9a-f]{40}$/.test(manifest.baselineCommit) &&
     typeof manifest.artBuild === "string" && manifest.artBuild.length >= 8 && manifest.artBuild.length <= 80 &&
     manifest.productionPolicyVersion === PRODUCTION_POLICY_VERSION &&

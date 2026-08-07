@@ -139,6 +139,41 @@ Tide Sprint completion at least 80%, Tide Sprint rematch at least 30%,
 non-default character selection by day 3 at least 35%, chase success 65–85%,
 crash-free sessions at least 99.5% and zero performance-budget regressions.
 
+### 2026-08-07 — Version 41-R1 clean rebuild certified
+
+The failed Version 41 sidecar implementation is retained only in Git history.
+It must not be restored, merged or used as a runtime base. Version 41 is rebuilt
+from the physically certified Version 39 commit
+`266b7900294f81e174134337a9d14b5951efcf30` through one HTML application, one
+renderer, one animation loop and one steering controller.
+
+Version 41-R1 adds only the `The Missing Moonseed` mission card, same-page
+briefing and fixed-seed playable current through an explicit
+`startExpedition()` seam. It contains no prototype monkey-patching, synthetic
+click, startup polling, release-metadata dynamic import or save request that can
+block play. Service-worker caching remains disabled during the staged rebuild.
+
+The owner physically certified all eight R1 acceptance points on both the
+Samsung S22 Ultra and Oppo Reno3 Pro: three fresh launches, mission-card
+visibility, same-page briefing, prompt Chapter 1 entry, deterministic advancing
+gameplay and score, correct left/right steering, background/resume, and Classic
+Current/tutorial regression safety. Matching production requests completed
+without Worker errors, including successful cloud-save reads and writes.
+
+R1 is the mandatory base for the remaining clean rebuild sequence:
+
+1. R2: Lumen Motes and the first objective.
+2. R3: relic, Miri and Neri.
+3. R4: Duskmaw and Moon Well restoration.
+4. R5: persistence, telemetry and production certification.
+
+iPhone/Safari validation of the rebuilt Expedition remains a later explicit
+cross-platform gate; Android certification must not be presented as iOS
+evidence.
+
+The complete R1 evidence is preserved in
+[`version41-r1-certification.md`](version41-r1-certification.md).
+
 ### Technical, fairness and safety guardrails
 
 - Ranked, Daily Tide and verified races use fixed deterministic encounter plans,

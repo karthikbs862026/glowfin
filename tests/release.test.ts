@@ -17,18 +17,19 @@ function metadata(
   };
 }
 
-describe("Version 41 release identity", () => {
-  it("accepts only Version 41 built from Version 39 with Version 40 explicitly deferred", () => {
+describe("Version 41-R1 release identity", () => {
+  it("accepts only the clean R1 rebuild rooted at the certified Version 39 baseline", () => {
     expect(isGlowfinReleaseMetadata(metadata())).toBe(true);
-    expect(metadata().certification).toBe("automated-candidate");
-    expect(metadata().phase).toBe("phase-living-current-vertical-slice");
+    expect(metadata().certification).toBe("physical-android-certified");
+    expect(metadata().phase).toBe("phase-living-current-r1");
+    expect(metadata().releaseTag).toBe("glowfin-v41-r1");
     expect(metadata().baselineVersion).toBe(39);
-    expect(metadata().deferredVersions).toEqual([40]);
+    expect(metadata().baselineCommit).toBe(
+      "266b7900294f81e174134337a9d14b5951efcf30"
+    );
+    expect(releaseConfig.deferredVersions).toEqual([40]);
     expect(isGlowfinReleaseMetadata(metadata({ version: 40 }))).toBe(false);
     expect(isGlowfinReleaseMetadata(metadata({ baselineCommit: "deadbeef" }))).toBe(false);
-    expect(isGlowfinReleaseMetadata(metadata({ deferredVersions: [] }))).toBe(false);
-    expect(isGlowfinReleaseMetadata(metadata({ deferredVersions: [40, 40] }))).toBe(false);
-    expect(isGlowfinReleaseMetadata(metadata({ deferredVersions: [39, 40] }))).toBe(false);
     expect(isGlowfinReleaseMetadata(metadata({ environment: "production" }))).toBe(true);
   });
 
