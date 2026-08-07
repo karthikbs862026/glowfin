@@ -19,6 +19,7 @@ for (const key of [
   "schemaVersion",
   "version",
   "phase",
+  "releaseTag",
   "certification",
   "baselineVersion",
   "baselineCommit",

@@ -12,6 +12,7 @@ export interface GlowfinReleaseMetadata {
   schemaVersion: number;
   version: number;
   phase: string;
+  releaseTag: string;
   certification: string;
   environment: GlowfinEnvironment;
   sourceCommit: string;
@@ -38,6 +39,7 @@ export function isGlowfinReleaseMetadata(
     candidate.schemaVersion === releaseConfig.schemaVersion &&
     candidate.version === releaseConfig.version &&
     candidate.phase === releaseConfig.phase &&
+    candidate.releaseTag === releaseConfig.releaseTag &&
     candidate.certification === releaseConfig.certification &&
     GLOWFIN_ENVIRONMENTS.some((entry) => entry === candidate.environment) &&
     typeof candidate.sourceCommit === "string" &&

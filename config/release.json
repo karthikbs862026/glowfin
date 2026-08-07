@@ -3,6 +3,7 @@
   "schemaVersion": 1,
   "version": 41,
   "phase": "phase-living-current-r1",
+  "releaseTag": "glowfin-v41-r1",
   "certification": "physical-android-certified",
   "baselineVersion": 39,
   "baselineCommit": "266b7900294f81e174134337a9d14b5951efcf30",

@@ -52,6 +52,8 @@ cloud-save `GET`/`PUT`, Daily Tide and leaderboard requests returned HTTP 200.
 - Debug exclusion and sealed release metadata: pass.
 - Rollback rehearsal: Version 41 to Version 39 passes with Version 40 explicitly
   recorded as deferred.
+- Immutable release identity: `glowfin-v41-r1`; the old `glowfin-v41` tag remains
+  untouched as forensic history.
 
 ## Remaining boundary
 

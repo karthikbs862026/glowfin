@@ -218,8 +218,7 @@ jobs:
       - name: Create immutable release tag after every release gate passes
         shell: bash
         run: |
-          version="$(node -e 'const fs=require("fs"); process.stdout.write(String(JSON.parse(fs.readFileSync("config/release.json","utf8")).version))')"
-          tag="glowfin-v${version}"
+          tag="$(node -e 'const fs=require("fs"); const release=JSON.parse(fs.readFileSync("config/release.json","utf8")); process.stdout.write(String(release.releaseTag || `glowfin-v${release.version}`))')"
           remote="$(git ls-remote --tags origin "refs/tags/${tag}^{}" | cut -f1)"
           if [[ -z "${remote}" ]]; then
             remote="$(git ls-remote --tags origin "refs/tags/${tag}" | cut -f1)"

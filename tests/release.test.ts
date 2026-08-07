@@ -22,6 +22,7 @@ describe("Version 41-R1 release identity", () => {
     expect(isGlowfinReleaseMetadata(metadata())).toBe(true);
     expect(metadata().certification).toBe("physical-android-certified");
     expect(metadata().phase).toBe("phase-living-current-r1");
+    expect(metadata().releaseTag).toBe("glowfin-v41-r1");
     expect(metadata().baselineVersion).toBe(39);
     expect(metadata().baselineCommit).toBe(
       "266b7900294f81e174134337a9d14b5951efcf30"
