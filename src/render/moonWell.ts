@@ -5,6 +5,7 @@ import type {
   CosmeticDefinition
 } from "../meta/progression";
 import type { TutorialPresentation } from "../meta/onboarding";
+import type { ExpeditionProgressV1 } from "../expedition/progress";
 
 export type MoonWellPanel = "home" | "wardrobe" | "objectives" | "leaderboard" | "settings";
 
@@ -31,6 +32,9 @@ export class MoonWell {
   private readonly tutorialTitle: HTMLElement;
   private readonly tutorialDetail: HTMLElement;
   private readonly tutorialFill: HTMLElement;
+  private readonly expeditionRestoration: HTMLElement;
+  private readonly expeditionRestorationTitle: HTMLElement;
+  private readonly expeditionRestorationDetail: HTMLElement;
 
   constructor(root: Document = document) {
     this.root = MoonWell.require(root, "moonwell-hub");
@@ -49,6 +53,18 @@ export class MoonWell {
     this.tutorialTitle = MoonWell.require(root, "tutorial-title");
     this.tutorialDetail = MoonWell.require(root, "tutorial-detail");
     this.tutorialFill = MoonWell.require(root, "tutorial-progress-fill");
+    this.expeditionRestoration = root.createElement("section");
+    this.expeditionRestoration.className = "moonwell-restoration";
+    this.expeditionRestoration.setAttribute("aria-label", "Moon Garden restoration");
+    this.expeditionRestorationTitle = root.createElement("strong");
+    this.expeditionRestorationDetail = root.createElement("span");
+    this.expeditionRestoration.append(
+      this.expeditionRestorationTitle,
+      this.expeditionRestorationDetail,
+    );
+    this.home.querySelector(".moonwell-invitation")?.after(
+      this.expeditionRestoration,
+    );
     for (const panel of ["wardrobe", "objectives", "leaderboard", "settings"] as const) {
       this.panels.set(panel, MoonWell.require(root, `moonwell-panel-${panel}`));
     }
@@ -205,6 +221,29 @@ export class MoonWell {
       row.append(copy, value);
       return row;
     }));
+  }
+
+  setExpeditionState(
+    progress: Pick<
+      ExpeditionProgressV1,
+      "moonWellRestored" | "discoveredRelics" | "completionMarks"
+    >,
+  ): void {
+    const relicCount = progress.discoveredRelics.length;
+    this.expeditionRestoration.dataset["restored"] = String(
+      progress.moonWellRestored,
+    );
+    this.expeditionRestoration.dataset["relics"] = String(relicCount);
+    this.expeditionRestorationTitle.textContent = progress.moonWellRestored
+      ? "Moon Well restored"
+      : "Moon Well restoration";
+    const marks = [
+      progress.completionMarks.primaryObjective ? "Primary" : null,
+      progress.completionMarks.hiddenRelic ? "Hidden relic" : null,
+      progress.completionMarks.cleanPerformance ? "Clean chase" : null,
+    ].filter((mark): mark is string => Boolean(mark));
+    this.expeditionRestorationDetail.textContent =
+      `Relic Atlas ${relicCount}/6${marks.length > 0 ? ` · ${marks.join(" · ")}` : " · Chapter 1 awaits"}`;
   }
 
   renderWardrobe(items: readonly WardrobeItemPresentation[], pearls: number): void {

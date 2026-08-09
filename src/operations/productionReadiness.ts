@@ -169,7 +169,8 @@ export function isSealedReleaseManifest(value: unknown): value is SealedReleaseM
   const version = Number(manifest.version);
   const recoveryBaseline =
     version === 41 &&
-    manifest.phase === "phase-living-current-r1" &&
+    (manifest.phase === "phase-living-current-r1" ||
+      manifest.phase === "phase-living-current-r5") &&
     baselineVersion === 39;
   return (
     Number.isInteger(manifest.schemaVersion) && Number(manifest.schemaVersion) >= 1 &&

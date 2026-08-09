@@ -4,11 +4,13 @@
 // and expand this to break down per-chunk (vendor/three vs game code) as the
 // bundle grows.
 
-import { readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const DIST_DIR = "dist";
-const BUDGET_BYTES = 2 * 1024 * 1024; // 2MB placeholder — TUNE AND RECORD IN ADR
+const budgets = JSON.parse(readFileSync("config/budgets.json", "utf8"));
+const BUDGET_BYTES = budgets.load.maxBundleBytes;
+const JAVASCRIPT_BUDGET_BYTES = budgets.load.maxJavaScriptBytes;
 
 function totalSize(dir) {
   let total = 0;
@@ -27,16 +29,38 @@ function totalSize(dir) {
   return total;
 }
 
+function javascriptSize(dir) {
+  let total = 0;
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    const s = statSync(full);
+    if (s.isDirectory()) total += javascriptSize(full);
+    else if (entry.endsWith(".js")) total += s.size;
+  }
+  return total;
+}
+
 try {
   const size = totalSize(DIST_DIR);
+  const jsSize = javascriptSize(DIST_DIR);
   const sizeMB = (size / 1024 / 1024).toFixed(2);
   const budgetMB = (BUDGET_BYTES / 1024 / 1024).toFixed(2);
+  const jsSizeMB = (jsSize / 1024 / 1024).toFixed(2);
+  const jsBudgetMB = (JAVASCRIPT_BUDGET_BYTES / 1024 / 1024).toFixed(2);
+
+  if (jsSize > JAVASCRIPT_BUDGET_BYTES) {
+    console.error(`JavaScript ${jsSizeMB}MB exceeds budget ${jsBudgetMB}MB.`);
+    process.exit(1);
+  }
 
   if (size > BUDGET_BYTES) {
     console.error(`Bundle size ${sizeMB}MB exceeds budget ${budgetMB}MB.`);
     process.exit(1);
   }
-  console.log(`Bundle size ${sizeMB}MB within budget ${budgetMB}MB.`);
+  console.log(
+    `JavaScript ${jsSizeMB}MB within ${jsBudgetMB}MB; ` +
+    `sealed payload ${sizeMB}MB within ${budgetMB}MB.`
+  );
 } catch (err) {
   console.error(`Could not measure bundle size in "${DIST_DIR}":`, err.message);
   process.exit(1);

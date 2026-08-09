@@ -16,6 +16,8 @@ export const TELEMETRY_EVENT_NAMES = [
   "expedition_briefing",
   "expedition_briefing_close",
   "expedition_start",
+  "expedition_complete",
+  "expedition_abandon",
   "tap_to_dive",
   "tutorial_start",
   "tutorial_step",

@@ -499,6 +499,11 @@ export class Environment {
     this.disposables.push(pointGeometry, pointMaterial);
   }
 
+  /** Reuse the world shader for named Expedition actors without new materials. */
+  sharedLivingMaterial(): THREE.ShaderMaterial {
+    return this.volumeMaterial;
+  }
+
   /** Replace only the six reef families selected for the Phase 3C slice. */
   installRuntimeReefGeometry(assets: RuntimeReefGeometrySet): void {
     const expectedOrder: readonly RuntimeReefFamily[] = [

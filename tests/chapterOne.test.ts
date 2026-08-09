@@ -9,7 +9,7 @@ import { tuning } from "../src/core/config";
 import { isSealedReleaseManifest } from "../src/operations/productionReadiness";
 import { Run } from "../src/sim/run";
 
-describe("Version 41-R1 Chapter 1 contract", () => {
+describe("Version 41-R5 Chapter 1 contract", () => {
   it("uses one stable unsigned fixed seed", () => {
     expect(CHAPTER_ONE_FIXED_SEED).toBe(0x4d4f4f4e);
     expect(CHAPTER_ONE_MISSION.seed).toBe(CHAPTER_ONE_FIXED_SEED);
@@ -43,8 +43,8 @@ describe("Version 41-R1 Chapter 1 contract", () => {
     expect(isSealedReleaseManifest({
       schemaVersion: 1,
       version: 41,
-      phase: "phase-living-current-r1",
-      certification: "physical-android-certified",
+      phase: "phase-living-current-r5",
+      certification: "automated-candidate",
       environment: "production",
       sourceCommit: "a".repeat(40),
       baselineVersion: 39,

@@ -11,6 +11,8 @@ export type HapticCue =
   | "tutorial-step"
   | "near-miss"
   | "collision"
+  | "lumen-mote"
+  | "lumen-chain"
   | "purchase"
   | "milestone"
   | "equip"
@@ -70,6 +72,8 @@ const CUE_COOLDOWN_MS: Record<HapticCue, number> = {
   "tutorial-step": 180,
   "near-miss": 650,
   collision: 350,
+  "lumen-mote": 110,
+  "lumen-chain": 280,
   purchase: 500,
   milestone: 800,
   equip: 220,
@@ -118,9 +122,12 @@ export class HapticDirector {
     switch (cue) {
       case "collision":
         return driver.impact("HEAVY");
+      case "lumen-chain":
+        return driver.impact("MEDIUM");
       case "purchase":
       case "milestone":
         return driver.notification("SUCCESS");
+      case "lumen-mote":
       case "tutorial-step":
       case "near-miss":
       case "equip":

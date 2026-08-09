@@ -174,6 +174,27 @@ evidence.
 The complete R1 evidence is preserved in
 [`version41-r1-certification.md`](version41-r1-certification.md).
 
+### 2026-08-09 — Version 41-R5 clean rebuild completed
+
+The R2–R5 sequence is now implemented directly on the certified R1 tree. The
+same fixed-seed Expedition adds bounded Lumen Motes, the optional Fragment
+fork, Miri rescue, the non-colliding Neri race, three returning Duskmaw Current
+Breaks, a ceremonial Moonseed finish and Moon Well restoration. Waiting never
+completes an encounter; missed required targets return ahead.
+
+Expedition progress is isolated from ranked Classic/Daily rewards in a
+checksummed primary/backup save domain. Claims are idempotent, completion is
+unranked, telemetry remains consent-gated and restoration appears in the Moon
+Well Relic Atlas. Classic Dive, Daily Tide, guided tutorial, replay ghosts and
+their existing rewards retain their original paths.
+
+Automated certification passes 398 repository tests across 53 files, the
+production and structural gates, native Android/iOS wrapper contracts, exact
+fixed-step completion and the deterministic 5,400-frame soak. R1's two-phone
+Android evidence remains valid for the preserved renderer/input/lifecycle
+baseline; R5 does not claim new iPhone hardware evidence. The complete record is
+preserved in [`version41-r5-certification.md`](version41-r5-certification.md).
+
 ### 2026-08-09 — Tide Sprint feel frozen and Version 42 integration authorised
 
 The owner accepted the current Tide Sprint playtest feel. Its steering,

@@ -113,6 +113,30 @@ import {
   type ExpeditionExperience
 } from "./expedition/chapterOne";
 import { ExpeditionDirector } from "./expedition/expeditionDirector";
+import {
+  LUMEN_OBJECTIVE_CHAIN_TARGET,
+  LumenMoteDirector,
+  lumenChainIntensity,
+  type LumenMoteSnapshot,
+  type LumenMotionSample,
+} from "./expedition/lumenMotes";
+import {
+  R3_PLAN_HASH,
+  R3_RACE_GATE_TARGET,
+  R3_RESCUE_LIGHT_TARGET,
+  R3EncounterDirector,
+  type R3StepEvents,
+} from "./expedition/r3Encounters";
+import {
+  R5_CURRENT_BREAK_TARGET,
+  R5_PLAN_HASH,
+  R5CompletionDirector,
+  type R5StepEvents,
+} from "./expedition/r5Completion";
+import {
+  ExpeditionProgressRepository,
+  type ExpeditionProgressV1,
+} from "./expedition/progress";
 
 const initialCanvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
 if (!initialCanvas) throw new Error("Canvas #glowfin-canvas not found");
@@ -123,7 +147,7 @@ const hostedServicesEnabled = shouldUseHostedServices(
   GLOWFIN_RELEASE.environment,
   window.location.hostname
 );
-// Version 41-R1 remains network-cache-free until its production journey is
+// Version 41-R5 remains network-cache-free until its production journey is
 // physically certified. The host still serves the self-deactivating V39
 // recovery worker so an older registration cannot regain startup ownership.
 const SERVICE_WORKER_CACHING_CERTIFIED = false;
@@ -143,6 +167,13 @@ if (runtimeSupport.supported) {
 const hud = new Hud();
 const moonWell = new MoonWell();
 const expedition = new ExpeditionDirector();
+const lumenMotes = new LumenMoteDirector();
+const r3DurationScale = import.meta.env.DEV &&
+    new URLSearchParams(window.location.search).get("r3qa") === "1"
+  ? 4
+  : 1;
+const r3Encounters = new R3EncounterDirector({ durationScale: r3DurationScale });
+const r5Completion = new R5CompletionDirector({ durationScale: r3DurationScale });
 const audio = new GlowfinAudio(tuning);
 const steering = new SteeringSource({
   dragRangeFraction: tuning.input.dragRangeFraction,
@@ -171,11 +202,14 @@ const progressStorage = (() => {
   }
 })();
 const progressRepository = new ProgressRepository(progressStorage);
+const expeditionProgressRepository = new ExpeditionProgressRepository(progressStorage);
 const guidedTutorialRepository = new GuidedTutorialRepository(progressStorage);
 let guidedTutorialComplete = guidedTutorialRepository.isCurrentComplete();
 let tutorialIntroDismissed = false;
 const progressLoad = progressRepository.load();
 let progress: GlowfinProgressV2 = progressLoad.progress;
+const expeditionProgressLoad = expeditionProgressRepository.load();
+let expeditionProgress: ExpeditionProgressV1 = expeditionProgressLoad.progress;
 const accessPreferenceRepository = new AccessPreferenceRepository(progressStorage);
 let accessPreferences = accessPreferenceRepository.load();
 steering.setSensitivityMultiplier(steeringSensitivityMultiplier(accessPreferences));
@@ -190,6 +224,13 @@ const telemetry = new TelemetryClient(
   progress.telemetryConsent,
   new HostedTelemetryTransport()
 );
+if (expeditionProgressLoad.recoveryReason) {
+  telemetry.track("save_recovered", {
+    domain: "expedition",
+    recoveredFrom: expeditionProgressLoad.recoveredFrom,
+    reason: expeditionProgressLoad.recoveryReason,
+  });
+}
 const cloudProgress = new HostedProgressClient();
 const dailyClock = new HostedDailyClockClient();
 const leaderboard = new HostedLeaderboardClient();
@@ -562,6 +603,7 @@ function refreshMoonWell(): void {
   moonWell.setDailyLabel(day, progress.daily.dailyClaims.includes(day));
   moonWell.renderObjectives(objectivePresentations());
   moonWell.setTutorialStatus(guidedTutorialComplete);
+  moonWell.setExpeditionState(expeditionProgress);
   refreshWardrobe();
 }
 
@@ -569,6 +611,10 @@ function showMoonWell(panel: MoonWellPanel = "home"): void {
   gameplayActive = false;
   activeExperience = "classic";
   expedition.reset();
+  lumenMotes.stop();
+  r3Encounters.stop();
+  r5Completion.stop();
+  view?.setLumenChainFraction(0);
   steering.reset();
   firstRunTutorial = null;
   tutorialStep = null;
@@ -820,10 +866,21 @@ function startRun(
   awaitingRestart = false;
   gameplayActive = true;
   completedCompetitiveRun = null;
-  if (activeExperience === "chapter-one-r1") {
+  if (activeExperience === "chapter-one-r5") {
     expedition.beginRun();
+    lumenMotes.start(run.sim.forwardDistance);
+    r3Encounters.start(run.sim.forwardDistance, run.sim.elapsedSec);
+    r5Completion.reset();
+    expedition.updateLumenObjective(lumenMotes.snapshot());
+    expedition.updateEncounter(r3Encounters.snapshot());
+    document.documentElement.dataset["glowfinLumenObjective"] = "active";
   } else {
     expedition.reset();
+    lumenMotes.stop();
+    r3Encounters.stop();
+    r5Completion.stop();
+    view?.setLumenChainFraction(0);
+    delete document.documentElement.dataset["glowfinLumenObjective"];
   }
   steering.reset();
   timestep.reset();
@@ -876,7 +933,7 @@ function startExpedition(): void {
   });
   startRun("fresh", {
     seedOverride: CHAPTER_ONE_MISSION.seed,
-    experience: "chapter-one-r1"
+    experience: "chapter-one-r5"
   });
 }
 
@@ -896,6 +953,245 @@ expedition.onBack(() => {
     chapter: CHAPTER_ONE_MISSION.chapter
   });
 });
+
+const LUMEN_TELEMETRY_MILESTONES = new Set([1, 3, 6, 8, 12]);
+
+function updateLumenMotes(motion: LumenMotionSample): LumenMoteSnapshot {
+  if (activeExperience !== "chapter-one-r5") return lumenMotes.snapshot();
+  const events = lumenMotes.step(motion);
+  const snapshot = lumenMotes.snapshot();
+  const changed = events.collected.length > 0 ||
+    events.brokenChain > 0 ||
+    events.objectiveCompleted ||
+    events.fullChainReached;
+
+  view?.setLumenChainFraction(lumenChainIntensity(snapshot.currentChain));
+  document.documentElement.dataset["glowfinLumenObjective"] =
+    snapshot.objectiveComplete ? "complete" : "active";
+  if (changed) expedition.updateLumenObjective(snapshot);
+
+  for (const pickup of events.collected) {
+    audio.playLumenMote(pickup.chain);
+    haptics.play(
+      pickup.chain % LUMEN_OBJECTIVE_CHAIN_TARGET === 0
+        ? "lumen-chain"
+        : "lumen-mote"
+    );
+    expedition.showLumenPickup(pickup);
+    if (
+      pickup.bestChain === pickup.chain &&
+      LUMEN_TELEMETRY_MILESTONES.has(pickup.bestChain)
+    ) {
+      telemetry.track("objective_progress", {
+        objective: "follow-light-lumen-chain",
+        action: "collect",
+        chain: pickup.chain,
+        bestChain: pickup.bestChain,
+        target: LUMEN_OBJECTIVE_CHAIN_TARGET,
+        collected: snapshot.collected,
+        moteScore: pickup.totalScore,
+        revision: CHAPTER_ONE_MISSION.revision
+      }, activeRunId);
+    }
+  }
+
+  if (events.brokenChain > 0) {
+    expedition.showChainBreak(events.brokenChain);
+  }
+  if (events.fullChainReached) {
+    haptics.play("lumen-chain");
+    expedition.showFullChain();
+  }
+  if (events.objectiveCompleted) {
+    audio.playLumenMote(snapshot.bestChain, true);
+    haptics.play("lumen-chain");
+    telemetry.track("objective_complete", {
+      objective: "follow-light-lumen-chain",
+      target: LUMEN_OBJECTIVE_CHAIN_TARGET,
+      bestChain: snapshot.bestChain,
+      collected: snapshot.collected,
+      elapsedSec: motion.elapsedSec,
+      moteScore: snapshot.score,
+      seed: run.seed,
+      revision: CHAPTER_ONE_MISSION.revision
+    }, activeRunId);
+  }
+  return snapshot;
+}
+
+function r3EventsChanged(events: R3StepEvents): boolean {
+  return events.beatChangedTo !== null ||
+    events.relicResolved !== null ||
+    events.rescueLightCollected > 0 ||
+    events.rescueLightReturned ||
+    events.miriRescued ||
+    events.raceGateCollected > 0 ||
+    events.raceGateReturned ||
+    events.raceCompleted;
+}
+
+function updateR3Encounters(motion: LumenMotionSample): void {
+  const lumen = updateLumenMotes(motion);
+  if (activeExperience !== "chapter-one-r5") return;
+  const events = r3Encounters.step({
+    ...motion,
+    collisionCount: run.collisionCount,
+    lumen,
+  });
+  const snapshot = r3Encounters.snapshot();
+  if (r3EventsChanged(events) || simulationSteps % 15 === 0) {
+    expedition.updateEncounter(snapshot);
+  }
+
+  if (events.beatChangedFrom && events.beatChangedTo) {
+    telemetry.track("signature_obstacle", {
+      content: "version41-r3",
+      encounter: events.beatChangedTo,
+      phase: "start",
+      planHash: R3_PLAN_HASH,
+    }, activeRunId);
+  }
+  if (events.relicResolved) {
+    const found = events.relicResolved === "found";
+    haptics.play(found ? "milestone" : "lumen-mote");
+    if (found) audio.playLumenMote(8, true);
+    expedition.showEncounterFeedback(
+      found ? "Moonseed Fragment discovered" : "Safe current chosen · mission continues",
+    );
+  }
+  if (events.rescueLightCollected > 0) {
+    audio.playLumenMote(events.rescueLightCollected + 3,
+      events.rescueLightCollected === R3_RESCUE_LIGHT_TARGET);
+    haptics.play(
+      events.rescueLightCollected === R3_RESCUE_LIGHT_TARGET
+        ? "milestone"
+        : "lumen-mote",
+    );
+    expedition.showEncounterFeedback(
+      events.miriRescued
+        ? "Miri is free"
+        : `Rescue Light ${events.rescueLightCollected}/${R3_RESCUE_LIGHT_TARGET}`,
+    );
+  } else if (events.rescueLightReturned) {
+    expedition.showEncounterFeedback("Missed Rescue Light returns ahead");
+  }
+  if (events.raceGateCollected > 0) {
+    audio.playLumenMote(events.raceGateCollected + 5,
+      events.raceGateCollected === R3_RACE_GATE_TARGET);
+    haptics.play("lumen-mote");
+    expedition.showEncounterFeedback(
+      `Race Gate ${events.raceGateCollected}/${R3_RACE_GATE_TARGET}`,
+    );
+  } else if (events.raceGateReturned) {
+    expedition.showEncounterFeedback("Missed Race Gate returns ahead");
+  }
+  if (events.raceCompleted) {
+    audio.playLumenMote(12, true);
+    haptics.play("milestone");
+    expedition.showEncounterFeedback("Glowfin finishes ahead of Neri");
+    telemetry.track("objective_complete", {
+      objective: "race-neri",
+      raceGates: snapshot.raceGates,
+      outcome: "glowfin-ahead",
+      planHash: R3_PLAN_HASH,
+    }, activeRunId);
+    r5Completion.startAfterR3({
+      ...motion,
+      collisionCount: run.collisionCount,
+    });
+    expedition.updateCompletion(r5Completion.snapshot());
+  }
+}
+
+function r5EventsChanged(events: R5StepEvents): boolean {
+  return events.beatChangedTo !== null ||
+    events.currentBreakCollected > 0 ||
+    events.currentBreakReturned ||
+    events.chaseCompleted ||
+    events.finishReturned ||
+    events.finishReached ||
+    events.restorationCompleted;
+}
+
+function recordExpeditionCompletion(): void {
+  const lumen = lumenMotes.snapshot();
+  const r3 = r3Encounters.snapshot();
+  const r5 = r5Completion.snapshot();
+  const result = expeditionProgressRepository.recordCompletion({
+    claimId: activeRunId,
+    planHash: R5_PLAN_HASH,
+    primaryObjective: r3.r3Complete && r5.r5Complete,
+    relicFound: r3.relicFound,
+    bestLumenChain: lumen.bestChain,
+    miriRescued: r3.miriRescued,
+    neriFinishGap: Math.max(0, r3.raceGap),
+    currentBreaks: r5.currentBreaks,
+    cleanChase: r5.cleanChase,
+    moonWellRestored: r5.moonWellRestored,
+  });
+  expeditionProgress = result.progress;
+  moonWell.setExpeditionState(expeditionProgress);
+  telemetry.track("reward_granted", {
+    domain: "expedition",
+    mission: CHAPTER_ONE_MISSION.id,
+    marks: result.newlyCompletedMarks.join(","),
+    relics: result.newlyDiscoveredRelics.join(","),
+    moonWellRestored: result.newlyRestoredMoonWell,
+    duplicatePrevented: result.duplicatePrevented,
+    planHash: R5_PLAN_HASH,
+  }, activeRunId);
+}
+
+function updateR5Completion(motion: LumenMotionSample): void {
+  if (activeExperience !== "chapter-one-r5") return;
+  const events = r5Completion.step({
+    ...motion,
+    collisionCount: run.collisionCount,
+  });
+  const snapshot = r5Completion.snapshot();
+  if (r5EventsChanged(events) || simulationSteps % 15 === 0) {
+    expedition.updateCompletion(snapshot);
+  }
+
+  if (events.currentBreakCollected > 0) {
+    const complete = events.currentBreakCollected === R5_CURRENT_BREAK_TARGET;
+    audio.playLumenMote(events.currentBreakCollected + 8, complete);
+    haptics.play(complete ? "milestone" : "lumen-mote");
+    expedition.showEncounterFeedback(
+      `Current Break ${events.currentBreakCollected}/${R5_CURRENT_BREAK_TARGET}`,
+    );
+  } else if (events.currentBreakReturned) {
+    expedition.showEncounterFeedback("Missed Current Break returns ahead");
+  }
+  if (events.chaseCompleted) {
+    expedition.showEncounterFeedback(
+      snapshot.cleanChase
+        ? "Duskmaw current broken · clean chase"
+        : "Duskmaw current broken",
+    );
+  }
+  if (events.finishReached) {
+    haptics.play("milestone");
+    expedition.showEncounterFeedback("Ceremonial Moon Well current reached");
+  } else if (events.finishReturned) {
+    expedition.showEncounterFeedback("Moon Well ring returns ahead");
+  }
+  if (events.restorationCompleted) {
+    recordExpeditionCompletion();
+    haptics.play("milestone");
+    audio.playLumenMote(14, true);
+    view?.setHeroMoment("celebration");
+    expedition.showEncounterFeedback("Moon Well restored · Chapter 1 complete");
+    telemetry.track("objective_complete", {
+      objective: "restore-moon-well",
+      mission: CHAPTER_ONE_MISSION.id,
+      cleanChase: snapshot.cleanChase,
+      relicFound: r3Encounters.snapshot().relicFound,
+      planHash: R5_PLAN_HASH,
+    }, activeRunId);
+    run.requestEnd("expedition-complete");
+  }
+}
 
 moonWell.onDive(() => {
   telemetry.track("tap_to_dive", {
@@ -984,7 +1280,7 @@ hud.onDailyTrial(() => {
 
 hud.onDiveAgain(() => {
   if (!awaitingRestart) return;
-  if (activeExperience === "chapter-one-r1") {
+  if (activeExperience === "chapter-one-r5") {
     startExpedition();
   } else {
     startRun("fresh");
@@ -1582,9 +1878,23 @@ function frame(nowMs: number): void {
   if (gameplayActive && !awaitingRestart) timestep.advance(frameSec * run.timeScale, (dt) => {
     if (awaitingRestart) return;
     const command = steering.getTarget();
+    const previousDistance = run.sim.forwardDistance;
+    const previousLateral = run.sim.lateralPosition;
     recorder.record(command);
     const events = run.step(dt, command);
     simulationSteps += 1;
+    const expeditionMotion: LumenMotionSample = {
+      fromDistance: previousDistance,
+      toDistance: run.sim.forwardDistance,
+      fromLateral: previousLateral,
+      toLateral: run.sim.lateralPosition,
+      elapsedSec: run.sim.elapsedSec,
+      gates: run.gates,
+      laneHalfWidth: tuning.lane.halfWidth,
+      creatureRadius: tuning.lane.creatureRadius
+    };
+    updateR3Encounters(expeditionMotion);
+    updateR5Completion(expeditionMotion);
 
     if (ghostRun && ghostReplay && ghostVisible) {
       const ghostCommand = ghostReplay.next();
@@ -1717,13 +2027,50 @@ function frame(nowMs: number): void {
     if (events.justEnded) {
       awaitingRestart = true;
       gameplayActive = false;
-      if (activeExperience === "chapter-one-r1") expedition.finishRun();
+      if (activeExperience === "chapter-one-r5") {
+        expedition.finishRun();
+        lumenMotes.stop();
+        r3Encounters.stop();
+        r5Completion.stop();
+        activeView.setLumenChainFraction(0);
+      }
       firstRunTutorial = null;
       tutorialStep = null;
       tutorialCompleteAtSec = null;
       tutorialSessionSource = null;
       moonWell.showTutorial(null);
       document.documentElement.dataset["glowfinScreen"] = "post-run";
+      if (activeExperience === "chapter-one-r5") {
+        const completed = run.endReason === "expedition-complete";
+        completedCompetitiveRun = null;
+        hud.hideGhostGap();
+        hud.setSubmitState("unavailable");
+        hud.setShareState("unavailable");
+        hud.setRewardedOffer(null);
+        hud.showExpeditionResult({
+          completed,
+          seconds: run.sim.elapsedSec,
+          collisions: run.collisionCount,
+          relicsDiscovered: expeditionProgress.discoveredRelics.length,
+          primaryMark: expeditionProgress.completionMarks.primaryObjective,
+          relicMark: expeditionProgress.completionMarks.hiddenRelic,
+          cleanMark: expeditionProgress.completionMarks.cleanPerformance,
+          moonWellRestored: expeditionProgress.moonWellRestored,
+        });
+        telemetry.track(completed ? "expedition_complete" : "expedition_abandon", {
+          mission: CHAPTER_ONE_MISSION.id,
+          revision: CHAPTER_ONE_MISSION.revision,
+          endReason: run.endReason,
+          elapsedSec: run.sim.elapsedSec,
+          collisions: run.collisionCount,
+          r3PlanHash: R3_PLAN_HASH,
+          r5PlanHash: R5_PLAN_HASH,
+          currentBreaks: r5Completion.snapshot().currentBreaks,
+          moonWellRestored: expeditionProgress.moonWellRestored,
+        }, activeRunId);
+        void telemetry.flush();
+        return;
+      }
       const summary: ReplaySummary = {
         score: run.scoring.score,
         elapsedSec: run.sim.elapsedSec,
@@ -1930,6 +2277,14 @@ function frame(nowMs: number): void {
   publishCertificationState();
 
   const lightFraction = run.light / tuning.light.max;
+  const lumenPresentation = activeExperience === "chapter-one-r5"
+    ? lumenMotes.presentation(
+      run.sim.forwardDistance,
+      run.gates,
+      tuning.lane.halfWidth,
+      tuning.lane.creatureRadius
+    )
+    : [];
   activeView.render(
     run.sim,
     run.gates,
@@ -1937,7 +2292,14 @@ function frame(nowMs: number): void {
     run.sim.elapsedSec,
     frameSec,
     ghostVisible && ghostRun ? ghostRun.sim : null,
-    run.activeLivingWorldEvents
+    run.activeLivingWorldEvents,
+    lumenPresentation,
+    activeExperience === "chapter-one-r5"
+      ? r3Encounters.presentation()
+      : null,
+    activeExperience === "chapter-one-r5"
+      ? r5Completion.presentation()
+      : null,
   );
   if (ghostVisible && ghostRun) {
     hud.updateGhostGap(run.sim.forwardDistance, ghostRun.sim.forwardDistance);

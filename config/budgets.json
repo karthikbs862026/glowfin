@@ -29,7 +29,9 @@
   },
 
   "load": {
-    "maxBundleBytes": 2097152,
+    "$comment": "R5 separates executable and complete sealed-payload ceilings. JavaScript stays below the original 2 MiB ceiling; the 3 MiB payload ceiling includes the three deterministic runtime GLBs and authored textures. See docs/adr-version41-r5-payload-budget.md.",
+    "maxJavaScriptBytes": 2097152,
+    "maxBundleBytes": 3145728,
     "maxColdStartMs": 3500
   },
 

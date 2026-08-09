@@ -1,24 +1,24 @@
 export const CHAPTER_ONE_FIXED_SEED = 0x4d4f4f4e;
 
-export type ExpeditionExperience = "classic" | "chapter-one-r1";
+export type ExpeditionExperience = "classic" | "chapter-one-r5";
 export type ExpeditionUiState = "mission-card" | "briefing" | "running";
 export type ExpeditionUiEvent = "open-briefing" | "close-briefing" | "start" | "finish";
 
 export interface ChapterOneMission {
   id: "the-missing-moonseed";
   chapter: 1;
-  revision: "r1";
+  revision: "r5";
   title: "The Missing Moonseed";
-  objective: "Follow the Light";
+  objective: "Find · Rescue · Race · Break Duskmaw · Restore";
   seed: number;
 }
 
 export const CHAPTER_ONE_MISSION: Readonly<ChapterOneMission> = Object.freeze({
   id: "the-missing-moonseed",
   chapter: 1,
-  revision: "r1",
+  revision: "r5",
   title: "The Missing Moonseed",
-  objective: "Follow the Light",
+  objective: "Find · Rescue · Race · Break Duskmaw · Restore",
   seed: CHAPTER_ONE_FIXED_SEED,
 });
 
