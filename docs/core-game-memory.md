@@ -174,6 +174,36 @@ evidence.
 The complete R1 evidence is preserved in
 [`version41-r1-certification.md`](version41-r1-certification.md).
 
+### 2026-08-09 — Tide Sprint feel frozen and Version 42 integration authorised
+
+The owner accepted the current Tide Sprint playtest feel. Its steering,
+one-finger speed control, near-current cues, Current Ring boosts, four-racer
+readability and photo-finish balance are now the frozen gameplay reference.
+Version 42 must not broadly redesign that experience. Changes are limited to
+main-game integration, deterministic fairness, regression fixes, accessibility,
+performance and certification work.
+
+The authorised delivery order is binding:
+
+1. Freeze the accepted Tide Sprint gameplay feel.
+2. Finish the clean Version 41 rebuild from the certified R1 tree.
+3. Create Version 42 only from the resulting latest `main`.
+4. Port Tide Sprint as a proper Moon Well mode wired to progression, rewards,
+   objectives, saves, consent-gated telemetry and deterministic ghosts.
+5. Preserve Classic Dive, Daily Tide, the guided tutorial and Expedition.
+6. Certify deterministic race authority, earned close-win fairness, Android and
+   iPhone behavior, lifecycle recovery, performance budgets and the full
+   5,400-frame renderer soak.
+7. Merge Version 42 and expose Tide Sprint from the main Glowfin playable link.
+
+Tide Sprint must not remain an isolated prototype after Version 41 completes.
+The isolated playtest is an implementation reference, not a runtime base to be
+merged wholesale. Version 42 must retain the shared competitive contract: all
+characters use identical collider, speed, lateral authority, momentum, Light,
+collision and score behavior; rivals remain non-colliding; no purchasable
+speed, character statistics, equipment advantage, competitive revive or
+real-time multiplayer is allowed.
+
 ### Technical, fairness and safety guardrails
 
 - Ranked, Daily Tide and verified races use fixed deterministic encounter plans,
