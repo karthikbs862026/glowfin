@@ -29,6 +29,12 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { loadRuntimeProductionGeometry } from "./runtimeProductionAssets";
+import type { LumenMotePresentation } from "../expedition/lumenMotes";
+import { LumenMoteField } from "./lumenMoteField";
+import type { R3EncounterPresentation } from "../expedition/r3Encounters";
+import { R3EncounterField } from "./r3EncounterField";
+import type { R5CompletionPresentation } from "../expedition/r5Completion";
+import { R5CompletionField } from "./r5CompletionField";
 import {
   cosmeticPalette,
   type CosmeticLoadout
@@ -65,6 +71,9 @@ export class GameView {
   private readonly floorMaterial: THREE.ShaderMaterial;
   private readonly wallMaterial: THREE.ShaderMaterial;
   private readonly trail: TrailRibbon;
+  private readonly lumenMotes: LumenMoteField;
+  private readonly r3Encounters: R3EncounterField;
+  private readonly r5Completion: R5CompletionField;
   private readonly composer: EffectComposer;
   private readonly bloomPass: UnrealBloomPass;
   private bloomEnabled = true;
@@ -73,6 +82,7 @@ export class GameView {
   private highContrast = false;
   private heroMoment: GlowfinHeroMoment | null = null;
   private heroMomentElapsedSec = 0;
+  private lumenChainFraction = 0;
   private readonly wallCausticBase = new THREE.Color(0x63e0ff);
   private readonly wallCausticHot = new THREE.Color(0xff6be0);
   private readonly wallCausticScratch = new THREE.Color();
@@ -395,9 +405,9 @@ export class GameView {
     inlayGeo.rotateZ(-Math.PI * 0.59);
     inlayGeo.scale(0.95, 1, 0.35);
     const inlayMaterial = new THREE.MeshBasicMaterial({
-      color: 0x55bdd7,
+      color: 0xffffff,
       transparent: true,
-      opacity: 0.045,
+      opacity: 1,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       toneMapped: false
@@ -409,8 +419,18 @@ export class GameView {
     );
     this.speedInlays.frustumCulled = false;
     this.speedInlays.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    const submergedInlayColour = new THREE.Color(0x071b22);
+    for (let index = 0; index < MAX_POOLED_STRIPES; index += 1) {
+      this.speedInlays.setColorAt(index, submergedInlayColour);
+    }
+    if (this.speedInlays.instanceColor) {
+      this.speedInlays.instanceColor.needsUpdate = true;
+    }
     this.scene.add(this.speedInlays);
     this.disposables.push(inlayGeo, inlayMaterial);
+
+    this.lumenMotes = new LumenMoteField(inlayMaterial);
+    this.scene.add(this.lumenMotes.mesh);
 
     // --- game-ready wall-fragment kit with independently truthful contours ---
     this.gates = new MoonGardenGates(cfg, moonstoneVolumeSurface);
@@ -430,6 +450,17 @@ export class GameView {
       livingMap: livingReefSurface
     });
     for (const object of this.environment.objects) this.scene.add(object);
+
+    this.r3Encounters = new R3EncounterField(
+      inlayMaterial,
+      this.environment.sharedLivingMaterial()
+    );
+    this.scene.add(this.r3Encounters.group);
+    this.r5Completion = new R5CompletionField(
+      inlayMaterial,
+      this.environment.sharedLivingMaterial()
+    );
+    this.scene.add(this.r5Completion.group);
 
     // Production Glowfin/gate/reef GLBs are one atomic visual upgrade. Gameplay
     // can still start from the already-validated construction kit if a
@@ -784,6 +815,28 @@ export class GameView {
     this.trail.applyCosmeticPalette(palette);
   }
 
+  /** Expedition-only sensory feedback on the existing trail material. */
+  setLumenChainFraction(value: number): void {
+    this.lumenChainFraction = Math.max(0, Math.min(1, value));
+    this.trail.setLumenChainFraction(this.lumenChainFraction);
+  }
+
+  r3EncounterBudget(): { drawCalls: number; triangles: number; materials: 0 } {
+    return {
+      drawCalls: this.r3Encounters.additionalDrawCalls(),
+      triangles: this.r3Encounters.triangleBudget(),
+      materials: 0,
+    };
+  }
+
+  r5CompletionBudget(): { drawCalls: number; triangles: number; materials: 0 } {
+    return {
+      drawCalls: this.r5Completion.additionalDrawCalls(),
+      triangles: this.r5Completion.triangleBudget(),
+      materials: 0,
+    };
+  }
+
   /** Presentation-only post-run personality pose; simulation truth is frozen. */
   setHeroMoment(moment: GlowfinHeroMoment | null): void {
     this.heroMoment = moment;
@@ -831,7 +884,10 @@ export class GameView {
     elapsedSec: number,
     frameSec: number,
     ghostSim: SimState | null = null,
-    activeLivingEvents: readonly ActiveLivingWorldEvent[] = []
+    activeLivingEvents: readonly ActiveLivingWorldEvent[] = [],
+    lumenMotePresentation: readonly LumenMotePresentation[] = [],
+    r3EncounterPresentation: Readonly<R3EncounterPresentation> | null = null,
+    r5CompletionPresentation: Readonly<R5CompletionPresentation> | null = null,
   ): void {
     const cfg = this.cfg;
     this.renderer.info.reset();
@@ -960,6 +1016,22 @@ export class GameView {
       0,
       frameSec
     );
+    this.lumenMotes.update(
+      lumenMotePresentation,
+      presentationElapsedSec,
+      this.lumenChainFraction,
+      this.reducedMotion
+    );
+    this.r3Encounters.update(
+      r3EncounterPresentation,
+      presentationElapsedSec,
+      this.reducedMotion,
+    );
+    this.r5Completion.update(
+      r5CompletionPresentation,
+      presentationElapsedSec,
+      this.reducedMotion,
+    );
 
     this.environment.update(
       sim.forwardDistance,
@@ -1001,6 +1073,9 @@ export class GameView {
     window.removeEventListener("resize", this.handleResize);
     for (const item of this.disposables) item.dispose();
     this.trail.dispose();
+    this.lumenMotes.dispose();
+    this.r3Encounters.dispose();
+    this.r5Completion.dispose();
     this.creature.dispose();
     this.ghostCreature.dispose();
     this.environment.dispose();

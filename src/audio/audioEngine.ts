@@ -183,6 +183,11 @@ export class GlowfinAudio {
     for (const cue of cues) this.playCue(cue);
   }
 
+  playLumenMote(chain: number, objectiveComplete = false): void {
+    const cue = this.director.lumenMote(chain, objectiveComplete);
+    if (this.uiState === "active") this.playCue(cue);
+  }
+
   update(momentumFraction: number, lightFraction: number): void {
     this.momentumFraction = Math.max(0, Math.min(1, momentumFraction));
     this.lightFraction = Math.max(0, Math.min(1, lightFraction));
@@ -548,6 +553,19 @@ export class GlowfinAudio {
         this.tone(293.66, 293.66, 0.42, 0.14, "sine", -0.12);
         this.tone(246.94, 220, 0.52, 0.11, "triangle", 0.12, 0.1);
         return;
+      case "lumen-mote": {
+        if (!this.hasCueCapacity(1)) return;
+        const notes = [587.33, 659.25, 739.99, 880, 987.77, 1174.66];
+        const note = notes[(cue.band ?? 0) % notes.length] ?? 587.33;
+        this.tone(note, note * 1.035, 0.13, 0.055 + cue.intensity * 0.055, "sine", pan);
+        return;
+      }
+      case "lumen-objective": {
+        if (!this.hasCueCapacity(2)) return;
+        this.tone(739.99, 880, 0.24, 0.12, "sine", -0.1);
+        this.tone(987.77, 1174.66, 0.32, 0.1, "triangle", 0.1, 0.07);
+        return;
+      }
     }
   }
 

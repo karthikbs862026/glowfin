@@ -54,6 +54,17 @@ export interface RunEndPresentation extends HudMetaPresentation {
   leaderboardDivision: LeaderboardDivision;
 }
 
+export interface ExpeditionEndPresentation {
+  completed: boolean;
+  seconds: number;
+  collisions: number;
+  relicsDiscovered: number;
+  primaryMark: boolean;
+  relicMark: boolean;
+  cleanMark: boolean;
+  moonWellRestored: boolean;
+}
+
 export class Hud {
   private readonly score: HTMLElement;
   private readonly multiplier: HTMLElement;
@@ -64,6 +75,7 @@ export class Hud {
   private readonly pearlCount: HTMLElement;
   private readonly tideLevel: HTMLElement;
   private readonly gameOver: HTMLElement;
+  private readonly finalLabel: HTMLElement;
   private readonly finalScore: HTMLElement;
   private readonly finalDetail: HTMLElement;
   private readonly newBest: HTMLElement;
@@ -102,6 +114,9 @@ export class Hud {
     this.pearlCount = Hud.require(root, "hud-pearls");
     this.tideLevel = Hud.require(root, "hud-tide-level");
     this.gameOver = Hud.require(root, "hud-gameover");
+    const finalLabel = this.gameOver.querySelector<HTMLElement>(".label");
+    if (!finalLabel) throw new Error("Hud: game-over label is missing");
+    this.finalLabel = finalLabel;
     this.finalScore = Hud.require(root, "hud-final-score");
     this.finalDetail = Hud.require(root, "hud-final-detail");
     this.newBest = Hud.require(root, "hud-new-best");
@@ -398,6 +413,8 @@ export class Hud {
     collisions: number,
     presentation: RunEndPresentation
   ): void {
+    this.finalLabel.textContent = "Moonwake gathered";
+    this.diveAgain.textContent = "Dive Again";
     this.finalScore.textContent = Math.floor(score).toLocaleString();
     this.finalDetail.textContent = `${seconds.toFixed(0)}s · ${nearMisses} near-miss · ${collisions} hits`;
     this.setBestScore(presentation.bestScore);
@@ -440,6 +457,54 @@ export class Hud {
     this.competitiveDivision.textContent = presentation.leaderboardDivision === "assisted"
       ? "Assisted division · replay validated separately"
       : "Standard division · deterministic replay validation";
+    this.gameOver.style.display = "flex";
+  }
+
+  showExpeditionResult(presentation: ExpeditionEndPresentation): void {
+    this.finalLabel.textContent = presentation.completed
+      ? "Chapter 1 complete"
+      : "The Moonseed current waits";
+    this.finalScore.textContent = presentation.completed ? "Restored" : "Try again";
+    this.finalDetail.textContent =
+      `${presentation.seconds.toFixed(0)}s · ${presentation.collisions} hits · Guided Expedition`;
+    this.newBest.dataset["visible"] = "false";
+    this.runReward.textContent = presentation.completed
+      ? "Expedition marks and relics secured"
+      : "No Expedition progress lost";
+    this.unlockBanner.dataset["visible"] = presentation.moonWellRestored
+      ? "true"
+      : "false";
+    this.unlockBanner.textContent = presentation.moonWellRestored
+      ? "The Moon Well now shines in the hub"
+      : "";
+    const marks = [
+      ["Primary objective", presentation.primaryMark],
+      ["Hidden relic", presentation.relicMark],
+      ["Clean chase", presentation.cleanMark],
+    ] as const;
+    this.objectiveList.replaceChildren(...marks.map(([label, completed]) => {
+      const row = document.createElement("div");
+      row.className = "hud-objective";
+      row.dataset["complete"] = String(completed);
+      const copy = document.createElement("span");
+      copy.textContent = label;
+      const value = document.createElement("strong");
+      value.textContent = completed ? "Complete" : "Open";
+      row.append(copy, value);
+      return row;
+    }));
+    this.streak.textContent = `Relic Atlas ${presentation.relicsDiscovered}/6`;
+    this.competitiveDivision.textContent = "Guided Expedition · unranked";
+    this.leaderboardStatus.textContent = presentation.completed
+      ? "Moon Well restoration recorded locally"
+      : "Missed targets return on the next attempt";
+    this.leaderboardList.replaceChildren();
+    this.raceBest.disabled = true;
+    this.raceBest.textContent = "Ghosts stay in Classic Dive";
+    this.submitScore.disabled = true;
+    this.shareClip.disabled = true;
+    this.rewardedPearls.disabled = true;
+    this.diveAgain.textContent = "Replay Chapter 1";
     this.gameOver.style.display = "flex";
   }
 

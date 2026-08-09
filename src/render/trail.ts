@@ -37,6 +37,7 @@ export class TrailRibbon {
   private readonly samples: TrailSample[] = [];
   private readonly maxSamples: number;
   private secondsSinceSample = 0;
+  private lumenChainFraction = 0;
 
   constructor(private readonly cfg: TuningConfig) {
     this.maxSamples = Math.max(4, Math.round(cfg.trail.segmentCount));
@@ -100,7 +101,13 @@ export class TrailRibbon {
   reset(): void {
     this.samples.length = 0;
     this.secondsSinceSample = 0;
+    this.lumenChainFraction = 0;
     this.geometry.setDrawRange(0, 0);
+  }
+
+  /** Presentation-only Expedition feedback; simulation truth is unaffected. */
+  setLumenChainFraction(value: number): void {
+    this.lumenChainFraction = Math.max(0, Math.min(1, value));
   }
 
   /** Switch colours on the existing ribbon material; zero new GPU resources. */
@@ -133,9 +140,10 @@ export class TrailRibbon {
       return;
     }
 
-    const width =
+    const width = (
       cfg.trail.widthAtZeroMomentum +
-      (cfg.trail.widthAtMaxMomentum - cfg.trail.widthAtZeroMomentum) * momentumFraction;
+      (cfg.trail.widthAtMaxMomentum - cfg.trail.widthAtZeroMomentum) * momentumFraction
+    ) * (1 + this.lumenChainFraction * 0.3);
     const y = creatureY + cfg.trail.heightOffset;
 
     for (let i = 0; i < count; i++) {
@@ -186,10 +194,11 @@ export class TrailRibbon {
     alphaAttribute.needsUpdate = true;
     this.geometry.setDrawRange(0, (count - 1) * 6);
 
-    const brightness =
+    const brightness = (
       cfg.trail.brightnessAtZeroMomentum +
       (cfg.trail.brightnessAtMaxMomentum - cfg.trail.brightnessAtZeroMomentum) *
-        momentumFraction;
+        momentumFraction
+    ) * (1 + this.lumenChainFraction * 0.25);
     const uniform = this.material.uniforms["uBrightness"];
     if (uniform) uniform.value = brightness;
   }

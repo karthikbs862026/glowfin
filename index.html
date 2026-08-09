@@ -681,6 +681,24 @@
         line-height: 1.45;
         text-align: center;
       }
+      .moonwell-restoration {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        margin: 0 0 12px;
+        padding: 10px 12px;
+        border: 1px solid rgba(121, 226, 255, 0.25);
+        border-radius: 15px;
+        background: rgba(6, 29, 52, 0.59);
+        color: #d8f6ff;
+      }
+      .moonwell-restoration strong { font-size: 13px; }
+      .moonwell-restoration span { color: rgba(205, 235, 245, 0.72); font-size: 11px; }
+      .moonwell-restoration[data-restored="true"] {
+        border-color: rgba(255, 224, 136, 0.52);
+        background: linear-gradient(135deg, rgba(70, 49, 106, 0.61), rgba(11, 89, 100, 0.61));
+      }
+      .moonwell-restoration[data-restored="true"] strong { color: #fff0b8; }
       .moonwell-cta,
       .moonwell-tutorial,
       .moonwell-challenge,
@@ -823,6 +841,16 @@
       .expedition-briefing-objective strong { display: block; color: #f6fdff; font-size: 15px; }
       .expedition-briefing-objective span { display: block; margin-top: 2px; color: rgba(207, 239, 250, 0.7); font-size: 12px; line-height: 1.35; }
       .expedition-briefing-note { margin: 13px 2px 18px; color: rgba(190, 225, 239, 0.66); font-size: 12px; line-height: 1.45; }
+      .expedition-briefing-route {
+        display: grid;
+        gap: 6px;
+        margin: 12px 0 18px;
+        color: rgba(211, 242, 252, 0.78);
+        font-size: 11px;
+        line-height: 1.35;
+      }
+      .expedition-briefing-route span { padding: 7px 9px; border-radius: 10px; background: rgba(3, 20, 38, 0.48); }
+      .expedition-briefing-route b { color: #ffe8a9; }
       .expedition-briefing-actions { display: grid; gap: 9px; }
       .expedition-briefing-actions button {
         min-height: 50px;
@@ -856,6 +884,32 @@
       #expedition-run-status[data-active="true"] { display: block; }
       #expedition-run-status strong { display: block; color: #fff0b8; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
       #expedition-run-status span { display: block; margin-top: 1px; color: rgba(218, 246, 255, 0.78); font-size: 11px; }
+      .expedition-beat-row, .expedition-lumen-stats { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+      #expedition-beat-title { color: #ffffff; font-weight: 800; }
+      #expedition-direction { color: #ffe7a3; font-size: 10px; letter-spacing: 0.08em; }
+      #expedition-character { color: rgba(147, 237, 255, 0.9) !important; }
+      #expedition-objective { margin-top: 5px !important; }
+      .expedition-objective-track { height: 3px; margin: 5px 0 3px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.12); }
+      #expedition-objective-fill { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #5ee8ff, #ffe88d); transition: width 0.15s linear; }
+      #expedition-stage-stats, .expedition-lumen-stats span { color: rgba(201, 232, 242, 0.68) !important; font-size: 10px !important; }
+      #expedition-collect-feedback {
+        position: fixed;
+        left: 50%;
+        top: max(178px, calc(var(--glowfin-safe-top) + 158px));
+        z-index: 5;
+        opacity: 0;
+        transform: translateX(-50%) scale(0.94);
+        padding: 7px 12px;
+        border: 1px solid rgba(255, 232, 158, 0.44);
+        border-radius: 999px;
+        background: rgba(7, 28, 49, 0.9);
+        color: #fff0b8;
+        font-size: 11px;
+        font-weight: 800;
+        pointer-events: none;
+        transition: opacity 0.12s ease, transform 0.16s ease;
+      }
+      #expedition-collect-feedback[data-active="true"] { opacity: 1; transform: translateX(-50%) scale(1); }
       .moonwell-daily {
         width: 100%;
         min-height: 48px;
@@ -1190,7 +1244,7 @@
         <div id="moonwell-home" class="moonwell-view">
           <p class="moonwell-invitation">Follow the current. Thread the cyan gates. Gather a brighter Moonwake.</p>
           <button id="expedition-mission-card" class="expedition-mission" type="button" data-hud-action aria-controls="expedition-briefing" aria-expanded="false">
-            <span class="expedition-mission-copy"><span class="expedition-mission-kicker">Guided Expedition · Chapter 1</span><strong>The Missing Moonseed</strong><small>Enter one verified fixed current and follow the light into the first district.</small></span>
+            <span class="expedition-mission-copy"><span class="expedition-mission-kicker">Guided Expedition · Chapter 1 · R5</span><strong>The Missing Moonseed</strong><small>Find the Fragment, rescue Miri, race Neri, break Duskmaw’s current and restore the Moon Well.</small></span>
             <span class="expedition-mission-mark" aria-hidden="true">✦</span>
           </button>
           <button id="moonwell-dive" class="moonwell-cta" type="button" data-hud-action>
@@ -1215,9 +1269,14 @@
         <section id="expedition-briefing" data-active="false" aria-hidden="true" aria-label="Chapter 1 briefing">
           <span class="expedition-briefing-kicker">Guided Expedition · Chapter 1</span>
           <h2>The Missing Moonseed</h2>
-          <p class="expedition-briefing-lead">A quiet moonlight trail has appeared beyond the Moon Well. Follow it into the first district and learn the route before the current changes.</p>
-          <div class="expedition-briefing-objective"><b aria-hidden="true">◇</b><span><strong>Objective · Follow the Light</strong><span>Steer through the cyan openings. This R1 route always uses the same verified seed.</span></span></div>
-          <p class="expedition-briefing-note">Classic controls, camera, collision truth and performance remain unchanged. Progress services never block the dive.</p>
+          <p class="expedition-briefing-lead">Neri has found a Moonseed trail—and a trapped baby manta named Miri. Duskmaw guards the return current. Drag left or right; Glowfin still swims forward automatically.</p>
+          <div class="expedition-briefing-objective"><b aria-hidden="true">✦</b><span><strong>Objective · Find, rescue, race, restore</strong><span>Every encounter advances only when you complete its real target. Waiting never finishes it.</span></span></div>
+          <div class="expedition-briefing-route" aria-label="Chapter route">
+            <span><b>1 · FOLLOW GOLD</b> — collect 6 Motes through cyan openings.</span>
+            <span><b>2 · CHOOSE</b> — narrow gold finds the Fragment; wide cyan stays safe.</span>
+            <span><b>3 · RESCUE &amp; RACE</b> — reach 3 Rescue Lights, then 3 Race Gates.</span>
+            <span><b>4 · BREAK &amp; RESTORE</b> — reach 3 Current Breaks and carry the Moonseed home.</span>
+          </div>
           <div class="expedition-briefing-actions">
             <button id="expedition-begin" type="button" data-hud-action>Begin Chapter 1</button>
             <button id="expedition-back" type="button" data-hud-action>Back to Moon Well</button>
@@ -1263,10 +1322,16 @@
       </div>
     </section>
 
-    <aside id="expedition-run-status" data-active="false" role="status" aria-live="polite">
+    <aside id="expedition-run-status" data-active="false" data-objective-complete="false" role="status" aria-live="polite">
       <strong>Chapter 1 · The Missing Moonseed</strong>
-      <span>Follow the Light · fixed verified current</span>
+      <div class="expedition-beat-row"><span id="expedition-beat-title">Follow the Light</span><b id="expedition-direction">FLOW ◆</b></div>
+      <span id="expedition-character">Neri · Moon-dolphin Scout</span>
+      <span id="expedition-objective">Collect 6 Motes in one chain · 0/6</span>
+      <div class="expedition-objective-track" aria-hidden="true"><i id="expedition-objective-fill"></i></div>
+      <span id="expedition-stage-stats">Follow the golden ribbon through cyan openings</span>
+      <div class="expedition-lumen-stats"><span id="expedition-chain">Chain 0 · Best 0</span><span id="expedition-mote-score">Mote score 0</span></div>
     </aside>
+    <aside id="expedition-collect-feedback" data-active="false" role="status" aria-live="polite"></aside>
 
     <aside id="tutorial-overlay" data-active="false" data-step="auto-swim" aria-live="polite">
       <div class="tutorial-overlay-row">

@@ -31,7 +31,7 @@ import {
   type SignatureObstacleVerb
 } from "./obstacleVariety";
 
-export type RunEndReason = "light-depleted";
+export type RunEndReason = "light-depleted" | "expedition-complete";
 
 export interface RunSnapshot {
   sim: SimState;
@@ -102,6 +102,7 @@ export class Run {
   collisionCount = 0;
   ended = false;
   endReason: RunEndReason | null = null;
+  private pendingEndReason: RunEndReason | null = null;
 
   private secondsSinceCollision = Number.POSITIVE_INFINITY;
   private slowMoRemainingSec = 0;
@@ -145,9 +146,28 @@ export class Run {
     return this.slowMoRemainingSec > 0;
   }
 
+  /** End at the next fixed step so replay and lifecycle boundaries stay exact. */
+  requestEnd(reason: RunEndReason): boolean {
+    if (this.ended || this.pendingEndReason !== null) return false;
+    this.pendingEndReason = reason;
+    return true;
+  }
+
   /** Advance one fixed simulation step. */
   step(dtSec: number, steeringTarget: number): StepEvents {
     if (this.ended) return NO_EVENTS;
+    if (this.pendingEndReason !== null) {
+      this.ended = true;
+      this.endReason = this.pendingEndReason;
+      this.pendingEndReason = null;
+      return {
+        nearMisses: 0,
+        collisions: 0,
+        encounters: [],
+        signatureEvents: [],
+        justEnded: true,
+      };
+    }
 
     const cfg = this.cfg;
     const previousDistance = this.sim.forwardDistance;

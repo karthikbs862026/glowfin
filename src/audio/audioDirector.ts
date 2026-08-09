@@ -6,7 +6,9 @@ export type GameplayAudioCueType =
   | "multiplier"
   | "collision"
   | "recovery"
-  | "run-end";
+  | "run-end"
+  | "lumen-mote"
+  | "lumen-objective";
 
 export interface GameplayAudioCue {
   type: GameplayAudioCueType;
@@ -14,6 +16,8 @@ export interface GameplayAudioCue {
   intensity: number;
   /** Stable sequence number used only to vary stereo placement and voicing. */
   sequence: number;
+  /** Optional bounded musical step for collectible pitch selection. */
+  band?: number;
 }
 
 export interface AmbientAudioMix {
@@ -144,8 +148,27 @@ export class GameplayAudioDirector {
     return cues;
   }
 
-  private cue(type: GameplayAudioCueType, intensity: number): GameplayAudioCue {
+  /** Presentation-only cue; chain ownership remains in Expedition simulation. */
+  lumenMote(chain: number, objectiveComplete = false): GameplayAudioCue {
+    const band = Math.max(0, Math.min(11, Math.floor(chain) - 1));
+    return this.cue(
+      objectiveComplete ? "lumen-objective" : "lumen-mote",
+      0.46 + (band / 11) * 0.54,
+      band
+    );
+  }
+
+  private cue(
+    type: GameplayAudioCueType,
+    intensity: number,
+    band?: number
+  ): GameplayAudioCue {
     this.sequence++;
-    return { type, intensity: clamp01(intensity), sequence: this.sequence };
+    return {
+      type,
+      intensity: clamp01(intensity),
+      sequence: this.sequence,
+      ...(band === undefined ? {} : { band })
+    };
   }
 }

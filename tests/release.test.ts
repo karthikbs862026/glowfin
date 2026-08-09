@@ -17,12 +17,12 @@ function metadata(
   };
 }
 
-describe("Version 41-R1 release identity", () => {
-  it("accepts only the clean R1 rebuild rooted at the certified Version 39 baseline", () => {
+describe("Version 41-R5 release identity", () => {
+  it("accepts only the clean R5 rebuild rooted at the certified Version 39 baseline", () => {
     expect(isGlowfinReleaseMetadata(metadata())).toBe(true);
-    expect(metadata().certification).toBe("physical-android-certified");
-    expect(metadata().phase).toBe("phase-living-current-r1");
-    expect(metadata().releaseTag).toBe("glowfin-v41-r1");
+    expect(metadata().certification).toBe("automated-candidate");
+    expect(metadata().phase).toBe("phase-living-current-r5");
+    expect(metadata().releaseTag).toBe("glowfin-v41-r5");
     expect(metadata().baselineVersion).toBe(39);
     expect(metadata().baselineCommit).toBe(
       "266b7900294f81e174134337a9d14b5951efcf30"
