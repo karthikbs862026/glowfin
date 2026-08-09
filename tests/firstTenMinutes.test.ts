@@ -4,9 +4,11 @@ import { describe, expect, it } from "vitest";
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
 describe("Version 39 first-ten-minute player shell", () => {
-  it("starts at a complete Moon Well with direct Dive and Daily Tide access", () => {
+  it("starts at a complete Moon Well with direct Dive, Tide Sprint and Daily access", () => {
     expect(html).toContain('id="moonwell-hub" data-active="true"');
     expect(html).toContain('id="moonwell-dive"');
+    expect(html).toContain('id="moonwell-tide-sprint"');
+    expect(html).toContain('id="moonwell-tide-sprint-detail"');
     expect(html).toContain('id="hud-daily-trial"');
     for (const panel of ["wardrobe", "objectives", "leaderboard", "settings"]) {
       expect(html).toContain(`id="moonwell-panel-${panel}"`);

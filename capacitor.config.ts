@@ -7,7 +7,7 @@ const environment = (globalThis as typeof globalThis & {
 const nativeDebug = environment["GLOWFIN_NATIVE_DEBUG"] === "1";
 
 /**
- * Store-wrapper contract for Glowfin Version 39.
+ * Store-wrapper contract established in Version 39 and retained by Version 42.
  *
  * Gameplay continues to load from the sealed Vite `dist` artifact. Native
  * projects may add presentation-only services (lifecycle and haptics), but

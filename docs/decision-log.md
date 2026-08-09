@@ -850,3 +850,23 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   prop density.
 - Advance server replay validation to `v38-signature-v2` and reject older
   validation claims rather than interpreting them under the new course truth.
+
+## 2026-08-09 — Integrate frozen Tide Sprint as a lazy shared-progress mode
+
+- Adopt ADR-0043 and create Version 42-R1 from merged Version 41-R5 commit
+  `c67c4a6350f3f432c72e5d01fe92df69c557f2f0`.
+- Preserve the accepted R10 control, race and photo-finish tuning. Integration,
+  regression, accessibility, performance and certification fixes are allowed;
+  a broad gameplay redesign is not.
+- Enter from the Moon Well and build Tide Sprint as a second mount-safe HTML
+  entry so its director, rigs and renderer do not join Classic startup.
+- Advance shared progress to schema/envelope 4, migrate complete Version 1–3
+  saves, and store bounded Tide objectives, cosmetic Bonds and one checksummed
+  Best Echo. Raise only the whole-envelope limit to 256 KiB so the independently
+  bounded Classic replay and Tide ghost can coexist.
+- Grant existing Pearls and Tide XP atomically with idempotent claim IDs. Leave
+  Classic/Daily scores and replays, calendar claims, tutorial and Expedition
+  state untouched.
+- Require deterministic race/fairness tests, Android/iPhone contract layouts,
+  lifecycle recovery, binding renderer budgets, both 5,400-render soak gates,
+  native compilation and real-device sign-off before unconditional promotion.

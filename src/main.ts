@@ -604,6 +604,7 @@ function refreshMoonWell(): void {
   moonWell.renderObjectives(objectivePresentations());
   moonWell.setTutorialStatus(guidedTutorialComplete);
   moonWell.setExpeditionState(expeditionProgress);
+  moonWell.setTideSprintState(progress.tideSprint, progress.ghostEnabled);
   refreshWardrobe();
 }
 
@@ -1199,6 +1200,16 @@ moonWell.onDive(() => {
     tutorialRequired: !guidedTutorialComplete
   });
   startRun("fresh");
+});
+
+moonWell.onTideSprint(() => {
+  telemetry.track("tide_sprint_entry", {
+    source: "moon-well",
+    bestFinishSec: progress.tideSprint.bestFinishSec ?? -1,
+    bestGhost: Boolean(progress.ghostEnabled && progress.tideSprint.bestGhost)
+  });
+  void telemetry.flush();
+  window.location.assign(new URL("tide-sprint/", document.baseURI).href);
 });
 
 moonWell.onTutorialStart(() => {

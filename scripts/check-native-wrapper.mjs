@@ -25,6 +25,9 @@ function requireBrandedPng(path, minimumBytes) {
 }
 
 const packageJson = json("package.json");
+const release = json("config/release.json");
+const nativeVersion = Number(release.version);
+const nativeMarketingVersion = `0.${nativeVersion}.0`;
 const nativePackages = [
   "@capacitor/core",
   "@capacitor/android",
@@ -81,8 +84,14 @@ requireTruth(
   "Android Beat My Current deep-link scheme is missing"
 );
 const androidBuild = text("android/app/build.gradle");
-requireTruth(androidBuild.includes("versionCode 39"), "Android build number does not match Version 39");
-requireTruth(androidBuild.includes('versionName "0.39.0"'), "Android version name does not match Version 39");
+requireTruth(
+  androidBuild.includes(`versionCode ${nativeVersion}`),
+  `Android build number does not match Version ${nativeVersion}`
+);
+requireTruth(
+  androidBuild.includes(`versionName "${nativeMarketingVersion}"`),
+  `Android version name does not match Version ${nativeVersion}`
+);
 
 const iosPlist = text("ios/App/App/Info.plist");
 requireTruth(!iosPlist.includes("UIInterfaceOrientationLandscape"), "iOS still permits landscape");
@@ -97,8 +106,14 @@ requireTruth(
   "iOS privacy manifest is missing or enables tracking"
 );
 const iosProject = text("ios/App/App.xcodeproj/project.pbxproj");
-requireTruth(iosProject.includes("CURRENT_PROJECT_VERSION = 39;"), "iOS build number does not match Version 39");
-requireTruth(iosProject.includes("MARKETING_VERSION = 0.39.0;"), "iOS version name does not match Version 39");
+requireTruth(
+  iosProject.includes(`CURRENT_PROJECT_VERSION = ${nativeVersion};`),
+  `iOS build number does not match Version ${nativeVersion}`
+);
+requireTruth(
+  iosProject.includes(`MARKETING_VERSION = ${nativeMarketingVersion};`),
+  `iOS version name does not match Version ${nativeVersion}`
+);
 
 requireBrandedPng("android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png", 40_000);
 requireBrandedPng("android/app/src/main/res/drawable-port-xxxhdpi/splash.png", 400_000);

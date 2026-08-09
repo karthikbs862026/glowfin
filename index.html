@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#04060f" />
-    <title>Glowfin — Version 41</title>
+    <title>Glowfin — Version 42</title>
     <style>
       :root {
         --ink: #cfefff;
@@ -700,6 +700,7 @@
       }
       .moonwell-restoration[data-restored="true"] strong { color: #fff0b8; }
       .moonwell-cta,
+      .moonwell-sprint,
       .moonwell-tutorial,
       .moonwell-challenge,
       .moonwell-daily,
@@ -712,6 +713,29 @@
         cursor: pointer;
         touch-action: manipulation;
       }
+      .moonwell-sprint {
+        width: 100%;
+        min-height: 86px;
+        margin: 0 0 12px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 15px;
+        border-color: rgba(99, 239, 255, 0.68);
+        border-radius: 22px;
+        background:
+          radial-gradient(circle at 86% 18%, rgba(255, 225, 133, 0.2), transparent 38%),
+          linear-gradient(135deg, rgba(5, 121, 151, 0.94), rgba(82, 61, 172, 0.94));
+        box-shadow: 0 12px 30px rgba(28, 162, 201, 0.2);
+        text-align: left;
+      }
+      .moonwell-sprint span, .moonwell-sprint strong, .moonwell-sprint small { display: block; }
+      .moonwell-sprint span { color: #ffe59a; font-size: 9px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; }
+      .moonwell-sprint strong { margin-top: 3px; color: #f5fdff; font-size: 20px; }
+      .moonwell-sprint small { margin-top: 3px; color: rgba(229, 250, 255, 0.76); font-size: 11px; line-height: 1.35; }
+      .moonwell-sprint strong, .moonwell-sprint small { letter-spacing: normal; text-transform: none; }
+      .moonwell-sprint b { padding: 7px 9px; border-radius: 999px; background: rgba(255, 233, 159, 0.16); color: #fff0b2; font-size: 9px; letter-spacing: 0.08em; }
       .moonwell-cta {
         width: 100%;
         min-height: 76px;
@@ -1247,6 +1271,10 @@
             <span class="expedition-mission-copy"><span class="expedition-mission-kicker">Guided Expedition · Chapter 1 · R5</span><strong>The Missing Moonseed</strong><small>Find the Fragment, rescue Miri, race Neri, break Duskmaw’s current and restore the Moon Well.</small></span>
             <span class="expedition-mission-mark" aria-hidden="true">✦</span>
           </button>
+          <button id="moonwell-tide-sprint" class="moonwell-sprint" type="button" data-hud-action>
+            <span><span>New mode · Version 42</span><strong>Tide Sprint</strong><small id="moonwell-tide-sprint-detail">Four fair racers · your Best Echo · shared rewards</small></span>
+            <b>RACE</b>
+          </button>
           <button id="moonwell-dive" class="moonwell-cta" type="button" data-hud-action>
             <span>Tap to Dive</span><small>Starts sound and the current</small>
           </button>
@@ -1317,7 +1345,7 @@
           <button class="hud-action" type="button" data-hud-action data-guided-tutorial><span data-tutorial-entry-title>Start guided tutorial</span> · 30 seconds</button>
           <button id="hud-telemetry-choice" class="hud-action" type="button" data-hud-action>Anonymous playtest data: choose</button>
           <div id="hud-telemetry-note">No name, email, device fingerprint or touch path is collected.</div>
-          <div id="hud-build" role="status">V41 · LOCAL · local</div>
+          <div id="hud-build" role="status">V42 · LOCAL · local</div>
         </section>
       </div>
     </section>

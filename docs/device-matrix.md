@@ -155,3 +155,24 @@ The owner explicitly confirmed the complete physical-device certification on
 and signing material are not invented or checked into the repository; this row
 records the release decision and the full acceptance checklist above that was
 certified.
+
+## Version 42 Tide Sprint rows — AWAITING CANDIDATE AND PHYSICAL EXECUTION
+
+Automated 390×844 and 412×915 Chromium contracts may prove layout, touch-event
+wiring, WebGL context rebuild, page-cache recovery and renderer budgets. They
+do not prove Safari/Metal behavior, physical touch feel, thermals, interruption
+handling or device speaker quality.
+
+| Device | race + close-win feel | safe areas + touch | interruption + thermal soak | Result |
+|---|---|---|---|---|
+| Samsung Galaxy S22 Ultra | Not run for V42 | Not run for V42 | Not run for V42 | Blocking final promotion |
+| OPPO Reno3 Pro | Not run for V42 | Not run for V42 | Not run for V42 | Blocking final promotion |
+| iPhone reference 1 | Not run for V42 | Not run for V42 | Not run for V42 | Blocking final promotion |
+| iPhone reference 2 | Not run for V42 | Not run for V42 | Not run for V42 | Blocking final promotion |
+
+For each phone, enter Tide Sprint from the Moon Well, complete the one-finger
+practice, run at least one clean-current win and one tiny-execution-loss race,
+verify that character choice changes no speed or handling, save and race a Best
+Echo, confirm shared Pearls/XP/objectives after returning to the hub, then test
+background/resume and one interruption. Finish with the existing real-time
+thermal/battery procedure. Record the exact source SHA and artifact digest.

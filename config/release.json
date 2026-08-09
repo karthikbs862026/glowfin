@@ -1,13 +1,15 @@
 {
-  "$comment": "Version 41-R5 clean Expedition completion candidate rebuilt from the certified Version 41 base.",
+  "$comment": "Version 42-R1 integrates the frozen Tide Sprint R10 feel as a shared Moon Well mode on merged Version 41-R5.",
   "schemaVersion": 1,
-  "version": 41,
-  "phase": "phase-living-current-r5",
-  "releaseTag": "glowfin-v41-r5",
+  "version": 42,
+  "phase": "phase-tide-sprint-integration-r1",
+  "releaseTag": "glowfin-v42-r1",
   "certification": "automated-candidate",
+  "sourceBaseVersion": 41,
+  "sourceBaseCommit": "c67c4a6350f3f432c72e5d01fe92df69c557f2f0",
   "baselineVersion": 39,
   "baselineCommit": "266b7900294f81e174134337a9d14b5951efcf30",
-  "deferredVersions": [40],
+  "deferredVersions": [40, 41],
   "artBuild": "phase3c-v30-glowfin-production",
   "productionPolicyVersion": 1
 }

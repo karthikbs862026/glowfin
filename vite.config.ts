@@ -81,7 +81,13 @@ export default defineConfig(({ command }) => {
     },
     build: {
       target: "es2020",
-      sourcemap: true
+      sourcemap: true,
+      rollupOptions: {
+        input: {
+          glowfin: "index.html",
+          tideSprint: "tide-sprint/index.html"
+        }
+      }
     }
   };
 });

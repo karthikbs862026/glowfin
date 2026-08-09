@@ -225,6 +225,26 @@ collision and score behavior; rivals remain non-colliding; no purchasable
 speed, character statistics, equipment advantage, competitive revive or
 real-time multiplayer is allowed.
 
+### 2026-08-09 — Version 42-R1 integration branch created
+
+Version 41-R5 is merged on `main` at
+`c67c4a6350f3f432c72e5d01fe92df69c557f2f0`. Version 42-R1 was created from
+that exact commit and implements Tide Sprint as a lazy Moon Well mode rather
+than restoring the discarded sidecar architecture.
+
+The R10 race plan remains frozen. Version 42 adds only the integration seams:
+shared Version 4 progress and recovery, existing Lumen Pearl/Tide XP rewards,
+cosmetic Bonds, three idempotent race objectives, a checksummed personal Best
+Echo, consent-gated semantic telemetry, lifecycle recovery and native/mounted
+route packaging. Classic Dive, Daily Tide, tutorial and Expedition entry paths
+remain intact. ADR-0043 owns the architecture and
+`version42-r1-certification.md` owns the evolving evidence ledger.
+
+The branch is not the final release merely because local deterministic tests
+pass. Candidate CI must certify both renderers and native wrappers, and real
+Version 42 Android/iPhone evidence remains required before unconditional
+promotion.
+
 ### Technical, fairness and safety guardrails
 
 - Ranked, Daily Tide and verified races use fixed deterministic encounter plans,

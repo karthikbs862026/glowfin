@@ -21,6 +21,8 @@ for (const key of [
   "phase",
   "releaseTag",
   "certification",
+  "sourceBaseVersion",
+  "sourceBaseCommit",
   "baselineVersion",
   "baselineCommit",
   "artBuild",

@@ -50,6 +50,8 @@ for (const key of [
   "version",
   "phase",
   "certification",
+  "sourceBaseVersion",
+  "sourceBaseCommit",
   "baselineVersion",
   "baselineCommit",
   "artBuild",
