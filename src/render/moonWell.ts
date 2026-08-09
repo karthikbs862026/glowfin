@@ -6,6 +6,10 @@ import type {
 } from "../meta/progression";
 import type { TutorialPresentation } from "../meta/onboarding";
 import type { ExpeditionProgressV1 } from "../expedition/progress";
+import {
+  TIDE_SPRINT_OBJECTIVES,
+  type TideSprintProgressV1,
+} from "../tideSprint/progress";
 
 export type MoonWellPanel = "home" | "wardrobe" | "objectives" | "leaderboard" | "settings";
 
@@ -19,6 +23,8 @@ export class MoonWell {
   private readonly home: HTMLElement;
   private readonly panels = new Map<MoonWellPanel, HTMLElement>();
   private readonly dive: HTMLButtonElement;
+  private readonly tideSprint: HTMLButtonElement;
+  private readonly tideSprintDetail: HTMLElement;
   private readonly daily: HTMLButtonElement;
   private readonly challenge: HTMLButtonElement;
   private readonly meta: HTMLElement;
@@ -40,6 +46,8 @@ export class MoonWell {
     this.root = MoonWell.require(root, "moonwell-hub");
     this.home = MoonWell.require(root, "moonwell-home");
     this.dive = MoonWell.requireButton(root, "moonwell-dive");
+    this.tideSprint = MoonWell.requireButton(root, "moonwell-tide-sprint");
+    this.tideSprintDetail = MoonWell.require(root, "moonwell-tide-sprint-detail");
     this.daily = MoonWell.requireButton(root, "hud-daily-trial");
     this.challenge = MoonWell.requireButton(root, "moonwell-challenge");
     this.meta = MoonWell.require(root, "moonwell-meta");
@@ -94,6 +102,10 @@ export class MoonWell {
 
   onDive(listener: () => void): void {
     this.wire(this.dive, listener);
+  }
+
+  onTideSprint(listener: () => void): void {
+    this.wire(this.tideSprint, listener);
   }
 
   onChallenge(listener: () => void): void {
@@ -174,6 +186,28 @@ export class MoonWell {
     this.daily.textContent = completed
       ? `Replay Daily Tide · ${dayId}`
       : `Daily Tide · ${dayId}`;
+  }
+
+  setTideSprintState(
+    progress: Pick<
+      TideSprintProgressV1,
+      "bestFinishSec" | "bestGhost" | "totals" | "completedObjectives"
+    >,
+    ghostEnabled: boolean,
+  ): void {
+    const best = progress.bestFinishSec === null
+      ? "No finish yet"
+      : `Best ${progress.bestFinishSec.toFixed(2)}s · ${progress.totals.wins} win${progress.totals.wins === 1 ? "" : "s"}`;
+    const ghost = ghostEnabled && progress.bestGhost
+      ? "Best Echo ready"
+      : ghostEnabled
+        ? "your Best Echo awaits"
+        : "personal ghost off";
+    const goals = `${progress.completedObjectives.length}/${TIDE_SPRINT_OBJECTIVES.length} race goals`;
+    this.tideSprintDetail.textContent = `${best} · ${ghost} · ${goals} · shared rewards`;
+    this.tideSprint.dataset["ghost"] = ghostEnabled && progress.bestGhost
+      ? "ready"
+      : ghostEnabled ? "preset" : "off";
   }
 
   setChallenge(caption: string | null, state: "ready" | "failed" | "loading" = "ready"): void {

@@ -12,6 +12,26 @@ execFileSync("git", ["merge-base", "--is-ancestor", baselineCommit, "HEAD"], {
   cwd: root,
   stdio: "ignore"
 });
+const sourceBaseCommit = String(current.sourceBaseCommit ?? "");
+if (
+  !Number.isInteger(current.sourceBaseVersion) ||
+  current.sourceBaseVersion >= current.version ||
+  !/^[0-9a-f]{40}$/.test(sourceBaseCommit)
+) {
+  throw new Error("Source base must name an earlier version and full immutable Git commit.");
+}
+execFileSync("git", ["merge-base", "--is-ancestor", sourceBaseCommit, "HEAD"], {
+  cwd: root,
+  stdio: "ignore"
+});
+const sourceBase = JSON.parse(execFileSync(
+  "git",
+  ["show", `${sourceBaseCommit}:config/release.json`],
+  { cwd: root, encoding: "utf8" }
+));
+if (sourceBase.version !== current.sourceBaseVersion) {
+  throw new Error("Source-base version does not match its immutable Git commit.");
+}
 const baselineText = execFileSync(
   "git",
   ["show", `${baselineCommit}:config/release.json`],

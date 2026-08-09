@@ -2,8 +2,9 @@ import { readdir, readFile, stat } from "node:fs/promises";
 
 const root = new URL("../dist/", import.meta.url);
 const index = await readFile(new URL("index.html", root), "utf8");
+const tideSprint = await readFile(new URL("tide-sprint/index.html", root), "utf8");
 
-if (/\b(?:src|href)=["']\/assets\//.test(index)) {
+if (/\b(?:src|href)=["']\/assets\//.test(`${index}\n${tideSprint}`)) {
   throw new Error(
     "Production HTML contains a site-root asset URL and cannot mount under /game."
   );
@@ -20,6 +21,7 @@ if (!index.includes('id="hud-build"')) {
 for (const id of [
   "moonwell-hub",
   "moonwell-dive",
+  "moonwell-tide-sprint",
   "moonwell-wardrobe-grid",
   "tutorial-overlay",
   "hud-dive-again",
@@ -28,6 +30,20 @@ for (const id of [
   if (!index.includes(`id="${id}"`)) {
     throw new Error(`Production HTML omits Version 37 player surface #${id}.`);
   }
+}
+for (const id of [
+  "race-lobby",
+  "race-start",
+  "race-canvas",
+  "race-result",
+  "race-runtime"
+]) {
+  if (!tideSprint.includes(`id="${id}"`)) {
+    throw new Error(`Production HTML omits Version 42 Tide Sprint surface #${id}.`);
+  }
+}
+if (!tideSprint.includes('src="../assets/')) {
+  throw new Error("Tide Sprint does not use a mount-safe relative asset path.");
 }
 
 const release = JSON.parse(await readFile(new URL("release.json", root), "utf8"));
@@ -45,11 +61,17 @@ if (
 
 const assetsUrl = new URL("assets/", root);
 const files = await readdir(assetsUrl);
-const mainBundles = files.filter((file) => /^index-[^.]+\.js$/.test(file));
+const mainBundles = files.filter((file) => /^(?:index|glowfin)-[^.]+\.js$/.test(file));
+const tideSprintBundles = files.filter((file) => /^tideSprint-[^.]+\.js$/.test(file));
 const contrastBundles = files.filter((file) => /^contrastProbe-[^.]+\.js$/.test(file));
-if (mainBundles.length !== 1 || contrastBundles.length !== 1) {
+if (
+  mainBundles.length !== 1 ||
+  tideSprintBundles.length !== 1 ||
+  contrastBundles.length !== 1
+) {
   throw new Error(
-    `Production assets contain stale hashed bundles: ${mainBundles.length} main, ${contrastBundles.length} contrast.`
+    `Production assets contain stale hashed bundles: ${mainBundles.length} main, ` +
+    `${tideSprintBundles.length} Tide Sprint, ${contrastBundles.length} contrast.`
   );
 }
 const bundles = await Promise.all(

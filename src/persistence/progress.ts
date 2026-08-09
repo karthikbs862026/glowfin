@@ -37,16 +37,33 @@ import {
   type CosmeticLoadout,
   type RunPearlReward
 } from "../meta/progression";
+import {
+  applyTideSprintRace,
+  createDefaultTideSprintProgress,
+  mergeTideSprintProgress,
+  selectTideSprintCrew as selectTideSprintCrewProgress,
+  tideSprintRunClaimId,
+  validateTideSprintProgress,
+  type TideSprintModeAward,
+  type TideSprintProgressV1,
+  type TideSprintRaceRecord
+} from "../tideSprint/progress";
+import {
+  TIDE_SPRINT_CREW_IDS,
+  type TideSprintCrewId
+} from "../tideSprint/crew";
 
-export const PROGRESS_SCHEMA_VERSION = 3 as const;
-export const PROGRESS_PRIMARY_KEY = "glowfin.progress.v3.primary";
-export const PROGRESS_BACKUP_KEY = "glowfin.progress.v3.backup";
+export const PROGRESS_SCHEMA_VERSION = 4 as const;
+export const PROGRESS_PRIMARY_KEY = "glowfin.progress.v4.primary";
+export const PROGRESS_BACKUP_KEY = "glowfin.progress.v4.backup";
+export const VERSION_3_PRIMARY_KEY = "glowfin.progress.v3.primary";
+export const VERSION_3_BACKUP_KEY = "glowfin.progress.v3.backup";
 export const VERSION_2_PRIMARY_KEY = "glowfin.progress.v2.primary";
 export const VERSION_2_BACKUP_KEY = "glowfin.progress.v2.backup";
 export const VERSION_1_PRIMARY_KEY = "glowfin.progress.v1.primary";
 export const VERSION_1_BACKUP_KEY = "glowfin.progress.v1.backup";
 export const LEGACY_BEST_SCORE_KEY = "glowfin.best-score";
-export const MAX_PROGRESS_BYTES = 160 * 1024;
+export const MAX_PROGRESS_BYTES = 256 * 1024;
 export const MAX_RECENT_REWARD_CLAIMS = 128;
 
 export type TelemetryConsent = "unset" | "granted" | "denied";
@@ -86,6 +103,21 @@ export interface GlowfinProgressV2 {
   progression: GlowfinProgressionV2;
   daily: DailyRetentionState;
   onboarding: GlowfinOnboardingV1;
+  tideSprint: TideSprintProgressV1;
+}
+
+interface GlowfinProgressV3Legacy {
+  schemaVersion: 3;
+  revision: number;
+  updatedAt: string;
+  bestScore: number;
+  bestReplay: GlowfinReplayV1 | null;
+  totals: GlowfinProgressV2["totals"];
+  telemetryConsent: TelemetryConsent;
+  ghostEnabled: boolean;
+  progression: GlowfinProgressionV2;
+  daily: DailyRetentionState;
+  onboarding: GlowfinOnboardingV1;
 }
 
 interface GlowfinProgressV2Legacy {
@@ -117,9 +149,15 @@ interface GlowfinProgressV1Legacy {
   ghostEnabled: boolean;
 }
 
-interface ProgressEnvelopeV3 {
-  envelopeVersion: 3;
+interface ProgressEnvelopeV4 {
+  envelopeVersion: 4;
   payload: GlowfinProgressV2;
+  checksum: string;
+}
+
+interface LegacyProgressEnvelopeV3 {
+  envelopeVersion: 3;
+  payload: GlowfinProgressV3Legacy;
   checksum: string;
 }
 
@@ -143,7 +181,7 @@ export interface ProgressStorage {
 
 export interface ProgressLoadResult {
   progress: GlowfinProgressV2;
-  recoveredFrom: "primary" | "backup" | "version-2" | "version-1" | "legacy" | "default";
+  recoveredFrom: "primary" | "backup" | "version-3" | "version-2" | "version-1" | "legacy" | "default";
   recoveryReason: string | null;
 }
 
@@ -187,6 +225,17 @@ export interface RewardedPearlGrantResult {
   progress: GlowfinProgressV2;
   granted: boolean;
   pearls: number;
+}
+
+export interface TideSprintRecordResult {
+  progress: GlowfinProgressV2;
+  award: TideSprintModeAward;
+  duplicateRewardPrevented: boolean;
+  newBest: boolean;
+  ghostSaved: boolean;
+  tideLevelBefore: number;
+  tideLevelAfter: number;
+  unlockedCosmetics: CosmeticDefinition[];
 }
 
 export type CosmeticPurchaseStatus =
@@ -244,6 +293,10 @@ function legacyProgressChecksum(progress: GlowfinProgressV1Legacy): string {
 }
 
 function version2ProgressChecksum(progress: GlowfinProgressV2Legacy): string {
+  return checksumText(JSON.stringify(progress));
+}
+
+function version3ProgressChecksum(progress: GlowfinProgressV3Legacy): string {
   return checksumText(JSON.stringify(progress));
 }
 
@@ -398,6 +451,26 @@ function validateVersion2Progress(value: unknown): value is GlowfinProgressV2Leg
   );
 }
 
+function validateVersion3Progress(value: unknown): value is GlowfinProgressV3Legacy {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<GlowfinProgressV3Legacy>;
+  const replayValid = candidate.bestReplay === null || validateReplay(candidate.bestReplay).valid;
+  return (
+    candidate.schemaVersion === 3 &&
+    Number.isInteger(candidate.revision) && Number(candidate.revision) >= 0 &&
+    safeIsoDate(candidate.updatedAt ?? "") &&
+    typeof candidate.bestScore === "number" && Number.isFinite(candidate.bestScore) && candidate.bestScore >= 0 &&
+    replayValid &&
+    totalsValid(candidate.totals) &&
+    consentValid(candidate.telemetryConsent) &&
+    typeof candidate.ghostEnabled === "boolean" &&
+    progressionValid(candidate.progression) &&
+    dailyValid(candidate.daily) &&
+    onboardingValid(candidate.onboarding) &&
+    (!candidate.bestReplay || candidate.bestReplay.summary.score <= candidate.bestScore + 1e-6)
+  );
+}
+
 function validateLegacyProgress(value: unknown): value is GlowfinProgressV1Legacy {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<GlowfinProgressV1Legacy>;
@@ -446,7 +519,8 @@ export function createDefaultProgress(now = new Date()): GlowfinProgressV2 {
       firstRewardSeen: false,
       firstPurchaseCompleted: false,
       firstEquipCompleted: false
-    }
+    },
+    tideSprint: createDefaultTideSprintProgress(now)
   };
 }
 
@@ -479,7 +553,8 @@ export function migrateLegacyProgress(
       firstRewardSeen: false,
       firstPurchaseCompleted: false,
       firstEquipCompleted: false
-    }
+    },
+    tideSprint: createDefaultTideSprintProgress(now)
   };
 }
 
@@ -517,7 +592,28 @@ export function migrateVersion2Progress(
       firstRewardSeen: legacy.progression.lumenPearls > 0,
       firstPurchaseCompleted: false,
       firstEquipCompleted: returningPlayer
-    }
+    },
+    tideSprint: createDefaultTideSprintProgress(now)
+  };
+}
+
+export function migrateVersion3Progress(
+  legacy: GlowfinProgressV3Legacy,
+  now = new Date()
+): GlowfinProgressV2 {
+  return {
+    schemaVersion: PROGRESS_SCHEMA_VERSION,
+    revision: legacy.revision + 1,
+    updatedAt: now.toISOString(),
+    bestScore: legacy.bestScore,
+    bestReplay: cloneReplay(legacy.bestReplay),
+    totals: { ...legacy.totals },
+    telemetryConsent: legacy.telemetryConsent,
+    ghostEnabled: legacy.ghostEnabled,
+    progression: JSON.parse(JSON.stringify(legacy.progression)) as GlowfinProgressionV2,
+    daily: JSON.parse(JSON.stringify(legacy.daily)) as DailyRetentionState,
+    onboarding: { ...legacy.onboarding },
+    tideSprint: createDefaultTideSprintProgress(now)
   };
 }
 
@@ -537,6 +633,7 @@ export function validateProgress(value: unknown): value is GlowfinProgressV2 {
     progressionValid(candidate.progression) &&
     dailyValid(candidate.daily) &&
     onboardingValid(candidate.onboarding) &&
+    validateTideSprintProgress(candidate.tideSprint) &&
     (!candidate.bestReplay || candidate.bestReplay.summary.score <= candidate.bestScore + 1e-6)
   );
 }
@@ -546,14 +643,15 @@ export function migrateProgressValue(
   now = new Date()
 ): GlowfinProgressV2 | null {
   if (validateProgress(value)) return cloneProgress(value);
+  if (validateVersion3Progress(value)) return migrateVersion3Progress(value, now);
   if (validateVersion2Progress(value)) return migrateVersion2Progress(value, now);
   if (validateLegacyProgress(value)) return migrateLegacyProgress(value, now);
   return null;
 }
 
 function encodeEnvelope(progress: GlowfinProgressV2): string {
-  const envelope: ProgressEnvelopeV3 = {
-    envelopeVersion: 3,
+  const envelope: ProgressEnvelopeV4 = {
+    envelopeVersion: 4,
     payload: progress,
     checksum: progressChecksum(progress)
   };
@@ -567,9 +665,9 @@ function encodeEnvelope(progress: GlowfinProgressV2): string {
 function decodeEnvelope(encoded: string): GlowfinProgressV2 | null {
   if (encoded.length < 2 || encoded.length > MAX_PROGRESS_BYTES) return null;
   try {
-    const value = JSON.parse(encoded) as Partial<ProgressEnvelopeV3>;
+    const value = JSON.parse(encoded) as Partial<ProgressEnvelopeV4>;
     if (
-      value.envelopeVersion !== 3 ||
+      value.envelopeVersion !== 4 ||
       typeof value.checksum !== "string" ||
       !validateProgress(value.payload) ||
       progressChecksum(value.payload) !== value.checksum
@@ -577,6 +675,22 @@ function decodeEnvelope(encoded: string): GlowfinProgressV2 | null {
       return null;
     }
     return value.payload;
+  } catch {
+    return null;
+  }
+}
+
+function decodeVersion3Envelope(encoded: string, now: Date): GlowfinProgressV2 | null {
+  if (encoded.length < 2 || encoded.length > MAX_PROGRESS_BYTES) return null;
+  try {
+    const value = JSON.parse(encoded) as Partial<LegacyProgressEnvelopeV3>;
+    if (
+      value.envelopeVersion !== 3 ||
+      typeof value.checksum !== "string" ||
+      !validateVersion3Progress(value.payload) ||
+      version3ProgressChecksum(value.payload) !== value.checksum
+    ) return null;
+    return migrateVersion3Progress(value.payload, now);
   } catch {
     return null;
   }
@@ -682,7 +796,8 @@ export function mergeProgress(
       firstRewardSeen: local.onboarding.firstRewardSeen || remote.onboarding.firstRewardSeen,
       firstPurchaseCompleted: local.onboarding.firstPurchaseCompleted || remote.onboarding.firstPurchaseCompleted,
       firstEquipCompleted: local.onboarding.firstEquipCompleted || remote.onboarding.firstEquipCompleted
-    }
+    },
+    tideSprint: mergeTideSprintProgress(local.tideSprint, remote.tideSprint, now)
   };
 }
 
@@ -742,6 +857,17 @@ export class ProgressRepository {
         progress: cloneProgress(backup),
         recoveredFrom: "backup",
         recoveryReason: primaryRaw ? "primary-corrupt" : "primary-missing"
+      };
+    }
+
+    const version3 = this.readVersion3();
+    if (version3) {
+      this.current = version3;
+      this.persist(this.current);
+      return {
+        progress: cloneProgress(this.current),
+        recoveredFrom: "version-3",
+        recoveryReason: "migrated-version-3"
       };
     }
 
@@ -909,6 +1035,141 @@ export class ProgressRepository {
         streak
       }
     };
+  }
+
+  /**
+   * Atomically records a Tide Sprint result, its cosmetic-only rewards,
+   * objectives and best deterministic ghost. Classic/Daily score, replay,
+   * calendar claims and tutorial state are deliberately untouched.
+   */
+  recordTideSprintRace(record: TideSprintRaceRecord): TideSprintRecordResult {
+    const claimId = tideSprintRunClaimId(record.runId);
+    const sharedClaims = new Set(this.current.progression.recentRewardClaims);
+    const duplicate = sharedClaims.has(claimId) ||
+      this.current.tideSprint.recentRunClaims.includes(claimId);
+    const previousXp = this.current.progression.tideXp;
+    if (duplicate) {
+      return {
+        progress: this.snapshot(),
+        award: {
+          pearls: 0,
+          xp: 0,
+          bond: 0,
+          newlyCompletedObjectives: []
+        },
+        duplicateRewardPrevented: true,
+        newBest: false,
+        ghostSaved: false,
+        tideLevelBefore: tideLevelForXp(previousXp),
+        tideLevelAfter: tideLevelForXp(previousXp),
+        unlockedCosmetics: []
+      };
+    }
+
+    const modeResult = applyTideSprintRace(
+      this.current.tideSprint,
+      record,
+      this.now()
+    );
+    sharedClaims.add(modeResult.claimId);
+    const nextXp = clampCount(previousXp + modeResult.award.xp);
+    const nextPearlsEarned = clampCount(
+      this.current.progression.lumenPearlsEarned + modeResult.award.pearls
+    );
+    const purchasedCost = purchasedCosmeticCost(
+      this.current.progression.purchasedCosmetics
+    );
+    const unlockedCosmetics = newlyUnlockedCosmetics(previousXp, nextXp);
+    this.current = {
+      ...this.current,
+      revision: this.current.revision + 1,
+      updatedAt: this.now().toISOString(),
+      totals: {
+        ...this.current.totals,
+        runs: clampCount(this.current.totals.runs + 1),
+        playSeconds: Math.max(
+          0,
+          this.current.totals.playSeconds + Math.max(0, record.elapsedSec)
+        ),
+        collisions: clampCount(
+          this.current.totals.collisions + Math.max(0, record.collisions)
+        )
+      },
+      progression: {
+        ...this.current.progression,
+        lumenPearls: Math.max(0, nextPearlsEarned - purchasedCost),
+        lumenPearlsEarned: nextPearlsEarned,
+        tideXp: nextXp,
+        recentRewardClaims: Array.from(sharedClaims)
+          .sort()
+          .slice(-MAX_RECENT_REWARD_CLAIMS)
+      },
+      onboarding: {
+        ...this.current.onboarding,
+        firstRewardSeen: this.current.onboarding.firstRewardSeen ||
+          modeResult.award.pearls > 0
+      },
+      tideSprint: modeResult.progress
+    };
+    this.persist(this.current);
+    return {
+      progress: this.snapshot(),
+      award: modeResult.award,
+      duplicateRewardPrevented: modeResult.duplicatePrevented,
+      newBest: modeResult.newBest,
+      ghostSaved: modeResult.ghostSaved,
+      tideLevelBefore: tideLevelForXp(previousXp),
+      tideLevelAfter: tideLevelForXp(nextXp),
+      unlockedCosmetics
+    };
+  }
+
+  selectTideSprintCrew(selected: TideSprintCrewId): GlowfinProgressV2 {
+    const next = selectTideSprintCrewProgress(
+      this.current.tideSprint,
+      selected,
+      this.now()
+    );
+    if (next.revision === this.current.tideSprint.revision) return this.snapshot();
+    this.current = {
+      ...this.current,
+      revision: this.current.revision + 1,
+      updatedAt: this.now().toISOString(),
+      tideSprint: next
+    };
+    this.persist(this.current);
+    return this.snapshot();
+  }
+
+  importLegacyTideSprintCrew(
+    selected: TideSprintCrewId,
+    bonds: Readonly<Record<TideSprintCrewId, number>>
+  ): GlowfinProgressV2 {
+    if (
+      this.current.tideSprint.revision > 0 ||
+      this.current.tideSprint.totals.runs > 0
+    ) return this.snapshot();
+    const migratedBonds = Object.fromEntries(TIDE_SPRINT_CREW_IDS.map((id) => [
+      id,
+      Math.max(0, Math.min(999, Math.floor(Number(bonds[id]) || 0)))
+    ])) as Record<TideSprintCrewId, number>;
+    const hasLegacyProgress = selected !== "glowfin" ||
+      TIDE_SPRINT_CREW_IDS.some((id) => migratedBonds[id] > 0);
+    if (!hasLegacyProgress) return this.snapshot();
+    this.current = {
+      ...this.current,
+      revision: this.current.revision + 1,
+      updatedAt: this.now().toISOString(),
+      tideSprint: {
+        ...this.current.tideSprint,
+        revision: this.current.tideSprint.revision + 1,
+        updatedAt: this.now().toISOString(),
+        selected,
+        bonds: migratedBonds
+      }
+    };
+    this.persist(this.current);
+    return this.snapshot();
   }
 
   /**
@@ -1197,6 +1458,19 @@ export class ProgressRepository {
       return (
         (primary ? decodeVersion2Envelope(primary, this.now()) : null) ??
         (backup ? decodeVersion2Envelope(backup, this.now()) : null)
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  private readVersion3(): GlowfinProgressV2 | null {
+    try {
+      const primary = this.storage.getItem(VERSION_3_PRIMARY_KEY);
+      const backup = this.storage.getItem(VERSION_3_BACKUP_KEY);
+      return (
+        (primary ? decodeVersion3Envelope(primary, this.now()) : null) ??
+        (backup ? decodeVersion3Envelope(backup, this.now()) : null)
       );
     } catch {
       return null;

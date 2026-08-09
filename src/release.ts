@@ -16,6 +16,8 @@ export interface GlowfinReleaseMetadata {
   certification: string;
   environment: GlowfinEnvironment;
   sourceCommit: string;
+  sourceBaseVersion: number;
+  sourceBaseCommit: string;
   baselineVersion: number;
   baselineCommit: string;
   artBuild: string;
@@ -46,6 +48,8 @@ export function isGlowfinReleaseMetadata(
     (candidate.environment === "local"
       ? candidate.sourceCommit === "local" || /^[0-9a-f]{40}$/.test(candidate.sourceCommit)
       : /^[0-9a-f]{40}$/.test(candidate.sourceCommit)) &&
+    candidate.sourceBaseVersion === releaseConfig.sourceBaseVersion &&
+    candidate.sourceBaseCommit === releaseConfig.sourceBaseCommit &&
     candidate.baselineVersion === releaseConfig.baselineVersion &&
     candidate.baselineCommit === releaseConfig.baselineCommit &&
     candidate.artBuild === releaseConfig.artBuild &&

@@ -73,6 +73,8 @@ jobs:
         run: npm run audio-gate:browser
       - name: Validate context rebuild and interruption recovery
         run: npm run runtime-gate:browser
+      - name: Validate Tide Sprint mobile layout, budgets and lifecycle recovery
+        run: npm run runtime-gate:tide-sprint
       - run: npm run art-gate:capture:fast
       - name: Validate reduced PR matrix
         run: |
@@ -91,6 +93,7 @@ jobs:
             build/art-gate-fast-report.txt
             build/audio-gate-browser.json
             build/runtime-recovery-browser.json
+            build/tide-sprint-browser.json
 
   full:
     name: full-render
@@ -169,6 +172,8 @@ jobs:
           exit 1
       - name: Run deterministic 30-minute simulated-time renderer soak
         run: npm run art-gate:soak
+      - name: Run Tide Sprint 5,400-frame renderer soak
+        run: npm run soak:tide-sprint
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -176,6 +181,7 @@ jobs:
           path: |
             build/art-gate-soak.json
             build/art-gate-soak-report.txt
+            build/tide-sprint-renderer-soak.json
 
   staging-artifact:
     name: immutable-staging-artifact
