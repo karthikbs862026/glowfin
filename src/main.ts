@@ -22,6 +22,7 @@ import {
   ProgressRepository,
   equippedCosmeticNames,
   type GlowfinProgressV2,
+  type RealmRecordResult,
   type SessionObservation
 } from "./persistence/progress";
 import {
@@ -45,6 +46,7 @@ import {
   dailySeed,
   isDayId,
   resolveDailyDay,
+  summarizeStreak,
   type GlowfinRunMode
 } from "./meta/daily";
 import {
@@ -137,6 +139,12 @@ import {
   ExpeditionProgressRepository,
   type ExpeditionProgressV1,
 } from "./expedition/progress";
+import type { RealmId } from "./realms/definition";
+import {
+  isCrystalTrenchUnlocked,
+  REALM_OBJECTIVES,
+} from "./realms/progress";
+import { RealmHud } from "./realms/hud";
 
 const initialCanvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
 if (!initialCanvas) throw new Error("Canvas #glowfin-canvas not found");
@@ -147,9 +155,9 @@ const hostedServicesEnabled = shouldUseHostedServices(
   GLOWFIN_RELEASE.environment,
   window.location.hostname
 );
-// Version 41-R5 remains network-cache-free until its production journey is
-// physically certified. The host still serves the self-deactivating V39
-// recovery worker so an older registration cannot regain startup ownership.
+// Version 43 review builds remain network-cache-free while the realms mature.
+// The host still serves the self-deactivating recovery worker so an older
+// registration cannot regain startup ownership across the Version 42 boundary.
 const SERVICE_WORKER_CACHING_CERTIFIED = false;
 
 const runtimeLifecycle = new RuntimeLifecycle();
@@ -166,6 +174,7 @@ if (runtimeSupport.supported) {
 }
 const hud = new Hud();
 const moonWell = new MoonWell();
+const realmHud = new RealmHud();
 const expedition = new ExpeditionDirector();
 const lumenMotes = new LumenMoteDirector();
 const r3DurationScale = import.meta.env.DEV &&
@@ -350,11 +359,14 @@ let tutorialSessionSource: "required" | "replay" | null = null;
 let activeChallenge: MoonflashChallengeV1 | null = null;
 let challengeRunActive = false;
 let activeExperience: ExpeditionExperience = "classic";
+let activeRealmId: RealmId = "moon-garden";
+let realmFeedbackUntilSec = 0;
 
 interface GlowfinCertificationSnapshot {
   schemaVersion: 1;
   releaseVersion: number;
   experience: ExpeditionExperience;
+  realm: RealmId;
   screen: "hub" | "run" | "post-run";
   seed: number;
   simulationSteps: number;
@@ -372,6 +384,7 @@ function publishCertificationState(): void {
     schemaVersion: 1,
     releaseVersion: GLOWFIN_RELEASE.version,
     experience: activeExperience,
+    realm: activeRealmId,
     screen: screen === "run" || screen === "post-run" ? screen : "hub",
     seed: run.seed,
     simulationSteps,
@@ -386,6 +399,10 @@ function publishCertificationState(): void {
 
 function signatureCueForRun(): SignatureCuePresentation | null {
   if (!gameplayActive || awaitingRestart || firstRunTutorial) return null;
+  // Kelp Cathedral teaches through collision-aligned fronds, coloured current
+  // ribbons and the manta beacon. A large text card obscured those visual cues
+  // and made the realm feel like a labelled Moon Garden reskin.
+  if (activeRealmId !== "moon-garden") return null;
   const forwardDistance = run.sim.forwardDistance;
   const gate = run.gates.find((candidate) => {
     const plan = candidate.obstaclePlan;
@@ -572,13 +589,21 @@ function hudMeta() {
 }
 
 function objectivePresentations() {
-  return progressRepository.activeObjectives(currentDailyDay().dayId).map((objective) => ({
+  const daily = progressRepository.activeObjectives(currentDailyDay().dayId).map((objective) => ({
     id: objective.id,
     label: objective.label,
     progress: objective.progress,
     target: objective.target,
     completed: objective.completed
   }));
+  const realms = progressRepository.activeRealmObjectives().map((objective) => ({
+    id: objective.id,
+    label: objective.label,
+    progress: objective.progress,
+    target: objective.target,
+    completed: objective.completed,
+  }));
+  return [...daily, ...realms];
 }
 
 function refreshWardrobe(): void {
@@ -605,17 +630,25 @@ function refreshMoonWell(): void {
   moonWell.setTutorialStatus(guidedTutorialComplete);
   moonWell.setExpeditionState(expeditionProgress);
   moonWell.setTideSprintState(progress.tideSprint, progress.ghostEnabled);
+  moonWell.setKelpCathedralState(progress.realms.kelpCathedral);
+  moonWell.setCrystalTrenchState(
+    progress.realms.crystalTrench,
+    isCrystalTrenchUnlocked(progress.realms),
+  );
   refreshWardrobe();
 }
 
 function showMoonWell(panel: MoonWellPanel = "home"): void {
   gameplayActive = false;
   activeExperience = "classic";
+  activeRealmId = "moon-garden";
   expedition.reset();
   lumenMotes.stop();
   r3Encounters.stop();
   r5Completion.stop();
   view?.setLumenChainFraction(0);
+  view?.setRealm(activeRealmId);
+  realmHud.setActive(false);
   steering.reset();
   firstRunTutorial = null;
   tutorialStep = null;
@@ -632,6 +665,7 @@ function showMoonWell(panel: MoonWellPanel = "home"): void {
   );
   document.documentElement.dataset["glowfinScreen"] = "hub";
   document.documentElement.dataset["glowfinMode"] = activeExperience;
+  document.documentElement.dataset["glowfinRealm"] = activeRealmId;
   publishCertificationState();
   telemetry.track("hub_view", { panel });
 }
@@ -652,6 +686,81 @@ function updateProgressUi(): void {
   document.documentElement.dataset["glowfinHighContrast"] =
     String(accessPreferences.highContrast);
   refreshMoonWell();
+}
+
+type RealmEndPresentation = NonNullable<
+  Parameters<Hud["showGameOver"]>[4]["realmResult"]
+>;
+
+function presentRealmResult(
+  result: RealmRecordResult,
+  realmResult: RealmEndPresentation,
+): void {
+  if (!run) return;
+  progress = result.progress;
+  updateProgressUi();
+  completedCompetitiveRun = null;
+  hud.hideGhostGap();
+  hud.setSubmitState("unavailable");
+  hud.setShareState("unavailable");
+  hud.setRewardedOffer(null);
+  hud.setLeaderboard(null, "empty");
+  const day = currentDailyDay().dayId;
+  hud.showGameOver(
+    run.scoring.score,
+    run.sim.elapsedSec,
+    run.scoring.nearMissCount,
+    run.collisionCount,
+    {
+      ...hudMeta(),
+      bestScore: progress.bestScore,
+      newBest: false,
+      raceGhostScore: null,
+      raceGhostLabel: "Ghosts stay in Classic Dive",
+      rewardPearls: result.award.pearls,
+      unlockedNames: result.unlockedCosmetics.map((item) => item.name),
+      objectives: objectivePresentations(),
+      streak: summarizeStreak(progress.daily.dailyClaims, progress.daily.bestStreak),
+      dailyDayId: day,
+      dailyCompleted: progress.daily.dailyClaims.includes(day),
+      calendarRewardRejected: false,
+      leaderboardDivision: activeClassification.division,
+      realmResult,
+    },
+  );
+  telemetry.track("reward_granted", {
+    source: "lost-realms",
+    realm: result.realm,
+    runPearls: result.award.pearls,
+    objectivePearls: result.award.pearls,
+    totalPearls: result.award.pearls,
+    tideXp: result.award.xp,
+    duplicatePrevented: result.duplicateRewardPrevented,
+  }, activeRunId);
+  for (const objectiveId of result.award.newlyCompletedObjectives) {
+    const objective = REALM_OBJECTIVES.find((candidate) => candidate.id === objectiveId);
+    telemetry.track("objective_complete", {
+      objective: objectiveId,
+      cadence: "realm",
+      realm: result.realm,
+      rewardPearls: objective?.rewardPearls ?? 0,
+      rewardXp: objective?.rewardXp ?? 0,
+    }, activeRunId);
+  }
+  if (result.crystalTrenchNewlyUnlocked) {
+    haptics.play("milestone");
+    view?.setHeroMoment("unlock");
+    telemetry.track("realm_unlock", {
+      realm: "crystal-trench",
+      prerequisite: "realm-kelp-rescue",
+      sourceRealm: "kelp-cathedral",
+    }, activeRunId);
+  } else if (result.award.pearls > 0) {
+    haptics.play("milestone");
+    view?.setHeroMoment("celebration");
+  }
+  void telemetry.flush();
+  void synchronizeCloudProgress();
 }
 
 function observeSessionDay(dayId: string): void {
@@ -792,6 +901,7 @@ function reportRunStart(): void {
     seed: run.seed,
     mode: activeRunMode,
     experience: activeExperience,
+    realm: activeRealmId,
     tuningVersion: tuning.version,
     hasSavedGhost: Boolean(
       challengeRunActive
@@ -828,6 +938,7 @@ interface StartRunOptions {
   forceGhost?: boolean;
   seedOverride?: number;
   experience?: ExpeditionExperience;
+  realmId?: RealmId;
 }
 
 function startRun(
@@ -837,13 +948,16 @@ function startRun(
   const guidedTutorialSource = options.guidedTutorialSource ?? null;
   const replayOverride = options.replayOverride ?? null;
   const forceGhost = options.forceGhost ?? false;
+  const requestedRealm = options.realmId ?? "moon-garden";
   const day = currentDailyDay();
   const dailyMode = mode === "daily" || mode === "daily-ghost";
-  const replay = mode === "ghost"
-    ? replayOverride ?? raceableReplay()
-    : mode === "daily-ghost"
-      ? raceableDailyReplay(day.dayId)
-      : null;
+  const replay = requestedRealm === "moon-garden"
+    ? mode === "ghost"
+      ? replayOverride ?? raceableReplay()
+      : mode === "daily-ghost"
+        ? raceableDailyReplay(day.dayId)
+        : null
+    : null;
   activeRunMode = mode === "ghost"
     ? replay ? "ghost" : "fresh"
     : mode === "daily-ghost"
@@ -854,13 +968,15 @@ function startRun(
   const seed = replay?.seed ?? options.seedOverride ??
     (dailyMode ? dailySeed(day.dayId) : generateSeed());
   activeExperience = options.experience ?? "classic";
-  run = new Run(seed, tuning);
+  activeRealmId = requestedRealm;
+  realmFeedbackUntilSec = 0;
+  run = new Run(seed, tuning, { realmId: activeRealmId });
   recorder = new ReplayRecorder(run.seed, tuning.version);
   moonflashRecorder = new MoonflashRecorder();
   activeClassification = classifyRunAccess(accessPreferences);
   activeRunId = createRunId();
   simulationSteps = 0;
-  ghostRun = replay ? new Run(replay.seed, tuning) : null;
+  ghostRun = replay ? new Run(replay.seed, tuning, { realmId: activeRealmId }) : null;
   ghostReplay = replay ? new ReplayPlayer(replay) : null;
   ghostVisible = Boolean(ghostRun && ghostReplay && (progress.ghostEnabled || forceGhost));
   ghostCompletionReported = false;
@@ -887,9 +1003,16 @@ function startRun(
   timestep.reset();
   view?.resetTrail();
   view?.setHeroMoment(null);
+  view?.setRealm(activeRealmId);
   view?.applyCosmetics(progress.progression.equippedCosmetics);
   moonWell.showTutorialIntro(false);
   moonWell.hide();
+  realmHud.setActive(activeRealmId !== "moon-garden");
+  if (activeRealmId === "kelp-cathedral") {
+    realmHud.updateKelp(run.kelpCathedralStatus, null);
+  } else if (activeRealmId === "crystal-trench") {
+    realmHud.updateCrystal(run.crystalTrenchStatus, null);
+  }
   hud.hideGameOver();
   hud.setSubmitState("unavailable");
   hud.setShareState("unavailable");
@@ -902,7 +1025,10 @@ function startRun(
   audio.resetRun(run.scoring.multiplier);
   document.documentElement.dataset["glowfinScreen"] = "run";
   document.documentElement.dataset["glowfinMode"] = activeExperience;
-  tutorialSessionSource = activeRunMode === "fresh" && activeExperience === "classic"
+  document.documentElement.dataset["glowfinRealm"] = activeRealmId;
+  tutorialSessionSource = activeRunMode === "fresh" &&
+      activeExperience === "classic" &&
+      activeRealmId === "moon-garden"
     ? guidedTutorialSource
     : null;
   firstRunTutorial = tutorialSessionSource
@@ -918,6 +1044,25 @@ function startRun(
     telemetry.track("tutorial_start", {
       source: tutorialSessionSource ?? "required",
       tutorialVersion: GUIDED_TUTORIAL_VERSION
+    }, activeRunId);
+  }
+  if (activeRealmId === "kelp-cathedral") {
+    telemetry.track("realm_start", {
+      realm: activeRealmId,
+      revision: 4,
+      seed: run.seed,
+      previousRescues: progress.realms.kelpCathedral.rescues,
+      relicFound: progress.realms.kelpCathedral.relicPages.includes("kelp-cathedral-page-1"),
+    }, activeRunId);
+  } else if (activeRealmId === "crystal-trench") {
+    telemetry.track("realm_start", {
+      realm: activeRealmId,
+      revision: 4,
+      slice: "mirror-current-r3",
+      seed: run.seed,
+      previousCompletions: progress.realms.crystalTrench.completions,
+      bestTimeSec: progress.realms.crystalTrench.bestTimeSec ?? 0,
+      cleanCompletions: progress.realms.crystalTrench.cleanCompletions,
     }, activeRunId);
   }
   reportRunStart();
@@ -1202,6 +1347,36 @@ moonWell.onDive(() => {
   startRun("fresh");
 });
 
+moonWell.onKelpCathedral(() => {
+  telemetry.track("realm_entry", {
+    realm: "kelp-cathedral",
+    source: "moon-well",
+    rescues: progress.realms.kelpCathedral.rescues,
+    relicFound: progress.realms.kelpCathedral.relicPages.includes("kelp-cathedral-page-1"),
+  });
+  startRun("fresh", { realmId: "kelp-cathedral" });
+});
+
+moonWell.onCrystalTrench(() => {
+  if (!isCrystalTrenchUnlocked(progress.realms)) {
+    telemetry.track("realm_entry", {
+      realm: "crystal-trench",
+      source: "moon-well",
+      locked: true,
+      unlockRequirement: "realm-kelp-rescue",
+    });
+    return;
+  }
+  telemetry.track("realm_entry", {
+    realm: "crystal-trench",
+    source: "moon-well",
+    slice: "mirror-current-r3",
+    completions: progress.realms.crystalTrench.completions,
+    cleanCompletions: progress.realms.crystalTrench.cleanCompletions,
+  });
+  startRun("fresh", { realmId: "crystal-trench" });
+});
+
 moonWell.onTideSprint(() => {
   telemetry.track("tide_sprint_entry", {
     source: "moon-well",
@@ -1293,6 +1468,18 @@ hud.onDiveAgain(() => {
   if (!awaitingRestart) return;
   if (activeExperience === "chapter-one-r5") {
     startExpedition();
+  } else if (
+    activeRealmId === "kelp-cathedral" &&
+    isCrystalTrenchUnlocked(progress.realms)
+  ) {
+    telemetry.track("realm_entry", {
+      realm: "crystal-trench",
+      source: "realm-one-complete",
+      slice: "mirror-current-r3",
+    });
+    startRun("fresh", { realmId: "crystal-trench" });
+  } else if (activeRealmId !== "moon-garden") {
+    startRun("fresh", { realmId: activeRealmId });
   } else {
     startRun("fresh");
   }
@@ -1812,6 +1999,7 @@ function rebuildRenderer(): Promise<void> {
       rebuiltView = new GameView(canvas, tuning);
       rebuiltView.setQuality(quality.settings);
       rebuiltView.setPresentationPreferences(accessPreferences);
+      rebuiltView.setRealm(activeRealmId);
       rebuiltView.applyCosmetics(progress.progression.equippedCosmetics);
       detachContextListeners = installContextListeners(canvas);
       detachPointerInput = attachPointerInput(canvas, steering);
@@ -1964,6 +2152,68 @@ function frame(nowMs: number): void {
         activeRunId
       );
     }
+    for (const event of events.realmEvents) {
+      realmHud.showEvent(event);
+      realmFeedbackUntilSec = run.sim.elapsedSec + 2.4;
+      if (event.success) {
+        haptics.play(
+          event.kind === "manta-rescue" ||
+          event.kind === "relic-page" ||
+          event.kind === "trench-threshold" ||
+          event.kind === "mirror-race-start" ||
+          event.kind === "mirror-race-win"
+            ? "milestone"
+            : "lumen-mote",
+        );
+      }
+      if (
+        event.kind === "manta-rescue" ||
+        event.kind === "relic-page" ||
+        event.kind === "trench-threshold" ||
+        event.kind === "mirror-race-start" ||
+        event.kind === "mirror-race-win"
+      ) {
+        audio.playLumenMote(
+          event.kind === "manta-rescue"
+            ? 12
+            : event.kind === "mirror-race-win"
+              ? 14
+              : event.kind === "mirror-race-start"
+                ? 11
+                : event.kind === "trench-threshold"
+                  ? 10
+                  : 8,
+          true,
+        );
+      }
+      telemetry.track(
+        event.kind === "manta-rescue"
+          ? "realm_rescue"
+          : event.kind === "relic-page"
+            ? "realm_relic"
+            : "realm_feature",
+        {
+          realm: activeRealmId,
+          kind: event.kind,
+          verb: event.verb,
+          distance: event.distance,
+          tier: event.tier,
+          template: event.templateId,
+          success: event.success,
+          direction: event.direction ?? 0,
+          relicPage: event.relicPageId ?? "none",
+        },
+        activeRunId,
+      );
+    }
+    if (
+      activeRealmId !== "moon-garden" &&
+      realmFeedbackUntilSec > 0 &&
+      run.sim.elapsedSec >= realmFeedbackUntilSec
+    ) {
+      realmHud.hideFeedback();
+      realmFeedbackUntilSec = 0;
+    }
     if (firstRunTutorial) {
       const previousStep = firstRunTutorial.step;
       const nextStep = firstRunTutorial.update({
@@ -2051,6 +2301,85 @@ function frame(nowMs: number): void {
       tutorialSessionSource = null;
       moonWell.showTutorial(null);
       document.documentElement.dataset["glowfinScreen"] = "post-run";
+      if (activeRealmId === "kelp-cathedral") {
+        const realmStatus = run.kelpCathedralStatus;
+        const realmRecord = progressRepository.recordKelpCathedralRun({
+          runId: activeRunId,
+          elapsedSec: run.sim.elapsedSec,
+          rescuedManta: realmStatus.rescuedManta,
+          relicPageFound: realmStatus.relicPageFound,
+          masteredVerbs: realmStatus.masteredVerbs,
+        }, {
+          collisions: run.collisionCount,
+        });
+        realmHud.setActive(false);
+        telemetry.track(
+          realmStatus.rescuedManta ? "realm_complete" : "realm_abandon",
+          {
+            realm: activeRealmId,
+            endReason: run.endReason,
+            elapsedSec: run.sim.elapsedSec,
+            collisions: run.collisionCount,
+            rescuedManta: realmStatus.rescuedManta,
+            relicPageFound: realmStatus.relicPageFound,
+            frondWindows: realmStatus.frondWindowsCleared,
+            currentTunnels: realmStatus.currentTunnelsEntered,
+          },
+          activeRunId,
+        );
+        presentRealmResult(realmRecord, {
+          kind: "kelp-cathedral",
+          title: "Kelp Cathedral",
+          rescuedManta: realmStatus.rescuedManta,
+          relicPageFound: realmStatus.relicPageFound,
+          crystalTrenchUnlocked: realmRecord.crystalTrenchUnlocked,
+        });
+        return;
+      } else if (activeRealmId === "crystal-trench") {
+        const realmStatus = run.crystalTrenchStatus;
+        const realmRecord = progressRepository.recordCrystalTrenchRun({
+          runId: activeRunId,
+          elapsedSec: run.sim.elapsedSec,
+          completed: realmStatus.raceWon,
+          cleanPerformance: realmStatus.cleanPerformance,
+          masteredVerbs: realmStatus.masteredVerbs,
+        }, {
+          collisions: run.collisionCount,
+        });
+        realmHud.setActive(false);
+        telemetry.track(
+          realmStatus.raceWon ? "realm_complete" : "realm_abandon",
+          {
+            realm: activeRealmId,
+            slice: "mirror-current-r3",
+            endReason: run.endReason,
+            elapsedSec: run.sim.elapsedSec,
+            collisions: run.collisionCount,
+            thresholdCrossed: realmStatus.thresholdCrossed,
+            thresholdRetries: realmStatus.thresholdRetries,
+            prismPulsesCleared: realmStatus.prismPulsesCleared,
+            platesCleared: realmStatus.platesCleared,
+            plateRetries: realmStatus.plateRetries,
+            raceWon: realmStatus.raceWon,
+            raceAttempts: realmStatus.raceAttempts,
+            raceLosses: realmStatus.raceLosses,
+            finishMarginSec: realmStatus.finishMarginSec ?? 0,
+            cleanPerformance: realmStatus.cleanPerformance,
+          },
+          activeRunId,
+        );
+        presentRealmResult(realmRecord, {
+          kind: "crystal-trench",
+          title: "Crystal Trench",
+          thresholdCrossed: realmStatus.thresholdCrossed,
+          prismPulsesCleared: realmStatus.prismPulsesCleared,
+          platesCleared: realmStatus.platesCleared,
+          raceWon: realmStatus.raceWon,
+          raceAttempts: realmStatus.raceAttempts,
+          cleanPerformance: realmStatus.cleanPerformance,
+        });
+        return;
+      }
       if (activeExperience === "chapter-one-r5") {
         const completed = run.endReason === "expedition-complete";
         completedCompetitiveRun = null;
@@ -2090,15 +2419,19 @@ function frame(nowMs: number): void {
         collisions: run.collisionCount
       };
       const replay = recorder.finish(summary);
-      const clip = moonflashRecorder.finish(replay, activeClassification);
+      const progressionReplay = activeRealmId === "moon-garden" ? replay : null;
+      const clip = activeRealmId === "moon-garden"
+        ? moonflashRecorder.finish(replay, activeClassification)
+        : null;
       const day = currentDailyDay();
       const rewardDay = activeRunDayId ?? day.dayId;
       const firstReward = !progress.onboarding.firstRewardSeen;
-      const record = progressRepository.recordRun(summary, replay, {
+      const record = progressRepository.recordRun(summary, progressionReplay, {
         runId: activeRunId,
         mode: activeRunMode,
         dayId: rewardDay,
-        calendarRewardsAllowed: day.status !== "clock-rollback"
+        calendarRewardsAllowed: day.status !== "clock-rollback",
+        competitiveRecordsAllowed: activeRealmId === "moon-garden"
       });
       progress = record.progress;
       updateProgressUi();
@@ -2123,6 +2456,7 @@ function frame(nowMs: number): void {
         seed: run.seed,
         mode: activeRunMode,
         experience: activeExperience,
+        realm: activeRealmId,
         score: summary.score,
         elapsedSec: summary.elapsedSec,
         distance: summary.forwardDistance,
@@ -2130,7 +2464,7 @@ function frame(nowMs: number): void {
         collisions: summary.collisions,
         newBest: record.newBest,
         replaySaved: record.replaySaved,
-        replaySegments: replay?.commands.length ?? 0,
+        replaySegments: progressionReplay?.commands.length ?? 0,
         tideLevel: record.retention.tideLevelAfter,
         rewardPearls: record.retention.totalPearls
       }, activeRunId);
@@ -2207,12 +2541,12 @@ function frame(nowMs: number): void {
       }
       const endedRunId = activeRunId;
       const dailyCompetitive = activeRunMode === "daily" || activeRunMode === "daily-ghost";
-      const submission: LeaderboardSubmissionV1 | null = replay ? {
+      const submission: LeaderboardSubmissionV1 | null = progressionReplay ? {
         schemaVersion: 1,
         runId: endedRunId,
         mode: activeRunMode,
         dayId: dailyCompetitive ? rewardDay : null,
-        replay,
+        replay: progressionReplay,
         classification: activeClassification
       } : null;
       const rewardedPearls = record.retention.runRewardClaimed
@@ -2236,7 +2570,9 @@ function frame(nowMs: number): void {
       const dailyGhost = activeRunMode === "daily" || activeRunMode === "daily-ghost"
         ? raceableDailyReplay(rewardDay)
         : null;
-      const savedGhost = dailyGhost ?? raceableReplay();
+      const savedGhost = activeRealmId === "moon-garden"
+        ? dailyGhost ?? raceableReplay()
+        : null;
       preferredGhostMode = dailyGhost ? "daily-ghost" : "ghost";
       const meta = hudMeta();
       hud.showGameOver(
@@ -2257,13 +2593,17 @@ function frame(nowMs: number): void {
           dailyDayId: rewardDay,
           dailyCompleted: progress.daily.dailyClaims.includes(rewardDay),
           calendarRewardRejected: record.retention.calendarRewardRejected,
-          leaderboardDivision: activeClassification.division
+          leaderboardDivision: activeClassification.division,
         }
       );
       hud.setSubmitState(submission ? "ready" : "unavailable");
       hud.setShareState(clip ? "ready" : "unavailable");
       hud.setRewardedOffer(null);
-      void loadCompetitiveBoard(competitiveState);
+      if (activeRealmId === "moon-garden") {
+        void loadCompetitiveBoard(competitiveState);
+      } else {
+        hud.setLeaderboard(null, "empty");
+      }
       if (rewardedPearls > 0) {
         void rewardedVideo.offer("double-lumen-pearls", {
           runEnded: true,
@@ -2311,7 +2651,24 @@ function frame(nowMs: number): void {
     activeExperience === "chapter-one-r5"
       ? r5Completion.presentation()
       : null,
+    activeRealmId === "kelp-cathedral"
+      ? run.kelpCathedralStatus.rescuedManta
+      : false,
+    activeRealmId === "crystal-trench"
+      ? run.crystalTrenchStatus
+      : null,
   );
+  if (activeRealmId === "kelp-cathedral") {
+    const nextRealmPlan = run.gates.find((gate) => (
+      gate.realmPlan && gate.distance > run.sim.forwardDistance + 3
+    ))?.realmPlan ?? null;
+    realmHud.updateKelp(run.kelpCathedralStatus, nextRealmPlan);
+  } else if (activeRealmId === "crystal-trench") {
+    const nextRealmPlan = run.gates.find((gate) => (
+      gate.realmPlan && gate.distance > run.sim.forwardDistance + 3
+    ))?.realmPlan ?? null;
+    realmHud.updateCrystal(run.crystalTrenchStatus, nextRealmPlan);
+  }
   if (ghostVisible && ghostRun) {
     hud.updateGhostGap(run.sim.forwardDistance, ghostRun.sim.forwardDistance);
   } else {

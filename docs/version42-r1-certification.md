@@ -2,7 +2,20 @@
 
 **Date:** 2026-08-09
 
-**Status:** integration candidate; automated and physical gates not yet final
+**Status:** merged and promoted to the main playable link
+
+**Tested candidate:**
+`9ccce3d38a524be6c12ba3bb63a42bbd2066a332`, artifact
+`fe24b6feac43b08782f41d2210c344279e4a2d699198138febce4e77e42a509a`
+
+**Merged main:**
+`6228c7755f55c63b27ccf8e58fac56291c9beae3`. The squash merge and tested PR
+head resolve to the identical Git tree
+`7215afa3db21fa62eb379bcdf283b6880f33d30a`.
+
+**Promoted artifact:** digest
+`419f2292cc409ba12b5448534b97d25af1cda52181471f39e81d04db1e48dce6`,
+24 sealed files, served at the main Glowfin playable URL.
 
 **Source base:** merged Version 41-R5
 `c67c4a6350f3f432c72e5d01fe92df69c557f2f0`
@@ -50,18 +63,20 @@ Expedition state.
 | Fault/privacy/rollback gate | 26/26 tests; V39 rollback with V40/V41 gap declared | Passed locally |
 | Art-gate self-tests + structure | 47/47; zero blockers, one retained LOD warning | Passed locally |
 | Native payload sync + policy | identical Android/iOS payload, lifecycle, safe-area and security contract | Passed locally |
-| Browser mobile/lifecycle gate | iPhone/Android contract sizes, context and page-cache recovery | Awaiting CI browser |
-| Tide Sprint 5,400-render WebGL soak | exact frames, heap/resource and binding render budgets | Awaiting CI browser |
-| Main-game 5,400-render soak | existing full renderer gate | Awaiting candidate CI |
-| Android/iOS wrapper compilation | native workflow | Awaiting candidate CI |
-| Real Android/iPhone playtest | touch, safe areas, thermal, interruption and close-win feel | Blocking final promotion |
+| Browser mobile/lifecycle gate | iPhone/Android contract sizes, context and page-cache recovery | Passed in candidate CI |
+| Tide Sprint 5,400-render WebGL soak | exact frames, heap/resource and binding render budgets | Passed in candidate CI |
+| Main-game 5,400-render soak | existing full renderer gate | Passed in candidate CI |
+| Android/iOS wrapper compilation | native workflow | Passed in candidate CI |
+| Real Android/iPhone playtest | owner confirmed race/close-win feel, safe areas/touch, interruption and thermal behavior on the exact candidate | Passed by owner 2026-08-09 |
 
-This ledger must be updated from the exact candidate SHA. Emulated iPhone
-dimensions and an iOS compile are not real iPhone hardware evidence.
+The owner supplied the Android/iPhone result but not device model, OS, browser,
+battery delta or thermal measurements. Those details are therefore not
+inferred. Emulated dimensions and iOS compilation remain classified only as
+automated evidence.
 
 ## Merge boundary
 
-Version 42 may be published as an owner-review checkpoint after all automated
-gates pass. It must not be described as unconditionally device-certified, and
-the final merge/exposure decision remains open until the Version 42 physical
-rows in `device-matrix.md` are signed.
+PR #33 was made ready and squash-merged after the owner closed the physical
+device gate. The exact merged artifact then passed 421 repository tests and the
+hosting build/save/reward/route gates before Version 94 was promoted to the
+main playable URL. Version 43-R1 branches from the merge SHA above.

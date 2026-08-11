@@ -49,6 +49,27 @@ describe("versioned corruption-recoverable progress", () => {
     expect(second.progress.totals.runs).toBe(2);
   });
 
+  it("can award shared progression without replacing the competitive best", () => {
+    const repository = new ProgressRepository(
+      new MemoryStorage(),
+      () => new Date("2026-08-04T00:00:00Z")
+    );
+    repository.load();
+    repository.recordRun(runSummary(120), replay(120));
+
+    const realmRun = repository.recordRun(runSummary(900), null, {
+      runId: "kelp-cathedral-run",
+      competitiveRecordsAllowed: false
+    });
+
+    expect(realmRun.newBest).toBe(false);
+    expect(realmRun.replaySaved).toBe(false);
+    expect(realmRun.progress.bestScore).toBe(120);
+    expect(realmRun.progress.bestReplay?.summary.score).toBe(120);
+    expect(realmRun.progress.totals.runs).toBe(2);
+    expect(realmRun.retention.runRewardClaimed).toBe(true);
+  });
+
   it("recovers a known-good backup when the primary copy is corrupt", () => {
     const storage = new MemoryStorage();
     const repository = new ProgressRepository(storage);

@@ -870,3 +870,78 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Require deterministic race/fairness tests, Android/iPhone contract layouts,
   lifecycle recovery, binding renderer budgets, both 5,400-render soak gates,
   native compilation and real-device sign-off before unconditional promotion.
+
+## 2026-08-09 — One mechanically complete realm before realm breadth
+
+- Start Version 43 with a data-driven realm contract and one Kelp Cathedral
+  vertical slice. Its authoritative Swaying Frond Windows and Reversing Current
+  Tunnels are shared by collision, solvability and rendering.
+- Persist the baby-manta rescue and one Relic Page separately from the promoted
+  schema-4 cloud save until a versioned backend migration is certified.
+- Kelp runs cannot write Classic ghosts, verified leaderboards or Moonflash
+  clips. Five pooled draws reuse an existing material and add no texture.
+- Do not build a second realm until blind tests distinguish Kelp Cathedral
+  mechanically. Full rationale is in
+  `adr-0044-version43-realms-kelp-cathedral.md`.
+
+## 2026-08-10 — Replace the rebadged Kelp Cathedral presentation
+
+- Reject the initial V43-R1 presentation: its Moon Garden pillars, gate forms,
+  route crescents, flat blue floor and explanatory overlay made it a reskin.
+- Hide Moon Garden gates, scenery and inlays in Kelp Cathedral, and remove the
+  large per-obstacle cue card from the realm.
+- Rebuild the frame around dense living kelp columns, buttress roots, braided
+  canopy arches, organic collision-aligned frond curtains, shell bells, sea
+  dragons, spores, filtered emerald light, coloured currents and the baby manta.
+- Keep the replacement within fixed mobile pools and the existing binding realm
+  budget. A label-free screenshot must read as Kelp Cathedral before a second
+  realm or V43 promotion is considered.
+
+## 2026-08-10 — Make Kelp Cathedral landmarks realistic and immediately legible
+
+- Treat the improved-but-dark living-cathedral candidate as another failed
+  visual review, not as a palette-tuning task.
+- Replace straight black trunks and tube-like arches with textured curved
+  stipes, holdfast roots and genuine three-strand braided vaults.
+- Render collision truth as broad translucent frond tissue; enlarge shell
+  bells and leafy sea dragons; increase pulsing spore density; keep the baby
+  manta visibly ahead until rescue.
+- Remove the inherited Moon Garden floor and seabed from this realm, add a
+  natural silt bed, and separate water depth, emerald bounce and warm canopy
+  light so landmarks retain readable colour and form.
+- Keep the realism pass deterministic and fixed-capacity: 15 realm draws,
+  eight materials, 99,486 reserved triangles and 13.45 MB active Kelp texture
+  memory under the existing mobile ceilings.
+
+## 2026-08-10 — Continue with Crystal Trench as an isolated ruin-threshold slice
+
+- Freeze the accepted Version 43-R1 Kelp Cathedral direction and use commit
+  `56c5808371ac6a34479044e3e08861ec86f6ff12` as the R2 source base.
+- Add Crystal Trench as a separate Moon Well destination and review route, not
+  as a replacement for V42 or the accepted R1 candidate.
+- Make Prism Pulse the only new primary verb: one cyan collision-truth route is
+  revealed while two violet reflections fade on a deterministic cadence.
+- Repeat the monumental Trench Gate until a clean crossing, then end the short
+  threshold arrival slice. Do not add Crystal save migration in R2.
+- Reserve Sliding Crystal Plates, the Neri mirror-current race, Crystal relic
+  progression and the complete cavern for R3.
+- Hold the threshold renderer to eleven draws, five materials, 36,450 triangles
+  and three bounded 512 px albedo maps under the existing realm ceilings.
+
+## 2026-08-11 — Integrate accepted Realm 1 and final Realm 2 from Version 42 main
+
+- Branch Version 43-R4 from promoted Version 42 commit
+  `6228c7755f55c63b27ccf8e58fac56291c9beae3`.
+- Import accepted Kelp Cathedral R1 and final Crystal Trench R3; never promote
+  the superseded R2 threshold prototype as Realm 2.
+- Unlock Crystal Trench only after the baby-manta rescue and expose the two
+  destinations in the Moon Well as Realm 1→Realm 2.
+- Advance the shared save to schema 5, conservatively migrate the full schema-4
+  payload, and import valid standalone realm history without back-paying
+  rewards.
+- Award four existing-currency objectives with idempotent claims. Keep realm
+  runs outside Classic score/replay, Daily calendar, Tide Sprint ghost,
+  tutorial, Expedition, verified leaderboard and Moonflash clip authority.
+- Require all repository, render, lifecycle, 5,400-frame and Android/iPhone
+  wrapper gates before merge. Label physical-device evidence separately and do
+  not inherit it silently from Version 42.

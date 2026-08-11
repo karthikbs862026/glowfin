@@ -417,3 +417,89 @@ privacy/save/performance guardrails and the Moon-Current soundtrack.
 - Never add competitive revive advertising.
 - Do not fill space with more static coral, merfolk or architecture; prefer
   purposeful motion, reactions and authored set-piece events.
+
+## 2026-08-09 — Version 42 promoted; Version 43-R1 begun
+
+PR #33 was squash-merged to `main` as
+`6228c7755f55c63b27ccf8e58fac56291c9beae3`. Its tree is identical to the
+green candidate head `9ccce3d38a524be6c12ba3bb63a42bbd2066a332`. The exact merged tree was sealed
+as the Version 42-R1 production artifact with digest
+`419f2292cc409ba12b5448534b97d25af1cda52181471f39e81d04db1e48dce6` and
+promoted to the stable Glowfin playable route.
+
+The owner confirmed that this exact Version 42 candidate passed real Android
+and real iPhone race/close-win fairness, safe-area and touch, interruption and
+background, and thermal-behaviour testing. Device models and OS versions were
+not supplied and must not be inferred or borrowed from earlier matrices.
+
+Version 43-R1 starts from that exact merge and implements the first *Realms of
+the Lost Kingdom* vertical slice: a data-driven realm framework and Kelp
+Cathedral. Its defining verbs are rhythmic Swaying Frond Windows and Reversing
+Current Tunnels; its repeat-until-success hero encounter rescues a baby manta;
+and its optional current awards one durable Relic Page. The implementation must
+stay within existing mobile budgets, keep one collision/render truth, and
+preserve Classic Dive, Daily Tide, tutorial, Expedition and Tide Sprint.
+
+Kelp Cathedral may share idempotent Pearls, Tide XP, objectives and aggregate
+progress, but it must never replace the Classic best score, save a Classic
+ghost, submit a Classic leaderboard result or create a Moonflash challenge
+clip. Its realm record remains a separate checksummed primary/backup save until
+a versioned cloud migration is designed and certified. V43 promotion remains
+blocked on Android/iPhone feel, safe-area, lifecycle, performance, thermal and
+5,400-frame certification.
+
+## 2026-08-10 — Kelp Cathedral requires a realm-owned silhouette
+
+The owner rejected the first V43-R1 visual candidate because it still read as
+the main Glowfin Moon Garden with a Kelp Cathedral badge. Realm acceptance now
+requires a label-free frame to communicate the destination. Kelp Cathedral
+must remove Moon Garden masonry, route crescents, large explanatory cue cards
+and Moonstone presentation, then establish dense living columns, braided
+canopy, organic collision-aligned fronds, emerald/gold light, spores, fauna and
+the manta rescue beacon. Palette and HUD changes alone never constitute a new
+realm.
+
+## 2026-08-10 — Named realm landmarks must be readable in ordinary play
+
+The owner found the first living Kelp Cathedral pass improved but still too
+abstract and dark: arches read as pipes, frond barriers as repeated spikes,
+and bells, spores, sea dragons and the manta were not clearly identifiable.
+For realm acceptance, a named feature must be recognisable at normal chase
+speed through silhouette, scale, material and contrast. A label or dark
+procedural stand-in does not count. Kelp Cathedral therefore uses textured
+curved stipes, three visibly braided strands, broad organic frond gates, a
+natural seabed, layered emerald/aqua/gold light, dense luminous spores, large
+scalloped bells, leafy sea dragons and a persistent manta target.
+
+## 2026-08-10 — Freeze accepted Kelp direction; build Crystal Trench in slices
+
+The owner accepted the corrected Kelp Cathedral realism direction and asked to
+continue. Version 43-R1 is therefore frozen as the visual and mechanical
+regression base. Version 43-R2 is the first Crystal Trench slice: an indigo ruin
+threshold, deterministic Prism Pulse route-reading and a repeat-until-clean
+Trench Gate crossing. It must be reviewable separately at `/game-v43-r2/`
+without replacing the stable Version 42 root or the accepted R1 route.
+
+R2 does not broaden the shared save. Sliding Crystal Plates, the Neri
+mirror-current race, Crystal relic progression and the full cavern journey are
+reserved for Version 43-R3. This sequencing keeps one new mechanic and one new
+realm silhouette under review at a time while preserving all V42 and Kelp
+behaviour.
+
+## 2026-08-11 — Integrate the accepted realms as Version 43-R4
+
+The owner accepted Crystal Trench R3 and authorized the combined mainline
+sequence. R4 must branch from promoted Version 42 main, import accepted Kelp
+Cathedral R1 and final Crystal Trench R3 (never R2), connect them through the
+Moon Well as Realm 1→Realm 2, and unify saves, rewards, objectives, progression
+and telemetry. Tide Sprint, Classic Dive, Daily Tide, tutorial and Expedition
+remain unchanged.
+
+The baby-manta rescue is the only Realm 2 unlock authority. Shared progress
+advances from schema 4 to 5 and imports valid standalone realm history without
+retroactive rewards. Realm claims are idempotent and cannot alter Classic
+competitive records, Daily claims, Tide Sprint ghosts, tutorial or Expedition.
+The combined candidate requires deterministic fairness, lifecycle,
+performance, 5,400-frame, Android and iPhone gates before merge and main-link
+promotion. Automated wrapper/simulator evidence and physical-device evidence
+must remain separately labelled.

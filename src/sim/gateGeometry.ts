@@ -11,6 +11,10 @@ import {
   shutterOpeningAt,
   type SignatureObstaclePlan
 } from "./obstacleVariety.ts";
+import {
+  realmOpeningsAt,
+  type RealmGatePlan,
+} from "../realms/mechanics.ts";
 
 export interface GateGeometrySource {
   distance: number;
@@ -20,9 +24,15 @@ export interface GateGeometrySource {
 
 export interface RuntimeGateGeometrySource extends GateGeometrySource {
   obstaclePlan?: SignatureObstaclePlan;
+  realmPlan?: RealmGatePlan;
 }
 
-export type GateOpeningRoute = "standard" | "safe" | "moonflash";
+export type GateOpeningRoute =
+  | "standard"
+  | "safe"
+  | "moonflash"
+  | "relic"
+  | "rescue";
 
 export interface GateOpeningGeometry {
   left: number;
@@ -91,6 +101,13 @@ export function gateOpeningsAt(
   gate: RuntimeGateGeometrySource,
   elapsedSec: number
 ): readonly GateOpeningGeometry[] {
+  if (gate.realmPlan) {
+    return realmOpeningsAt(
+      gate.realmPlan,
+      { left: gate.gapLeft, right: gate.gapRight },
+      elapsedSec,
+    );
+  }
   const plan = gate.obstaclePlan;
   if (plan?.verb === "moonflash-choice") {
     return plan.openings

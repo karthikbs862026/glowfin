@@ -25,6 +25,16 @@ import {
   type SignatureObstaclePlan,
   type SignatureObstacleVerb
 } from "./obstacleVariety";
+import type { RealmId } from "../realms/definition";
+import {
+  realmProofOpening,
+  maximumCurrentTunnelDisplacement,
+  planRealmGate,
+  slidingCrystalPlateRetryPlan,
+  trenchThresholdRetryPlan,
+  type RealmGatePlan,
+  type SlidingCrystalPlatePlan,
+} from "../realms/mechanics";
 import chunkData from "../../config/chunks.json";
 
 export interface Gate {
@@ -47,6 +57,8 @@ export interface Gate {
   obstaclePlan?: SignatureObstaclePlan;
   /** Rare non-colliding authored event associated with this gate. */
   livingEvent?: LivingWorldEventPlan;
+  /** Version 43 realm-specific deterministic geometry and current authority. */
+  realmPlan?: RealmGatePlan;
 }
 
 interface GateTemplate {
@@ -221,6 +233,13 @@ export function requiredTravel(from: Gate, to: Gate, cfg: TuningConfig): number 
 export function gateSolvabilityOpening(
   gate: Gate
 ): Pick<Gate, "distance" | "gapLeft" | "gapRight" | "templateId" | "tier"> {
+  if (gate.realmPlan) {
+    const opening = realmProofOpening(
+      gate.realmPlan,
+      { left: gate.gapLeft, right: gate.gapRight },
+    );
+    return { ...gate, gapLeft: opening.left, gapRight: opening.right };
+  }
   const plan = gate.obstaclePlan;
   if (plan?.verb === "moonflash-choice") {
     const safe = plan.openings.find((opening) => opening.route === "safe");
@@ -249,9 +268,17 @@ export function transitionLateralBudget(
 ): number {
   const base = lateralBudget(from.distance, to.distance, profile, cfg);
   const plan = to.obstaclePlan;
-  if (plan?.verb !== "current-lane") return base;
   const speed = forwardSpeedAt(profile.at(to.distance), cfg);
-  return Math.max(0, base - maximumCurrentLaneDisplacement(plan, speed));
+  if (plan?.verb === "current-lane") {
+    return Math.max(0, base - maximumCurrentLaneDisplacement(plan, speed));
+  }
+  if (to.realmPlan?.verb === "reversing-current-tunnel") {
+    return Math.max(
+      0,
+      base - maximumCurrentTunnelDisplacement(to.realmPlan, speed),
+    );
+  }
+  return base;
 }
 
 export class CourseGenerator {
@@ -260,14 +287,21 @@ export class CourseGenerator {
   private readonly generated: Gate[] = [];
   private nextDistance: number;
   private nextArtVariant = 0;
+  private nextRealmGateIndex = 0;
+  private readonly realmId: RealmId;
 
   constructor(
     readonly seed: number,
     private readonly cfg: TuningConfig,
-    options: { firstGateDistance?: number; profileDistance?: number } = {}
+    options: {
+      firstGateDistance?: number;
+      profileDistance?: number;
+      realmId?: RealmId;
+    } = {}
   ) {
     this.rng = new SeededRandom(seed);
     this.profile = new MomentumProfile(cfg, options.profileDistance ?? 12000);
+    this.realmId = options.realmId ?? "moon-garden";
     // Give the player a clear runway before the first obstacle.
     this.nextDistance = options.firstGateDistance ?? cfg.readability.visibleAheadUnits;
   }
@@ -306,6 +340,49 @@ export class CourseGenerator {
     }
   }
 
+  /**
+   * Reauthor the next safe Crystal Trench gate as the same buried threshold.
+   * A miss therefore repeats farther ahead without resetting score, momentum,
+   * or the deterministic replay stream.
+   */
+  scheduleCrystalThresholdRetry(minimumDistance: number): number | null {
+    if (this.realmId !== "crystal-trench") return null;
+    this.ensureGeneratedTo(
+      minimumDistance + this.cfg.readability.visibleAheadUnits * 2,
+    );
+    const candidate = this.generated.find((gate) => (
+      gate.distance >= minimumDistance &&
+      gate.realmPlan?.verb !== "trench-threshold"
+    ));
+    if (!candidate) return null;
+    candidate.realmPlan = trenchThresholdRetryPlan(candidate);
+    return candidate.distance;
+  }
+
+  /** Repeat a missed plate cadence on a future collision-proved plate gate. */
+  scheduleCrystalPlateRetry(
+    failedPlan: SlidingCrystalPlatePlan,
+    minimumDistance: number,
+  ): number | null {
+    if (this.realmId !== "crystal-trench") return null;
+    this.ensureGeneratedTo(
+      minimumDistance + this.cfg.readability.visibleAheadUnits * 2,
+    );
+    const candidate = this.generated.find((gate) => (
+      gate.distance >= minimumDistance &&
+      gate.realmPlan?.verb === "sliding-crystal-plates"
+    ));
+    if (!candidate || candidate.realmPlan?.verb !== "sliding-crystal-plates") {
+      return null;
+    }
+    candidate.realmPlan = slidingCrystalPlateRetryPlan(
+      failedPlan,
+      candidate.realmPlan,
+      candidate.distance,
+    );
+    return candidate.distance;
+  }
+
   private appendChunk(): void {
     const tier = tierAtDistance(this.nextDistance);
     const eligible = templates.filter((t) => t.minTier <= tier);
@@ -324,7 +401,8 @@ export class CourseGenerator {
         distance,
         tier,
         template.id,
-        template.signatureVerb
+        template.signatureVerb,
+        this.nextRealmGateIndex++,
       ));
       this.nextDistance = distance + spacing;
     }
@@ -353,7 +431,8 @@ export class CourseGenerator {
     distance: number,
     tier: number,
     templateId: string,
-    signatureVerb: SignatureObstacleVerb
+    signatureVerb: SignatureObstacleVerb,
+    realmGateIndex: number,
   ): Gate {
     const cfg = this.cfg;
     const halfWidth = cfg.lane.halfWidth;
@@ -386,12 +465,21 @@ export class CourseGenerator {
       templateId,
       tier
     };
-    draftGate.obstaclePlan = planSignatureObstacle(
-      signatureVerb,
-      { seed: this.seed, gate: draftGate },
-      halfWidth,
-      r
-    );
+    if (this.realmId === "moon-garden") {
+      draftGate.obstaclePlan = planSignatureObstacle(
+        signatureVerb,
+        { seed: this.seed, gate: draftGate },
+        halfWidth,
+        r
+      );
+    } else {
+      draftGate.realmPlan = planRealmGate(
+        this.realmId,
+        { seed: this.seed, gate: draftGate, gateIndex: realmGateIndex },
+        halfWidth,
+        r,
+      );
+    }
     const proofOpening = gateSolvabilityOpening(draftGate);
     const proofHalfGap = (proofOpening.gapRight - proofOpening.gapLeft) * 0.5;
 
@@ -434,13 +522,22 @@ export class CourseGenerator {
         this.nextArtVariant++ % GATE_FAMILIES.length
       ) as GateFacadeVariant
     };
-    gate.obstaclePlan = planSignatureObstacle(
-      signatureVerb,
-      { seed: this.seed, gate },
-      halfWidth,
-      r
-    );
-    gate.livingEvent = planLivingWorldEvent({ seed: this.seed, gate }) ?? undefined;
+    if (this.realmId === "moon-garden") {
+      gate.obstaclePlan = planSignatureObstacle(
+        signatureVerb,
+        { seed: this.seed, gate },
+        halfWidth,
+        r
+      );
+      gate.livingEvent = planLivingWorldEvent({ seed: this.seed, gate }) ?? undefined;
+    } else {
+      gate.realmPlan = planRealmGate(
+        this.realmId,
+        { seed: this.seed, gate, gateIndex: realmGateIndex },
+        halfWidth,
+        r,
+      );
+    }
     return gate;
   }
 }

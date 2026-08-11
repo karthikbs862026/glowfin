@@ -15,10 +15,10 @@ execFileSync("git", ["merge-base", "--is-ancestor", baselineCommit, "HEAD"], {
 const sourceBaseCommit = String(current.sourceBaseCommit ?? "");
 if (
   !Number.isInteger(current.sourceBaseVersion) ||
-  current.sourceBaseVersion >= current.version ||
+  current.sourceBaseVersion > current.version ||
   !/^[0-9a-f]{40}$/.test(sourceBaseCommit)
 ) {
-  throw new Error("Source base must name an earlier version and full immutable Git commit.");
+  throw new Error("Source base must name an earlier version or revision and full immutable Git commit.");
 }
 execFileSync("git", ["merge-base", "--is-ancestor", sourceBaseCommit, "HEAD"], {
   cwd: root,
@@ -31,6 +31,12 @@ const sourceBase = JSON.parse(execFileSync(
 ));
 if (sourceBase.version !== current.sourceBaseVersion) {
   throw new Error("Source-base version does not match its immutable Git commit.");
+}
+if (
+  sourceBase.version === current.version &&
+  sourceBase.releaseTag === current.releaseTag
+) {
+  throw new Error("A same-version source base must name a distinct immutable revision.");
 }
 const baselineText = execFileSync(
   "git",

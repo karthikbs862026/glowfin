@@ -10,6 +10,10 @@ import {
   TIDE_SPRINT_OBJECTIVES,
   type TideSprintProgressV1,
 } from "../tideSprint/progress";
+import type {
+  CrystalTrenchProgressV1,
+  KelpCathedralProgressV1,
+} from "../realms/progress";
 
 export type MoonWellPanel = "home" | "wardrobe" | "objectives" | "leaderboard" | "settings";
 
@@ -25,6 +29,10 @@ export class MoonWell {
   private readonly dive: HTMLButtonElement;
   private readonly tideSprint: HTMLButtonElement;
   private readonly tideSprintDetail: HTMLElement;
+  private readonly kelpCathedral: HTMLButtonElement;
+  private readonly kelpCathedralDetail: HTMLElement;
+  private readonly crystalTrench: HTMLButtonElement;
+  private readonly crystalTrenchDetail: HTMLElement;
   private readonly daily: HTMLButtonElement;
   private readonly challenge: HTMLButtonElement;
   private readonly meta: HTMLElement;
@@ -48,6 +56,10 @@ export class MoonWell {
     this.dive = MoonWell.requireButton(root, "moonwell-dive");
     this.tideSprint = MoonWell.requireButton(root, "moonwell-tide-sprint");
     this.tideSprintDetail = MoonWell.require(root, "moonwell-tide-sprint-detail");
+    this.kelpCathedral = MoonWell.requireButton(root, "moonwell-kelp-cathedral");
+    this.kelpCathedralDetail = MoonWell.require(root, "moonwell-kelp-cathedral-detail");
+    this.crystalTrench = MoonWell.requireButton(root, "moonwell-crystal-trench");
+    this.crystalTrenchDetail = MoonWell.require(root, "moonwell-crystal-trench-detail");
     this.daily = MoonWell.requireButton(root, "hud-daily-trial");
     this.challenge = MoonWell.requireButton(root, "moonwell-challenge");
     this.meta = MoonWell.require(root, "moonwell-meta");
@@ -106,6 +118,14 @@ export class MoonWell {
 
   onTideSprint(listener: () => void): void {
     this.wire(this.tideSprint, listener);
+  }
+
+  onKelpCathedral(listener: () => void): void {
+    this.wire(this.kelpCathedral, listener);
+  }
+
+  onCrystalTrench(listener: () => void): void {
+    this.wire(this.crystalTrench, listener);
   }
 
   onChallenge(listener: () => void): void {
@@ -208,6 +228,58 @@ export class MoonWell {
     this.tideSprint.dataset["ghost"] = ghostEnabled && progress.bestGhost
       ? "ready"
       : ghostEnabled ? "preset" : "off";
+  }
+
+  setKelpCathedralState(progress: Readonly<KelpCathedralProgressV1>): void {
+    const rescue = progress.rescues > 0
+      ? `${progress.rescues} rescue${progress.rescues === 1 ? "" : "s"}`
+      : "Baby manta awaits";
+    const best = progress.bestRescueSec === null
+      ? "no rescue time"
+      : `best ${progress.bestRescueSec.toFixed(1)}s`;
+    const relic = progress.relicPages.includes("kelp-cathedral-page-1")
+      ? "Relic Page found"
+      : "1 hidden Relic Page";
+    this.kelpCathedralDetail.textContent =
+      `${rescue} · ${best} · ${relic} · ${progress.masteredVerbs.length}/4 realm verbs`;
+    this.kelpCathedral.dataset["rescued"] = String(progress.rescues > 0);
+    this.kelpCathedral.dataset["relic"] = String(
+      progress.relicPages.includes("kelp-cathedral-page-1"),
+    );
+  }
+
+  setCrystalTrenchState(
+    progress: Readonly<CrystalTrenchProgressV1>,
+    unlocked = true,
+  ): void {
+    this.crystalTrench.disabled = !unlocked;
+    this.crystalTrench.dataset["locked"] = String(!unlocked);
+    this.crystalTrench.setAttribute(
+      "aria-label",
+      unlocked
+        ? "Enter Realm 2, Crystal Trench"
+        : "Crystal Trench locked; rescue the baby manta in Realm 1",
+    );
+    if (!unlocked) {
+      this.crystalTrenchDetail.textContent =
+        "Locked · rescue the baby manta in Kelp Cathedral to open Realm 2";
+      this.crystalTrench.dataset["completed"] = "false";
+      this.crystalTrench.dataset["clean"] = "false";
+      return;
+    }
+    const completion = progress.completions > 0
+      ? `${progress.completions} Mirror Current win${progress.completions === 1 ? "" : "s"}`
+      : "Neri awaits in the Mirror Current";
+    const best = progress.bestTimeSec === null
+      ? "no clear time"
+      : `best ${progress.bestTimeSec.toFixed(1)}s`;
+    const clean = progress.cleanCompletions > 0
+      ? `${progress.cleanCompletions} clean`
+      : "clean mark open";
+    this.crystalTrenchDetail.textContent =
+      `${completion} · ${best} · ${clean} · ${progress.masteredVerbs.length}/4 realm verbs`;
+    this.crystalTrench.dataset["completed"] = String(progress.completions > 0);
+    this.crystalTrench.dataset["clean"] = String(progress.cleanCompletions > 0);
   }
 
   setChallenge(caption: string | null, state: "ready" | "failed" | "loading" = "ready"): void {

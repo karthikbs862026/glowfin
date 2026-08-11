@@ -19,6 +19,7 @@ const noEvents = (): StepEvents => ({
   collisions: 0,
   encounters: [],
   signatureEvents: [],
+  realmEvents: [],
   justEnded: false
 });
 
