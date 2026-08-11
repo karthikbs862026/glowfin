@@ -9,10 +9,9 @@
 
 **Candidate branch:** `agent/version43-r4-realms-integration`
 
-**Local sealed artifact:** digest
-`b7051ad8c645027c5e223b5ac64f6d2d72e193b227ac5d0a0df10efcc35e7c4c`,
-33 files. This is a pre-commit local seal and will be replaced by the immutable
-CI/merged artifact identity.
+**Local sealed artifact:** 33-file production build completed successfully.
+The immutable digest is intentionally recorded from the final merged source
+identity during promotion rather than from a moving pull-request commit.
 
 ## Integrated scope
 
@@ -32,7 +31,7 @@ CI/merged artifact identity.
 | Gate | Evidence | Status |
 |---|---|---|
 | Lint + strict TypeScript | zero warnings/errors | Passed locally |
-| Repository suite | 451/451 tests across 60 files | Passed locally |
+| Repository suite | 452/452 tests across 61 files | Passed locally |
 | Realm progression and migration | Realm 1→2 lock, schema 4→5, prototype import, reward idempotency and cloud merge | Passed locally |
 | Deterministic fairness | four clean R3 seeds finish in 58–70 seconds with a positive sub-0.5-second margin | Passed locally |
 | Repeat-until-clean | forced Trench Gate and plate misses reform with the authoritative sequence | Passed locally |
