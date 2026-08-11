@@ -1,15 +1,15 @@
 {
-  "$comment": "Version 42-R1 integrates the frozen Tide Sprint R10 feel as a shared Moon Well mode on merged Version 41-R5.",
+  "$comment": "Version 43-R4 integrates the accepted Kelp Cathedral Realm 1 and Crystal Trench R3 Mirror Current into the Version 42 mainline with shared progression, rewards, objectives, saves and telemetry.",
   "schemaVersion": 1,
-  "version": 42,
-  "phase": "phase-tide-sprint-integration-r1",
-  "releaseTag": "glowfin-v42-r1",
-  "certification": "automated-candidate",
-  "sourceBaseVersion": 41,
-  "sourceBaseCommit": "c67c4a6350f3f432c72e5d01fe92df69c557f2f0",
+  "version": 43,
+  "phase": "phase-realms-mainline-integration-r4",
+  "releaseTag": "glowfin-v43-r4-realms-integrated",
+  "certification": "automated-and-wrapper-candidate",
+  "sourceBaseVersion": 42,
+  "sourceBaseCommit": "6228c7755f55c63b27ccf8e58fac56291c9beae3",
   "baselineVersion": 39,
   "baselineCommit": "266b7900294f81e174134337a9d14b5951efcf30",
-  "deferredVersions": [40, 41],
+  "deferredVersions": [40, 41, 42],
   "artBuild": "phase3c-v30-glowfin-production",
   "productionPolicyVersion": 1
 }

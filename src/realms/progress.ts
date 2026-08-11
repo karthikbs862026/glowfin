@@ -1,0 +1,582 @@
+import type { RealmGameplayVerb } from "./definition";
+
+export const REALM_PROGRESS_SCHEMA_VERSION = 1 as const;
+export const REALM_PROGRESS_PRIMARY_KEY = "glowfin.realms.v1.primary";
+export const REALM_PROGRESS_BACKUP_KEY = "glowfin.realms.v1.backup";
+const MAX_REALM_CLAIMS = 64;
+
+export interface KelpCathedralProgressV1 {
+  runs: number;
+  rescues: number;
+  bestRescueSec: number | null;
+  relicPages: Array<"kelp-cathedral-page-1">;
+  masteredVerbs: RealmGameplayVerb[];
+  recentClaims: string[];
+}
+
+export interface CrystalTrenchProgressV1 {
+  runs: number;
+  completions: number;
+  bestTimeSec: number | null;
+  cleanCompletions: number;
+  masteredVerbs: RealmGameplayVerb[];
+  recentClaims: string[];
+}
+
+export interface RealmProgressV1 {
+  schemaVersion: typeof REALM_PROGRESS_SCHEMA_VERSION;
+  revision: number;
+  updatedAt: string;
+  kelpCathedral: KelpCathedralProgressV1;
+  crystalTrench: CrystalTrenchProgressV1;
+}
+
+interface RealmProgressEnvelopeV1 {
+  envelopeVersion: 1;
+  payload: RealmProgressV1;
+  checksum: string;
+}
+
+export interface RealmProgressStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+
+export interface KelpCathedralRunRecord {
+  runId: string;
+  elapsedSec: number;
+  rescuedManta: boolean;
+  relicPageFound: boolean;
+  masteredVerbs: readonly RealmGameplayVerb[];
+}
+
+export interface CrystalTrenchRunRecord {
+  runId: string;
+  elapsedSec: number;
+  completed: boolean;
+  cleanPerformance: boolean;
+  masteredVerbs: readonly RealmGameplayVerb[];
+}
+
+export type RealmObjectiveId =
+  | "realm-kelp-rescue"
+  | "realm-kelp-relic"
+  | "realm-crystal-clear"
+  | "realm-crystal-clean";
+
+export interface RealmObjectiveDefinition {
+  id: RealmObjectiveId;
+  label: string;
+  rewardPearls: number;
+  rewardXp: number;
+}
+
+export interface RealmObjectivePresentation extends RealmObjectiveDefinition {
+  progress: number;
+  target: 1;
+  completed: boolean;
+}
+
+export interface RealmModeAward {
+  pearls: number;
+  xp: number;
+  newlyCompletedObjectives: RealmObjectiveId[];
+}
+
+export interface RealmRunUpdate {
+  progress: RealmProgressV1;
+  claimId: string;
+  duplicatePrevented: boolean;
+  crystalTrenchUnlocked: boolean;
+  crystalTrenchNewlyUnlocked: boolean;
+  award: RealmModeAward;
+}
+
+export const REALM_OBJECTIVES: readonly RealmObjectiveDefinition[] = [
+  {
+    id: "realm-kelp-rescue",
+    label: "Realm 1 · Rescue the baby manta",
+    rewardPearls: 60,
+    rewardXp: 45,
+  },
+  {
+    id: "realm-kelp-relic",
+    label: "Realm 1 · Recover the hidden Relic Page",
+    rewardPearls: 35,
+    rewardXp: 30,
+  },
+  {
+    id: "realm-crystal-clear",
+    label: "Realm 2 · Win Neri's Mirror Current race",
+    rewardPearls: 75,
+    rewardXp: 55,
+  },
+  {
+    id: "realm-crystal-clean",
+    label: "Realm 2 · Earn the clean Trench mark",
+    rewardPearls: 45,
+    rewardXp: 35,
+  },
+] as const;
+
+function checksum(text: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+
+function clone(progress: RealmProgressV1): RealmProgressV1 {
+  return JSON.parse(JSON.stringify(progress)) as RealmProgressV1;
+}
+
+function validDate(value: unknown): value is string {
+  return typeof value === "string" && Number.isFinite(Date.parse(value));
+}
+
+function safeClaim(value: string): string {
+  return value.replace(/[^a-zA-Z0-9:._-]/g, "").slice(0, 104) || "unknown";
+}
+
+export function createDefaultRealmProgress(now = new Date()): RealmProgressV1 {
+  return {
+    schemaVersion: REALM_PROGRESS_SCHEMA_VERSION,
+    revision: 0,
+    updatedAt: now.toISOString(),
+    kelpCathedral: {
+      runs: 0,
+      rescues: 0,
+      bestRescueSec: null,
+      relicPages: [],
+      masteredVerbs: [],
+      recentClaims: [],
+    },
+    crystalTrench: {
+      runs: 0,
+      completions: 0,
+      bestTimeSec: null,
+      cleanCompletions: 0,
+      masteredVerbs: [],
+      recentClaims: [],
+    },
+  };
+}
+
+export function isCrystalTrenchUnlocked(progress: RealmProgressV1): boolean {
+  return progress.kelpCathedral.rescues > 0;
+}
+
+function objectiveCompleted(
+  progress: RealmProgressV1,
+  objectiveId: RealmObjectiveId,
+): boolean {
+  switch (objectiveId) {
+    case "realm-kelp-rescue":
+      return progress.kelpCathedral.rescues > 0;
+    case "realm-kelp-relic":
+      return progress.kelpCathedral.relicPages.includes("kelp-cathedral-page-1");
+    case "realm-crystal-clear":
+      return progress.crystalTrench.completions > 0;
+    case "realm-crystal-clean":
+      return progress.crystalTrench.cleanCompletions > 0;
+  }
+}
+
+export function realmObjectivePresentations(
+  progress: RealmProgressV1,
+): RealmObjectivePresentation[] {
+  return REALM_OBJECTIVES.map((objective) => {
+    const completed = objectiveCompleted(progress, objective.id);
+    return {
+      ...objective,
+      progress: completed ? 1 : 0,
+      target: 1,
+      completed,
+    };
+  });
+}
+
+function awardForObjectives(objectiveIds: readonly RealmObjectiveId[]): RealmModeAward {
+  const definitions = new Map(REALM_OBJECTIVES.map((objective) => [
+    objective.id,
+    objective,
+  ]));
+  return objectiveIds.reduce<RealmModeAward>((award, objectiveId) => {
+    const objective = definitions.get(objectiveId);
+    if (!objective) return award;
+    award.pearls += objective.rewardPearls;
+    award.xp += objective.rewardXp;
+    award.newlyCompletedObjectives.push(objectiveId);
+    return award;
+  }, { pearls: 0, xp: 0, newlyCompletedObjectives: [] });
+}
+
+export function applyKelpCathedralRun(
+  current: RealmProgressV1,
+  record: KelpCathedralRunRecord,
+  now = new Date(),
+): RealmRunUpdate {
+  const claimId = `realm:kelp:${safeClaim(record.runId)}`;
+  if (current.kelpCathedral.recentClaims.includes(claimId)) {
+    return {
+      progress: clone(current),
+      claimId,
+      duplicatePrevented: true,
+      crystalTrenchUnlocked: isCrystalTrenchUnlocked(current),
+      crystalTrenchNewlyUnlocked: false,
+      award: awardForObjectives([]),
+    };
+  }
+  const rescueWasComplete = objectiveCompleted(current, "realm-kelp-rescue");
+  const relicWasComplete = objectiveCompleted(current, "realm-kelp-relic");
+  const crystalWasUnlocked = isCrystalTrenchUnlocked(current);
+  const previous = current.kelpCathedral;
+  const bestRescueSec = record.rescuedManta
+    ? previous.bestRescueSec === null
+      ? record.elapsedSec
+      : Math.min(previous.bestRescueSec, record.elapsedSec)
+    : previous.bestRescueSec;
+  const progress: RealmProgressV1 = {
+    schemaVersion: REALM_PROGRESS_SCHEMA_VERSION,
+    revision: current.revision + 1,
+    updatedAt: now.toISOString(),
+    kelpCathedral: {
+      runs: previous.runs + 1,
+      rescues: previous.rescues + (record.rescuedManta ? 1 : 0),
+      bestRescueSec,
+      relicPages: record.relicPageFound
+        ? ["kelp-cathedral-page-1"]
+        : [...previous.relicPages],
+      masteredVerbs: Array.from(new Set([
+        ...previous.masteredVerbs,
+        ...record.masteredVerbs,
+      ])).sort(),
+      recentClaims: [...previous.recentClaims, claimId].slice(-MAX_REALM_CLAIMS),
+    },
+    crystalTrench: clone(current).crystalTrench,
+  };
+  const newlyCompleted: RealmObjectiveId[] = [];
+  if (!rescueWasComplete && objectiveCompleted(progress, "realm-kelp-rescue")) {
+    newlyCompleted.push("realm-kelp-rescue");
+  }
+  if (!relicWasComplete && objectiveCompleted(progress, "realm-kelp-relic")) {
+    newlyCompleted.push("realm-kelp-relic");
+  }
+  return {
+    progress,
+    claimId,
+    duplicatePrevented: false,
+    crystalTrenchUnlocked: isCrystalTrenchUnlocked(progress),
+    crystalTrenchNewlyUnlocked:
+      !crystalWasUnlocked && isCrystalTrenchUnlocked(progress),
+    award: awardForObjectives(newlyCompleted),
+  };
+}
+
+export function applyCrystalTrenchRun(
+  current: RealmProgressV1,
+  record: CrystalTrenchRunRecord,
+  now = new Date(),
+): RealmRunUpdate {
+  const claimId = `realm:crystal:${safeClaim(record.runId)}`;
+  if (current.crystalTrench.recentClaims.includes(claimId)) {
+    return {
+      progress: clone(current),
+      claimId,
+      duplicatePrevented: true,
+      crystalTrenchUnlocked: isCrystalTrenchUnlocked(current),
+      crystalTrenchNewlyUnlocked: false,
+      award: awardForObjectives([]),
+    };
+  }
+  if (!isCrystalTrenchUnlocked(current)) {
+    return {
+      progress: clone(current),
+      claimId,
+      duplicatePrevented: true,
+      crystalTrenchUnlocked: false,
+      crystalTrenchNewlyUnlocked: false,
+      award: awardForObjectives([]),
+    };
+  }
+  const clearWasComplete = objectiveCompleted(current, "realm-crystal-clear");
+  const cleanWasComplete = objectiveCompleted(current, "realm-crystal-clean");
+  const previous = current.crystalTrench;
+  const bestTimeSec = record.completed
+    ? previous.bestTimeSec === null
+      ? record.elapsedSec
+      : Math.min(previous.bestTimeSec, record.elapsedSec)
+    : previous.bestTimeSec;
+  const progress: RealmProgressV1 = {
+    schemaVersion: REALM_PROGRESS_SCHEMA_VERSION,
+    revision: current.revision + 1,
+    updatedAt: now.toISOString(),
+    kelpCathedral: clone(current).kelpCathedral,
+    crystalTrench: {
+      runs: previous.runs + 1,
+      completions: previous.completions + (record.completed ? 1 : 0),
+      bestTimeSec,
+      cleanCompletions: previous.cleanCompletions +
+        (record.completed && record.cleanPerformance ? 1 : 0),
+      masteredVerbs: Array.from(new Set([
+        ...previous.masteredVerbs,
+        ...record.masteredVerbs,
+      ])).sort(),
+      recentClaims: [...previous.recentClaims, claimId].slice(-MAX_REALM_CLAIMS),
+    },
+  };
+  const newlyCompleted: RealmObjectiveId[] = [];
+  if (!clearWasComplete && objectiveCompleted(progress, "realm-crystal-clear")) {
+    newlyCompleted.push("realm-crystal-clear");
+  }
+  if (!cleanWasComplete && objectiveCompleted(progress, "realm-crystal-clean")) {
+    newlyCompleted.push("realm-crystal-clean");
+  }
+  return {
+    progress,
+    claimId,
+    duplicatePrevented: false,
+    crystalTrenchUnlocked: true,
+    crystalTrenchNewlyUnlocked: false,
+    award: awardForObjectives(newlyCompleted),
+  };
+}
+
+function validKelpProgress(kelp: Partial<KelpCathedralProgressV1> | undefined): boolean {
+  if (!kelp) return false;
+  const allowedVerbs: readonly RealmGameplayVerb[] = [
+    "swaying-frond-window",
+    "reversing-current-tunnel",
+    "manta-rescue",
+    "relic-current",
+  ];
+  return Number.isInteger(kelp.runs) && Number(kelp.runs) >= 0 &&
+    Number.isInteger(kelp.rescues) && Number(kelp.rescues) >= 0 &&
+    Number(kelp.rescues) <= Number(kelp.runs) &&
+    (kelp.bestRescueSec === null || (
+      typeof kelp.bestRescueSec === "number" &&
+      Number.isFinite(kelp.bestRescueSec) &&
+      kelp.bestRescueSec > 0
+    )) &&
+    Array.isArray(kelp.relicPages) &&
+    kelp.relicPages.every((page) => page === "kelp-cathedral-page-1") &&
+    new Set(kelp.relicPages).size === kelp.relicPages.length &&
+    Array.isArray(kelp.masteredVerbs) &&
+    kelp.masteredVerbs.every((verb) => allowedVerbs.includes(verb)) &&
+    new Set(kelp.masteredVerbs).size === kelp.masteredVerbs.length &&
+    Array.isArray(kelp.recentClaims) &&
+    kelp.recentClaims.length <= MAX_REALM_CLAIMS &&
+    kelp.recentClaims.every((claim) => (
+      typeof claim === "string" && /^[a-zA-Z0-9:._-]{1,120}$/.test(claim)
+    )) &&
+    new Set(kelp.recentClaims).size === kelp.recentClaims.length;
+}
+
+function validCrystalProgress(
+  crystal: Partial<CrystalTrenchProgressV1> | undefined,
+): boolean {
+  if (!crystal) return false;
+  const allowedVerbs: readonly RealmGameplayVerb[] = [
+    "prism-pulse",
+    "trench-threshold",
+    "sliding-crystal-plates",
+    "mirror-current-race",
+  ];
+  return Number.isInteger(crystal.runs) && Number(crystal.runs) >= 0 &&
+    Number.isInteger(crystal.completions) && Number(crystal.completions) >= 0 &&
+    Number(crystal.completions) <= Number(crystal.runs) &&
+    Number.isInteger(crystal.cleanCompletions) && Number(crystal.cleanCompletions) >= 0 &&
+    Number(crystal.cleanCompletions) <= Number(crystal.completions) &&
+    (crystal.bestTimeSec === null || (
+      typeof crystal.bestTimeSec === "number" &&
+      Number.isFinite(crystal.bestTimeSec) &&
+      crystal.bestTimeSec > 0
+    )) &&
+    Array.isArray(crystal.masteredVerbs) &&
+    crystal.masteredVerbs.every((verb) => allowedVerbs.includes(verb)) &&
+    new Set(crystal.masteredVerbs).size === crystal.masteredVerbs.length &&
+    Array.isArray(crystal.recentClaims) &&
+    crystal.recentClaims.length <= MAX_REALM_CLAIMS &&
+    crystal.recentClaims.every((claim) => (
+      typeof claim === "string" && /^[a-zA-Z0-9:._-]{1,120}$/.test(claim)
+    )) &&
+    new Set(crystal.recentClaims).size === crystal.recentClaims.length;
+}
+
+export function validateRealmProgress(value: unknown): value is RealmProgressV1 {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<RealmProgressV1>;
+  const kelp = candidate.kelpCathedral as Partial<KelpCathedralProgressV1> | undefined;
+  const crystal = candidate.crystalTrench as Partial<CrystalTrenchProgressV1> | undefined;
+  return candidate.schemaVersion === REALM_PROGRESS_SCHEMA_VERSION &&
+    Number.isInteger(candidate.revision) && Number(candidate.revision) >= 0 &&
+    validDate(candidate.updatedAt) &&
+    validKelpProgress(kelp) &&
+    validCrystalProgress(crystal);
+}
+
+export function mergeRealmProgress(
+  local: RealmProgressV1,
+  remote: RealmProgressV1,
+  now = new Date(),
+): RealmProgressV1 {
+  const localBest = local.kelpCathedral.bestRescueSec;
+  const remoteBest = remote.kelpCathedral.bestRescueSec;
+  const bestRescueSec = localBest === null
+    ? remoteBest
+    : remoteBest === null
+      ? localBest
+      : Math.min(localBest, remoteBest);
+  const localCrystalBest = local.crystalTrench.bestTimeSec;
+  const remoteCrystalBest = remote.crystalTrench.bestTimeSec;
+  const bestCrystalTimeSec = localCrystalBest === null
+    ? remoteCrystalBest
+    : remoteCrystalBest === null
+      ? localCrystalBest
+      : Math.min(localCrystalBest, remoteCrystalBest);
+  return {
+    schemaVersion: REALM_PROGRESS_SCHEMA_VERSION,
+    revision: Math.max(local.revision, remote.revision) + 1,
+    updatedAt: now.toISOString(),
+    kelpCathedral: {
+      runs: Math.max(local.kelpCathedral.runs, remote.kelpCathedral.runs),
+      rescues: Math.max(local.kelpCathedral.rescues, remote.kelpCathedral.rescues),
+      bestRescueSec,
+      relicPages: Array.from(new Set([
+        ...local.kelpCathedral.relicPages,
+        ...remote.kelpCathedral.relicPages,
+      ])).sort() as Array<"kelp-cathedral-page-1">,
+      masteredVerbs: Array.from(new Set([
+        ...local.kelpCathedral.masteredVerbs,
+        ...remote.kelpCathedral.masteredVerbs,
+      ])).sort() as RealmGameplayVerb[],
+      recentClaims: Array.from(new Set([
+        ...local.kelpCathedral.recentClaims,
+        ...remote.kelpCathedral.recentClaims,
+      ])).sort().slice(-MAX_REALM_CLAIMS),
+    },
+    crystalTrench: {
+      runs: Math.max(local.crystalTrench.runs, remote.crystalTrench.runs),
+      completions: Math.max(
+        local.crystalTrench.completions,
+        remote.crystalTrench.completions,
+      ),
+      bestTimeSec: bestCrystalTimeSec,
+      cleanCompletions: Math.max(
+        local.crystalTrench.cleanCompletions,
+        remote.crystalTrench.cleanCompletions,
+      ),
+      masteredVerbs: Array.from(new Set([
+        ...local.crystalTrench.masteredVerbs,
+        ...remote.crystalTrench.masteredVerbs,
+      ])).sort() as RealmGameplayVerb[],
+      recentClaims: Array.from(new Set([
+        ...local.crystalTrench.recentClaims,
+        ...remote.crystalTrench.recentClaims,
+      ])).sort().slice(-MAX_REALM_CLAIMS),
+    },
+  };
+}
+
+function encode(progress: RealmProgressV1): string {
+  const payload = JSON.stringify(progress);
+  const envelope: RealmProgressEnvelopeV1 = {
+    envelopeVersion: 1,
+    payload: progress,
+    checksum: checksum(payload),
+  };
+  return JSON.stringify(envelope);
+}
+
+function decode(encoded: string | null): RealmProgressV1 | null {
+  if (!encoded || encoded.length > 64 * 1024) return null;
+  try {
+    const envelope = JSON.parse(encoded) as Partial<RealmProgressEnvelopeV1>;
+    if (
+      envelope.envelopeVersion !== 1 ||
+      typeof envelope.checksum !== "string" ||
+      !envelope.payload ||
+      typeof envelope.payload !== "object" ||
+      checksum(JSON.stringify(envelope.payload)) !== envelope.checksum
+    ) return null;
+    if (validateRealmProgress(envelope.payload)) return clone(envelope.payload);
+    const legacy = envelope.payload as Partial<RealmProgressV1>;
+    if (
+      legacy.schemaVersion !== REALM_PROGRESS_SCHEMA_VERSION ||
+      !Number.isInteger(legacy.revision) ||
+      Number(legacy.revision) < 0 ||
+      !validDate(legacy.updatedAt) ||
+      !validKelpProgress(legacy.kelpCathedral)
+    ) return null;
+    return {
+      schemaVersion: REALM_PROGRESS_SCHEMA_VERSION,
+      revision: Number(legacy.revision),
+      updatedAt: legacy.updatedAt!,
+      kelpCathedral: clone({
+        schemaVersion: REALM_PROGRESS_SCHEMA_VERSION,
+        revision: Number(legacy.revision),
+        updatedAt: legacy.updatedAt!,
+        kelpCathedral: legacy.kelpCathedral!,
+        crystalTrench: createDefaultRealmProgress().crystalTrench,
+      }).kelpCathedral,
+      crystalTrench: createDefaultRealmProgress().crystalTrench,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function readLegacyRealmProgress(
+  storage: Pick<RealmProgressStorage, "getItem">,
+): RealmProgressV1 | null {
+  try {
+    return decode(storage.getItem(REALM_PROGRESS_PRIMARY_KEY)) ??
+      decode(storage.getItem(REALM_PROGRESS_BACKUP_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export class RealmProgressRepository {
+  private current: RealmProgressV1;
+
+  constructor(
+    private readonly storage: RealmProgressStorage,
+    private readonly now: () => Date = () => new Date(),
+  ) {
+    const primary = decode(storage.getItem(REALM_PROGRESS_PRIMARY_KEY));
+    const backup = decode(storage.getItem(REALM_PROGRESS_BACKUP_KEY));
+    this.current = primary ?? backup ?? createDefaultRealmProgress(this.now());
+    this.persist();
+  }
+
+  snapshot(): RealmProgressV1 {
+    return clone(this.current);
+  }
+
+  recordKelpRun(record: KelpCathedralRunRecord): RealmProgressV1 {
+    this.current = applyKelpCathedralRun(this.current, record, this.now()).progress;
+    this.persist();
+    return this.snapshot();
+  }
+
+  recordCrystalRun(record: CrystalTrenchRunRecord): RealmProgressV1 {
+    this.current = applyCrystalTrenchRun(this.current, record, this.now()).progress;
+    this.persist();
+    return this.snapshot();
+  }
+
+  replaceWithMerged(remote: RealmProgressV1): RealmProgressV1 {
+    this.current = mergeRealmProgress(this.current, remote, this.now());
+    this.persist();
+    return this.snapshot();
+  }
+
+  private persist(): void {
+    const encoded = encode(this.current);
+    this.storage.setItem(REALM_PROGRESS_BACKUP_KEY, encoded);
+    this.storage.setItem(REALM_PROGRESS_PRIMARY_KEY, encoded);
+  }
+}

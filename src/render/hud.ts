@@ -7,6 +7,7 @@ import type { TelemetryConsent } from "../persistence/progress";
 import type { CosmeticCategory } from "../meta/progression";
 import type { StreakSummary } from "../meta/daily";
 import type { SignatureObstacleVerb } from "../sim/obstacleVariety";
+import type { RealmGameplayVerb } from "../realms/definition";
 import type {
   LeaderboardEntryV1,
   LeaderboardSnapshotV1
@@ -34,7 +35,7 @@ export interface HudMetaPresentation {
 }
 
 export interface SignatureCuePresentation {
-  verb: SignatureObstacleVerb;
+  verb: SignatureObstacleVerb | RealmGameplayVerb;
   title: string;
   detail: string;
 }
@@ -52,6 +53,24 @@ export interface RunEndPresentation extends HudMetaPresentation {
   dailyCompleted: boolean;
   calendarRewardRejected: boolean;
   leaderboardDivision: LeaderboardDivision;
+  realmResult?:
+    | {
+        kind: "kelp-cathedral";
+        title: string;
+        rescuedManta: boolean;
+        relicPageFound: boolean;
+        crystalTrenchUnlocked: boolean;
+      }
+    | {
+        kind: "crystal-trench";
+        title: string;
+        thresholdCrossed: boolean;
+        prismPulsesCleared: number;
+        platesCleared: number;
+        raceWon: boolean;
+        raceAttempts: number;
+        cleanPerformance: boolean;
+      };
 }
 
 export interface ExpeditionEndPresentation {
@@ -413,10 +432,28 @@ export class Hud {
     collisions: number,
     presentation: RunEndPresentation
   ): void {
-    this.finalLabel.textContent = "Moonwake gathered";
-    this.diveAgain.textContent = "Dive Again";
+    const realmResult = presentation.realmResult;
+    this.finalLabel.textContent = realmResult
+      ? realmResult.kind === "kelp-cathedral"
+        ? realmResult.rescuedManta
+          ? `${realmResult.title} restored`
+          : `${realmResult.title} explored`
+        : realmResult.raceWon
+          ? `${realmResult.title} · Mirror Current won`
+          : `${realmResult.title} surveyed`
+      : "Moonwake gathered";
+    this.diveAgain.textContent = presentation.realmResult
+      ? presentation.realmResult.kind === "kelp-cathedral" &&
+          presentation.realmResult.crystalTrenchUnlocked
+        ? "Continue to Crystal Trench"
+        : `Return to ${presentation.realmResult.title}`
+      : "Dive Again";
     this.finalScore.textContent = Math.floor(score).toLocaleString();
-    this.finalDetail.textContent = `${seconds.toFixed(0)}s · ${nearMisses} near-miss · ${collisions} hits`;
+    this.finalDetail.textContent = realmResult
+      ? realmResult.kind === "kelp-cathedral"
+        ? `${seconds.toFixed(0)}s · ${realmResult.rescuedManta ? "baby manta rescued" : "rescue current continues"} · ${realmResult.relicPageFound ? "Relic Page found" : "relic still hidden"}${realmResult.crystalTrenchUnlocked ? " · Realm 2 unlocked" : ""}`
+        : `${seconds.toFixed(0)}s · ${realmResult.thresholdCrossed ? "Trench Gate sealed" : "threshold reforms ahead"} · ${realmResult.platesCleared} plates · ${realmResult.raceWon ? `Neri beaten in ${realmResult.raceAttempts} race${realmResult.raceAttempts === 1 ? "" : "s"}` : "Mirror Current still open"}${realmResult.cleanPerformance ? " · clean mark" : ""}`
+      : `${seconds.toFixed(0)}s · ${nearMisses} near-miss · ${collisions} hits`;
     this.setBestScore(presentation.bestScore);
     this.setMeta(presentation);
     this.newBest.dataset["visible"] = presentation.newBest ? "true" : "false";

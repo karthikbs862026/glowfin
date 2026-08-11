@@ -56,6 +56,7 @@ import {
   type RuntimeReefFamily
 } from "../art/runtimeAssetContract";
 import type { RuntimeReefGeometrySet } from "./runtimeProductionAssets";
+import type { RealmId } from "../realms/definition";
 
 function hash01(a: number, salt: number): number {
   let h = Math.imul(a ^ salt, 0x27d4eb2d);
@@ -266,6 +267,7 @@ export class Environment {
   private readonly pointPositions: THREE.BufferAttribute;
 
   private density = 1;
+  private activeRealm: RealmId = "moon-garden";
   private readonly matrix = new THREE.Matrix4();
   private readonly position = new THREE.Vector3();
   private readonly quaternion = new THREE.Quaternion();
@@ -531,6 +533,12 @@ export class Environment {
     this.heroMerfolk.setDetail(this.density);
   }
 
+  setRealm(realmId: RealmId): void {
+    this.activeRealm = realmId;
+    const visible = realmId === "moon-garden";
+    for (const object of this.objects) object.visible = visible;
+  }
+
   reset(): void {
     // All placements derive from simulation distance; no retained response state.
   }
@@ -581,9 +589,10 @@ export class Environment {
         ? {
             anchorDistance: moonBloom.plan.anchorDistance,
             strength: livingEventStrength(moonBloom, time)
-          }
+      }
         : null
     );
+    if (this.activeRealm !== "moon-garden") return;
     const heroStage = this.resolveHeroStage(forwardDistance, gates);
     this.updateArchitecture(forwardDistance, heroStage);
     this.updateSkyline(forwardDistance);

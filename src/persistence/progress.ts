@@ -52,10 +52,28 @@ import {
   TIDE_SPRINT_CREW_IDS,
   type TideSprintCrewId
 } from "../tideSprint/crew";
+import {
+  applyCrystalTrenchRun,
+  applyKelpCathedralRun,
+  createDefaultRealmProgress,
+  mergeRealmProgress,
+  readLegacyRealmProgress,
+  realmObjectivePresentations,
+  validateRealmProgress,
+  type CrystalTrenchRunRecord,
+  type KelpCathedralRunRecord,
+  type RealmModeAward,
+  type RealmObjectivePresentation,
+  type RealmProgressV1,
+  type RealmRunUpdate,
+} from "../realms/progress";
+import type { RealmId } from "../realms/definition";
 
-export const PROGRESS_SCHEMA_VERSION = 4 as const;
-export const PROGRESS_PRIMARY_KEY = "glowfin.progress.v4.primary";
-export const PROGRESS_BACKUP_KEY = "glowfin.progress.v4.backup";
+export const PROGRESS_SCHEMA_VERSION = 5 as const;
+export const PROGRESS_PRIMARY_KEY = "glowfin.progress.v5.primary";
+export const PROGRESS_BACKUP_KEY = "glowfin.progress.v5.backup";
+export const VERSION_4_PRIMARY_KEY = "glowfin.progress.v4.primary";
+export const VERSION_4_BACKUP_KEY = "glowfin.progress.v4.backup";
 export const VERSION_3_PRIMARY_KEY = "glowfin.progress.v3.primary";
 export const VERSION_3_BACKUP_KEY = "glowfin.progress.v3.backup";
 export const VERSION_2_PRIMARY_KEY = "glowfin.progress.v2.primary";
@@ -104,7 +122,15 @@ export interface GlowfinProgressV2 {
   daily: DailyRetentionState;
   onboarding: GlowfinOnboardingV1;
   tideSprint: TideSprintProgressV1;
+  realms: RealmProgressV1;
 }
+
+type GlowfinProgressV4Legacy = Omit<
+  GlowfinProgressV2,
+  "schemaVersion" | "realms"
+> & {
+  schemaVersion: 4;
+};
 
 interface GlowfinProgressV3Legacy {
   schemaVersion: 3;
@@ -149,9 +175,15 @@ interface GlowfinProgressV1Legacy {
   ghostEnabled: boolean;
 }
 
-interface ProgressEnvelopeV4 {
-  envelopeVersion: 4;
+interface ProgressEnvelopeV5 {
+  envelopeVersion: 5;
   payload: GlowfinProgressV2;
+  checksum: string;
+}
+
+interface LegacyProgressEnvelopeV4 {
+  envelopeVersion: 4;
+  payload: GlowfinProgressV4Legacy;
   checksum: string;
 }
 
@@ -181,7 +213,7 @@ export interface ProgressStorage {
 
 export interface ProgressLoadResult {
   progress: GlowfinProgressV2;
-  recoveredFrom: "primary" | "backup" | "version-3" | "version-2" | "version-1" | "legacy" | "default";
+  recoveredFrom: "primary" | "backup" | "version-4" | "version-3" | "version-2" | "version-1" | "legacy" | "default";
   recoveryReason: string | null;
 }
 
@@ -190,6 +222,7 @@ export interface ProgressRunContext {
   mode?: GlowfinRunMode;
   dayId?: string;
   calendarRewardsAllowed?: boolean;
+  competitiveRecordsAllowed?: boolean;
 }
 
 export interface ObjectiveRunPresentation extends DailyObjectiveDefinition {
@@ -233,6 +266,22 @@ export interface TideSprintRecordResult {
   duplicateRewardPrevented: boolean;
   newBest: boolean;
   ghostSaved: boolean;
+  tideLevelBefore: number;
+  tideLevelAfter: number;
+  unlockedCosmetics: CosmeticDefinition[];
+}
+
+export interface RealmRunContext {
+  collisions?: number;
+}
+
+export interface RealmRecordResult {
+  progress: GlowfinProgressV2;
+  realm: RealmId;
+  award: RealmModeAward;
+  duplicateRewardPrevented: boolean;
+  crystalTrenchUnlocked: boolean;
+  crystalTrenchNewlyUnlocked: boolean;
   tideLevelBefore: number;
   tideLevelAfter: number;
   unlockedCosmetics: CosmeticDefinition[];
@@ -297,6 +346,10 @@ function version2ProgressChecksum(progress: GlowfinProgressV2Legacy): string {
 }
 
 function version3ProgressChecksum(progress: GlowfinProgressV3Legacy): string {
+  return checksumText(JSON.stringify(progress));
+}
+
+function version4ProgressChecksum(progress: GlowfinProgressV4Legacy): string {
   return checksumText(JSON.stringify(progress));
 }
 
@@ -471,6 +524,27 @@ function validateVersion3Progress(value: unknown): value is GlowfinProgressV3Leg
   );
 }
 
+function validateVersion4Progress(value: unknown): value is GlowfinProgressV4Legacy {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<GlowfinProgressV4Legacy>;
+  const replayValid = candidate.bestReplay === null || validateReplay(candidate.bestReplay).valid;
+  return (
+    candidate.schemaVersion === 4 &&
+    Number.isInteger(candidate.revision) && Number(candidate.revision) >= 0 &&
+    safeIsoDate(candidate.updatedAt ?? "") &&
+    typeof candidate.bestScore === "number" && Number.isFinite(candidate.bestScore) && candidate.bestScore >= 0 &&
+    replayValid &&
+    totalsValid(candidate.totals) &&
+    consentValid(candidate.telemetryConsent) &&
+    typeof candidate.ghostEnabled === "boolean" &&
+    progressionValid(candidate.progression) &&
+    dailyValid(candidate.daily) &&
+    onboardingValid(candidate.onboarding) &&
+    validateTideSprintProgress(candidate.tideSprint) &&
+    (!candidate.bestReplay || candidate.bestReplay.summary.score <= candidate.bestScore + 1e-6)
+  );
+}
+
 function validateLegacyProgress(value: unknown): value is GlowfinProgressV1Legacy {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<GlowfinProgressV1Legacy>;
@@ -520,7 +594,8 @@ export function createDefaultProgress(now = new Date()): GlowfinProgressV2 {
       firstPurchaseCompleted: false,
       firstEquipCompleted: false
     },
-    tideSprint: createDefaultTideSprintProgress(now)
+    tideSprint: createDefaultTideSprintProgress(now),
+    realms: createDefaultRealmProgress(now)
   };
 }
 
@@ -554,7 +629,8 @@ export function migrateLegacyProgress(
       firstPurchaseCompleted: false,
       firstEquipCompleted: false
     },
-    tideSprint: createDefaultTideSprintProgress(now)
+    tideSprint: createDefaultTideSprintProgress(now),
+    realms: createDefaultRealmProgress(now)
   };
 }
 
@@ -593,7 +669,8 @@ export function migrateVersion2Progress(
       firstPurchaseCompleted: false,
       firstEquipCompleted: returningPlayer
     },
-    tideSprint: createDefaultTideSprintProgress(now)
+    tideSprint: createDefaultTideSprintProgress(now),
+    realms: createDefaultRealmProgress(now)
   };
 }
 
@@ -613,7 +690,21 @@ export function migrateVersion3Progress(
     progression: JSON.parse(JSON.stringify(legacy.progression)) as GlowfinProgressionV2,
     daily: JSON.parse(JSON.stringify(legacy.daily)) as DailyRetentionState,
     onboarding: { ...legacy.onboarding },
-    tideSprint: createDefaultTideSprintProgress(now)
+    tideSprint: createDefaultTideSprintProgress(now),
+    realms: createDefaultRealmProgress(now)
+  };
+}
+
+export function migrateVersion4Progress(
+  legacy: GlowfinProgressV4Legacy,
+  now = new Date(),
+): GlowfinProgressV2 {
+  return {
+    ...JSON.parse(JSON.stringify(legacy)) as GlowfinProgressV4Legacy,
+    schemaVersion: PROGRESS_SCHEMA_VERSION,
+    revision: legacy.revision + 1,
+    updatedAt: now.toISOString(),
+    realms: createDefaultRealmProgress(now),
   };
 }
 
@@ -634,6 +725,7 @@ export function validateProgress(value: unknown): value is GlowfinProgressV2 {
     dailyValid(candidate.daily) &&
     onboardingValid(candidate.onboarding) &&
     validateTideSprintProgress(candidate.tideSprint) &&
+    validateRealmProgress(candidate.realms) &&
     (!candidate.bestReplay || candidate.bestReplay.summary.score <= candidate.bestScore + 1e-6)
   );
 }
@@ -643,6 +735,7 @@ export function migrateProgressValue(
   now = new Date()
 ): GlowfinProgressV2 | null {
   if (validateProgress(value)) return cloneProgress(value);
+  if (validateVersion4Progress(value)) return migrateVersion4Progress(value, now);
   if (validateVersion3Progress(value)) return migrateVersion3Progress(value, now);
   if (validateVersion2Progress(value)) return migrateVersion2Progress(value, now);
   if (validateLegacyProgress(value)) return migrateLegacyProgress(value, now);
@@ -650,8 +743,8 @@ export function migrateProgressValue(
 }
 
 function encodeEnvelope(progress: GlowfinProgressV2): string {
-  const envelope: ProgressEnvelopeV4 = {
-    envelopeVersion: 4,
+  const envelope: ProgressEnvelopeV5 = {
+    envelopeVersion: 5,
     payload: progress,
     checksum: progressChecksum(progress)
   };
@@ -665,9 +758,9 @@ function encodeEnvelope(progress: GlowfinProgressV2): string {
 function decodeEnvelope(encoded: string): GlowfinProgressV2 | null {
   if (encoded.length < 2 || encoded.length > MAX_PROGRESS_BYTES) return null;
   try {
-    const value = JSON.parse(encoded) as Partial<ProgressEnvelopeV4>;
+    const value = JSON.parse(encoded) as Partial<ProgressEnvelopeV5>;
     if (
-      value.envelopeVersion !== 4 ||
+      value.envelopeVersion !== 5 ||
       typeof value.checksum !== "string" ||
       !validateProgress(value.payload) ||
       progressChecksum(value.payload) !== value.checksum
@@ -675,6 +768,22 @@ function decodeEnvelope(encoded: string): GlowfinProgressV2 | null {
       return null;
     }
     return value.payload;
+  } catch {
+    return null;
+  }
+}
+
+function decodeVersion4Envelope(encoded: string, now: Date): GlowfinProgressV2 | null {
+  if (encoded.length < 2 || encoded.length > MAX_PROGRESS_BYTES) return null;
+  try {
+    const value = JSON.parse(encoded) as Partial<LegacyProgressEnvelopeV4>;
+    if (
+      value.envelopeVersion !== 4 ||
+      typeof value.checksum !== "string" ||
+      !validateVersion4Progress(value.payload) ||
+      version4ProgressChecksum(value.payload) !== value.checksum
+    ) return null;
+    return migrateVersion4Progress(value.payload, now);
   } catch {
     return null;
   }
@@ -797,7 +906,8 @@ export function mergeProgress(
       firstPurchaseCompleted: local.onboarding.firstPurchaseCompleted || remote.onboarding.firstPurchaseCompleted,
       firstEquipCompleted: local.onboarding.firstEquipCompleted || remote.onboarding.firstEquipCompleted
     },
-    tideSprint: mergeTideSprintProgress(local.tideSprint, remote.tideSprint, now)
+    tideSprint: mergeTideSprintProgress(local.tideSprint, remote.tideSprint, now),
+    realms: mergeRealmProgress(local.realms, remote.realms, now)
   };
 }
 
@@ -814,6 +924,35 @@ function runRewardClaimId(
   if (context.runId) return `run:${safeClaimId(context.runId)}`;
   if (replay) return `replay:${replay.seed.toString(16)}:${replay.checksum}`;
   return `summary:${Math.floor(summary.score)}:${Math.floor(summary.forwardDistance)}:${Math.floor(summary.elapsedSec)}`;
+}
+
+function realmHistoryPayload(progress: RealmProgressV1): string {
+  return JSON.stringify({
+    kelpCathedral: progress.kelpCathedral,
+    crystalTrench: progress.crystalTrench,
+  });
+}
+
+function importLegacyRealms(
+  progress: GlowfinProgressV2,
+  storage: Pick<ProgressStorage, "getItem">,
+  now: Date,
+): { progress: GlowfinProgressV2; imported: boolean } {
+  const legacy = readLegacyRealmProgress(storage);
+  if (!legacy) return { progress, imported: false };
+  const merged = mergeRealmProgress(progress.realms, legacy, now);
+  if (realmHistoryPayload(merged) === realmHistoryPayload(progress.realms)) {
+    return { progress, imported: false };
+  }
+  return {
+    imported: true,
+    progress: {
+      ...progress,
+      revision: progress.revision + 1,
+      updatedAt: now.toISOString(),
+      realms: merged,
+    },
+  };
 }
 
 export class ProgressRepository {
@@ -841,22 +980,45 @@ export class ProgressRepository {
 
     const primary = primaryRaw ? decodeEnvelope(primaryRaw) : null;
     if (primary) {
-      this.current = primary;
-      return { progress: cloneProgress(primary), recoveredFrom: "primary", recoveryReason: null };
+      const imported = importLegacyRealms(primary, this.storage, this.now());
+      this.current = imported.progress;
+      if (imported.imported) this.persist(this.current);
+      return {
+        progress: cloneProgress(this.current),
+        recoveredFrom: "primary",
+        recoveryReason: imported.imported ? "migrated-realm-prototype" : null,
+      };
     }
 
     const backup = backupRaw ? decodeEnvelope(backupRaw) : null;
     if (backup) {
-      this.current = backup;
+      const imported = importLegacyRealms(backup, this.storage, this.now());
+      this.current = imported.progress;
       try {
-        this.storage.setItem(PROGRESS_PRIMARY_KEY, encodeEnvelope(backup));
+        this.storage.setItem(PROGRESS_PRIMARY_KEY, encodeEnvelope(this.current));
       } catch {
         // In-memory recovery remains valid when storage is temporarily denied.
       }
       return {
-        progress: cloneProgress(backup),
+        progress: cloneProgress(this.current),
         recoveredFrom: "backup",
-        recoveryReason: primaryRaw ? "primary-corrupt" : "primary-missing"
+        recoveryReason: imported.imported
+          ? "migrated-realm-prototype"
+          : primaryRaw ? "primary-corrupt" : "primary-missing"
+      };
+    }
+
+    const version4 = this.readVersion4();
+    if (version4) {
+      const imported = importLegacyRealms(version4, this.storage, this.now());
+      this.current = imported.progress;
+      this.persist(this.current);
+      return {
+        progress: cloneProgress(this.current),
+        recoveredFrom: "version-4",
+        recoveryReason: imported.imported
+          ? "migrated-version-4-and-realm-prototype"
+          : "migrated-version-4"
       };
     }
 
@@ -924,7 +1086,8 @@ export class ProgressRepository {
     context: ProgressRunContext = {}
   ): RunRecordResult {
     const validReplay = replay && validateReplay(replay).valid ? replay : null;
-    const newBest = summary.score > this.current.bestScore;
+    const competitiveRecordsAllowed = context.competitiveRecordsAllowed ?? true;
+    const newBest = competitiveRecordsAllowed && summary.score > this.current.bestScore;
     const mode = context.mode ?? "fresh";
     const resolvedDay = resolveDailyDay(
       this.now(),
@@ -1121,6 +1284,106 @@ export class ProgressRepository {
       tideLevelBefore: tideLevelForXp(previousXp),
       tideLevelAfter: tideLevelForXp(nextXp),
       unlockedCosmetics
+    };
+  }
+
+  recordKelpCathedralRun(
+    record: KelpCathedralRunRecord,
+    context: RealmRunContext = {},
+  ): RealmRecordResult {
+    return this.recordRealmRun(
+      "kelp-cathedral",
+      record.elapsedSec,
+      context,
+      applyKelpCathedralRun(this.current.realms, record, this.now()),
+    );
+  }
+
+  recordCrystalTrenchRun(
+    record: CrystalTrenchRunRecord,
+    context: RealmRunContext = {},
+  ): RealmRecordResult {
+    return this.recordRealmRun(
+      "crystal-trench",
+      record.elapsedSec,
+      context,
+      applyCrystalTrenchRun(this.current.realms, record, this.now()),
+    );
+  }
+
+  activeRealmObjectives(): RealmObjectivePresentation[] {
+    return realmObjectivePresentations(this.current.realms);
+  }
+
+  private recordRealmRun(
+    realm: Exclude<RealmId, "moon-garden">,
+    elapsedSec: number,
+    context: RealmRunContext,
+    update: RealmRunUpdate,
+  ): RealmRecordResult {
+    const previousXp = this.current.progression.tideXp;
+    if (update.duplicatePrevented) {
+      return {
+        progress: this.snapshot(),
+        realm,
+        award: update.award,
+        duplicateRewardPrevented: true,
+        crystalTrenchUnlocked: update.crystalTrenchUnlocked,
+        crystalTrenchNewlyUnlocked: false,
+        tideLevelBefore: tideLevelForXp(previousXp),
+        tideLevelAfter: tideLevelForXp(previousXp),
+        unlockedCosmetics: [],
+      };
+    }
+
+    const sharedClaims = new Set(this.current.progression.recentRewardClaims);
+    sharedClaims.add(update.claimId);
+    const nextXp = clampCount(previousXp + update.award.xp);
+    const nextPearlsEarned = clampCount(
+      this.current.progression.lumenPearlsEarned + update.award.pearls,
+    );
+    const purchasedCost = purchasedCosmeticCost(
+      this.current.progression.purchasedCosmetics,
+    );
+    const unlockedCosmetics = newlyUnlockedCosmetics(previousXp, nextXp);
+    this.current = {
+      ...this.current,
+      revision: this.current.revision + 1,
+      updatedAt: this.now().toISOString(),
+      totals: {
+        ...this.current.totals,
+        runs: clampCount(this.current.totals.runs + 1),
+        playSeconds: Math.max(0, this.current.totals.playSeconds + Math.max(0, elapsedSec)),
+        collisions: clampCount(
+          this.current.totals.collisions + Math.max(0, context.collisions ?? 0),
+        ),
+      },
+      progression: {
+        ...this.current.progression,
+        lumenPearls: Math.max(0, nextPearlsEarned - purchasedCost),
+        lumenPearlsEarned: nextPearlsEarned,
+        tideXp: nextXp,
+        recentRewardClaims: Array.from(sharedClaims)
+          .sort()
+          .slice(-MAX_RECENT_REWARD_CLAIMS),
+      },
+      onboarding: {
+        ...this.current.onboarding,
+        firstRewardSeen: this.current.onboarding.firstRewardSeen || update.award.pearls > 0,
+      },
+      realms: update.progress,
+    };
+    this.persist(this.current);
+    return {
+      progress: this.snapshot(),
+      realm,
+      award: update.award,
+      duplicateRewardPrevented: false,
+      crystalTrenchUnlocked: update.crystalTrenchUnlocked,
+      crystalTrenchNewlyUnlocked: update.crystalTrenchNewlyUnlocked,
+      tideLevelBefore: tideLevelForXp(previousXp),
+      tideLevelAfter: tideLevelForXp(nextXp),
+      unlockedCosmetics,
     };
   }
 
@@ -1458,6 +1721,19 @@ export class ProgressRepository {
       return (
         (primary ? decodeVersion2Envelope(primary, this.now()) : null) ??
         (backup ? decodeVersion2Envelope(backup, this.now()) : null)
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  private readVersion4(): GlowfinProgressV2 | null {
+    try {
+      const primary = this.storage.getItem(VERSION_4_PRIMARY_KEY);
+      const backup = this.storage.getItem(VERSION_4_BACKUP_KEY);
+      return (
+        (primary ? decodeVersion4Envelope(primary, this.now()) : null) ??
+        (backup ? decodeVersion4Envelope(backup, this.now()) : null)
       );
     } catch {
       return null;

@@ -8,6 +8,7 @@ import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
 import type { Gate } from "../sim/course";
 import type { ActiveLivingWorldEvent } from "../sim/obstacleVariety";
+import type { CrystalTrenchRunStatus } from "../sim/run";
 import { forwardSpeed, type SimState } from "../sim/state";
 import {
   createCausticMaterial,
@@ -39,11 +40,20 @@ import {
   cosmeticPalette,
   type CosmeticLoadout
 } from "../meta/progression";
+import {
+  realmDefinition,
+  type RealmId,
+} from "../realms/definition";
+import { KelpCathedralField } from "./kelpCathedralField";
+import { CrystalTrenchField } from "./crystalTrenchField";
+import { isEffectivelyVisible } from "./effectiveVisibility";
 
 /** Hard caps. Part 4.6 requires pool sizes be part of the performance budget. */
 const MAX_POOLED_STRIPES = 40;
 const STRIPE_SPACING_UNITS = 14;
 const STANDARD_EXPOSURE = 0.96;
+const KELP_CATHEDRAL_EXPOSURE = 1.08;
+const CRYSTAL_TRENCH_EXPOSURE = 1.12;
 const HIGH_CONTRAST_EXPOSURE = 1.06;
 
 export interface PresentationPreferences {
@@ -68,12 +78,20 @@ export class GameView {
   private readonly ghostCreature: Creature;
   private readonly environment: Environment;
   private readonly gates: MoonGardenGates;
+  private readonly moonGardenSeabed: THREE.Mesh;
+  private readonly moonGardenFloor: THREE.Mesh;
   private readonly floorMaterial: THREE.ShaderMaterial;
   private readonly wallMaterial: THREE.ShaderMaterial;
+  private readonly hemisphereLight: THREE.HemisphereLight;
+  private readonly ambientLight: THREE.AmbientLight;
+  private readonly keyLight: THREE.DirectionalLight;
+  private readonly bounceLight: THREE.DirectionalLight;
   private readonly trail: TrailRibbon;
   private readonly lumenMotes: LumenMoteField;
   private readonly r3Encounters: R3EncounterField;
   private readonly r5Completion: R5CompletionField;
+  private readonly kelpCathedral: KelpCathedralField;
+  private readonly crystalTrench: CrystalTrenchField;
   private readonly composer: EffectComposer;
   private readonly bloomPass: UnrealBloomPass;
   private bloomEnabled = true;
@@ -86,6 +104,10 @@ export class GameView {
   private readonly wallCausticBase = new THREE.Color(0x63e0ff);
   private readonly wallCausticHot = new THREE.Color(0xff6be0);
   private readonly wallCausticScratch = new THREE.Color();
+  private activeRealm: RealmId = "moon-garden";
+  private moonGardenBackground: THREE.Texture | null = null;
+  private kelpBackground: THREE.Texture | null = null;
+  private crystalTrenchBackground: THREE.Texture | null = null;
   /**
    * Mask material for the contrast probe. Outputs white only for obstacles
    * within the reaction window; anything further reads as background.
@@ -259,13 +281,67 @@ export class GameView {
     glowfinSurface.wrapS = THREE.MirroredRepeatWrapping;
     glowfinSurface.wrapT = THREE.MirroredRepeatWrapping;
     glowfinSurface.anisotropy = maxAnisotropy;
+    const kelpBladeSurface = textureLoader.load(
+      "art/kelp-cathedral/kelp-blade-albedo-v2.webp"
+    );
+    kelpBladeSurface.colorSpace = THREE.SRGBColorSpace;
+    kelpBladeSurface.wrapS = THREE.RepeatWrapping;
+    kelpBladeSurface.wrapT = THREE.RepeatWrapping;
+    kelpBladeSurface.repeat.set(1, 1.8);
+    kelpBladeSurface.anisotropy = maxAnisotropy;
+    const kelpStipeSurface = textureLoader.load(
+      "art/kelp-cathedral/kelp-stipe-albedo-v2.webp"
+    );
+    kelpStipeSurface.colorSpace = THREE.SRGBColorSpace;
+    kelpStipeSurface.wrapS = THREE.RepeatWrapping;
+    kelpStipeSurface.wrapT = THREE.RepeatWrapping;
+    kelpStipeSurface.repeat.set(1.25, 3.6);
+    kelpStipeSurface.anisotropy = maxAnisotropy;
+    const kelpSeabedSurface = textureLoader.load(
+      "art/kelp-cathedral/kelp-seabed-albedo-v2.webp"
+    );
+    kelpSeabedSurface.colorSpace = THREE.SRGBColorSpace;
+    kelpSeabedSurface.wrapS = THREE.RepeatWrapping;
+    kelpSeabedSurface.wrapT = THREE.RepeatWrapping;
+    kelpSeabedSurface.repeat.set(12, 660);
+    kelpSeabedSurface.anisotropy = maxAnisotropy;
+    const crystalTrenchSurface = textureLoader.load(
+      "art/crystal-trench/crystal-albedo-v2.webp"
+    );
+    crystalTrenchSurface.colorSpace = THREE.SRGBColorSpace;
+    crystalTrenchSurface.wrapS = THREE.RepeatWrapping;
+    crystalTrenchSurface.wrapT = THREE.RepeatWrapping;
+    crystalTrenchSurface.repeat.set(1.25, 2.8);
+    crystalTrenchSurface.anisotropy = maxAnisotropy;
+    const crystalRuinSurface = textureLoader.load(
+      "art/crystal-trench/ruin-stone-albedo-v2.webp"
+    );
+    crystalRuinSurface.colorSpace = THREE.SRGBColorSpace;
+    crystalRuinSurface.wrapS = THREE.RepeatWrapping;
+    crystalRuinSurface.wrapT = THREE.RepeatWrapping;
+    crystalRuinSurface.repeat.set(1.35, 2.55);
+    crystalRuinSurface.anisotropy = maxAnisotropy;
+    const crystalSeabedSurface = textureLoader.load(
+      "art/crystal-trench/seabed-albedo-v2.webp"
+    );
+    crystalSeabedSurface.colorSpace = THREE.SRGBColorSpace;
+    crystalSeabedSurface.wrapS = THREE.RepeatWrapping;
+    crystalSeabedSurface.wrapT = THREE.RepeatWrapping;
+    crystalSeabedSurface.repeat.set(10, 560);
+    crystalSeabedSurface.anisotropy = maxAnisotropy;
 
     this.disposables.push(
       moonstoneSurface,
       moonstoneFloorSurface,
       moonstoneVolumeSurface,
       livingReefSurface,
-      glowfinSurface
+      glowfinSurface,
+      kelpBladeSurface,
+      kelpStipeSurface,
+      kelpSeabedSurface,
+      crystalTrenchSurface,
+      crystalRuinSurface,
+      crystalSeabedSurface
     );
 
     const backgroundCanvas = document.createElement("canvas");
@@ -314,7 +390,106 @@ export class GameView {
     const backgroundTexture = new THREE.CanvasTexture(backgroundCanvas);
     backgroundTexture.colorSpace = THREE.SRGBColorSpace;
     this.scene.background = backgroundTexture;
+    this.moonGardenBackground = backgroundTexture;
     this.disposables.push(backgroundTexture);
+
+    const kelpBackgroundCanvas = document.createElement("canvas");
+    kelpBackgroundCanvas.width = 128;
+    kelpBackgroundCanvas.height = 256;
+    const kelpBackgroundContext = kelpBackgroundCanvas.getContext("2d");
+    if (!kelpBackgroundContext) {
+      throw new Error("2D canvas is required for the Kelp Cathedral water gradient.");
+    }
+    const kelpGradient = kelpBackgroundContext.createLinearGradient(
+      0,
+      0,
+      0,
+      kelpBackgroundCanvas.height,
+    );
+    kelpGradient.addColorStop(0, "#28584a");
+    kelpGradient.addColorStop(0.2, "#16453c");
+    kelpGradient.addColorStop(0.56, "#0a302e");
+    kelpGradient.addColorStop(1, "#041b22");
+    kelpBackgroundContext.fillStyle = kelpGradient;
+    kelpBackgroundContext.fillRect(
+      0,
+      0,
+      kelpBackgroundCanvas.width,
+      kelpBackgroundCanvas.height,
+    );
+    const canopyGlow = kelpBackgroundContext.createRadialGradient(
+      kelpBackgroundCanvas.width * 0.5,
+      kelpBackgroundCanvas.height * 0.02,
+      1,
+      kelpBackgroundCanvas.width * 0.5,
+      kelpBackgroundCanvas.height * 0.02,
+      kelpBackgroundCanvas.width * 0.92,
+    );
+    canopyGlow.addColorStop(0, "rgba(255, 244, 182, 0.62)");
+    canopyGlow.addColorStop(0.22, "rgba(148, 235, 184, 0.3)");
+    canopyGlow.addColorStop(0.6, "rgba(46, 142, 114, 0.1)");
+    canopyGlow.addColorStop(1, "rgba(3, 27, 29, 0)");
+    kelpBackgroundContext.fillStyle = canopyGlow;
+    kelpBackgroundContext.fillRect(
+      0,
+      0,
+      kelpBackgroundCanvas.width,
+      kelpBackgroundCanvas.height,
+    );
+    const kelpBackgroundTexture = new THREE.CanvasTexture(kelpBackgroundCanvas);
+    kelpBackgroundTexture.colorSpace = THREE.SRGBColorSpace;
+    this.kelpBackground = kelpBackgroundTexture;
+    this.disposables.push(kelpBackgroundTexture);
+
+    const crystalBackgroundCanvas = document.createElement("canvas");
+    crystalBackgroundCanvas.width = 128;
+    crystalBackgroundCanvas.height = 256;
+    const crystalBackgroundContext = crystalBackgroundCanvas.getContext("2d");
+    if (!crystalBackgroundContext) {
+      throw new Error("2D canvas is required for the Crystal Trench water gradient.");
+    }
+    const crystalGradient = crystalBackgroundContext.createLinearGradient(
+      0,
+      0,
+      0,
+      crystalBackgroundCanvas.height,
+    );
+    crystalGradient.addColorStop(0, "#284c72");
+    crystalGradient.addColorStop(0.18, "#1a315d");
+    crystalGradient.addColorStop(0.52, "#101e45");
+    crystalGradient.addColorStop(0.78, "#09142f");
+    crystalGradient.addColorStop(1, "#04091b");
+    crystalBackgroundContext.fillStyle = crystalGradient;
+    crystalBackgroundContext.fillRect(
+      0,
+      0,
+      crystalBackgroundCanvas.width,
+      crystalBackgroundCanvas.height,
+    );
+    const refractedMoon = crystalBackgroundContext.createRadialGradient(
+      crystalBackgroundCanvas.width * 0.52,
+      crystalBackgroundCanvas.height * 0.04,
+      1,
+      crystalBackgroundCanvas.width * 0.52,
+      crystalBackgroundCanvas.height * 0.04,
+      crystalBackgroundCanvas.width * 0.82,
+    );
+    refractedMoon.addColorStop(0, "rgba(225, 253, 255, 0.82)");
+    refractedMoon.addColorStop(0.12, "rgba(130, 228, 255, 0.42)");
+    refractedMoon.addColorStop(0.38, "rgba(96, 151, 237, 0.19)");
+    refractedMoon.addColorStop(0.7, "rgba(105, 83, 207, 0.08)");
+    refractedMoon.addColorStop(1, "rgba(7, 12, 36, 0)");
+    crystalBackgroundContext.fillStyle = refractedMoon;
+    crystalBackgroundContext.fillRect(
+      0,
+      0,
+      crystalBackgroundCanvas.width,
+      crystalBackgroundCanvas.height,
+    );
+    const crystalBackgroundTexture = new THREE.CanvasTexture(crystalBackgroundCanvas);
+    crystalBackgroundTexture.colorSpace = THREE.SRGBColorSpace;
+    this.crystalTrenchBackground = crystalBackgroundTexture;
+    this.disposables.push(crystalBackgroundTexture);
     // Fog starts well beyond the sight distance so it never eats an obstacle
     // the player is supposed to be reading (Part 3.4).
     // Fog must begin BEYOND the reaction window, not at its edge.
@@ -337,14 +512,16 @@ export class GameView {
       cfg.readability.visibleAheadUnits * (cfg.visual.fogFarMultiplier + 0.4)
     );
 
-    this.scene.add(new THREE.HemisphereLight(0x78c5e8, 0x050d1b, 1.08));
-    this.scene.add(new THREE.AmbientLight(0x285877, 0.38));
-    const key = new THREE.DirectionalLight(0xb9edff, 1.65);
-    key.position.set(-0.5, 1, 0.55);
-    this.scene.add(key);
-    const coralBounce = new THREE.DirectionalLight(0xff6bba, 0.28);
-    coralBounce.position.set(0.65, -0.15, -0.8);
-    this.scene.add(coralBounce);
+    this.hemisphereLight = new THREE.HemisphereLight(0x78c5e8, 0x050d1b, 1.08);
+    this.scene.add(this.hemisphereLight);
+    this.ambientLight = new THREE.AmbientLight(0x285877, 0.38);
+    this.scene.add(this.ambientLight);
+    this.keyLight = new THREE.DirectionalLight(0xb9edff, 1.65);
+    this.keyLight.position.set(-0.5, 1, 0.55);
+    this.scene.add(this.keyLight);
+    this.bounceLight = new THREE.DirectionalLight(0xff6bba, 0.28);
+    this.bounceLight.position.set(0.65, -0.15, -0.8);
+    this.scene.add(this.bounceLight);
 
     const fogNear = cfg.readability.visibleAheadUnits * cfg.visual.fogNearMultiplier;
     const fogFar = cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier;
@@ -361,10 +538,10 @@ export class GameView {
       roughness: 1,
       metalness: 0
     });
-    const seabed = new THREE.Mesh(seabedGeo, seabedMaterial);
-    seabed.rotation.x = -Math.PI / 2;
-    seabed.position.y = -1.08;
-    this.scene.add(seabed);
+    this.moonGardenSeabed = new THREE.Mesh(seabedGeo, seabedMaterial);
+    this.moonGardenSeabed.rotation.x = -Math.PI / 2;
+    this.moonGardenSeabed.position.y = -1.08;
+    this.scene.add(this.moonGardenSeabed);
     this.disposables.push(seabedGeo, seabedMaterial);
 
     // One continuous garden floor replaces the bright rectangular "road"
@@ -387,10 +564,10 @@ export class GameView {
       surfaceWeight: 0.22,
       routeHalfWidth: cfg.lane.halfWidth
     });
-    const floor = new THREE.Mesh(floorGeo, this.floorMaterial);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -1;
-    this.scene.add(floor);
+    this.moonGardenFloor = new THREE.Mesh(floorGeo, this.floorMaterial);
+    this.moonGardenFloor.rotation.x = -Math.PI / 2;
+    this.moonGardenFloor.position.y = -1;
+    this.scene.add(this.moonGardenFloor);
     this.disposables.push(floorGeo, this.floorMaterial);
 
     // --- submerged crescent inlays: one instanced draw, not forty debug bars ---
@@ -450,6 +627,19 @@ export class GameView {
       livingMap: livingReefSurface
     });
     for (const object of this.environment.objects) this.scene.add(object);
+
+    this.kelpCathedral = new KelpCathedralField(cfg, {
+      blade: kelpBladeSurface,
+      stipe: kelpStipeSurface,
+      seabed: kelpSeabedSurface,
+    });
+    this.scene.add(this.kelpCathedral.group);
+    this.crystalTrench = new CrystalTrenchField(cfg, {
+      crystal: crystalTrenchSurface,
+      ruinStone: crystalRuinSurface,
+      seabed: crystalSeabedSurface,
+    });
+    this.scene.add(this.crystalTrench.group);
 
     this.r3Encounters = new R3EncounterField(
       inlayMaterial,
@@ -745,12 +935,86 @@ export class GameView {
     this.applyPresentationEffects();
   }
 
+  setRealm(realmId: RealmId): void {
+    this.activeRealm = realmId;
+    this.environment.setRealm(realmId);
+    const kelpActive = realmId === "kelp-cathedral";
+    const crystalActive = realmId === "crystal-trench";
+    const moonGardenActive = realmId === "moon-garden";
+    for (const object of this.gates.objects) object.visible = moonGardenActive;
+    this.speedInlays.visible = moonGardenActive;
+    this.moonGardenSeabed.visible = moonGardenActive;
+    this.moonGardenFloor.visible = moonGardenActive;
+    const definition = realmDefinition(realmId);
+    this.wallCausticBase.set(definition.palette.routeCalm);
+    this.wallCausticHot.set(definition.palette.routeMomentum);
+    this.scene.background = kelpActive
+      ? this.kelpBackground
+      : crystalActive
+        ? this.crystalTrenchBackground
+        : this.moonGardenBackground;
+    if (this.scene.fog instanceof THREE.Fog) {
+      this.scene.fog.color.set(definition.palette.fog);
+      this.scene.fog.near = this.cfg.readability.visibleAheadUnits *
+        (kelpActive ? 1.12 : crystalActive ? 1.24 : this.cfg.visual.fogNearMultiplier);
+      this.scene.fog.far = this.cfg.readability.visibleAheadUnits *
+        (kelpActive ? 2.12 : crystalActive ? 2.38 : this.cfg.visual.fogFarMultiplier);
+    }
+    const setFloorColour = (uniform: string, colour: THREE.ColorRepresentation): void => {
+      const target = this.floorMaterial.uniforms[uniform];
+      if (target?.value instanceof THREE.Color) target.value.set(colour);
+    };
+    setFloorColour(
+      "uBaseColor",
+      kelpActive ? 0x092b23 : crystalActive ? 0x101c38 : 0x20364a,
+    );
+    setFloorColour(
+      "uCausticColor",
+      kelpActive ? 0x35d48d : crystalActive ? 0x5ebee8 : 0x2ea8d8,
+    );
+    setFloorColour("uFogColor", definition.palette.fog);
+    const surfaceWeight = this.floorMaterial.uniforms["uSurfaceWeight"];
+    if (surfaceWeight) surfaceWeight.value = moonGardenActive ? 0.22 : 0.035;
+
+    this.hemisphereLight.color.set(
+      kelpActive ? 0xd8ffe2 : crystalActive ? 0xd8f7ff : 0x78c5e8,
+    );
+    this.hemisphereLight.groundColor.set(
+      kelpActive ? 0x122a1e : crystalActive ? 0x090d28 : 0x050d1b,
+    );
+    this.hemisphereLight.intensity = kelpActive ? 1.58 : crystalActive ? 1.68 : 1.08;
+    this.ambientLight.color.set(
+      kelpActive ? 0x568b6c : crystalActive ? 0x4e5f9d : 0x285877,
+    );
+    this.ambientLight.intensity = kelpActive ? 0.72 : crystalActive ? 0.68 : 0.38;
+    this.keyLight.color.set(
+      kelpActive ? 0xffefb5 : crystalActive ? 0xd9fbff : 0xb9edff,
+    );
+    this.keyLight.intensity = kelpActive ? 2.2 : crystalActive ? 2.26 : 1.65;
+    this.bounceLight.color.set(
+      kelpActive ? 0x65e2b9 : crystalActive ? 0x8d72ff : 0xff6bba,
+    );
+    this.bounceLight.intensity = kelpActive ? 0.62 : crystalActive ? 0.64 : 0.28;
+    this.applyPresentationEffects();
+  }
+
   private applyPresentationEffects(): void {
     this.bloomEnabled = this.qualityBloomEnabled && !this.reducedMotion;
     this.bloomPass.enabled = this.bloomEnabled;
     this.renderer.toneMappingExposure = this.highContrast
-      ? HIGH_CONTRAST_EXPOSURE
-      : STANDARD_EXPOSURE;
+      ? Math.max(
+          HIGH_CONTRAST_EXPOSURE,
+          this.activeRealm === "kelp-cathedral"
+            ? KELP_CATHEDRAL_EXPOSURE
+            : this.activeRealm === "crystal-trench"
+              ? CRYSTAL_TRENCH_EXPOSURE
+              : 0,
+        )
+      : this.activeRealm === "kelp-cathedral"
+        ? KELP_CATHEDRAL_EXPOSURE
+        : this.activeRealm === "crystal-trench"
+          ? CRYSTAL_TRENCH_EXPOSURE
+          : STANDARD_EXPOSURE;
   }
 
   /** Metrics the capture harness cannot infer reliably from render.info. */
@@ -764,7 +1028,7 @@ export class GameView {
   } {
     const materials = new Set<string>();
     this.scene.traverse((object) => {
-      if (!(object instanceof THREE.Mesh) || !object.visible) return;
+      if (!(object instanceof THREE.Mesh) || !isEffectivelyVisible(object)) return;
       const list = Array.isArray(object.material)
         ? object.material
         : [object.material];
@@ -773,10 +1037,10 @@ export class GameView {
     return {
       activeMaterials: materials.size,
       godRayMeshes: this.cfg.environment.godRayCount,
-      // Two authored moonstone sources plus the independently sampled floor
-      // clone and tiny generated water gradient. Review-character and
-      // skyline/life atlas textures are no longer loaded.
-      textureMemoryMB: 10.3,
+      // Moon-Garden plus the two resident lost-realm material sets. Every map
+      // is a bounded 512 px WebP and the full renderer remains well below the
+      // 48 MB realm ceiling even though inactive textures stay GPU-resident.
+      textureMemoryMB: 16.45,
       heroMerfolkHeightPixels: this.environment.heroMerfolkScreenHeightPixels(
         this.camera,
         this.renderer.domElement.clientHeight || window.innerHeight
@@ -837,6 +1101,22 @@ export class GameView {
     };
   }
 
+  kelpCathedralBudget(): { drawCalls: number; triangles: number; materials: number } {
+    return {
+      drawCalls: this.kelpCathedral.additionalDrawCalls(),
+      triangles: this.kelpCathedral.triangleBudget(),
+      materials: this.kelpCathedral.additionalMaterials(),
+    };
+  }
+
+  crystalTrenchBudget(): { drawCalls: number; triangles: number; materials: number } {
+    return {
+      drawCalls: this.crystalTrench.additionalDrawCalls(),
+      triangles: this.crystalTrench.triangleBudget(),
+      materials: this.crystalTrench.additionalMaterials(),
+    };
+  }
+
   /** Presentation-only post-run personality pose; simulation truth is frozen. */
   setHeroMoment(moment: GlowfinHeroMoment | null): void {
     this.heroMoment = moment;
@@ -888,6 +1168,8 @@ export class GameView {
     lumenMotePresentation: readonly LumenMotePresentation[] = [],
     r3EncounterPresentation: Readonly<R3EncounterPresentation> | null = null,
     r5CompletionPresentation: Readonly<R5CompletionPresentation> | null = null,
+    kelpRescuedManta = false,
+    crystalTrenchStatus: Readonly<CrystalTrenchRunStatus> | null = null,
   ): void {
     const cfg = this.cfg;
     this.renderer.info.reset();
@@ -1041,15 +1323,31 @@ export class GameView {
       gates,
       activeLivingEvents
     );
-
-    this.updateStripes(sim.forwardDistance);
-    this.gates.update(
+    this.kelpCathedral.update(
+      this.activeRealm,
       sim.forwardDistance,
+      presentationElapsedSec,
       gates,
-      this.camera,
-      this.renderer.domElement.clientHeight || window.innerHeight,
-      elapsedSec
+      kelpRescuedManta,
     );
+    this.crystalTrench.update(
+      this.activeRealm,
+      sim.forwardDistance,
+      presentationElapsedSec,
+      gates,
+      crystalTrenchStatus,
+    );
+
+    if (this.activeRealm === "moon-garden") {
+      this.updateStripes(sim.forwardDistance);
+      this.gates.update(
+        sim.forwardDistance,
+        gates,
+        this.camera,
+        this.renderer.domElement.clientHeight || window.innerHeight,
+        elapsedSec
+      );
+    }
 
     if (this.bloomEnabled) this.composer.render();
     else this.renderer.render(this.scene, this.camera);
@@ -1076,6 +1374,8 @@ export class GameView {
     this.lumenMotes.dispose();
     this.r3Encounters.dispose();
     this.r5Completion.dispose();
+    this.kelpCathedral.dispose();
+    this.crystalTrench.dispose();
     this.creature.dispose();
     this.ghostCreature.dispose();
     this.environment.dispose();

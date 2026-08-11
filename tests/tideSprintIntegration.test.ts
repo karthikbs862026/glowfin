@@ -88,11 +88,13 @@ describe("Version 42 shared Tide Sprint integration", () => {
       () => new Date("2026-08-09T00:01:00Z"),
     ).load();
     expect(loaded.recoveredFrom).toBe("version-3");
-    expect(loaded.progress.schemaVersion).toBe(4);
+    expect(loaded.progress.schemaVersion).toBe(5);
     expect(loaded.progress.bestScore).toBe(12_345);
     expect(loaded.progress.progression.lumenPearls).toBe(80);
     expect(loaded.progress.onboarding.tutorialCompleted).toBe(true);
     expect(loaded.progress.tideSprint.totals.runs).toBe(0);
+    expect(loaded.progress.realms.kelpCathedral.runs).toBe(0);
+    expect(loaded.progress.realms.crystalTrench.runs).toBe(0);
     expect(storage.values.has(PROGRESS_PRIMARY_KEY)).toBe(true);
   });
 

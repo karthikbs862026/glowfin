@@ -73,7 +73,8 @@ export function stepSim(
   steeringTarget: number,
   dtSec: number,
   cfg: TuningConfig,
-  externalLateralDriftPerSec = 0
+  externalLateralDriftPerSec = 0,
+  externalLateralBounds?: Readonly<{ left: number; right: number }>,
 ): void {
   // --- timers ---
   state.stunRemainingSec = Math.max(0, state.stunRemainingSec - dtSec);
@@ -108,8 +109,16 @@ export function stepSim(
   state.lateralPosition += (
     state.smoothedSteering * lateralSpeed(state, cfg) + drift
   ) * dtSec;
-  if (state.lateralPosition > maxOffset) state.lateralPosition = maxOffset;
-  if (state.lateralPosition < -maxOffset) state.lateralPosition = -maxOffset;
+  const boundedLeft = externalLateralBounds
+    ? Math.max(-maxOffset, externalLateralBounds.left + cfg.lane.creatureRadius)
+    : -maxOffset;
+  const boundedRight = externalLateralBounds
+    ? Math.min(maxOffset, externalLateralBounds.right - cfg.lane.creatureRadius)
+    : maxOffset;
+  const lateralLeft = boundedLeft <= boundedRight ? boundedLeft : -maxOffset;
+  const lateralRight = boundedLeft <= boundedRight ? boundedRight : maxOffset;
+  if (state.lateralPosition > lateralRight) state.lateralPosition = lateralRight;
+  if (state.lateralPosition < lateralLeft) state.lateralPosition = lateralLeft;
 
   state.forwardDistance += forwardSpeed(state, cfg) * dtSec;
   state.elapsedSec += dtSec;

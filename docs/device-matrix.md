@@ -156,23 +156,45 @@ and signing material are not invented or checked into the repository; this row
 records the release decision and the full acceptance checklist above that was
 certified.
 
-## Version 42 Tide Sprint rows — AWAITING CANDIDATE AND PHYSICAL EXECUTION
+## Version 42 Tide Sprint rows — OWNER CERTIFIED 2026-08-09
 
 Automated 390×844 and 412×915 Chromium contracts may prove layout, touch-event
 wiring, WebGL context rebuild, page-cache recovery and renderer budgets. They
 do not prove Safari/Metal behavior, physical touch feel, thermals, interruption
 handling or device speaker quality.
 
-| Device | race + close-win feel | safe areas + touch | interruption + thermal soak | Result |
+| Device | race + close-win feel | safe areas + touch | interruption + thermal behavior | Result |
 |---|---|---|---|---|
-| Samsung Galaxy S22 Ultra | Not run for V42 | Not run for V42 | Not run for V42 | Blocking final promotion |
-| OPPO Reno3 Pro | Not run for V42 | Not run for V42 | Not run for V42 | Blocking final promotion |
-| iPhone reference 1 | Not run for V42 | Not run for V42 | Not run for V42 | Blocking final promotion |
-| iPhone reference 2 | Not run for V42 | Not run for V42 | Not run for V42 | Blocking final promotion |
+| Real Android (model/OS not supplied) | Owner confirmed passed | Owner confirmed passed | Owner confirmed passed | **Certified** |
+| Real iPhone (model/OS not supplied) | Owner confirmed passed | Owner confirmed passed | Owner confirmed passed | **Certified** |
 
-For each phone, enter Tide Sprint from the Moon Well, complete the one-finger
+The owner confirmed the full Version 42 hardware boundary on the exact PR #33
+candidate on 2026-08-09. The source candidate, artifact digest, identical merge
+tree and promoted artifact are recorded in `version42-r1-certification.md`.
+Specific device models and OS/browser versions were not supplied, so the four
+named Version 39 devices above are not silently relabelled as Version 42
+evidence.
+
+The certified procedure was: enter Tide Sprint from the Moon Well, complete the one-finger
 practice, run at least one clean-current win and one tiny-execution-loss race,
 verify that character choice changes no speed or handling, save and race a Best
 Echo, confirm shared Pearls/XP/objectives after returning to the hub, then test
 background/resume and one interruption. Finish with the existing real-time
 thermal/battery procedure. Record the exact source SHA and artifact digest.
+
+## Version 43-R4 integrated realms rows — AWAITING EXACT-CANDIDATE HARDWARE
+
+Automated Android compilation and iPhone-simulator/archive jobs validate the
+native projects and sealed payload. They do not prove real touch feel,
+Safari/Metal rendering, thermals, battery, speaker behavior or interruptions.
+
+| Device | Realm 1→2 progression + saves | Kelp/Crystal readability + close win | lifecycle + 30-minute thermal | Result |
+|---|---|---|---|---|
+| Real Android | Not run on R4 candidate | Not run on R4 candidate | Not run on R4 candidate | Pending |
+| Real iPhone | Not run on R4 candidate | Not run on R4 candidate | Not run on R4 candidate | Pending |
+
+Use the exact R4 candidate SHA and sealed artifact. Complete Kelp Cathedral,
+confirm the Realm 2 unlock survives reload, finish a clean Crystal run, verify
+shared Pearls/XP/objectives, and confirm Classic, Daily, tutorial, Expedition
+and Tide Sprint state remains intact. Then run background/lock/call recovery,
+safe-area/touch checks and the existing real-time thermal/battery procedure.

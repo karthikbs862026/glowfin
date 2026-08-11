@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#04060f" />
-    <title>Glowfin — Version 42</title>
+    <title>Glowfin — Version 43-R4 · Realms Integrated</title>
     <style>
       :root {
         --ink: #cfefff;
@@ -701,6 +701,7 @@
       .moonwell-restoration[data-restored="true"] strong { color: #fff0b8; }
       .moonwell-cta,
       .moonwell-sprint,
+      .moonwell-realm,
       .moonwell-tutorial,
       .moonwell-challenge,
       .moonwell-daily,
@@ -736,6 +737,49 @@
       .moonwell-sprint small { margin-top: 3px; color: rgba(229, 250, 255, 0.76); font-size: 11px; line-height: 1.35; }
       .moonwell-sprint strong, .moonwell-sprint small { letter-spacing: normal; text-transform: none; }
       .moonwell-sprint b { padding: 7px 9px; border-radius: 999px; background: rgba(255, 233, 159, 0.16); color: #fff0b2; font-size: 9px; letter-spacing: 0.08em; }
+      .moonwell-realm {
+        width: 100%;
+        min-height: 96px;
+        margin: 0 0 12px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 15px;
+        border-color: rgba(117, 255, 192, 0.7);
+        border-radius: 22px;
+        background:
+          radial-gradient(circle at 88% 16%, rgba(255, 221, 126, 0.2), transparent 36%),
+          linear-gradient(135deg, rgba(5, 102, 84, 0.96), rgba(20, 63, 96, 0.96));
+        box-shadow: 0 12px 32px rgba(31, 193, 132, 0.18);
+        text-align: left;
+      }
+      .moonwell-realm span, .moonwell-realm strong, .moonwell-realm small { display: block; }
+      .moonwell-realm span { color: #baffdf; font-size: 9px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; }
+      .moonwell-realm strong { margin-top: 3px; color: #f5fff9; font-size: 20px; letter-spacing: normal; text-transform: none; }
+      .moonwell-realm small { margin-top: 4px; color: rgba(226, 255, 242, 0.76); font-size: 11px; line-height: 1.35; letter-spacing: normal; text-transform: none; }
+      .moonwell-realm b { padding: 7px 9px; border-radius: 999px; background: rgba(151, 255, 207, 0.14); color: #d9ffeb; font-size: 9px; letter-spacing: 0.08em; }
+      .moonwell-realm[data-rescued="true"] { border-color: rgba(255, 224, 132, 0.72); }
+      .moonwell-realm[data-realm="crystal-trench"] {
+        border-color: rgba(133, 207, 255, 0.72);
+        background:
+          radial-gradient(circle at 88% 16%, rgba(183, 247, 255, 0.2), transparent 36%),
+          linear-gradient(135deg, rgba(31, 49, 113, 0.97), rgba(51, 35, 113, 0.96));
+        box-shadow: 0 12px 32px rgba(91, 111, 240, 0.2);
+      }
+      .moonwell-realm[data-realm="crystal-trench"] span { color: #aeefff; }
+      .moonwell-realm[data-realm="crystal-trench"] small { color: rgba(224, 235, 255, 0.78); }
+      .moonwell-realm[data-realm="crystal-trench"] b { background: rgba(135, 216, 255, 0.15); color: #d9f9ff; }
+      .moonwell-realm[data-locked="true"] {
+        cursor: not-allowed;
+        filter: saturate(0.58);
+        opacity: 0.62;
+        box-shadow: none;
+      }
+      .moonwell-realm[data-locked="true"] b {
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(226, 240, 255, 0.72);
+      }
       .moonwell-cta {
         width: 100%;
         min-height: 76px;
@@ -934,6 +978,57 @@
         transition: opacity 0.12s ease, transform 0.16s ease;
       }
       #expedition-collect-feedback[data-active="true"] { opacity: 1; transform: translateX(-50%) scale(1); }
+      #realm-run-status {
+        position: fixed;
+        top: max(18px, var(--glowfin-safe-top));
+        left: 50%;
+        z-index: 4;
+        display: none;
+        transform: translateX(-50%);
+        width: min(310px, calc(100vw - 150px));
+        padding: 7px 11px;
+        border: 1px solid rgba(117, 255, 192, 0.48);
+        border-radius: 16px;
+        background: linear-gradient(135deg, rgba(3, 48, 37, 0.82), rgba(7, 61, 52, 0.74));
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+        backdrop-filter: blur(7px);
+        pointer-events: none;
+        text-align: center;
+      }
+      #realm-run-status[data-active="true"] { display: block; }
+      #realm-run-status strong { display: block; color: #c8ffe3; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+      #realm-run-status span { display: block; margin-top: 2px; color: rgba(225, 255, 241, 0.82); font-size: 10px; line-height: 1.25; }
+      #realm-feature-detail { color: rgba(186, 255, 222, 0.65) !important; font-size: 9px !important; }
+      #realm-feedback {
+        position: fixed;
+        left: 50%;
+        top: max(130px, calc(var(--glowfin-safe-top) + 110px));
+        z-index: 5;
+        opacity: 0;
+        transform: translateX(-50%) scale(0.94);
+        padding: 7px 12px;
+        border: 1px solid rgba(142, 255, 203, 0.48);
+        border-radius: 999px;
+        background: rgba(3, 45, 39, 0.92);
+        color: #d6ffea;
+        font-size: 11px;
+        font-weight: 800;
+        pointer-events: none;
+        transition: opacity 0.12s ease, transform 0.16s ease;
+      }
+      #realm-feedback[data-active="true"] { opacity: 1; transform: translateX(-50%) scale(1); }
+      html[data-glowfin-realm="crystal-trench"] #realm-run-status {
+        border-color: rgba(126, 195, 255, 0.54);
+        background: linear-gradient(135deg, rgba(17, 30, 82, 0.86), rgba(48, 32, 96, 0.8));
+      }
+      html[data-glowfin-realm="crystal-trench"] #realm-run-status strong { color: #d8f8ff; }
+      html[data-glowfin-realm="crystal-trench"] #realm-run-status span { color: rgba(226, 237, 255, 0.84); }
+      html[data-glowfin-realm="crystal-trench"] #realm-feature-detail { color: rgba(174, 201, 255, 0.72) !important; }
+      html[data-glowfin-realm="crystal-trench"] #realm-feedback {
+        border-color: rgba(139, 204, 255, 0.5);
+        background: rgba(21, 28, 83, 0.93);
+        color: #ddf9ff;
+      }
       .moonwell-daily {
         width: 100%;
         min-height: 48px;
@@ -1179,6 +1274,8 @@
         pointer-events: none;
       }
       #hud-signature-cue[data-active="true"] { display: block; }
+      html[data-glowfin-realm="kelp-cathedral"] #hud-signature-cue,
+      html[data-glowfin-realm="crystal-trench"] #hud-signature-cue { display: none !important; }
       #hud-signature-cue strong { display: block; color: #f5fcff; font-size: 14px; }
       #hud-signature-cue span { display: block; margin-top: 2px; color: rgba(217, 244, 255, 0.8); font-size: 12px; line-height: 1.3; }
       #hud-signature-cue[data-verb="moonflash-choice"] { border-color: rgba(255, 93, 198, 0.58); }
@@ -1271,6 +1368,14 @@
             <span class="expedition-mission-copy"><span class="expedition-mission-kicker">Guided Expedition · Chapter 1 · R5</span><strong>The Missing Moonseed</strong><small>Find the Fragment, rescue Miri, race Neri, break Duskmaw’s current and restore the Moon Well.</small></span>
             <span class="expedition-mission-mark" aria-hidden="true">✦</span>
           </button>
+          <button id="moonwell-kelp-cathedral" class="moonwell-realm" type="button" data-hud-action>
+            <span><span>Version 43-R4 · Realm 1</span><strong>Kelp Cathedral</strong><small id="moonwell-kelp-cathedral-detail">Baby manta awaits · braided canopy arches · shell bells · living frond currents</small></span>
+            <b>BEGIN REALMS</b>
+          </button>
+          <button id="moonwell-crystal-trench" class="moonwell-realm" type="button" data-realm="crystal-trench" data-hud-action>
+            <span><span>Version 43-R4 · Realm 2</span><strong>Crystal Trench</strong><small id="moonwell-crystal-trench-detail">Locked · rescue the baby manta in Kelp Cathedral to open Realm 2</small></span>
+            <b>RACE NERI</b>
+          </button>
           <button id="moonwell-tide-sprint" class="moonwell-sprint" type="button" data-hud-action>
             <span><span>New mode · Version 42</span><strong>Tide Sprint</strong><small id="moonwell-tide-sprint-detail">Four fair racers · your Best Echo · shared rewards</small></span>
             <b>RACE</b>
@@ -1345,7 +1450,7 @@
           <button class="hud-action" type="button" data-hud-action data-guided-tutorial><span data-tutorial-entry-title>Start guided tutorial</span> · 30 seconds</button>
           <button id="hud-telemetry-choice" class="hud-action" type="button" data-hud-action>Anonymous playtest data: choose</button>
           <div id="hud-telemetry-note">No name, email, device fingerprint or touch path is collected.</div>
-          <div id="hud-build" role="status">V42 · LOCAL · local</div>
+          <div id="hud-build" role="status">V43 · LOCAL · local</div>
         </section>
       </div>
     </section>
@@ -1360,6 +1465,13 @@
       <div class="expedition-lumen-stats"><span id="expedition-chain">Chain 0 · Best 0</span><span id="expedition-mote-score">Mote score 0</span></div>
     </aside>
     <aside id="expedition-collect-feedback" data-active="false" role="status" aria-live="polite"></aside>
+
+    <aside id="realm-run-status" data-active="false" aria-hidden="true" role="status" aria-live="polite">
+      <strong id="realm-title">Kelp Cathedral · Realm 1</strong>
+      <span id="realm-objective">Reach the collapsing chamber and rescue the baby manta</span>
+      <span id="realm-feature-detail">Fronds open on a rhythm · currents narrow, then reverse</span>
+    </aside>
+    <aside id="realm-feedback" data-active="false" role="status" aria-live="polite"></aside>
 
     <aside id="tutorial-overlay" data-active="false" data-step="auto-swim" aria-live="polite">
       <div class="tutorial-overlay-row">
