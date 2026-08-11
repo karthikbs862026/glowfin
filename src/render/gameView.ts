@@ -46,6 +46,7 @@ import {
 } from "../realms/definition";
 import { KelpCathedralField } from "./kelpCathedralField";
 import { CrystalTrenchField } from "./crystalTrenchField";
+import { isEffectivelyVisible } from "./effectiveVisibility";
 
 /** Hard caps. Part 4.6 requires pool sizes be part of the performance budget. */
 const MAX_POOLED_STRIPES = 40;
@@ -1027,7 +1028,7 @@ export class GameView {
   } {
     const materials = new Set<string>();
     this.scene.traverse((object) => {
-      if (!(object instanceof THREE.Mesh) || !object.visible) return;
+      if (!(object instanceof THREE.Mesh) || !isEffectivelyVisible(object)) return;
       const list = Array.isArray(object.material)
         ? object.material
         : [object.material];
