@@ -44,6 +44,12 @@ docs/art/*.png -filter -diff -merge -text
 public/art/moon-garden/*.webp -filter -diff -merge -text
 public/art/moon-garden/*.png -filter -diff -merge -text
 
+# Version 43 realm textures are compact, runtime-critical WebP atlases. Keep
+# them as ordinary Git blobs so every PR, release and native wrapper checkout
+# is self-contained rather than depending on separately published LFS objects.
+public/art/kelp-cathedral/*.webp -filter -diff -merge -text
+public/art/crystal-trench/*.webp -filter -diff -merge -text
+
 # Capacitor's generated launcher and splash images are small wrapper scaffolds.
 # Keep them as ordinary Git blobs so a native checkout is self-contained and
 # cannot be blocked by unpublished LFS objects.
