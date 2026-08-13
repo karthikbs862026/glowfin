@@ -70,6 +70,8 @@ export interface RunEndPresentation extends HudMetaPresentation {
         raceWon: boolean;
         raceAttempts: number;
         cleanPerformance: boolean;
+        leviathanGraveyardUnlocked: boolean;
+        leviathanGraveyardNewlyUnlocked: boolean;
       }
     | {
         kind: "duskmaw-pursuit";
@@ -443,6 +445,10 @@ export class Hud {
     presentation: RunEndPresentation
   ): void {
     const realmResult = presentation.realmResult;
+    const crystalAdvanceReady = realmResult?.kind === "crystal-trench" &&
+      realmResult.raceWon && realmResult.leviathanGraveyardUnlocked;
+    const leviathanNewlyUnlocked = realmResult?.kind === "crystal-trench" &&
+      realmResult.leviathanGraveyardNewlyUnlocked;
     this.finalLabel.textContent = realmResult
       ? realmResult.kind === "kelp-cathedral"
         ? realmResult.rescuedManta
@@ -462,6 +468,8 @@ export class Hud {
       ? presentation.realmResult.kind === "kelp-cathedral" &&
           presentation.realmResult.crystalTrenchUnlocked
         ? "Continue to Crystal Trench"
+        : crystalAdvanceReady
+          ? "Continue to Leviathan Graveyard"
         : presentation.realmResult.kind === "duskmaw-pursuit"
           ? "Face Duskmaw Again"
           : `Return to ${presentation.realmResult.title}`
@@ -471,7 +479,7 @@ export class Hud {
       ? realmResult.kind === "kelp-cathedral"
         ? `${seconds.toFixed(0)}s · ${realmResult.rescuedManta ? "baby manta rescued" : "rescue current continues"} · ${realmResult.relicPageFound ? "Relic Page found" : "relic still hidden"}${realmResult.crystalTrenchUnlocked ? " · Realm 2 unlocked" : ""}`
         : realmResult.kind === "crystal-trench"
-          ? `${seconds.toFixed(0)}s · ${realmResult.thresholdCrossed ? "Trench Gate sealed" : "threshold reforms ahead"} · ${realmResult.platesCleared} plates · ${realmResult.raceWon ? `Neri beaten in ${realmResult.raceAttempts} race${realmResult.raceAttempts === 1 ? "" : "s"}` : "Mirror Current still open"}${realmResult.cleanPerformance ? " · clean mark" : ""}`
+          ? `${seconds.toFixed(0)}s · ${realmResult.thresholdCrossed ? "Trench Gate sealed" : "threshold reforms ahead"} · ${realmResult.platesCleared} plates · ${realmResult.raceWon ? `Neri beaten in ${realmResult.raceAttempts} race${realmResult.raceAttempts === 1 ? "" : "s"}` : "Mirror Current still open"}${realmResult.cleanPerformance ? " · clean mark" : ""}${leviathanNewlyUnlocked ? " · Realm 3 unlocked" : crystalAdvanceReady ? " · Realm 3 available" : ""}`
           : `${seconds.toFixed(0)}s · ${realmResult.currentBreaks}/${realmResult.currentBreakTarget} Current Breaks · ${realmResult.captures === 0 ? "no captures" : `${realmResult.captures} capture${realmResult.captures === 1 ? "" : "s"} recovered`} · ${realmResult.completed ? realmResult.integrated ? "Auralis freed · Duskmaw sealed" : "Moon Seal reached" : "Heartlight War continues"}${realmResult.cleanPerformance ? " · clean mark" : ""}`
       : `${seconds.toFixed(0)}s · ${nearMisses} near-miss · ${collisions} hits`;
     this.setBestScore(presentation.bestScore);
@@ -490,9 +498,14 @@ export class Hud {
       : presentation.rewardPearls > 0
       ? `+${presentation.rewardPearls.toLocaleString()} Lumen Pearls`
       : "Rewards already secured";
-    this.unlockBanner.dataset["visible"] = presentation.unlockedNames.length > 0 ? "true" : "false";
-    this.unlockBanner.textContent = presentation.unlockedNames.length > 0
-      ? realmResult?.kind === "duskmaw-pursuit"
+    this.unlockBanner.dataset["visible"] = leviathanNewlyUnlocked ||
+        presentation.unlockedNames.length > 0
+      ? "true"
+      : "false";
+    this.unlockBanner.textContent = leviathanNewlyUnlocked
+      ? "Realm 3 unlocked · Leviathan Graveyard · continue into the Heartlight War"
+      : presentation.unlockedNames.length > 0
+        ? realmResult?.kind === "duskmaw-pursuit"
         ? realmResult.integrated
           ? `Permanent Realm 3 reward · ${presentation.unlockedNames.join(" · ")}`
           : `Ceremonial 3D reward · ${presentation.unlockedNames.join(" · ")} · Realm 3 route awakened`
