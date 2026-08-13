@@ -147,16 +147,20 @@ import {
   REALM_OBJECTIVES,
 } from "./realms/progress";
 import { RealmHud } from "./realms/hud";
+import {
+  isIntegratedRealmThreeExperience,
+  isVersion44ReviewPath,
+  realmHandoffDestination,
+} from "./realms/handoff";
 
 const initialCanvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
 if (!initialCanvas) throw new Error("Canvas #glowfin-canvas not found");
 let canvas: HTMLCanvasElement = initialCanvas;
 
 mountReleaseIdentity();
-const v44ReviewRoute = /(?:^|\/)game-v44-r1(?:\/|$)/.test(
-  window.location.pathname,
-);
-const v45IntegrationRoute = /(?:^|\/)game-v45-r1(?:\/|$)/.test(
+const v44ReviewRoute = isVersion44ReviewPath(window.location.pathname);
+const v45IntegrationRoute = isIntegratedRealmThreeExperience(
+  GLOWFIN_RELEASE.version,
   window.location.pathname,
 );
 const hostedServicesEnabled = shouldUseHostedServices(
@@ -1583,8 +1587,12 @@ hud.onDiveAgain(() => {
   if (activeExperience === "chapter-one-r5") {
     startExpedition();
   } else if (
-    activeRealmId === "kelp-cathedral" &&
-    isCrystalTrenchUnlocked(progress.realms)
+    realmHandoffDestination(activeRealmId, {
+      crystalTrenchUnlocked: isCrystalTrenchUnlocked(progress.realms),
+      leviathanGraveyardUnlocked: isLeviathanGraveyardUnlocked(progress.realms),
+      crystalTrenchRaceWon: run?.crystalTrenchStatus.raceWon ?? false,
+    }) === "crystal-trench" &&
+    activeRealmId !== "crystal-trench"
   ) {
     telemetry.track("realm_entry", {
       realm: "crystal-trench",
@@ -1592,6 +1600,20 @@ hud.onDiveAgain(() => {
       slice: "mirror-current-r3",
     });
     startRun("fresh", { realmId: "crystal-trench" });
+  } else if (
+    realmHandoffDestination(activeRealmId, {
+      crystalTrenchUnlocked: isCrystalTrenchUnlocked(progress.realms),
+      leviathanGraveyardUnlocked: isLeviathanGraveyardUnlocked(progress.realms),
+      crystalTrenchRaceWon: run?.crystalTrenchStatus.raceWon ?? false,
+    }) === "leviathan-graveyard" &&
+    activeRealmId !== "leviathan-graveyard"
+  ) {
+    telemetry.track("realm_entry", {
+      realm: "leviathan-graveyard",
+      source: "realm-two-complete",
+      slice: "duskmaw-pursuit-r1",
+    });
+    startRun("fresh", { realmId: "leviathan-graveyard" });
   } else if (activeRealmId !== "moon-garden") {
     startRun("fresh", { realmId: activeRealmId });
   } else {
@@ -2532,6 +2554,9 @@ function frame(nowMs: number): void {
           raceWon: realmStatus.raceWon,
           raceAttempts: realmStatus.raceAttempts,
           cleanPerformance: realmStatus.cleanPerformance,
+          leviathanGraveyardUnlocked: realmRecord.leviathanGraveyardUnlocked,
+          leviathanGraveyardNewlyUnlocked:
+            realmRecord.leviathanGraveyardNewlyUnlocked,
         });
         return;
       } else if (activeRealmId === "leviathan-graveyard") {
