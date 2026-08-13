@@ -38,8 +38,28 @@ import {
   CRYSTAL_NERI_START_LEAD,
   CRYSTAL_PLATES_TO_RACE,
   CRYSTAL_RACE_RETRY_DISTANCE,
+  DUSKMAW_CHASE_DURATION_SEC,
+  DUSKMAW_CHASE_START_SEC,
+  DUSKMAW_AURALIS_CATCHUP_SEC,
+  DUSKMAW_BOSS_MOUTHFIRE_RADIUS,
+  DUSKMAW_BOSS_MAX_HEALTH,
+  DUSKMAW_MOONLINK_STRIKE_DAMAGE,
+  DUSKMAW_PRE_VAULT_STRIKE_DAMAGE,
+  DUSKMAW_COLLISION_LIGHT_COST,
+  DUSKMAW_COMPLETE_COAST_DISTANCE,
+  DUSKMAW_CURRENT_BREAK_TARGET,
+  DUSKMAW_MINION_BLUEPRINTS,
+  DUSKMAW_PRE_VAULT_STRIKES,
+  DUSKMAW_VAULT_HOLD_SEC,
+  DUSKMAW_LIGHT_REGEN_MULTIPLIER,
+  DUSKMAW_MIN_COMPLETION_SEC,
+  DUSKMAW_MOMENTUM_CAP_FRACTION,
   currentTunnelDirection,
   currentTunnelForce,
+  duskmawMinionMouthfireRadius,
+  vacuumWakeForce,
+  type DuskmawMinionId,
+  type DuskmawMinionTier,
   type RealmEventKind,
 } from "../realms/mechanics";
 
@@ -133,6 +153,58 @@ export interface CrystalTrenchRunStatus {
   masteredVerbs: readonly RealmGameplayVerb[];
 }
 
+export type DuskmawPursuitPhase =
+  | "approach"
+  | "minion-wave-1"
+  | "minion-wave-2"
+  | "minion-wave-3"
+  | "duskmaw-assault"
+  | "shadow-sweep"
+  | "vacuum-wake"
+  | "ruins-collapse"
+  | "heartlight-run"
+  | "vault-rescue"
+  | "auralis-catchup"
+  | "moonlink-battle"
+  | "complete";
+
+export interface DuskmawRunStatus {
+  phase: DuskmawPursuitPhase;
+  phaseElapsedSec: number;
+  pursuitActive: boolean;
+  currentBreaks: number;
+  currentBreakTarget: number;
+  preVaultStrikes: number;
+  bossHealth: number;
+  bossMaxHealth: number;
+  bossRegenerations: number;
+  joinedStrikes: number;
+  activeMinionId: DuskmawMinionId | null;
+  activeMinionTier: DuskmawMinionTier | null;
+  activeMinionHits: number;
+  activeMinionRequiredHits: number;
+  minionsDefeated: number;
+  minionTarget: number;
+  recoveryItemsCollected: number;
+  heartlightRecovered: boolean;
+  vaultWorldDistance: number | null;
+  vaultHoldActive: boolean;
+  auralisFreed: boolean;
+  attackTargetLateral: number | null;
+  attackGateDistance: number | null;
+  lastPlayerHitSec: number;
+  lastEnemyHitSec: number;
+  lastMinionDefeatSec: number;
+  lastRecoverySec: number;
+  lastRegenerationSec: number;
+  captures: number;
+  recoveredFirstCapture: boolean;
+  moonSealReached: boolean;
+  completed: boolean;
+  cleanPerformance: boolean;
+  masteredVerbs: readonly RealmGameplayVerb[];
+}
+
 const NO_EVENTS: StepEvents = {
   nearMisses: 0,
   collisions: 0,
@@ -183,6 +255,28 @@ export class Run {
   private realmMirrorRaceRetryDistance: number | null = null;
   private realmCompletionDistance: number | null = null;
   private realmMirrorRaceFinishMarginSec: number | null = null;
+  private realmDuskmawCurrentBreaks = 0;
+  private realmDuskmawCaptures = 0;
+  private realmDuskmawPhase: DuskmawPursuitPhase = "approach";
+  private realmDuskmawPhaseStartedSec = 0;
+  private readonly realmDuskmawMinionHits = new Map<DuskmawMinionId, number>();
+  private readonly realmDuskmawDefeatedMinions = new Set<DuskmawMinionId>();
+  private readonly realmDuskmawStrikeSequences = new Set<number>();
+  private readonly realmDuskmawRecoveryIds = new Set<number>();
+  private realmDuskmawBossHealth = DUSKMAW_BOSS_MAX_HEALTH;
+  private realmDuskmawRegenerations = 0;
+  private realmDuskmawJoinedStrikes = 0;
+  private realmDuskmawVaultDistance: number | null = null;
+  private realmDuskmawAuralisFreed = false;
+  private realmDuskmawLastPlayerHitSec = Number.NEGATIVE_INFINITY;
+  private realmDuskmawLastEnemyHitSec = Number.NEGATIVE_INFINITY;
+  private realmDuskmawLastMinionDefeatSec = Number.NEGATIVE_INFINITY;
+  private realmDuskmawLastDefeatedMinionId: DuskmawMinionId | null = null;
+  private realmDuskmawLastRecoverySec = Number.NEGATIVE_INFINITY;
+  private realmDuskmawLastRegenerationSec = Number.NEGATIVE_INFINITY;
+  private readonly shotLocks = new Map<number, number>();
+  private realmDuskmawMoonSealReached = false;
+  private realmDuskmawCompletionDistance: number | null = null;
   private readonly realmMasteredVerbs = new Set<RealmGameplayVerb>();
   /** Scan cursor: gates before this index are behind the player. */
   private gateCursor = 0;
@@ -263,6 +357,200 @@ export class Run {
     };
   }
 
+  get duskmawStatus(): Readonly<DuskmawRunStatus> {
+    const elapsed = this.sim.elapsedSec;
+    const phase = this.realmDuskmawPhase;
+    const waveTier: DuskmawMinionTier | null = phase === "minion-wave-1"
+      ? 1
+      : phase === "minion-wave-2"
+        ? 2
+        : phase === "minion-wave-3"
+          ? 3
+          : null;
+    const undefeatedMinion = waveTier === null
+      ? null
+      : DUSKMAW_MINION_BLUEPRINTS.find((minion) => (
+          minion.tier === waveTier && !this.realmDuskmawDefeatedMinions.has(minion.id)
+        )) ?? null;
+    const defeatedMinion = waveTier !== null &&
+      elapsed - this.realmDuskmawLastMinionDefeatSec < 1.25
+      ? DUSKMAW_MINION_BLUEPRINTS.find((minion) => (
+          minion.id === this.realmDuskmawLastDefeatedMinionId && minion.tier === waveTier
+        )) ?? null
+      : null;
+    const activeMinion = undefeatedMinion ?? defeatedMinion;
+    const predictedVault = this.course.gates.find((gate) => (
+      gate.realmPlan?.verb === "moonbone-vault"
+    ));
+    const vaultWorldDistance = this.realmDuskmawVaultDistance ??
+      (predictedVault ? predictedVault.distance + 24 : null);
+    const lock = this.shotLocks.entries().next().value as
+      [number, number] | undefined;
+    return {
+      phase,
+      phaseElapsedSec: Math.max(0, elapsed - this.realmDuskmawPhaseStartedSec),
+      pursuitActive: phase !== "approach" && phase !== "vault-rescue" && phase !== "complete",
+      currentBreaks: this.realmDuskmawCurrentBreaks,
+      currentBreakTarget: DUSKMAW_CURRENT_BREAK_TARGET,
+      preVaultStrikes: Math.min(DUSKMAW_PRE_VAULT_STRIKES, this.realmDuskmawCurrentBreaks),
+      bossHealth: this.realmDuskmawBossHealth,
+      bossMaxHealth: DUSKMAW_BOSS_MAX_HEALTH,
+      bossRegenerations: this.realmDuskmawRegenerations,
+      joinedStrikes: this.realmDuskmawJoinedStrikes,
+      activeMinionId: activeMinion?.id ?? null,
+      activeMinionTier: activeMinion?.tier ?? null,
+      activeMinionHits: activeMinion
+        ? this.realmDuskmawMinionHits.get(activeMinion.id) ?? 0
+        : 0,
+      activeMinionRequiredHits: activeMinion?.requiredHits ?? 0,
+      minionsDefeated: this.realmDuskmawDefeatedMinions.size,
+      minionTarget: DUSKMAW_MINION_BLUEPRINTS.length,
+      recoveryItemsCollected: this.realmDuskmawRecoveryIds.size,
+      heartlightRecovered: this.realmDuskmawCurrentBreaks >= DUSKMAW_PRE_VAULT_STRIKES,
+      vaultWorldDistance,
+      vaultHoldActive: phase === "vault-rescue",
+      auralisFreed: this.realmDuskmawAuralisFreed,
+      attackTargetLateral: lock?.[1] ?? null,
+      attackGateDistance: lock?.[0] ?? null,
+      lastPlayerHitSec: this.realmDuskmawLastPlayerHitSec,
+      lastEnemyHitSec: this.realmDuskmawLastEnemyHitSec,
+      lastMinionDefeatSec: this.realmDuskmawLastMinionDefeatSec,
+      lastRecoverySec: this.realmDuskmawLastRecoverySec,
+      lastRegenerationSec: this.realmDuskmawLastRegenerationSec,
+      captures: this.realmDuskmawCaptures,
+      recoveredFirstCapture: this.realmDuskmawCaptures > 0 &&
+        this.realmDuskmawRecoveryIds.size > 0 && this.light > 0,
+      moonSealReached: this.realmDuskmawMoonSealReached,
+      completed: this.realmDuskmawMoonSealReached,
+      cleanPerformance: this.realmDuskmawCaptures === 0 && this.collisionCount === 0,
+      masteredVerbs: Array.from(this.realmMasteredVerbs).sort(),
+    };
+  }
+
+  private isShotGate(gate: Gate): boolean {
+    const verb = gate.realmPlan?.verb;
+    return verb === "minion-assault" || verb === "shadow-sweep" ||
+      verb === "vacuum-wake";
+  }
+
+  private updateShotLocks(
+    distance: number,
+    lateral: number,
+  ): void {
+    if (this.realmId !== "leviathan-graveyard") return;
+    for (const d of this.shotLocks.keys()) {
+      if (d < distance - 4) this.shotLocks.delete(d);
+    }
+    for (const gate of this.course.gates) {
+      if (gate.distance < distance) continue;
+      if (gate.distance > distance + 138) break;
+      if (!this.isShotGate(gate)) continue;
+      const plan = gate.realmPlan;
+      if (!plan || distance < plan.telegraphFromDistance) continue;
+      if (!this.shotLocks.has(gate.distance)) {
+        this.shotLocks.set(
+          gate.distance,
+          Math.max(
+            -this.cfg.lane.halfWidth + 0.9,
+            Math.min(this.cfg.lane.halfWidth - 0.9, lateral),
+          ),
+        );
+      }
+    }
+  }
+
+  private shotClearance(
+    gate: Gate,
+    fromD: number,
+    toD: number,
+    fromX: number,
+    toX: number,
+  ): number | null {
+    const plan = gate.realmPlan;
+    if (
+      plan?.verb !== "minion-assault" &&
+      plan?.verb !== "shadow-sweep" &&
+      plan?.verb !== "vacuum-wake"
+    ) return null;
+    const target = this.shotLocks.get(gate.distance);
+    if (target === undefined) return null;
+    const t = Math.max(0, Math.min(
+      1,
+      (gate.distance - fromD) / Math.max(1e-9, toD - fromD),
+    ));
+    const x = fromX + (toX - fromX) * t;
+    const radius = plan.verb === "minion-assault"
+      ? duskmawMinionMouthfireRadius(plan.minionTier)
+      : DUSKMAW_BOSS_MOUTHFIRE_RADIUS;
+    return Math.abs(x - target) - radius - this.cfg.lane.creatureRadius;
+  }
+
+  private setDuskmawPhase(phase: DuskmawPursuitPhase): void {
+    if (this.realmDuskmawPhase === phase) return;
+    this.realmDuskmawPhase = phase;
+    this.realmDuskmawPhaseStartedSec = this.sim.elapsedSec;
+  }
+
+  private advanceDuskmawPhase(): void {
+    if (this.realmId !== "leviathan-graveyard" || this.realmDuskmawMoonSealReached) return;
+    const phaseElapsed = this.sim.elapsedSec - this.realmDuskmawPhaseStartedSec;
+    switch (this.realmDuskmawPhase) {
+      case "approach":
+        if (this.sim.elapsedSec >= DUSKMAW_CHASE_START_SEC) {
+          this.setDuskmawPhase("minion-wave-1");
+        }
+        return;
+      case "minion-wave-1":
+        if (DUSKMAW_MINION_BLUEPRINTS
+          .filter((minion) => minion.tier === 1)
+          .every((minion) => this.realmDuskmawDefeatedMinions.has(minion.id)) &&
+          phaseElapsed >= 1.25 &&
+          this.sim.elapsedSec - this.realmDuskmawLastMinionDefeatSec >= 1.25) {
+          this.setDuskmawPhase("minion-wave-2");
+        }
+        return;
+      case "minion-wave-2":
+        if (DUSKMAW_MINION_BLUEPRINTS
+          .filter((minion) => minion.tier === 2)
+          .every((minion) => this.realmDuskmawDefeatedMinions.has(minion.id)) &&
+          this.sim.elapsedSec - this.realmDuskmawLastMinionDefeatSec >= 1.25) {
+          this.setDuskmawPhase("minion-wave-3");
+        }
+        return;
+      case "minion-wave-3":
+        if (DUSKMAW_MINION_BLUEPRINTS
+          .filter((minion) => minion.tier === 3)
+          .every((minion) => this.realmDuskmawDefeatedMinions.has(minion.id)) &&
+          this.sim.elapsedSec - this.realmDuskmawLastMinionDefeatSec >= 1.25) {
+          this.setDuskmawPhase("duskmaw-assault");
+        }
+        return;
+      case "duskmaw-assault":
+      case "shadow-sweep":
+      case "vacuum-wake":
+      case "ruins-collapse":
+        if (this.realmDuskmawCurrentBreaks >= DUSKMAW_PRE_VAULT_STRIKES) {
+          this.setDuskmawPhase("heartlight-run");
+        }
+        return;
+      case "vault-rescue":
+        if (phaseElapsed >= DUSKMAW_VAULT_HOLD_SEC) {
+          this.realmDuskmawAuralisFreed = true;
+          this.setDuskmawPhase("auralis-catchup");
+        }
+        return;
+      case "auralis-catchup":
+        if (phaseElapsed >= DUSKMAW_AURALIS_CATCHUP_SEC) {
+          this.setDuskmawPhase("moonlink-battle");
+        }
+        return;
+      case "heartlight-run":
+      case "moonlink-battle":
+      case "complete":
+        return;
+    }
+  }
+
   /**
    * Time scale to apply to wall-clock frame time before feeding the fixed-step
    * accumulator. Drives the near-miss slow-mo beat (Part 2.3).
@@ -322,6 +610,7 @@ export class Run {
   /** Advance one fixed simulation step. */
   step(dtSec: number, steeringTarget: number): StepEvents {
     if (this.ended) return NO_EVENTS;
+    this.advanceDuskmawPhase();
     if (this.pendingEndReason !== null) {
       this.ended = true;
       this.endReason = this.pendingEndReason;
@@ -340,6 +629,9 @@ export class Run {
     const previousDistance = this.sim.forwardDistance;
     const previousLateral = this.sim.lateralPosition;
     const previousElapsedSec = this.sim.elapsedSec;
+    this.updateShotLocks(previousDistance, previousLateral);
+    const vaultHold = this.realmId === "leviathan-graveyard" &&
+      this.realmDuskmawPhase === "vault-rescue";
 
     // Only the nearest active current owns the player. Authored zones may
     // overlap spatially at high tiers, but stacking two forces would exceed
@@ -353,20 +645,34 @@ export class Run {
     const currentPlan = currentGate?.obstaclePlan;
     const realmCurrentGate = this.course.gates.find((gate) => {
       const plan = gate.realmPlan;
-      return plan?.verb === "reversing-current-tunnel" &&
+      return (
+        plan?.verb === "reversing-current-tunnel" ||
+        plan?.verb === "vacuum-wake"
+      ) &&
         previousDistance >= plan.startDistance &&
         previousDistance <= plan.endDistance;
     });
     const realmCurrentPlan = realmCurrentGate?.realmPlan;
     const lateralDrift = realmCurrentPlan?.verb === "reversing-current-tunnel"
       ? currentTunnelForce(realmCurrentPlan, previousDistance, previousLateral)
+      : realmCurrentPlan?.verb === "vacuum-wake"
+        ? vacuumWakeForce(realmCurrentPlan, previousDistance, previousLateral)
       : currentPlan?.verb === "current-lane"
         ? currentLaneForce(currentPlan, previousDistance, previousLateral)
         : 0;
-    const realmTunnelBounds = realmCurrentPlan?.verb === "reversing-current-tunnel"
+    const realmTunnelBounds = (
+      realmCurrentPlan?.verb === "reversing-current-tunnel" ||
+      realmCurrentPlan?.verb === "vacuum-wake"
+    )
       ? { left: realmCurrentPlan.laneLeft, right: realmCurrentPlan.laneRight }
       : undefined;
 
+    if (this.realmId === "leviathan-graveyard") {
+      this.sim.momentum = Math.min(
+        this.sim.momentum,
+        cfg.momentum.ceiling * DUSKMAW_MOMENTUM_CAP_FRACTION,
+      );
+    }
     stepSim(
       this.sim,
       steeringTarget,
@@ -375,6 +681,19 @@ export class Run {
       lateralDrift,
       realmTunnelBounds,
     );
+    if (vaultHold) {
+      // The Moonbone Vault is a world landmark, not an endless-runner prop.
+      // Time and steering continue for the rescue animation, but forward
+      // travel pauses so the cell remains fixed in space until Auralis exits.
+      this.sim.forwardDistance = previousDistance;
+      this.sim.momentum = 0;
+    }
+    if (this.realmId === "leviathan-graveyard") {
+      this.sim.momentum = Math.min(
+        this.sim.momentum,
+        cfg.momentum.ceiling * DUSKMAW_MOMENTUM_CAP_FRACTION,
+      );
+    }
 
     const distanceTravelled = this.sim.forwardDistance - previousDistance;
 
@@ -464,6 +783,22 @@ export class Run {
             direction: realmPlan.lateralDriftPerSec < 0 ? 1 : -1,
           });
         }
+      } else if (realmPlan?.verb === "vacuum-wake") {
+        if (
+          realmPlan.startDistance >= previousDistance &&
+          realmPlan.startDistance < this.sim.forwardDistance
+        ) {
+          this.realmMasteredVerbs.add("vacuum-wake");
+          realmEvents.push({
+            kind: "vacuum-wake-enter",
+            verb: realmPlan.verb,
+            distance: realmPlan.startDistance,
+            tier: gate.tier,
+            templateId: gate.templateId,
+            success: true,
+            direction: realmPlan.lateralDriftPerSec < 0 ? -1 : 1,
+          });
+        }
       }
       if (gate.distance > this.sim.forwardDistance + cfg.readability.visibleAheadUnits) {
         break;
@@ -495,6 +830,19 @@ export class Run {
 
     for (const pass of passes) {
       const realmPlan = pass.gate.realmPlan;
+      const shotClearance = this.shotClearance(
+        pass.gate,
+        previousDistance,
+        this.sim.forwardDistance,
+        previousLateral,
+        this.sim.lateralPosition,
+      );
+      if (shotClearance !== null) {
+        // V44 attack truth is the visible mouthfire lane locked at telegraph,
+        // never the unrelated procedural gate opening behind the custom realm.
+        pass.collided = shotClearance < 0;
+        pass.clearance = shotClearance;
+      }
       if (realmPlan?.verb === "swaying-frond-window") {
         if (!pass.collided) {
           this.realmFrondWindowsCleared += 1;
@@ -592,15 +940,180 @@ export class Run {
           templateId: pass.gate.templateId,
           success: crossed,
         });
+      } else if (realmPlan?.verb === "minion-assault") {
+        const previousHits = this.realmDuskmawMinionHits.get(realmPlan.minionId) ?? 0;
+        const alreadyDefeated = this.realmDuskmawDefeatedMinions.has(realmPlan.minionId);
+        const strikeReady = !alreadyDefeated && realmPlan.hitIndex <= previousHits + 1;
+        const landed = !pass.collided && strikeReady;
+        let defeated = alreadyDefeated;
+        if (landed) {
+          const hits = Math.min(realmPlan.requiredHits, previousHits + 1);
+          this.realmDuskmawMinionHits.set(realmPlan.minionId, hits);
+          this.realmDuskmawLastEnemyHitSec = this.sim.elapsedSec;
+          defeated = hits >= realmPlan.requiredHits;
+          if (defeated) {
+            this.realmDuskmawDefeatedMinions.add(realmPlan.minionId);
+            this.realmDuskmawLastDefeatedMinionId = realmPlan.minionId;
+            this.realmDuskmawLastMinionDefeatSec = this.sim.elapsedSec;
+          }
+          this.realmMasteredVerbs.add("minion-assault");
+        } else if (!alreadyDefeated) {
+          this.course.scheduleDuskmawMinionRetry(
+            { ...realmPlan, hitIndex: previousHits + 1 },
+            pass.gate.distance + 78,
+          );
+        }
+        realmEvents.push({
+          kind: landed
+            ? defeated ? "minion-defeated" : "minion-hit"
+            : alreadyDefeated ? "minion-defeated" : "minion-shot-missed",
+          verb: realmPlan.verb,
+          distance: pass.gate.distance,
+          tier: pass.gate.tier,
+          templateId: `${pass.gate.templateId}:${realmPlan.minionId}:${realmPlan.hitIndex}`,
+          success: landed || alreadyDefeated,
+        });
+      } else if (realmPlan?.verb === "lumen-bloom") {
+        const collected = !pass.collided;
+        if (collected && !this.realmDuskmawRecoveryIds.has(realmPlan.recoveryId)) {
+          this.realmDuskmawRecoveryIds.add(realmPlan.recoveryId);
+          this.light = Math.min(cfg.light.max, this.light + realmPlan.healAmount);
+          this.realmDuskmawLastRecoverySec = this.sim.elapsedSec;
+          this.realmMasteredVerbs.add("lumen-bloom");
+        }
+        realmEvents.push({
+          kind: collected ? "lumen-bloom" : "lumen-bloom-missed",
+          verb: realmPlan.verb,
+          distance: pass.gate.distance,
+          tier: pass.gate.tier,
+          templateId: `${pass.gate.templateId}:recovery-${realmPlan.recoveryId}`,
+          success: collected,
+        });
+      } else if (realmPlan?.verb === "shadow-sweep") {
+        if (!pass.collided) this.realmMasteredVerbs.add("shadow-sweep");
+        realmEvents.push({
+          kind: "shadow-sweep",
+          verb: realmPlan.verb,
+          distance: pass.gate.distance,
+          tier: pass.gate.tier,
+          templateId: pass.gate.templateId,
+          success: !pass.collided,
+          direction: realmPlan.sweepSide,
+        });
+      } else if (realmPlan?.verb === "ruins-collapse") {
+        if (!pass.collided) this.realmMasteredVerbs.add("ruins-collapse");
+        realmEvents.push({
+          kind: "ruins-collapse",
+          verb: realmPlan.verb,
+          distance: pass.gate.distance,
+          tier: pass.gate.tier,
+          templateId: pass.gate.templateId,
+          success: !pass.collided,
+          direction: realmPlan.collapseSide,
+        });
+      } else if (realmPlan?.verb === "current-break") {
+        const preVault = realmPlan.sequence <= DUSKMAW_PRE_VAULT_STRIKES;
+        const eligible = preVault
+          ? this.realmDuskmawDefeatedMinions.size >= DUSKMAW_MINION_BLUEPRINTS.length
+          : this.realmDuskmawAuralisFreed && this.realmDuskmawPhase === "moonlink-battle";
+        const collected = !pass.collided && eligible;
+        if (collected) {
+          if (!this.realmDuskmawStrikeSequences.has(realmPlan.sequence)) {
+            this.realmDuskmawStrikeSequences.add(realmPlan.sequence);
+            this.realmDuskmawCurrentBreaks = Math.min(
+              DUSKMAW_CURRENT_BREAK_TARGET,
+              this.realmDuskmawStrikeSequences.size,
+            );
+            const damage = preVault
+              ? DUSKMAW_PRE_VAULT_STRIKE_DAMAGE
+              : DUSKMAW_MOONLINK_STRIKE_DAMAGE;
+            this.realmDuskmawBossHealth = Math.max(
+              0,
+              this.realmDuskmawBossHealth - damage,
+            );
+            this.realmDuskmawLastEnemyHitSec = this.sim.elapsedSec;
+            if (!preVault) this.realmDuskmawJoinedStrikes += 1;
+            if (preVault && (realmPlan.sequence === 2 || realmPlan.sequence === 4)) {
+              this.realmDuskmawBossHealth = Math.min(
+                DUSKMAW_BOSS_MAX_HEALTH,
+                this.realmDuskmawBossHealth + 2,
+              );
+              this.realmDuskmawRegenerations += 1;
+              this.realmDuskmawLastRegenerationSec = this.sim.elapsedSec;
+            }
+          }
+          this.realmMasteredVerbs.add("current-break");
+        } else {
+          this.course.scheduleDuskmawCurrentBreakRetry(
+            realmPlan,
+            pass.gate.distance + 96,
+          );
+        }
+        realmEvents.push({
+          kind: collected ? "current-break" : "current-break-missed",
+          verb: realmPlan.verb,
+          distance: pass.gate.distance,
+          tier: pass.gate.tier,
+          templateId: `${pass.gate.templateId}:${realmPlan.sequence}`,
+          success: collected,
+        });
+      } else if (realmPlan?.verb === "moonbone-vault") {
+        const unlocked = !pass.collided &&
+          this.realmDuskmawCurrentBreaks >= DUSKMAW_PRE_VAULT_STRIKES &&
+          this.realmDuskmawDefeatedMinions.size >= DUSKMAW_MINION_BLUEPRINTS.length;
+        if (unlocked && this.realmDuskmawPhase === "heartlight-run") {
+          this.realmDuskmawVaultDistance = pass.gate.distance + 24;
+          this.setDuskmawPhase("vault-rescue");
+          this.realmMasteredVerbs.add("moonbone-vault");
+        }
+        realmEvents.push({
+          kind: unlocked ? "moonbone-vault" : "moonbone-vault-locked",
+          verb: realmPlan.verb,
+          distance: pass.gate.distance,
+          tier: pass.gate.tier,
+          templateId: pass.gate.templateId,
+          success: unlocked,
+        });
+      } else if (realmPlan?.verb === "moon-seal") {
+        const reached = !pass.collided &&
+          this.sim.elapsedSec >= DUSKMAW_MIN_COMPLETION_SEC &&
+          this.realmDuskmawCurrentBreaks >= DUSKMAW_CURRENT_BREAK_TARGET &&
+          this.realmDuskmawBossHealth <= 0 &&
+          this.realmDuskmawAuralisFreed;
+        if (reached && !this.realmDuskmawMoonSealReached) {
+          this.realmDuskmawMoonSealReached = true;
+          this.realmDuskmawCompletionDistance = pass.gate.distance;
+          this.setDuskmawPhase("complete");
+          this.realmMasteredVerbs.add("moon-seal");
+        }
+        realmEvents.push({
+          kind: reached ? "moon-seal" : "moon-seal-missed",
+          verb: realmPlan.verb,
+          distance: pass.gate.distance,
+          tier: pass.gate.tier,
+          templateId: `${pass.gate.templateId}:${realmPlan.sequence}`,
+          success: reached,
+        });
       }
       if (pass.collided) {
         // applyCollision returns false during i-frames, in which case no light
         // is lost either — otherwise a dense cluster would drain the run
         // through a grace period that is supposed to be protecting the player.
         if (applyCollision(this.sim, cfg)) {
-          this.light -= cfg.light.costPerCollision;
+          this.light -= this.realmId === "leviathan-graveyard"
+            ? DUSKMAW_COLLISION_LIGHT_COST
+            : cfg.light.costPerCollision;
           this.secondsSinceCollision = 0;
           this.collisionCount++;
+          if (
+            this.realmId === "leviathan-graveyard" &&
+            previousElapsedSec >= DUSKMAW_CHASE_START_SEC &&
+            previousElapsedSec <
+              DUSKMAW_CHASE_START_SEC + DUSKMAW_CHASE_DURATION_SEC
+          ) {
+            this.realmDuskmawCaptures += 1;
+            this.realmDuskmawLastPlayerHitSec = this.sim.elapsedSec;
+          }
           collisions++;
           encounters.push({
             kind: "collision",
@@ -742,7 +1255,13 @@ export class Run {
     // --- light regen and run end (Part 2.4) ---
     this.secondsSinceCollision += dtSec;
     if (this.secondsSinceCollision > cfg.light.regenDelayAfterCollisionSec) {
-      this.light = Math.min(cfg.light.max, this.light + cfg.light.regenPerSec * dtSec);
+      const regenMultiplier = this.realmId === "leviathan-graveyard"
+        ? DUSKMAW_LIGHT_REGEN_MULTIPLIER
+        : 1;
+      this.light = Math.min(
+        cfg.light.max,
+        this.light + cfg.light.regenPerSec * regenMultiplier * dtSec,
+      );
     }
 
     this.slowMoRemainingSec = Math.max(0, this.slowMoRemainingSec - dtSec);
@@ -763,6 +1282,16 @@ export class Run {
       this.realmCompletionDistance !== null &&
       this.sim.forwardDistance >=
         this.realmCompletionDistance + CRYSTAL_COMPLETE_COAST_DISTANCE
+    ) {
+      this.ended = true;
+      this.endReason = "realm-complete";
+      justEnded = true;
+    } else if (
+      this.realmId === "leviathan-graveyard" &&
+      this.realmDuskmawMoonSealReached &&
+      this.realmDuskmawCompletionDistance !== null &&
+      this.sim.forwardDistance >=
+        this.realmDuskmawCompletionDistance + DUSKMAW_COMPLETE_COAST_DISTANCE
     ) {
       this.ended = true;
       this.endReason = "realm-complete";

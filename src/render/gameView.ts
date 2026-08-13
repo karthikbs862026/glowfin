@@ -8,7 +8,7 @@ import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
 import type { Gate } from "../sim/course";
 import type { ActiveLivingWorldEvent } from "../sim/obstacleVariety";
-import type { CrystalTrenchRunStatus } from "../sim/run";
+import type { CrystalTrenchRunStatus, DuskmawRunStatus } from "../sim/run";
 import { forwardSpeed, type SimState } from "../sim/state";
 import {
   createCausticMaterial,
@@ -46,6 +46,7 @@ import {
 } from "../realms/definition";
 import { KelpCathedralField } from "./kelpCathedralField";
 import { CrystalTrenchField } from "./crystalTrenchField";
+import { LeviathanGraveyardField } from "./leviathanGraveyardField";
 import { isEffectivelyVisible } from "./effectiveVisibility";
 
 /** Hard caps. Part 4.6 requires pool sizes be part of the performance budget. */
@@ -54,6 +55,7 @@ const STRIPE_SPACING_UNITS = 14;
 const STANDARD_EXPOSURE = 0.96;
 const KELP_CATHEDRAL_EXPOSURE = 1.08;
 const CRYSTAL_TRENCH_EXPOSURE = 1.12;
+const LEVIATHAN_GRAVEYARD_EXPOSURE = 1.42;
 const HIGH_CONTRAST_EXPOSURE = 1.06;
 
 export interface PresentationPreferences {
@@ -92,6 +94,7 @@ export class GameView {
   private readonly r5Completion: R5CompletionField;
   private readonly kelpCathedral: KelpCathedralField;
   private readonly crystalTrench: CrystalTrenchField;
+  private readonly leviathanGraveyard: LeviathanGraveyardField;
   private readonly composer: EffectComposer;
   private readonly bloomPass: UnrealBloomPass;
   private bloomEnabled = true;
@@ -108,6 +111,7 @@ export class GameView {
   private moonGardenBackground: THREE.Texture | null = null;
   private kelpBackground: THREE.Texture | null = null;
   private crystalTrenchBackground: THREE.Texture | null = null;
+  private leviathanGraveyardBackground: THREE.Texture | null = null;
   /**
    * Mask material for the contrast probe. Outputs white only for obstacles
    * within the reaction window; anything further reads as background.
@@ -329,7 +333,30 @@ export class GameView {
     crystalSeabedSurface.wrapT = THREE.RepeatWrapping;
     crystalSeabedSurface.repeat.set(10, 560);
     crystalSeabedSurface.anisotropy = maxAnisotropy;
-
+    const leviathanFossilSurface = textureLoader.load(
+      "art/leviathan-graveyard/fossil-bone-albedo-v2.webp"
+    );
+    leviathanFossilSurface.colorSpace = THREE.SRGBColorSpace;
+    leviathanFossilSurface.wrapS = THREE.RepeatWrapping;
+    leviathanFossilSurface.wrapT = THREE.RepeatWrapping;
+    leviathanFossilSurface.repeat.set(1.2, 3.1);
+    leviathanFossilSurface.anisotropy = maxAnisotropy;
+    const leviathanRuinSurface = textureLoader.load(
+      "art/leviathan-graveyard/ruin-stone-albedo-v1.webp"
+    );
+    leviathanRuinSurface.colorSpace = THREE.SRGBColorSpace;
+    leviathanRuinSurface.wrapS = THREE.RepeatWrapping;
+    leviathanRuinSurface.wrapT = THREE.RepeatWrapping;
+    leviathanRuinSurface.repeat.set(1.4, 2.2);
+    leviathanRuinSurface.anisotropy = maxAnisotropy;
+    const leviathanSeabedSurface = textureLoader.load(
+      "art/leviathan-graveyard/seabed-albedo-v1.webp"
+    );
+    leviathanSeabedSurface.colorSpace = THREE.SRGBColorSpace;
+    leviathanSeabedSurface.wrapS = THREE.RepeatWrapping;
+    leviathanSeabedSurface.wrapT = THREE.RepeatWrapping;
+    leviathanSeabedSurface.repeat.set(10, 720);
+    leviathanSeabedSurface.anisotropy = maxAnisotropy;
     this.disposables.push(
       moonstoneSurface,
       moonstoneFloorSurface,
@@ -341,7 +368,10 @@ export class GameView {
       kelpSeabedSurface,
       crystalTrenchSurface,
       crystalRuinSurface,
-      crystalSeabedSurface
+      crystalSeabedSurface,
+      leviathanFossilSurface,
+      leviathanRuinSurface,
+      leviathanSeabedSurface
     );
 
     const backgroundCanvas = document.createElement("canvas");
@@ -490,6 +520,56 @@ export class GameView {
     crystalBackgroundTexture.colorSpace = THREE.SRGBColorSpace;
     this.crystalTrenchBackground = crystalBackgroundTexture;
     this.disposables.push(crystalBackgroundTexture);
+
+    const leviathanBackgroundCanvas = document.createElement("canvas");
+    leviathanBackgroundCanvas.width = 128;
+    leviathanBackgroundCanvas.height = 256;
+    const leviathanBackgroundContext = leviathanBackgroundCanvas.getContext("2d");
+    if (!leviathanBackgroundContext) {
+      throw new Error("2D canvas is required for the Leviathan Graveyard gradient.");
+    }
+    const leviathanGradient = leviathanBackgroundContext.createLinearGradient(
+      0,
+      0,
+      0,
+      leviathanBackgroundCanvas.height,
+    );
+    leviathanGradient.addColorStop(0, "#4b8791");
+    leviathanGradient.addColorStop(0.22, "#327080");
+    leviathanGradient.addColorStop(0.58, "#1b4e5c");
+    leviathanGradient.addColorStop(1, "#092935");
+    leviathanBackgroundContext.fillStyle = leviathanGradient;
+    leviathanBackgroundContext.fillRect(
+      0,
+      0,
+      leviathanBackgroundCanvas.width,
+      leviathanBackgroundCanvas.height,
+    );
+    const fossilMoon = leviathanBackgroundContext.createRadialGradient(
+      leviathanBackgroundCanvas.width * 0.48,
+      leviathanBackgroundCanvas.height * 0.04,
+      1,
+      leviathanBackgroundCanvas.width * 0.48,
+      leviathanBackgroundCanvas.height * 0.04,
+      leviathanBackgroundCanvas.width * 0.8,
+    );
+    fossilMoon.addColorStop(0, "rgba(239, 255, 248, 0.82)");
+    fossilMoon.addColorStop(0.16, "rgba(153, 231, 235, 0.46)");
+    fossilMoon.addColorStop(0.46, "rgba(75, 154, 170, 0.2)");
+    fossilMoon.addColorStop(1, "rgba(5, 20, 34, 0)");
+    leviathanBackgroundContext.fillStyle = fossilMoon;
+    leviathanBackgroundContext.fillRect(
+      0,
+      0,
+      leviathanBackgroundCanvas.width,
+      leviathanBackgroundCanvas.height,
+    );
+    const leviathanBackgroundTexture = new THREE.CanvasTexture(
+      leviathanBackgroundCanvas,
+    );
+    leviathanBackgroundTexture.colorSpace = THREE.SRGBColorSpace;
+    this.leviathanGraveyardBackground = leviathanBackgroundTexture;
+    this.disposables.push(leviathanBackgroundTexture);
     // Fog starts well beyond the sight distance so it never eats an obstacle
     // the player is supposed to be reading (Part 3.4).
     // Fog must begin BEYOND the reaction window, not at its edge.
@@ -640,6 +720,12 @@ export class GameView {
       seabed: crystalSeabedSurface,
     });
     this.scene.add(this.crystalTrench.group);
+    this.leviathanGraveyard = new LeviathanGraveyardField(cfg, {
+      fossilBone: leviathanFossilSurface,
+      ruinStone: leviathanRuinSurface,
+      seabed: leviathanSeabedSurface,
+    });
+    this.scene.add(this.leviathanGraveyard.group);
 
     this.r3Encounters = new R3EncounterField(
       inlayMaterial,
@@ -940,6 +1026,7 @@ export class GameView {
     this.environment.setRealm(realmId);
     const kelpActive = realmId === "kelp-cathedral";
     const crystalActive = realmId === "crystal-trench";
+    const leviathanActive = realmId === "leviathan-graveyard";
     const moonGardenActive = realmId === "moon-garden";
     for (const object of this.gates.objects) object.visible = moonGardenActive;
     this.speedInlays.visible = moonGardenActive;
@@ -952,13 +1039,27 @@ export class GameView {
       ? this.kelpBackground
       : crystalActive
         ? this.crystalTrenchBackground
-        : this.moonGardenBackground;
+        : leviathanActive
+          ? this.leviathanGraveyardBackground
+          : this.moonGardenBackground;
     if (this.scene.fog instanceof THREE.Fog) {
       this.scene.fog.color.set(definition.palette.fog);
       this.scene.fog.near = this.cfg.readability.visibleAheadUnits *
-        (kelpActive ? 1.12 : crystalActive ? 1.24 : this.cfg.visual.fogNearMultiplier);
+        (kelpActive
+          ? 1.12
+          : crystalActive
+            ? 1.24
+            : leviathanActive
+              ? 1.36
+              : this.cfg.visual.fogNearMultiplier);
       this.scene.fog.far = this.cfg.readability.visibleAheadUnits *
-        (kelpActive ? 2.12 : crystalActive ? 2.38 : this.cfg.visual.fogFarMultiplier);
+        (kelpActive
+          ? 2.12
+          : crystalActive
+            ? 2.38
+            : leviathanActive
+              ? 2.56
+              : this.cfg.visual.fogFarMultiplier);
     }
     const setFloorColour = (uniform: string, colour: THREE.ColorRepresentation): void => {
       const target = this.floorMaterial.uniforms[uniform];
@@ -966,35 +1067,101 @@ export class GameView {
     };
     setFloorColour(
       "uBaseColor",
-      kelpActive ? 0x092b23 : crystalActive ? 0x101c38 : 0x20364a,
+      kelpActive
+        ? 0x092b23
+        : crystalActive
+          ? 0x101c38
+          : leviathanActive
+            ? 0x284f57
+            : 0x20364a,
     );
     setFloorColour(
       "uCausticColor",
-      kelpActive ? 0x35d48d : crystalActive ? 0x5ebee8 : 0x2ea8d8,
+      kelpActive
+        ? 0x35d48d
+        : crystalActive
+          ? 0x5ebee8
+          : leviathanActive
+            ? 0x75dce4
+            : 0x2ea8d8,
     );
     setFloorColour("uFogColor", definition.palette.fog);
     const surfaceWeight = this.floorMaterial.uniforms["uSurfaceWeight"];
     if (surfaceWeight) surfaceWeight.value = moonGardenActive ? 0.22 : 0.035;
 
     this.hemisphereLight.color.set(
-      kelpActive ? 0xd8ffe2 : crystalActive ? 0xd8f7ff : 0x78c5e8,
+      kelpActive
+        ? 0xd8ffe2
+        : crystalActive
+          ? 0xd8f7ff
+          : leviathanActive
+            ? 0xb9dfe3
+            : 0x78c5e8,
     );
     this.hemisphereLight.groundColor.set(
-      kelpActive ? 0x122a1e : crystalActive ? 0x090d28 : 0x050d1b,
+      kelpActive
+        ? 0x122a1e
+        : crystalActive
+          ? 0x090d28
+          : leviathanActive
+            ? 0x102d32
+            : 0x050d1b,
     );
-    this.hemisphereLight.intensity = kelpActive ? 1.58 : crystalActive ? 1.68 : 1.08;
+    this.hemisphereLight.intensity = kelpActive
+      ? 1.58
+      : crystalActive
+        ? 1.68
+        : leviathanActive
+          ? 1.76
+          : 1.08;
     this.ambientLight.color.set(
-      kelpActive ? 0x568b6c : crystalActive ? 0x4e5f9d : 0x285877,
+      kelpActive
+        ? 0x568b6c
+        : crystalActive
+          ? 0x4e5f9d
+          : leviathanActive
+            ? 0x62888e
+            : 0x285877,
     );
-    this.ambientLight.intensity = kelpActive ? 0.72 : crystalActive ? 0.68 : 0.38;
+    this.ambientLight.intensity = kelpActive
+      ? 0.72
+      : crystalActive
+        ? 0.68
+        : leviathanActive
+          ? 0.72
+          : 0.38;
     this.keyLight.color.set(
-      kelpActive ? 0xffefb5 : crystalActive ? 0xd9fbff : 0xb9edff,
+      kelpActive
+        ? 0xffefb5
+        : crystalActive
+          ? 0xd9fbff
+          : leviathanActive
+            ? 0xe2ffff
+            : 0xb9edff,
     );
-    this.keyLight.intensity = kelpActive ? 2.2 : crystalActive ? 2.26 : 1.65;
+    this.keyLight.intensity = kelpActive
+      ? 2.2
+      : crystalActive
+        ? 2.26
+        : leviathanActive
+          ? 2.32
+          : 1.65;
     this.bounceLight.color.set(
-      kelpActive ? 0x65e2b9 : crystalActive ? 0x8d72ff : 0xff6bba,
+      kelpActive
+        ? 0x65e2b9
+        : crystalActive
+          ? 0x8d72ff
+          : leviathanActive
+            ? 0x66b9c2
+            : 0xff6bba,
     );
-    this.bounceLight.intensity = kelpActive ? 0.62 : crystalActive ? 0.64 : 0.28;
+    this.bounceLight.intensity = kelpActive
+      ? 0.62
+      : crystalActive
+        ? 0.64
+        : leviathanActive
+          ? 0.62
+          : 0.28;
     this.applyPresentationEffects();
   }
 
@@ -1008,13 +1175,17 @@ export class GameView {
             ? KELP_CATHEDRAL_EXPOSURE
             : this.activeRealm === "crystal-trench"
               ? CRYSTAL_TRENCH_EXPOSURE
-              : 0,
+              : this.activeRealm === "leviathan-graveyard"
+                ? LEVIATHAN_GRAVEYARD_EXPOSURE
+                : 0,
         )
       : this.activeRealm === "kelp-cathedral"
         ? KELP_CATHEDRAL_EXPOSURE
         : this.activeRealm === "crystal-trench"
           ? CRYSTAL_TRENCH_EXPOSURE
-          : STANDARD_EXPOSURE;
+          : this.activeRealm === "leviathan-graveyard"
+            ? LEVIATHAN_GRAVEYARD_EXPOSURE
+            : STANDARD_EXPOSURE;
   }
 
   /** Metrics the capture harness cannot infer reliably from render.info. */
@@ -1037,10 +1208,10 @@ export class GameView {
     return {
       activeMaterials: materials.size,
       godRayMeshes: this.cfg.environment.godRayCount,
-      // Moon-Garden plus the two resident lost-realm material sets. Every map
+      // Moon-Garden plus the resident encounter material sets. Every map
       // is a bounded 512 px WebP and the full renderer remains well below the
       // 48 MB realm ceiling even though inactive textures stay GPU-resident.
-      textureMemoryMB: 16.45,
+      textureMemoryMB: 19.45,
       heroMerfolkHeightPixels: this.environment.heroMerfolkScreenHeightPixels(
         this.camera,
         this.renderer.domElement.clientHeight || window.innerHeight
@@ -1117,6 +1288,18 @@ export class GameView {
     };
   }
 
+  leviathanGraveyardBudget(): {
+    drawCalls: number;
+    triangles: number;
+    materials: number;
+  } {
+    return {
+      drawCalls: this.leviathanGraveyard.additionalDrawCalls(),
+      triangles: this.leviathanGraveyard.triangleBudget(),
+      materials: this.leviathanGraveyard.additionalMaterials(),
+    };
+  }
+
   /** Presentation-only post-run personality pose; simulation truth is frozen. */
   setHeroMoment(moment: GlowfinHeroMoment | null): void {
     this.heroMoment = moment;
@@ -1170,6 +1353,7 @@ export class GameView {
     r5CompletionPresentation: Readonly<R5CompletionPresentation> | null = null,
     kelpRescuedManta = false,
     crystalTrenchStatus: Readonly<CrystalTrenchRunStatus> | null = null,
+    duskmawStatus: Readonly<DuskmawRunStatus> | null = null,
   ): void {
     const cfg = this.cfg;
     this.renderer.info.reset();
@@ -1273,14 +1457,53 @@ export class GameView {
       cfg.camera.distanceBehindAtMaxMomentum,
       momentumFraction
     );
-    const fov = lerp(cfg.camera.fovAtZeroMomentum, cfg.camera.fovAtMaxMomentum, momentumFraction);
+    const leviathanCamera = this.activeRealm === "leviathan-graveyard";
+    const finalePhase = duskmawStatus?.phase === "complete";
+    const moonlinkPhase = duskmawStatus?.phase === "moonlink-battle";
+    const finaleLinear = finalePhase
+      ? THREE.MathUtils.clamp((duskmawStatus?.phaseElapsedSec ?? 0) / 7.2, 0, 1)
+      : 0;
+    const finaleEase = finaleLinear * finaleLinear * (3 - 2 * finaleLinear);
+    const fov = leviathanCamera
+      ? finalePhase
+        ? lerp(57, 52.5, finaleEase)
+        : moonlinkPhase
+          ? lerp(56.5, 59.5, momentumFraction)
+          : lerp(55, 59, momentumFraction)
+      : lerp(cfg.camera.fovAtZeroMomentum, cfg.camera.fovAtMaxMomentum, momentumFraction);
     if (Math.abs(this.camera.fov - fov) > 0.01) {
       this.camera.fov = fov;
       this.camera.updateProjectionMatrix();
     }
     const camX = sim.lateralPosition * cfg.camera.lateralFollowFraction;
-    this.camera.position.set(camX, cfg.camera.height, worldZ + behind);
-    this.camera.lookAt(camX * 0.5, cfg.camera.lookHeight, worldZ - cfg.camera.lookAheadUnits);
+    const hitShake = leviathanCamera ? collisionFraction : 0;
+    const finaleBlastAge = finalePhase ? duskmawStatus?.phaseElapsedSec ?? 0 : -1;
+    const finaleShakeEnvelope = finaleBlastAge >= 0.8 && finaleBlastAge < 3.9
+      ? Math.sin(Math.PI * THREE.MathUtils.clamp((finaleBlastAge - 0.8) / 3.1, 0, 1))
+      : 0;
+    const shakeX = this.reducedMotion ? 0 :
+      Math.sin(elapsedSec * 43) * hitShake * 0.34 +
+      Math.sin(elapsedSec * 31) * finaleShakeEnvelope * 0.16;
+    const shakeY = this.reducedMotion ? 0 :
+      Math.sin(elapsedSec * 57 + 0.8) * hitShake * 0.22 +
+      Math.sin(elapsedSec * 37 + 0.4) * finaleShakeEnvelope * 0.11;
+    const leviathanCameraHeight = finalePhase ? lerp(4.72, 5.05, finaleEase) : 4.55;
+    const leviathanLookHeight = finalePhase ? lerp(2.15, 3.1, finaleEase) : 2.05;
+    const leviathanLookAhead = finalePhase
+      ? lerp(31, 22.5, finaleEase)
+      : moonlinkPhase
+        ? 34
+        : 29.5;
+    this.camera.position.set(
+      camX + shakeX,
+      (leviathanCamera ? leviathanCameraHeight : cfg.camera.height) + shakeY,
+      worldZ + (leviathanCamera ? behind + 1.2 : behind),
+    );
+    this.camera.lookAt(
+      camX * (leviathanCamera ? 0.35 : 0.5) - shakeX * 0.35,
+      (leviathanCamera ? leviathanLookHeight : cfg.camera.lookHeight) - shakeY * 0.25,
+      worldZ - (leviathanCamera ? leviathanLookAhead : cfg.camera.lookAheadUnits),
+    );
 
     // Obstacle caustics drift cyan -> magenta with momentum, which gives the
     // Part 3.4 palette its range and ties the world's colour to the same value
@@ -1337,6 +1560,15 @@ export class GameView {
       gates,
       crystalTrenchStatus,
     );
+    this.leviathanGraveyard.update(
+      this.activeRealm,
+      sim.forwardDistance,
+      sim.lateralPosition,
+      presentationElapsedSec,
+      gates,
+      duskmawStatus,
+      this.reducedMotion,
+    );
 
     if (this.activeRealm === "moon-garden") {
       this.updateStripes(sim.forwardDistance);
@@ -1376,6 +1608,7 @@ export class GameView {
     this.r5Completion.dispose();
     this.kelpCathedral.dispose();
     this.crystalTrench.dispose();
+    this.leviathanGraveyard.dispose();
     this.creature.dispose();
     this.ghostCreature.dispose();
     this.environment.dispose();

@@ -50,6 +50,11 @@ public/art/moon-garden/*.png -filter -diff -merge -text
 public/art/kelp-cathedral/*.webp -filter -diff -merge -text
 public/art/crystal-trench/*.webp -filter -diff -merge -text
 
+# Version 45 realm textures follow the same compact, runtime-critical contract
+# as the Version 43 realm atlases so PR, release and native checkouts remain
+# self-contained and cannot reference unpublished LFS objects.
+public/art/leviathan-graveyard/*.webp -filter -diff -merge -text
+
 # Capacitor's generated launcher and splash images are small wrapper scaffolds.
 # Keep them as ordinary Git blobs so a native checkout is self-contained and
 # cannot be blocked by unpublished LFS objects.

@@ -503,3 +503,24 @@ The combined candidate requires deterministic fairness, lifecycle,
 performance, 5,400-frame, Android and iPhone gates before merge and main-link
 promotion. Automated wrapper/simulator evidence and physical-device evidence
 must remain separately labelled.
+
+## 2026-08-13 — Integrate the accepted Heartlight War as Realm 3
+
+Version 45-R1 is rooted at protected GitHub Version 43-R4 main and imports the
+accepted hosted Heartlight War plus its Realm 3 progression contract. Crystal
+Trench victory is the sole unlock authority for Leviathan Graveyard. Defeating
+Duskmaw and freeing Auralis persists runs, victories, best time, clean marks,
+mastered verbs and a permanent Mooncrest Covenant through the existing shared
+save envelope.
+
+The encounter remains deterministic and authority-aligned: minion waves,
+recovery, current breaks, the stationary Moonbone Vault rescue and the final
+four coordinated Auralis strikes must resolve from simulation state rather
+than renderer or wall-clock state. Classic Dive, Daily Tide, tutorial,
+Expedition, Tide Sprint, Kelp Cathedral and Crystal Trench must retain their
+competitive records and progression boundaries.
+
+The fixed 3 MiB sealed payload, 2 MiB JavaScript, 128 KiB hosted verifier and
+realm draw/triangle/texture budgets remain binding. Version 45 wrapper and CI
+artifact identities advance together; automated evidence never substitutes
+for an exact-candidate Android/iPhone playtest.

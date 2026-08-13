@@ -9,7 +9,7 @@ import { tuning } from "./core/config";
 import { FIXED_DT_SEC, FixedTimestepRunner } from "./core/timestep";
 import { SteeringSource, attachPointerInput } from "./input/steering";
 import { generateSeed } from "./core/rng";
-import { Run } from "./sim/run";
+import { Run, type DuskmawPursuitPhase } from "./sim/run";
 import { GameView } from "./render/gameView";
 import { Hud, type SignatureCuePresentation } from "./render/hud";
 import { MoonWell, type MoonWellPanel } from "./render/moonWell";
@@ -142,6 +142,8 @@ import {
 import type { RealmId } from "./realms/definition";
 import {
   isCrystalTrenchUnlocked,
+  isLeviathanGraveyardUnlocked,
+  leviathanGraveyardProgress,
   REALM_OBJECTIVES,
 } from "./realms/progress";
 import { RealmHud } from "./realms/hud";
@@ -151,11 +153,17 @@ if (!initialCanvas) throw new Error("Canvas #glowfin-canvas not found");
 let canvas: HTMLCanvasElement = initialCanvas;
 
 mountReleaseIdentity();
+const v44ReviewRoute = /(?:^|\/)game-v44-r1(?:\/|$)/.test(
+  window.location.pathname,
+);
+const v45IntegrationRoute = /(?:^|\/)game-v45-r1(?:\/|$)/.test(
+  window.location.pathname,
+);
 const hostedServicesEnabled = shouldUseHostedServices(
   GLOWFIN_RELEASE.environment,
   window.location.hostname
 );
-// Version 43 review builds remain network-cache-free while the realms mature.
+// Version 44 review builds remain network-cache-free while the encounter matures.
 // The host still serves the self-deactivating recovery worker so an older
 // registration cannot regain startup ownership across the Version 42 boundary.
 const SERVICE_WORKER_CACHING_CERTIFIED = false;
@@ -361,6 +369,9 @@ let challengeRunActive = false;
 let activeExperience: ExpeditionExperience = "classic";
 let activeRealmId: RealmId = "moon-garden";
 let realmFeedbackUntilSec = 0;
+let lastDuskmawTelegraphKey: string | null = null;
+let lastDuskmawPhase: DuskmawPursuitPhase | null = null;
+let mooncrestCeremonyCuePlayed = false;
 
 interface GlowfinCertificationSnapshot {
   schemaVersion: 1;
@@ -635,6 +646,12 @@ function refreshMoonWell(): void {
     progress.realms.crystalTrench,
     isCrystalTrenchUnlocked(progress.realms),
   );
+  moonWell.setDuskmawState(
+    leviathanGraveyardProgress(progress.realms),
+    isLeviathanGraveyardUnlocked(progress.realms),
+    v44ReviewRoute,
+    v45IntegrationRoute,
+  );
   refreshWardrobe();
 }
 
@@ -695,6 +712,7 @@ type RealmEndPresentation = NonNullable<
 function presentRealmResult(
   result: RealmRecordResult,
   realmResult: RealmEndPresentation,
+  specialUnlockNames: readonly string[] = [],
 ): void {
   if (!run) return;
   progress = result.progress;
@@ -718,7 +736,10 @@ function presentRealmResult(
       raceGhostScore: null,
       raceGhostLabel: "Ghosts stay in Classic Dive",
       rewardPearls: result.award.pearls,
-      unlockedNames: result.unlockedCosmetics.map((item) => item.name),
+      unlockedNames: [
+        ...result.unlockedCosmetics.map((item) => item.name),
+        ...specialUnlockNames,
+      ],
       objectives: objectivePresentations(),
       streak: summarizeStreak(progress.daily.dailyClaims, progress.daily.bestStreak),
       dailyDayId: day,
@@ -755,12 +776,66 @@ function presentRealmResult(
       prerequisite: "realm-kelp-rescue",
       sourceRealm: "kelp-cathedral",
     }, activeRunId);
+  } else if (result.leviathanGraveyardNewlyUnlocked) {
+    haptics.play("milestone");
+    view?.setHeroMoment("unlock");
+    telemetry.track("realm_unlock", {
+      realm: "leviathan-graveyard",
+      prerequisite: "realm-crystal-clear",
+      sourceRealm: "crystal-trench",
+    }, activeRunId);
   } else if (result.award.pearls > 0) {
     haptics.play("milestone");
     view?.setHeroMoment("celebration");
   }
   void telemetry.flush();
   void synchronizeCloudProgress();
+}
+
+/** Version 44-R1 remains an isolated encounter comparison route. */
+function presentDuskmawResult(): void {
+  if (!run) return;
+  const status = run.duskmawStatus;
+  completedCompetitiveRun = null;
+  hud.hideGhostGap();
+  hud.setSubmitState("unavailable");
+  hud.setShareState("unavailable");
+  hud.setRewardedOffer(null);
+  hud.setLeaderboard(null, "empty");
+  const day = currentDailyDay().dayId;
+  hud.showGameOver(
+    run.scoring.score,
+    run.sim.elapsedSec,
+    run.scoring.nearMissCount,
+    run.collisionCount,
+    {
+      ...hudMeta(),
+      bestScore: progress.bestScore,
+      newBest: false,
+      raceGhostScore: null,
+      raceGhostLabel: "Ghosts stay in Classic Dive",
+      rewardPearls: 0,
+      unlockedNames: status.completed ? ["Auralis Mooncrest Covenant"] : [],
+      objectives: objectivePresentations(),
+      streak: summarizeStreak(progress.daily.dailyClaims, progress.daily.bestStreak),
+      dailyDayId: day,
+      dailyCompleted: progress.daily.dailyClaims.includes(day),
+      calendarRewardRejected: false,
+      leaderboardDivision: activeClassification.division,
+      realmResult: {
+        kind: "duskmaw-pursuit",
+        title: "Leviathan Graveyard",
+        integrated: false,
+        completed: status.completed,
+        currentBreaks: status.currentBreaks,
+        currentBreakTarget: status.currentBreakTarget,
+        captures: status.captures,
+        cleanPerformance: status.cleanPerformance,
+      },
+    },
+  );
+  view?.setHeroMoment(status.completed ? "celebration" : "recovery");
+  void telemetry.flush();
 }
 
 function observeSessionDay(dayId: string): void {
@@ -970,6 +1045,9 @@ function startRun(
   activeExperience = options.experience ?? "classic";
   activeRealmId = requestedRealm;
   realmFeedbackUntilSec = 0;
+  lastDuskmawTelegraphKey = null;
+  lastDuskmawPhase = null;
+  mooncrestCeremonyCuePlayed = false;
   run = new Run(seed, tuning, { realmId: activeRealmId });
   recorder = new ReplayRecorder(run.seed, tuning.version);
   moonflashRecorder = new MoonflashRecorder();
@@ -1012,6 +1090,8 @@ function startRun(
     realmHud.updateKelp(run.kelpCathedralStatus, null);
   } else if (activeRealmId === "crystal-trench") {
     realmHud.updateCrystal(run.crystalTrenchStatus, null);
+  } else if (activeRealmId === "leviathan-graveyard") {
+    realmHud.updateDuskmaw(run.duskmawStatus, null);
   }
   hud.hideGameOver();
   hud.setSubmitState("unavailable");
@@ -1063,6 +1143,18 @@ function startRun(
       previousCompletions: progress.realms.crystalTrench.completions,
       bestTimeSec: progress.realms.crystalTrench.bestTimeSec ?? 0,
       cleanCompletions: progress.realms.crystalTrench.cleanCompletions,
+    }, activeRunId);
+  } else if (activeRealmId === "leviathan-graveyard") {
+    telemetry.track("realm_start", {
+      realm: activeRealmId,
+      revision: 1,
+      slice: "duskmaw-pursuit-r1",
+      seed: run.seed,
+      reviewRoute: v44ReviewRoute,
+      integrationRoute: v45IntegrationRoute,
+      previousVictories: leviathanGraveyardProgress(progress.realms).victories,
+      mooncrestCovenant: leviathanGraveyardProgress(progress.realms).mooncrestCovenant,
+      persistence: v45IntegrationRoute ? "enabled" : "disabled",
     }, activeRunId);
   }
   reportRunStart();
@@ -1375,6 +1467,28 @@ moonWell.onCrystalTrench(() => {
     cleanCompletions: progress.realms.crystalTrench.cleanCompletions,
   });
   startRun("fresh", { realmId: "crystal-trench" });
+});
+
+moonWell.onDuskmaw(() => {
+  const unlocked = isLeviathanGraveyardUnlocked(progress.realms);
+  if (!unlocked && !v44ReviewRoute) {
+    telemetry.track("realm_entry", {
+      realm: "leviathan-graveyard",
+      source: "moon-well",
+      locked: true,
+      unlockRequirement: "crystal-trench-win",
+    });
+    return;
+  }
+  telemetry.track("realm_entry", {
+    realm: "leviathan-graveyard",
+    source: "moon-well",
+    slice: "duskmaw-pursuit-r1",
+    reviewRoute: v44ReviewRoute,
+    integrationRoute: v45IntegrationRoute,
+    previousVictories: leviathanGraveyardProgress(progress.realms).victories,
+  });
+  startRun("fresh", { realmId: "leviathan-graveyard" });
 });
 
 moonWell.onTideSprint(() => {
@@ -2155,9 +2269,24 @@ function frame(nowMs: number): void {
     for (const event of events.realmEvents) {
       realmHud.showEvent(event);
       realmFeedbackUntilSec = run.sim.elapsedSec + 2.4;
-      if (event.success) {
+      const duskmawAttack =
+        event.kind === "shadow-sweep" ||
+        event.kind === "vacuum-wake-enter" ||
+        event.kind === "ruins-collapse";
+      const duskmawSpecial =
+        event.kind === "minion-hit" ||
+        event.kind === "minion-defeated" ||
+        event.kind === "lumen-bloom" ||
+        event.kind === "moonbone-vault";
+      if (event.success && !duskmawAttack && !duskmawSpecial) {
         haptics.play(
-          event.kind === "manta-rescue" ||
+          event.kind === "moon-seal"
+            ? "moon-seal"
+            : event.kind === "current-break"
+              ? "current-break"
+              : event.kind === "vacuum-wake-enter"
+                ? "threat-pulse"
+                : event.kind === "manta-rescue" ||
           event.kind === "relic-page" ||
           event.kind === "trench-threshold" ||
           event.kind === "mirror-race-start" ||
@@ -2165,6 +2294,32 @@ function frame(nowMs: number): void {
             ? "milestone"
             : "lumen-mote",
         );
+      }
+      if (duskmawAttack) {
+        audio.playDuskmawCue("threat-pulse");
+        haptics.play("threat-pulse");
+      } else if (event.kind === "minion-hit" && event.success) {
+        audio.playDuskmawCue("minion-hit");
+        haptics.play("minion-hit");
+      } else if (event.kind === "minion-defeated" && event.success) {
+        audio.playDuskmawCue("minion-defeat");
+        haptics.play("minion-defeat");
+      } else if (event.kind === "lumen-bloom" && event.success) {
+        audio.playDuskmawCue("lumen-bloom");
+        haptics.play("lumen-bloom");
+      } else if (event.kind === "current-break" && event.success) {
+        audio.playDuskmawCue("current-break");
+        const regenerationAge = run.sim.elapsedSec - run.duskmawStatus.lastRegenerationSec;
+        if (regenerationAge >= 0 && regenerationAge < 0.1) {
+          audio.playDuskmawCue("boss-regenerate");
+          haptics.play("boss-regenerate");
+        }
+      } else if (event.kind === "moonbone-vault" && event.success) {
+        audio.playDuskmawCue("vault-charge");
+        haptics.play("vault-charge");
+      } else if (event.kind === "moon-seal" && event.success) {
+        audio.playDuskmawCue("grand-blast");
+        haptics.play("grand-blast");
       }
       if (
         event.kind === "manta-rescue" ||
@@ -2378,6 +2533,60 @@ function frame(nowMs: number): void {
           raceAttempts: realmStatus.raceAttempts,
           cleanPerformance: realmStatus.cleanPerformance,
         });
+        return;
+      } else if (activeRealmId === "leviathan-graveyard") {
+        const realmStatus = run.duskmawStatus;
+        realmHud.setActive(false);
+        const persistenceEnabled = v45IntegrationRoute;
+        telemetry.track(
+          realmStatus.completed ? "realm_complete" : "realm_abandon",
+          {
+            realm: activeRealmId,
+            slice: "duskmaw-pursuit-r1",
+            endReason: run.endReason,
+            elapsedSec: run.sim.elapsedSec,
+            collisions: run.collisionCount,
+            currentBreaks: realmStatus.currentBreaks,
+            currentBreakTarget: realmStatus.currentBreakTarget,
+            minionsDefeated: realmStatus.minionsDefeated,
+            recoveryItems: realmStatus.recoveryItemsCollected,
+            bossHealth: realmStatus.bossHealth,
+            bossRegenerations: realmStatus.bossRegenerations,
+            joinedStrikes: realmStatus.joinedStrikes,
+            auralisFreed: realmStatus.auralisFreed,
+            captures: realmStatus.captures,
+            recoveredFirstCapture: realmStatus.recoveredFirstCapture,
+            moonSealReached: realmStatus.moonSealReached,
+            cleanPerformance: realmStatus.cleanPerformance,
+            persistence: persistenceEnabled ? "enabled" : "disabled",
+          },
+          activeRunId,
+        );
+        if (persistenceEnabled) {
+          const realmRecord = progressRepository.recordLeviathanGraveyardRun({
+            runId: activeRunId,
+            elapsedSec: run.sim.elapsedSec,
+            completed: realmStatus.completed,
+            cleanPerformance: realmStatus.cleanPerformance,
+            masteredVerbs: realmStatus.masteredVerbs,
+          }, {
+            collisions: run.collisionCount,
+          });
+          presentRealmResult(realmRecord, {
+            kind: "duskmaw-pursuit",
+            title: "Leviathan Graveyard",
+            integrated: true,
+            completed: realmStatus.completed,
+            currentBreaks: realmStatus.currentBreaks,
+            currentBreakTarget: realmStatus.currentBreakTarget,
+            captures: realmStatus.captures,
+            cleanPerformance: realmStatus.cleanPerformance,
+          }, realmRecord.mooncrestCovenantNewlyAwarded
+            ? ["Auralis Mooncrest Covenant"]
+            : []);
+          return;
+        }
+        presentDuskmawResult();
         return;
       }
       if (activeExperience === "chapter-one-r5") {
@@ -2657,6 +2866,9 @@ function frame(nowMs: number): void {
     activeRealmId === "crystal-trench"
       ? run.crystalTrenchStatus
       : null,
+    activeRealmId === "leviathan-graveyard"
+      ? run.duskmawStatus
+      : null,
   );
   if (activeRealmId === "kelp-cathedral") {
     const nextRealmPlan = run.gates.find((gate) => (
@@ -2668,6 +2880,68 @@ function frame(nowMs: number): void {
       gate.realmPlan && gate.distance > run.sim.forwardDistance + 3
     ))?.realmPlan ?? null;
     realmHud.updateCrystal(run.crystalTrenchStatus, nextRealmPlan);
+  } else if (activeRealmId === "leviathan-graveyard") {
+    const nextGate = run.gates.find((gate) => (
+      gate.realmPlan && gate.distance > run.sim.forwardDistance + 3
+    ));
+    const nextPriorityGate = run.gates.find((gate) => (
+      gate.realmPlan &&
+      gate.realmPlan.verb !== "guided-rescue-current" &&
+      gate.distance > run.sim.forwardDistance + 3 &&
+      gate.distance <= run.sim.forwardDistance + 132
+    ));
+    const nextRealmPlan = nextPriorityGate?.realmPlan ?? nextGate?.realmPlan ?? null;
+    const mouthAttack = nextPriorityGate && (
+      nextPriorityGate.realmPlan?.verb === "minion-assault" ||
+      nextPriorityGate.realmPlan?.verb === "shadow-sweep" ||
+      nextPriorityGate.realmPlan?.verb === "vacuum-wake" ||
+      nextPriorityGate.realmPlan?.verb === "ruins-collapse"
+    );
+    if (mouthAttack && nextPriorityGate?.realmPlan) {
+      const telegraphKey = `${nextPriorityGate.realmPlan.verb}:${nextPriorityGate.distance.toFixed(2)}`;
+      if (telegraphKey !== lastDuskmawTelegraphKey) {
+        lastDuskmawTelegraphKey = telegraphKey;
+        audio.playDuskmawCue("threat-pulse");
+        haptics.play("threat-pulse");
+        telemetry.track("duskmaw_mouth_attack_telegraph", {
+          verb: nextPriorityGate.realmPlan.verb,
+          distance: nextPriorityGate.distance,
+          reactionDistance: nextPriorityGate.distance - run.sim.forwardDistance,
+        }, activeRunId);
+      }
+    }
+    const duskmawStatus = run.duskmawStatus;
+    if (duskmawStatus.phase !== lastDuskmawPhase) {
+      if (duskmawStatus.phase === "auralis-catchup") {
+        audio.playDuskmawCue("vault-break");
+        haptics.play("vault-break");
+      } else if (duskmawStatus.phase === "moonlink-battle") {
+        audio.playDuskmawCue("auralis-arrival");
+        haptics.play("auralis-arrival");
+      }
+      telemetry.track("duskmaw_phase", {
+        phase: duskmawStatus.phase,
+        minionsDefeated: duskmawStatus.minionsDefeated,
+        bossHealth: duskmawStatus.bossHealth,
+        auralisFreed: duskmawStatus.auralisFreed,
+      }, activeRunId);
+      lastDuskmawPhase = duskmawStatus.phase;
+    }
+    if (
+      duskmawStatus.phase === "complete" &&
+      duskmawStatus.phaseElapsedSec >= 5.15 &&
+      !mooncrestCeremonyCuePlayed
+    ) {
+      mooncrestCeremonyCuePlayed = true;
+      audio.playDuskmawCue("moon-seal");
+      haptics.play("moon-seal");
+      telemetry.track("duskmaw_phase", {
+        phase: "mooncrest-ceremony",
+        joinedStrikes: duskmawStatus.joinedStrikes,
+        bossHealth: duskmawStatus.bossHealth,
+      }, activeRunId);
+    }
+    realmHud.updateDuskmaw(duskmawStatus, nextRealmPlan);
   }
   if (ghostVisible && ghostRun) {
     hud.updateGhostGap(run.sim.forwardDistance, ghostRun.sim.forwardDistance);

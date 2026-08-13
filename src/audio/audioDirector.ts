@@ -8,7 +8,18 @@ export type GameplayAudioCueType =
   | "recovery"
   | "run-end"
   | "lumen-mote"
-  | "lumen-objective";
+  | "lumen-objective"
+  | "threat-pulse"
+  | "minion-hit"
+  | "minion-defeat"
+  | "lumen-bloom"
+  | "current-break"
+  | "boss-regenerate"
+  | "vault-charge"
+  | "vault-break"
+  | "auralis-arrival"
+  | "grand-blast"
+  | "moon-seal";
 
 export interface GameplayAudioCue {
   type: GameplayAudioCueType;
@@ -155,6 +166,18 @@ export class GameplayAudioDirector {
       objectiveComplete ? "lumen-objective" : "lumen-mote",
       0.46 + (band / 11) * 0.54,
       band
+    );
+  }
+
+  /** Presentation-only Duskmaw language; encounter state stays in Run. */
+  duskmawCue(
+    type: "threat-pulse" | "minion-hit" | "minion-defeat" | "lumen-bloom" |
+      "current-break" | "boss-regenerate" | "vault-charge" | "vault-break" |
+      "auralis-arrival" | "grand-blast" | "moon-seal",
+  ): GameplayAudioCue {
+    return this.cue(
+      type,
+      type === "threat-pulse" ? 0.82 : type === "minion-hit" ? 0.76 : 1,
     );
   }
 

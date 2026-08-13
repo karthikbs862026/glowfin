@@ -945,3 +945,21 @@ and reduce floor/caustic competition behind the collider-true cyan core.
 - Require all repository, render, lifecycle, 5,400-frame and Android/iPhone
   wrapper gates before merge. Label physical-device evidence separately and do
   not inherit it silently from Version 42.
+
+## 2026-08-13 — Promote the accepted Heartlight War as Realm 3
+
+- Create Version 45-R1 from protected GitHub Version 43-R4 main and integrate
+  the accepted hosted Version 44 Heartlight War and Version 45 progression
+  snapshot as one reviewable change.
+- Unlock Leviathan Graveyard only after a Crystal Trench victory. Persist its
+  runs, victories, best and clean times, mastered verbs and permanent Auralis
+  Mooncrest Covenant through the shared checksummed save envelope.
+- Preserve one deterministic encounter authority for collision, rendering,
+  replay verification and server validation; retries and recovery must never
+  use wall-clock or presentation state.
+- Keep Classic, Daily, tutorial, Expedition, Tide Sprint and the first two
+  realms outside Realm 3 reward and competitive side effects.
+- Preserve the fixed mobile budgets. Optimize the three accepted 512 px Realm
+  3 textures rather than increasing the 3 MiB sealed-payload ceiling.
+- Advance Android/iOS wrapper and CI artifact identities to Version 45. Keep
+  physical-device evidence distinct from automated wrapper and browser gates.

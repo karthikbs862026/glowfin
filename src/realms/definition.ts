@@ -2,6 +2,7 @@ export const REALM_IDS = [
   "moon-garden",
   "kelp-cathedral",
   "crystal-trench",
+  "leviathan-graveyard",
 ] as const;
 
 export type RealmId = typeof REALM_IDS[number];
@@ -14,7 +15,16 @@ export type RealmGameplayVerb =
   | "prism-pulse"
   | "trench-threshold"
   | "sliding-crystal-plates"
-  | "mirror-current-race";
+  | "mirror-current-race"
+  | "guided-rescue-current"
+  | "minion-assault"
+  | "lumen-bloom"
+  | "shadow-sweep"
+  | "vacuum-wake"
+  | "ruins-collapse"
+  | "current-break"
+  | "moonbone-vault"
+  | "moon-seal";
 
 export interface RealmPalette {
   fog: number;
@@ -122,11 +132,48 @@ export const CRYSTAL_TRENCH_REALM: Readonly<RealmDefinition> = Object.freeze({
   budget: REALM_BUDGET,
 });
 
+/**
+ * V44-R1 established the encounter. V45-R1 promotes the accepted battle to
+ * Realm 3: Crystal Trench opens it, victories persist, and freeing Auralis
+ * forms the permanent Mooncrest Covenant. It owns no Relic Page because the
+ * covenant itself is the realm's narrative and progression reward.
+ */
+export const LEVIATHAN_GRAVEYARD_ENCOUNTER: Readonly<RealmDefinition> =
+  Object.freeze({
+    id: "leviathan-graveyard",
+    revision: 1,
+    title: "Leviathan Graveyard · Heartlight War",
+    shortTitle: "Leviathan Graveyard",
+    description: "Duskmaw stole Auralis's Heartlight, raised three ranks of shadow brood and sealed the Guardian inside the Moonbone Vault. Glowfin must defeat the brood, survive the jailer's regenerating armour, carry the Heartlight home, free Auralis and earn a Mooncrest Covenant through four coordinated Guardian strikes.",
+    residents: ["Duskmaw", "Auralis · Guardian of the Moon Current", "L1 Rift Darts", "L2 Grave Warden", "L3 Maw Sentinel", "graveyard lanternfish"],
+    gameplayVerbs: [
+      "guided-rescue-current",
+      "minion-assault",
+      "lumen-bloom",
+      "shadow-sweep",
+      "vacuum-wake",
+      "ruins-collapse",
+      "current-break",
+      "moonbone-vault",
+      "moon-seal",
+    ] as const,
+    heroEncounter: "Defeat one-hit needlefish Rift Darts, a two-hit armoured-crustacean Grave Warden and a three-hit abyssal-ray Maw Sentinel; dodge only the visibly locked projectile lane; recover through Lumen Blooms; strip Duskmaw's regenerating armour; carry the visible Heartlight to a stationary vault; stop to free Auralis; then land four Moonbolts that cue Auralis to intercept, ram and beam Duskmaw before a cinematic Void Heart rupture and Mooncrest Covenant ceremony",
+    relicPageId: null,
+    palette: {
+      fog: 0x123b46,
+      routeCalm: 0x56efff,
+      routeMomentum: 0x8e6bff,
+      accent: 0xe8f7df,
+    },
+    budget: REALM_BUDGET,
+  });
+
 export const REALM_DEFINITIONS: Readonly<Record<RealmId, Readonly<RealmDefinition>>> =
   Object.freeze({
     "moon-garden": MOON_GARDEN_REALM,
     "kelp-cathedral": KELP_CATHEDRAL_REALM,
     "crystal-trench": CRYSTAL_TRENCH_REALM,
+    "leviathan-graveyard": LEVIATHAN_GRAVEYARD_ENCOUNTER,
   });
 
 export function isRealmId(value: unknown): value is RealmId {

@@ -21,6 +21,8 @@ export const TELEMETRY_EVENT_NAMES = [
   "realm_entry",
   "realm_start",
   "realm_feature",
+  "duskmaw_mouth_attack_telegraph",
+  "duskmaw_phase",
   "realm_rescue",
   "realm_relic",
   "realm_unlock",

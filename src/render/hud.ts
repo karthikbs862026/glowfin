@@ -70,6 +70,16 @@ export interface RunEndPresentation extends HudMetaPresentation {
         raceWon: boolean;
         raceAttempts: number;
         cleanPerformance: boolean;
+      }
+    | {
+        kind: "duskmaw-pursuit";
+        title: string;
+        integrated: boolean;
+        completed: boolean;
+        currentBreaks: number;
+        currentBreakTarget: number;
+        captures: number;
+        cleanPerformance: boolean;
       };
 }
 
@@ -438,31 +448,55 @@ export class Hud {
         ? realmResult.rescuedManta
           ? `${realmResult.title} restored`
           : `${realmResult.title} explored`
-        : realmResult.raceWon
-          ? `${realmResult.title} · Mirror Current won`
-          : `${realmResult.title} surveyed`
+        : realmResult.kind === "crystal-trench"
+          ? realmResult.raceWon
+            ? `${realmResult.title} · Mirror Current won`
+            : `${realmResult.title} surveyed`
+          : realmResult.completed
+            ? realmResult.integrated
+              ? `${realmResult.title} · Auralis freed`
+              : `${realmResult.title} · Moon Seal reached`
+            : `${realmResult.title} explored`
       : "Moonwake gathered";
     this.diveAgain.textContent = presentation.realmResult
       ? presentation.realmResult.kind === "kelp-cathedral" &&
           presentation.realmResult.crystalTrenchUnlocked
         ? "Continue to Crystal Trench"
-        : `Return to ${presentation.realmResult.title}`
+        : presentation.realmResult.kind === "duskmaw-pursuit"
+          ? "Face Duskmaw Again"
+          : `Return to ${presentation.realmResult.title}`
       : "Dive Again";
     this.finalScore.textContent = Math.floor(score).toLocaleString();
     this.finalDetail.textContent = realmResult
       ? realmResult.kind === "kelp-cathedral"
         ? `${seconds.toFixed(0)}s · ${realmResult.rescuedManta ? "baby manta rescued" : "rescue current continues"} · ${realmResult.relicPageFound ? "Relic Page found" : "relic still hidden"}${realmResult.crystalTrenchUnlocked ? " · Realm 2 unlocked" : ""}`
-        : `${seconds.toFixed(0)}s · ${realmResult.thresholdCrossed ? "Trench Gate sealed" : "threshold reforms ahead"} · ${realmResult.platesCleared} plates · ${realmResult.raceWon ? `Neri beaten in ${realmResult.raceAttempts} race${realmResult.raceAttempts === 1 ? "" : "s"}` : "Mirror Current still open"}${realmResult.cleanPerformance ? " · clean mark" : ""}`
+        : realmResult.kind === "crystal-trench"
+          ? `${seconds.toFixed(0)}s · ${realmResult.thresholdCrossed ? "Trench Gate sealed" : "threshold reforms ahead"} · ${realmResult.platesCleared} plates · ${realmResult.raceWon ? `Neri beaten in ${realmResult.raceAttempts} race${realmResult.raceAttempts === 1 ? "" : "s"}` : "Mirror Current still open"}${realmResult.cleanPerformance ? " · clean mark" : ""}`
+          : `${seconds.toFixed(0)}s · ${realmResult.currentBreaks}/${realmResult.currentBreakTarget} Current Breaks · ${realmResult.captures === 0 ? "no captures" : `${realmResult.captures} capture${realmResult.captures === 1 ? "" : "s"} recovered`} · ${realmResult.completed ? realmResult.integrated ? "Auralis freed · Duskmaw sealed" : "Moon Seal reached" : "Heartlight War continues"}${realmResult.cleanPerformance ? " · clean mark" : ""}`
       : `${seconds.toFixed(0)}s · ${nearMisses} near-miss · ${collisions} hits`;
     this.setBestScore(presentation.bestScore);
     this.setMeta(presentation);
     this.newBest.dataset["visible"] = presentation.newBest ? "true" : "false";
-    this.runReward.textContent = presentation.rewardPearls > 0
+    this.runReward.textContent = realmResult?.kind === "duskmaw-pursuit"
+      ? realmResult.integrated
+        ? realmResult.completed
+          ? presentation.rewardPearls > 0
+            ? `+${presentation.rewardPearls.toLocaleString()} Lumen Pearls · Mooncrest Covenant secured`
+            : "Mooncrest Covenant active · Realm 3 rewards secured"
+          : "Realm 3 history saved · return stronger for Auralis"
+        : realmResult.completed
+          ? "Mooncrest Covenant awarded by Auralis · Guardian alliance preview"
+          : "Review encounter · progression unchanged"
+      : presentation.rewardPearls > 0
       ? `+${presentation.rewardPearls.toLocaleString()} Lumen Pearls`
       : "Rewards already secured";
     this.unlockBanner.dataset["visible"] = presentation.unlockedNames.length > 0 ? "true" : "false";
     this.unlockBanner.textContent = presentation.unlockedNames.length > 0
-      ? `Now available in Wardrobe · ${presentation.unlockedNames.join(" · ")}`
+      ? realmResult?.kind === "duskmaw-pursuit"
+        ? realmResult.integrated
+          ? `Permanent Realm 3 reward · ${presentation.unlockedNames.join(" · ")}`
+          : `Ceremonial 3D reward · ${presentation.unlockedNames.join(" · ")} · Realm 3 route awakened`
+        : `Now available in Wardrobe · ${presentation.unlockedNames.join(" · ")}`
       : "";
     this.objectiveList.replaceChildren(...presentation.objectives.map((objective) => {
       const row = document.createElement("div");

@@ -55,6 +55,7 @@ import {
 import {
   applyCrystalTrenchRun,
   applyKelpCathedralRun,
+  applyLeviathanGraveyardRun,
   createDefaultRealmProgress,
   mergeRealmProgress,
   readLegacyRealmProgress,
@@ -62,6 +63,7 @@ import {
   validateRealmProgress,
   type CrystalTrenchRunRecord,
   type KelpCathedralRunRecord,
+  type LeviathanGraveyardRunRecord,
   type RealmModeAward,
   type RealmObjectivePresentation,
   type RealmProgressV1,
@@ -282,6 +284,9 @@ export interface RealmRecordResult {
   duplicateRewardPrevented: boolean;
   crystalTrenchUnlocked: boolean;
   crystalTrenchNewlyUnlocked: boolean;
+  leviathanGraveyardUnlocked: boolean;
+  leviathanGraveyardNewlyUnlocked: boolean;
+  mooncrestCovenantNewlyAwarded: boolean;
   tideLevelBefore: number;
   tideLevelAfter: number;
   unlockedCosmetics: CosmeticDefinition[];
@@ -930,6 +935,7 @@ function realmHistoryPayload(progress: RealmProgressV1): string {
   return JSON.stringify({
     kelpCathedral: progress.kelpCathedral,
     crystalTrench: progress.crystalTrench,
+    leviathanGraveyard: progress.leviathanGraveyard ?? null,
   });
 }
 
@@ -1311,6 +1317,18 @@ export class ProgressRepository {
     );
   }
 
+  recordLeviathanGraveyardRun(
+    record: LeviathanGraveyardRunRecord,
+    context: RealmRunContext = {},
+  ): RealmRecordResult {
+    return this.recordRealmRun(
+      "leviathan-graveyard",
+      record.elapsedSec,
+      context,
+      applyLeviathanGraveyardRun(this.current.realms, record, this.now()),
+    );
+  }
+
   activeRealmObjectives(): RealmObjectivePresentation[] {
     return realmObjectivePresentations(this.current.realms);
   }
@@ -1330,6 +1348,9 @@ export class ProgressRepository {
         duplicateRewardPrevented: true,
         crystalTrenchUnlocked: update.crystalTrenchUnlocked,
         crystalTrenchNewlyUnlocked: false,
+        leviathanGraveyardUnlocked: update.leviathanGraveyardUnlocked,
+        leviathanGraveyardNewlyUnlocked: false,
+        mooncrestCovenantNewlyAwarded: false,
         tideLevelBefore: tideLevelForXp(previousXp),
         tideLevelAfter: tideLevelForXp(previousXp),
         unlockedCosmetics: [],
@@ -1381,6 +1402,9 @@ export class ProgressRepository {
       duplicateRewardPrevented: false,
       crystalTrenchUnlocked: update.crystalTrenchUnlocked,
       crystalTrenchNewlyUnlocked: update.crystalTrenchNewlyUnlocked,
+      leviathanGraveyardUnlocked: update.leviathanGraveyardUnlocked,
+      leviathanGraveyardNewlyUnlocked: update.leviathanGraveyardNewlyUnlocked,
+      mooncrestCovenantNewlyAwarded: update.mooncrestCovenantNewlyAwarded,
       tideLevelBefore: tideLevelForXp(previousXp),
       tideLevelAfter: tideLevelForXp(nextXp),
       unlockedCosmetics,
