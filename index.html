@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#04060f" />
-    <title>Glowfin — Version 43-R4 · Realms Integrated</title>
+    <title>Glowfin — Version 45-R1 · Realm 3 Integrated</title>
     <style>
       :root {
         --ink: #cfefff;
@@ -770,6 +770,15 @@
       .moonwell-realm[data-realm="crystal-trench"] span { color: #aeefff; }
       .moonwell-realm[data-realm="crystal-trench"] small { color: rgba(224, 235, 255, 0.78); }
       .moonwell-realm[data-realm="crystal-trench"] b { background: rgba(135, 216, 255, 0.15); color: #d9f9ff; }
+      .moonwell-realm[data-realm="leviathan-graveyard"] {
+        border-color: rgba(143, 207, 224, 0.55);
+        background:
+          linear-gradient(135deg, rgba(18, 27, 58, 0.96), rgba(7, 11, 31, 0.98)),
+          radial-gradient(circle at 14% 22%, rgba(109, 224, 244, 0.16), transparent 46%);
+      }
+      .moonwell-realm[data-realm="leviathan-graveyard"] span { color: #aeeeff; }
+      .moonwell-realm[data-realm="leviathan-graveyard"] small { color: rgba(222, 235, 249, 0.8); }
+      .moonwell-realm[data-realm="leviathan-graveyard"] b { background: rgba(122, 99, 207, 0.2); color: #edeeff; }
       .moonwell-realm[data-locked="true"] {
         cursor: not-allowed;
         filter: saturate(0.58);
@@ -1029,6 +1038,79 @@
         background: rgba(21, 28, 83, 0.93);
         color: #ddf9ff;
       }
+      html[data-glowfin-realm="leviathan-graveyard"] #realm-run-status {
+        left: max(12px, var(--glowfin-safe-left));
+        transform: none;
+        width: min(420px, calc(100vw - 82px - var(--glowfin-safe-left)));
+        padding: 9px 11px;
+        box-sizing: border-box;
+        border-radius: 13px;
+        border-color: rgba(115, 221, 239, 0.62);
+        background: linear-gradient(135deg, rgba(8, 42, 54, 0.9), rgba(8, 25, 43, 0.88));
+        text-align: left;
+      }
+      html[data-glowfin-realm="leviathan-graveyard"] #realm-run-status strong { color: #e4fdff; font-size: 11px; }
+      html[data-glowfin-realm="leviathan-graveyard"] #realm-run-status span { color: rgba(238, 249, 255, 0.94); font-size: 10px; }
+      html[data-glowfin-realm="leviathan-graveyard"] #realm-feature-detail { color: rgba(176, 238, 246, 0.86) !important; font-size: 8px !important; }
+      html[data-glowfin-realm="leviathan-graveyard"] #realm-feedback {
+        border-color: rgba(117, 220, 244, 0.58);
+        background: rgba(8, 14, 36, 0.9);
+        color: #e4fbff;
+      }
+      #realm-progress {
+        display: none;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 3px;
+        margin-top: 6px;
+      }
+      html[data-glowfin-realm="leviathan-graveyard"] #realm-progress[data-active="true"] { display: grid; }
+      html[data-glowfin-realm="leviathan-graveyard"] #realm-progress { margin-top: 4px; }
+      html[data-glowfin-realm="leviathan-graveyard"] #realm-progress span { min-height: 18px; font-size: 7px; }
+      html[data-glowfin-realm="leviathan-graveyard"] #hud-top,
+      html[data-glowfin-realm="leviathan-graveyard"] #hud-best,
+      html[data-glowfin-realm="leviathan-graveyard"] #hud-meta,
+      html[data-glowfin-realm="leviathan-graveyard"] #hud-ghost-gap,
+      html[data-glowfin-realm="leviathan-graveyard"] .hud-meter:has(#hud-momentum) { display: none !important; }
+      html[data-glowfin-realm="leviathan-graveyard"] .hud-meter:has(#hud-light) {
+        position: absolute;
+        top: max(142px, calc(var(--glowfin-safe-top) + 124px));
+        left: max(16px, var(--glowfin-safe-left));
+        grid-template-columns: 42px minmax(0, 1fr);
+        width: min(280px, calc(100vw - 32px));
+      }
+      html[data-glowfin-realm="leviathan-graveyard"] #hud-light { width: 100%; height: 8px; background: rgba(4, 24, 34, 0.5); }
+      html[data-glowfin-realm="leviathan-graveyard"] #realm-feedback {
+        top: max(180px, calc(var(--glowfin-safe-top) + 162px));
+        max-width: calc(100vw - 30px);
+        box-sizing: border-box;
+        text-align: center;
+      }
+      #realm-progress span {
+        display: grid;
+        min-height: 18px;
+        place-items: center;
+        margin: 0;
+        border: 1px solid rgba(136, 185, 207, 0.3);
+        border-radius: 6px;
+        background: rgba(18, 30, 60, 0.82);
+        color: rgba(203, 222, 235, 0.58);
+        font-size: 7px;
+        font-weight: 900;
+        letter-spacing: 0.035em;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+      #realm-progress span[data-state="current"] {
+        border-color: rgba(135, 244, 255, 0.9);
+        background: rgba(33, 129, 153, 0.58);
+        color: #eaffff;
+        box-shadow: 0 0 12px rgba(88, 236, 255, 0.32);
+      }
+      #realm-progress span[data-state="complete"] {
+        border-color: rgba(172, 255, 196, 0.78);
+        background: rgba(39, 126, 92, 0.7);
+        color: #e9fff0;
+      }
       .moonwell-daily {
         width: 100%;
         min-height: 48px;
@@ -1275,7 +1357,8 @@
       }
       #hud-signature-cue[data-active="true"] { display: block; }
       html[data-glowfin-realm="kelp-cathedral"] #hud-signature-cue,
-      html[data-glowfin-realm="crystal-trench"] #hud-signature-cue { display: none !important; }
+      html[data-glowfin-realm="crystal-trench"] #hud-signature-cue,
+      html[data-glowfin-realm="leviathan-graveyard"] #hud-signature-cue { display: none !important; }
       #hud-signature-cue strong { display: block; color: #f5fcff; font-size: 14px; }
       #hud-signature-cue span { display: block; margin-top: 2px; color: rgba(217, 244, 255, 0.8); font-size: 12px; line-height: 1.3; }
       #hud-signature-cue[data-verb="moonflash-choice"] { border-color: rgba(255, 93, 198, 0.58); }
@@ -1376,6 +1459,10 @@
             <span><span>Version 43-R4 · Realm 2</span><strong>Crystal Trench</strong><small id="moonwell-crystal-trench-detail">Locked · rescue the baby manta in Kelp Cathedral to open Realm 2</small></span>
             <b>RACE NERI</b>
           </button>
+          <button id="moonwell-duskmaw" class="moonwell-realm" type="button" data-realm="leviathan-graveyard" data-hud-action>
+            <span><span>Version 45-R1 · Realm 3</span><strong>Leviathan Graveyard · Heartlight War</strong><small id="moonwell-duskmaw-detail">Locked · win the Crystal Trench Mirror Current to reveal Realm 3</small></span>
+            <b>BEGIN BATTLE</b>
+          </button>
           <button id="moonwell-tide-sprint" class="moonwell-sprint" type="button" data-hud-action>
             <span><span>New mode · Version 42</span><strong>Tide Sprint</strong><small id="moonwell-tide-sprint-detail">Four fair racers · your Best Echo · shared rewards</small></span>
             <b>RACE</b>
@@ -1450,7 +1537,7 @@
           <button class="hud-action" type="button" data-hud-action data-guided-tutorial><span data-tutorial-entry-title>Start guided tutorial</span> · 30 seconds</button>
           <button id="hud-telemetry-choice" class="hud-action" type="button" data-hud-action>Anonymous playtest data: choose</button>
           <div id="hud-telemetry-note">No name, email, device fingerprint or touch path is collected.</div>
-          <div id="hud-build" role="status">V43 · LOCAL · local</div>
+          <div id="hud-build" role="status">V45 · LOCAL · local</div>
         </section>
       </div>
     </section>
@@ -1469,6 +1556,12 @@
     <aside id="realm-run-status" data-active="false" aria-hidden="true" role="status" aria-live="polite">
       <strong id="realm-title">Kelp Cathedral · Realm 1</strong>
       <span id="realm-objective">Reach the collapsing chamber and rescue the baby manta</span>
+      <div id="realm-progress" data-active="false" aria-label="Encounter progress">
+        <span id="realm-progress-break-1" data-state="pending">1 · Brood</span>
+        <span id="realm-progress-break-2" data-state="pending">2 · Heartlight</span>
+        <span id="realm-progress-break-3" data-state="pending">3 · Free Auralis</span>
+        <span id="realm-progress-seal" data-state="pending">4 · Mooncrest</span>
+      </div>
       <span id="realm-feature-detail">Fronds open on a rhythm · currents narrow, then reverse</span>
     </aside>
     <aside id="realm-feedback" data-active="false" role="status" aria-live="polite"></aside>

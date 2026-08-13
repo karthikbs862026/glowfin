@@ -15,6 +15,17 @@ export type HapticCue =
   | "lumen-chain"
   | "purchase"
   | "milestone"
+  | "threat-pulse"
+  | "minion-hit"
+  | "minion-defeat"
+  | "lumen-bloom"
+  | "current-break"
+  | "boss-regenerate"
+  | "vault-charge"
+  | "vault-break"
+  | "auralis-arrival"
+  | "grand-blast"
+  | "moon-seal"
   | "equip"
   | "setting";
 
@@ -76,6 +87,17 @@ const CUE_COOLDOWN_MS: Record<HapticCue, number> = {
   "lumen-chain": 280,
   purchase: 500,
   milestone: 800,
+  "threat-pulse": 520,
+  "minion-hit": 180,
+  "minion-defeat": 420,
+  "lumen-bloom": 380,
+  "current-break": 240,
+  "boss-regenerate": 700,
+  "vault-charge": 800,
+  "vault-break": 1_000,
+  "auralis-arrival": 900,
+  "grand-blast": 1_200,
+  "moon-seal": 900,
   equip: 220,
   setting: 180
 };
@@ -121,12 +143,24 @@ export class HapticDirector {
     if (!driver) return Promise.resolve();
     switch (cue) {
       case "collision":
+      case "grand-blast":
         return driver.impact("HEAVY");
       case "lumen-chain":
         return driver.impact("MEDIUM");
       case "purchase":
       case "milestone":
+      case "minion-defeat":
+      case "lumen-bloom":
+      case "vault-break":
+      case "auralis-arrival":
+      case "moon-seal":
         return driver.notification("SUCCESS");
+      case "threat-pulse":
+      case "boss-regenerate":
+      case "vault-charge":
+        return driver.impact("MEDIUM");
+      case "current-break":
+      case "minion-hit":
       case "lumen-mote":
       case "tutorial-step":
       case "near-miss":

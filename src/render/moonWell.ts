@@ -13,6 +13,7 @@ import {
 import type {
   CrystalTrenchProgressV1,
   KelpCathedralProgressV1,
+  LeviathanGraveyardProgressV1,
 } from "../realms/progress";
 
 export type MoonWellPanel = "home" | "wardrobe" | "objectives" | "leaderboard" | "settings";
@@ -33,6 +34,8 @@ export class MoonWell {
   private readonly kelpCathedralDetail: HTMLElement;
   private readonly crystalTrench: HTMLButtonElement;
   private readonly crystalTrenchDetail: HTMLElement;
+  private readonly duskmaw: HTMLButtonElement;
+  private readonly duskmawDetail: HTMLElement;
   private readonly daily: HTMLButtonElement;
   private readonly challenge: HTMLButtonElement;
   private readonly meta: HTMLElement;
@@ -60,6 +63,8 @@ export class MoonWell {
     this.kelpCathedralDetail = MoonWell.require(root, "moonwell-kelp-cathedral-detail");
     this.crystalTrench = MoonWell.requireButton(root, "moonwell-crystal-trench");
     this.crystalTrenchDetail = MoonWell.require(root, "moonwell-crystal-trench-detail");
+    this.duskmaw = MoonWell.requireButton(root, "moonwell-duskmaw");
+    this.duskmawDetail = MoonWell.require(root, "moonwell-duskmaw-detail");
     this.daily = MoonWell.requireButton(root, "hud-daily-trial");
     this.challenge = MoonWell.requireButton(root, "moonwell-challenge");
     this.meta = MoonWell.require(root, "moonwell-meta");
@@ -126,6 +131,10 @@ export class MoonWell {
 
   onCrystalTrench(listener: () => void): void {
     this.wire(this.crystalTrench, listener);
+  }
+
+  onDuskmaw(listener: () => void): void {
+    this.wire(this.duskmaw, listener);
   }
 
   onChallenge(listener: () => void): void {
@@ -280,6 +289,50 @@ export class MoonWell {
       `${completion} · ${best} · ${clean} · ${progress.masteredVerbs.length}/4 realm verbs`;
     this.crystalTrench.dataset["completed"] = String(progress.completions > 0);
     this.crystalTrench.dataset["clean"] = String(progress.cleanCompletions > 0);
+  }
+
+  setDuskmawState(
+    progress: Readonly<LeviathanGraveyardProgressV1>,
+    unlocked: boolean,
+    reviewRoute = false,
+    integratedRoute = false,
+  ): void {
+    const available = unlocked || reviewRoute;
+    this.duskmaw.disabled = !available;
+    this.duskmaw.dataset["locked"] = String(!available);
+    this.duskmaw.setAttribute(
+      "aria-label",
+      available
+        ? integratedRoute
+          ? "Enter Realm 3, Leviathan Graveyard Heartlight War"
+          : "Enter the Version 44 R1 Heartlight War"
+        : "Duskmaw pursuit locked; win the Crystal Trench Mirror Current",
+    );
+    if (!available) {
+      this.duskmawDetail.textContent =
+        "Locked · win the Crystal Trench Mirror Current to reveal Realm 3";
+      this.duskmaw.dataset["completed"] = "false";
+      this.duskmaw.dataset["clean"] = "false";
+      return;
+    }
+    if (reviewRoute && !integratedRoute) {
+      this.duskmawDetail.textContent =
+        "Encounter review · defeat the three brood ranks · free Auralis · seal Duskmaw";
+      return;
+    }
+    const victory = progress.victories > 0
+      ? `${progress.victories} Heartlight victor${progress.victories === 1 ? "y" : "ies"}`
+      : "Auralis remains imprisoned";
+    const best = progress.bestVictorySec === null
+      ? "no victory time"
+      : `best ${progress.bestVictorySec.toFixed(1)}s`;
+    const covenant = progress.mooncrestCovenant
+      ? "Mooncrest Covenant active"
+      : "Mooncrest Covenant unclaimed";
+    this.duskmawDetail.textContent =
+      `${victory} · ${best} · ${covenant} · ${progress.masteredVerbs.length}/9 realm verbs`;
+    this.duskmaw.dataset["completed"] = String(progress.victories > 0);
+    this.duskmaw.dataset["clean"] = String(progress.cleanVictories > 0);
   }
 
   setChallenge(caption: string | null, state: "ready" | "failed" | "loading" = "ready"): void {

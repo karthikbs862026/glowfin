@@ -23,12 +23,24 @@ export interface CrystalTrenchProgressV1 {
   recentClaims: string[];
 }
 
+export interface LeviathanGraveyardProgressV1 {
+  runs: number;
+  victories: number;
+  bestVictorySec: number | null;
+  cleanVictories: number;
+  mooncrestCovenant: boolean;
+  masteredVerbs: RealmGameplayVerb[];
+  recentClaims: string[];
+}
+
 export interface RealmProgressV1 {
   schemaVersion: typeof REALM_PROGRESS_SCHEMA_VERSION;
   revision: number;
   updatedAt: string;
   kelpCathedral: KelpCathedralProgressV1;
   crystalTrench: CrystalTrenchProgressV1;
+  /** Optional only so Version 43/44 schema-5 cloud saves remain additive. */
+  leviathanGraveyard?: LeviathanGraveyardProgressV1;
 }
 
 interface RealmProgressEnvelopeV1 {
@@ -58,11 +70,21 @@ export interface CrystalTrenchRunRecord {
   masteredVerbs: readonly RealmGameplayVerb[];
 }
 
+export interface LeviathanGraveyardRunRecord {
+  runId: string;
+  elapsedSec: number;
+  completed: boolean;
+  cleanPerformance: boolean;
+  masteredVerbs: readonly RealmGameplayVerb[];
+}
+
 export type RealmObjectiveId =
   | "realm-kelp-rescue"
   | "realm-kelp-relic"
   | "realm-crystal-clear"
-  | "realm-crystal-clean";
+  | "realm-crystal-clean"
+  | "realm-heartlight-war"
+  | "realm-heartlight-clean";
 
 export interface RealmObjectiveDefinition {
   id: RealmObjectiveId;
@@ -89,6 +111,9 @@ export interface RealmRunUpdate {
   duplicatePrevented: boolean;
   crystalTrenchUnlocked: boolean;
   crystalTrenchNewlyUnlocked: boolean;
+  leviathanGraveyardUnlocked: boolean;
+  leviathanGraveyardNewlyUnlocked: boolean;
+  mooncrestCovenantNewlyAwarded: boolean;
   award: RealmModeAward;
 }
 
@@ -117,6 +142,18 @@ export const REALM_OBJECTIVES: readonly RealmObjectiveDefinition[] = [
     rewardPearls: 45,
     rewardXp: 35,
   },
+  {
+    id: "realm-heartlight-war",
+    label: "Realm 3 · Free Auralis and defeat Duskmaw",
+    rewardPearls: 140,
+    rewardXp: 100,
+  },
+  {
+    id: "realm-heartlight-clean",
+    label: "Realm 3 · Earn the clean Heartlight mark",
+    rewardPearls: 60,
+    rewardXp: 45,
+  },
 ] as const;
 
 function checksum(text: string): string {
@@ -140,6 +177,26 @@ function safeClaim(value: string): string {
   return value.replace(/[^a-zA-Z0-9:._-]/g, "").slice(0, 104) || "unknown";
 }
 
+function createDefaultLeviathanProgress(): LeviathanGraveyardProgressV1 {
+  return {
+    runs: 0,
+    victories: 0,
+    bestVictorySec: null,
+    cleanVictories: 0,
+    mooncrestCovenant: false,
+    masteredVerbs: [],
+    recentClaims: [],
+  };
+}
+
+export function leviathanGraveyardProgress(
+  progress: RealmProgressV1,
+): LeviathanGraveyardProgressV1 {
+  return progress.leviathanGraveyard
+    ? JSON.parse(JSON.stringify(progress.leviathanGraveyard)) as LeviathanGraveyardProgressV1
+    : createDefaultLeviathanProgress();
+}
+
 export function createDefaultRealmProgress(now = new Date()): RealmProgressV1 {
   return {
     schemaVersion: REALM_PROGRESS_SCHEMA_VERSION,
@@ -161,11 +218,16 @@ export function createDefaultRealmProgress(now = new Date()): RealmProgressV1 {
       masteredVerbs: [],
       recentClaims: [],
     },
+    leviathanGraveyard: createDefaultLeviathanProgress(),
   };
 }
 
 export function isCrystalTrenchUnlocked(progress: RealmProgressV1): boolean {
   return progress.kelpCathedral.rescues > 0;
+}
+
+export function isLeviathanGraveyardUnlocked(progress: RealmProgressV1): boolean {
+  return progress.crystalTrench.completions > 0;
 }
 
 function objectiveCompleted(
@@ -181,6 +243,10 @@ function objectiveCompleted(
       return progress.crystalTrench.completions > 0;
     case "realm-crystal-clean":
       return progress.crystalTrench.cleanCompletions > 0;
+    case "realm-heartlight-war":
+      return leviathanGraveyardProgress(progress).victories > 0;
+    case "realm-heartlight-clean":
+      return leviathanGraveyardProgress(progress).cleanVictories > 0;
   }
 }
 
@@ -226,6 +292,9 @@ export function applyKelpCathedralRun(
       duplicatePrevented: true,
       crystalTrenchUnlocked: isCrystalTrenchUnlocked(current),
       crystalTrenchNewlyUnlocked: false,
+      leviathanGraveyardUnlocked: isLeviathanGraveyardUnlocked(current),
+      leviathanGraveyardNewlyUnlocked: false,
+      mooncrestCovenantNewlyAwarded: false,
       award: awardForObjectives([]),
     };
   }
@@ -256,6 +325,7 @@ export function applyKelpCathedralRun(
       recentClaims: [...previous.recentClaims, claimId].slice(-MAX_REALM_CLAIMS),
     },
     crystalTrench: clone(current).crystalTrench,
+    leviathanGraveyard: leviathanGraveyardProgress(current),
   };
   const newlyCompleted: RealmObjectiveId[] = [];
   if (!rescueWasComplete && objectiveCompleted(progress, "realm-kelp-rescue")) {
@@ -271,6 +341,9 @@ export function applyKelpCathedralRun(
     crystalTrenchUnlocked: isCrystalTrenchUnlocked(progress),
     crystalTrenchNewlyUnlocked:
       !crystalWasUnlocked && isCrystalTrenchUnlocked(progress),
+    leviathanGraveyardUnlocked: isLeviathanGraveyardUnlocked(progress),
+    leviathanGraveyardNewlyUnlocked: false,
+    mooncrestCovenantNewlyAwarded: false,
     award: awardForObjectives(newlyCompleted),
   };
 }
@@ -288,6 +361,9 @@ export function applyCrystalTrenchRun(
       duplicatePrevented: true,
       crystalTrenchUnlocked: isCrystalTrenchUnlocked(current),
       crystalTrenchNewlyUnlocked: false,
+      leviathanGraveyardUnlocked: isLeviathanGraveyardUnlocked(current),
+      leviathanGraveyardNewlyUnlocked: false,
+      mooncrestCovenantNewlyAwarded: false,
       award: awardForObjectives([]),
     };
   }
@@ -298,11 +374,15 @@ export function applyCrystalTrenchRun(
       duplicatePrevented: true,
       crystalTrenchUnlocked: false,
       crystalTrenchNewlyUnlocked: false,
+      leviathanGraveyardUnlocked: false,
+      leviathanGraveyardNewlyUnlocked: false,
+      mooncrestCovenantNewlyAwarded: false,
       award: awardForObjectives([]),
     };
   }
   const clearWasComplete = objectiveCompleted(current, "realm-crystal-clear");
   const cleanWasComplete = objectiveCompleted(current, "realm-crystal-clean");
+  const leviathanWasUnlocked = isLeviathanGraveyardUnlocked(current);
   const previous = current.crystalTrench;
   const bestTimeSec = record.completed
     ? previous.bestTimeSec === null
@@ -326,6 +406,7 @@ export function applyCrystalTrenchRun(
       ])).sort(),
       recentClaims: [...previous.recentClaims, claimId].slice(-MAX_REALM_CLAIMS),
     },
+    leviathanGraveyard: leviathanGraveyardProgress(current),
   };
   const newlyCompleted: RealmObjectiveId[] = [];
   if (!clearWasComplete && objectiveCompleted(progress, "realm-crystal-clear")) {
@@ -340,6 +421,78 @@ export function applyCrystalTrenchRun(
     duplicatePrevented: false,
     crystalTrenchUnlocked: true,
     crystalTrenchNewlyUnlocked: false,
+    leviathanGraveyardUnlocked: isLeviathanGraveyardUnlocked(progress),
+    leviathanGraveyardNewlyUnlocked:
+      !leviathanWasUnlocked && isLeviathanGraveyardUnlocked(progress),
+    mooncrestCovenantNewlyAwarded: false,
+    award: awardForObjectives(newlyCompleted),
+  };
+}
+
+export function applyLeviathanGraveyardRun(
+  current: RealmProgressV1,
+  record: LeviathanGraveyardRunRecord,
+  now = new Date(),
+): RealmRunUpdate {
+  const claimId = `realm:leviathan:${safeClaim(record.runId)}`;
+  const previous = leviathanGraveyardProgress(current);
+  if (previous.recentClaims.includes(claimId) || !isLeviathanGraveyardUnlocked(current)) {
+    return {
+      progress: clone(current),
+      claimId,
+      duplicatePrevented: true,
+      crystalTrenchUnlocked: isCrystalTrenchUnlocked(current),
+      crystalTrenchNewlyUnlocked: false,
+      leviathanGraveyardUnlocked: isLeviathanGraveyardUnlocked(current),
+      leviathanGraveyardNewlyUnlocked: false,
+      mooncrestCovenantNewlyAwarded: false,
+      award: awardForObjectives([]),
+    };
+  }
+  const victoryWasComplete = objectiveCompleted(current, "realm-heartlight-war");
+  const cleanWasComplete = objectiveCompleted(current, "realm-heartlight-clean");
+  const bestVictorySec = record.completed
+    ? previous.bestVictorySec === null
+      ? record.elapsedSec
+      : Math.min(previous.bestVictorySec, record.elapsedSec)
+    : previous.bestVictorySec;
+  const progress: RealmProgressV1 = {
+    schemaVersion: REALM_PROGRESS_SCHEMA_VERSION,
+    revision: current.revision + 1,
+    updatedAt: now.toISOString(),
+    kelpCathedral: clone(current).kelpCathedral,
+    crystalTrench: clone(current).crystalTrench,
+    leviathanGraveyard: {
+      runs: previous.runs + 1,
+      victories: previous.victories + (record.completed ? 1 : 0),
+      bestVictorySec,
+      cleanVictories: previous.cleanVictories +
+        (record.completed && record.cleanPerformance ? 1 : 0),
+      mooncrestCovenant: previous.mooncrestCovenant || record.completed,
+      masteredVerbs: Array.from(new Set([
+        ...previous.masteredVerbs,
+        ...record.masteredVerbs,
+      ])).sort(),
+      recentClaims: [...previous.recentClaims, claimId].slice(-MAX_REALM_CLAIMS),
+    },
+  };
+  const newlyCompleted: RealmObjectiveId[] = [];
+  if (!victoryWasComplete && objectiveCompleted(progress, "realm-heartlight-war")) {
+    newlyCompleted.push("realm-heartlight-war");
+  }
+  if (!cleanWasComplete && objectiveCompleted(progress, "realm-heartlight-clean")) {
+    newlyCompleted.push("realm-heartlight-clean");
+  }
+  return {
+    progress,
+    claimId,
+    duplicatePrevented: false,
+    crystalTrenchUnlocked: true,
+    crystalTrenchNewlyUnlocked: false,
+    leviathanGraveyardUnlocked: true,
+    leviathanGraveyardNewlyUnlocked: false,
+    mooncrestCovenantNewlyAwarded:
+      !previous.mooncrestCovenant && progress.leviathanGraveyard!.mooncrestCovenant,
     award: awardForObjectives(newlyCompleted),
   };
 }
@@ -405,16 +558,57 @@ function validCrystalProgress(
     new Set(crystal.recentClaims).size === crystal.recentClaims.length;
 }
 
+function validLeviathanProgress(
+  leviathan: Partial<LeviathanGraveyardProgressV1> | undefined,
+): boolean {
+  if (!leviathan) return false;
+  const allowedVerbs: readonly RealmGameplayVerb[] = [
+    "guided-rescue-current",
+    "minion-assault",
+    "lumen-bloom",
+    "shadow-sweep",
+    "vacuum-wake",
+    "ruins-collapse",
+    "current-break",
+    "moonbone-vault",
+    "moon-seal",
+  ];
+  return Number.isInteger(leviathan.runs) && Number(leviathan.runs) >= 0 &&
+    Number.isInteger(leviathan.victories) && Number(leviathan.victories) >= 0 &&
+    Number(leviathan.victories) <= Number(leviathan.runs) &&
+    Number.isInteger(leviathan.cleanVictories) && Number(leviathan.cleanVictories) >= 0 &&
+    Number(leviathan.cleanVictories) <= Number(leviathan.victories) &&
+    (leviathan.bestVictorySec === null || (
+      typeof leviathan.bestVictorySec === "number" &&
+      Number.isFinite(leviathan.bestVictorySec) &&
+      leviathan.bestVictorySec > 0
+    )) &&
+    typeof leviathan.mooncrestCovenant === "boolean" &&
+    (!leviathan.mooncrestCovenant || Number(leviathan.victories) > 0) &&
+    Array.isArray(leviathan.masteredVerbs) &&
+    leviathan.masteredVerbs.every((verb) => allowedVerbs.includes(verb)) &&
+    new Set(leviathan.masteredVerbs).size === leviathan.masteredVerbs.length &&
+    Array.isArray(leviathan.recentClaims) &&
+    leviathan.recentClaims.length <= MAX_REALM_CLAIMS &&
+    leviathan.recentClaims.every((claim) => (
+      typeof claim === "string" && /^[a-zA-Z0-9:._-]{1,120}$/.test(claim)
+    )) &&
+    new Set(leviathan.recentClaims).size === leviathan.recentClaims.length;
+}
+
 export function validateRealmProgress(value: unknown): value is RealmProgressV1 {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<RealmProgressV1>;
   const kelp = candidate.kelpCathedral as Partial<KelpCathedralProgressV1> | undefined;
   const crystal = candidate.crystalTrench as Partial<CrystalTrenchProgressV1> | undefined;
+  const leviathan = candidate.leviathanGraveyard as
+    Partial<LeviathanGraveyardProgressV1> | undefined;
   return candidate.schemaVersion === REALM_PROGRESS_SCHEMA_VERSION &&
     Number.isInteger(candidate.revision) && Number(candidate.revision) >= 0 &&
     validDate(candidate.updatedAt) &&
     validKelpProgress(kelp) &&
-    validCrystalProgress(crystal);
+    validCrystalProgress(crystal) &&
+    (leviathan === undefined || validLeviathanProgress(leviathan));
 }
 
 export function mergeRealmProgress(
@@ -436,6 +630,13 @@ export function mergeRealmProgress(
     : remoteCrystalBest === null
       ? localCrystalBest
       : Math.min(localCrystalBest, remoteCrystalBest);
+  const localLeviathan = leviathanGraveyardProgress(local);
+  const remoteLeviathan = leviathanGraveyardProgress(remote);
+  const bestLeviathanTimeSec = localLeviathan.bestVictorySec === null
+    ? remoteLeviathan.bestVictorySec
+    : remoteLeviathan.bestVictorySec === null
+      ? localLeviathan.bestVictorySec
+      : Math.min(localLeviathan.bestVictorySec, remoteLeviathan.bestVictorySec);
   return {
     schemaVersion: REALM_PROGRESS_SCHEMA_VERSION,
     revision: Math.max(local.revision, remote.revision) + 1,
@@ -475,6 +676,25 @@ export function mergeRealmProgress(
       recentClaims: Array.from(new Set([
         ...local.crystalTrench.recentClaims,
         ...remote.crystalTrench.recentClaims,
+      ])).sort().slice(-MAX_REALM_CLAIMS),
+    },
+    leviathanGraveyard: {
+      runs: Math.max(localLeviathan.runs, remoteLeviathan.runs),
+      victories: Math.max(localLeviathan.victories, remoteLeviathan.victories),
+      bestVictorySec: bestLeviathanTimeSec,
+      cleanVictories: Math.max(
+        localLeviathan.cleanVictories,
+        remoteLeviathan.cleanVictories,
+      ),
+      mooncrestCovenant:
+        localLeviathan.mooncrestCovenant || remoteLeviathan.mooncrestCovenant,
+      masteredVerbs: Array.from(new Set([
+        ...localLeviathan.masteredVerbs,
+        ...remoteLeviathan.masteredVerbs,
+      ])).sort() as RealmGameplayVerb[],
+      recentClaims: Array.from(new Set([
+        ...localLeviathan.recentClaims,
+        ...remoteLeviathan.recentClaims,
       ])).sort().slice(-MAX_REALM_CLAIMS),
     },
   };
@@ -564,6 +784,12 @@ export class RealmProgressRepository {
 
   recordCrystalRun(record: CrystalTrenchRunRecord): RealmProgressV1 {
     this.current = applyCrystalTrenchRun(this.current, record, this.now()).progress;
+    this.persist();
+    return this.snapshot();
+  }
+
+  recordLeviathanRun(record: LeviathanGraveyardRunRecord): RealmProgressV1 {
+    this.current = applyLeviathanGraveyardRun(this.current, record, this.now()).progress;
     this.persist();
     return this.snapshot();
   }

@@ -48,12 +48,13 @@ function generatedCourse(realmId: RealmId) {
   return course.gates.map((gate) => JSON.parse(JSON.stringify(gate)) as typeof gate);
 }
 
-describe("Version 43-R4 integrated realm framework", () => {
+describe("Version 45-R1 integrated realm framework", () => {
   it("registers Kelp Cathedral as data with the hard mobile budget", () => {
     expect(Object.keys(REALM_DEFINITIONS)).toEqual([
       "moon-garden",
       "kelp-cathedral",
       "crystal-trench",
+      "leviathan-graveyard",
     ]);
     expect(realmDefinitionIssues(KELP_CATHEDRAL_REALM)).toEqual([]);
     expect(KELP_CATHEDRAL_REALM.gameplayVerbs).toEqual([

@@ -188,6 +188,15 @@ export class GlowfinAudio {
     if (this.uiState === "active") this.playCue(cue);
   }
 
+  playDuskmawCue(
+    type: "threat-pulse" | "minion-hit" | "minion-defeat" | "lumen-bloom" |
+      "current-break" | "boss-regenerate" | "vault-charge" | "vault-break" |
+      "auralis-arrival" | "grand-blast" | "moon-seal",
+  ): void {
+    const cue = this.director.duskmawCue(type);
+    if (this.uiState === "active") this.playCue(cue);
+  }
+
   update(momentumFraction: number, lightFraction: number): void {
     this.momentumFraction = Math.max(0, Math.min(1, momentumFraction));
     this.lightFraction = Math.max(0, Math.min(1, lightFraction));
@@ -566,6 +575,77 @@ export class GlowfinAudio {
         this.tone(987.77, 1174.66, 0.32, 0.1, "triangle", 0.1, 0.07);
         return;
       }
+      case "threat-pulse":
+        if (!this.hasCueCapacity(3)) return;
+        this.tone(146.83, 92.5, 0.62, 0.19 * cue.intensity, "sawtooth", -0.16);
+        this.tone(220, 146.83, 0.46, 0.1 * cue.intensity, "triangle", 0.16, 0.05);
+        this.noiseBurst(0.32, 0.07, 380, 0);
+        return;
+      case "minion-hit":
+        if (!this.hasCueCapacity(3)) return;
+        this.tone(174.61, 110, 0.24, 0.16, "triangle", -pan);
+        this.noiseBurst(0.2, 0.1, 1_450, pan);
+        this.tone(659.25, 1318.5, 0.26, 0.1, "sine", pan, 0.035);
+        return;
+      case "minion-defeat":
+        if (!this.hasCueCapacity(4)) return;
+        this.tone(146.83, 73.42, 0.46, 0.17, "triangle", -0.22);
+        this.noiseBurst(0.42, 0.14, 760, 0);
+        this.tone(392, 987.77, 0.52, 0.12, "sine", 0.12, 0.055);
+        this.tone(659.25, 1567.98, 0.58, 0.075, "triangle", 0.24, 0.11);
+        return;
+      case "lumen-bloom":
+        if (!this.hasCueCapacity(3)) return;
+        this.tone(523.25, 659.25, 0.28, 0.11, "sine", -0.16);
+        this.tone(659.25, 880, 0.34, 0.09, "sine", 0.16, 0.06);
+        this.tone(1046.5, 1318.5, 0.26, 0.05, "triangle", 0, 0.12);
+        return;
+      case "current-break":
+        if (!this.hasCueCapacity(3)) return;
+        this.tone(369.99, 739.99, 0.27, 0.13, "sine", -0.2);
+        this.tone(554.37, 1108.73, 0.31, 0.1, "triangle", 0.2, 0.045);
+        this.tone(739.99, 1479.98, 0.24, 0.055, "sine", 0, 0.09);
+        return;
+      case "boss-regenerate":
+        if (!this.hasCueCapacity(3)) return;
+        this.tone(246.94, 123.47, 0.72, 0.16, "sawtooth", -0.2);
+        this.tone(369.99, 184.99, 0.68, 0.1, "triangle", 0.2, 0.06);
+        this.noiseBurst(0.52, 0.09, 440, 0);
+        return;
+      case "vault-charge":
+        if (!this.hasCueCapacity(3)) return;
+        this.tone(220, 440, 0.56, 0.1, "sine", -0.18);
+        this.tone(329.63, 659.25, 0.62, 0.08, "triangle", 0.18, 0.08);
+        this.tone(440, 880, 0.7, 0.055, "sine", 0, 0.16);
+        return;
+      case "vault-break":
+        if (!this.hasCueCapacity(4)) return;
+        this.tone(196, 98, 0.78, 0.2, "triangle", -0.24);
+        this.noiseBurst(0.65, 0.18, 680, 0);
+        this.tone(392, 784, 0.72, 0.12, "sine", 0.12, 0.12);
+        this.tone(587.33, 1174.66, 0.62, 0.08, "sine", 0.24, 0.2);
+        return;
+      case "auralis-arrival":
+        if (!this.hasCueCapacity(4)) return;
+        this.tone(293.66, 587.33, 0.58, 0.12, "sine", -0.24);
+        this.tone(369.99, 739.99, 0.66, 0.1, "sine", -0.08, 0.08);
+        this.tone(440, 880, 0.74, 0.09, "triangle", 0.08, 0.16);
+        this.tone(587.33, 1174.66, 0.8, 0.07, "sine", 0.24, 0.24);
+        return;
+      case "grand-blast":
+        if (!this.hasCueCapacity(4)) return;
+        this.tone(98, 36.71, 1.45, 0.25, "sawtooth", -0.22);
+        this.noiseBurst(1.18, 0.24, 680, 0);
+        this.tone(293.66, 1174.66, 1.32, 0.14, "sine", 0.08, 0.12);
+        this.tone(587.33, 2349.32, 1.46, 0.09, "triangle", 0.24, 0.28);
+        return;
+      case "moon-seal":
+        if (!this.hasCueCapacity(4)) return;
+        this.tone(293.66, 293.66, 0.65, 0.12, "sine", -0.24);
+        this.tone(369.99, 369.99, 0.72, 0.1, "sine", -0.08, 0.06);
+        this.tone(440, 440, 0.78, 0.09, "triangle", 0.08, 0.12);
+        this.tone(587.33, 880, 0.82, 0.075, "sine", 0.24, 0.18);
+        return;
     }
   }
 

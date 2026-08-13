@@ -13,6 +13,64 @@ export const CRYSTAL_NERI_SPEED_PER_SEC = 44;
 export const CRYSTAL_NERI_START_LEAD = 10;
 export const CRYSTAL_RACE_RETRY_DISTANCE = 120;
 export const CRYSTAL_COMPLETE_COAST_DISTANCE = 34;
+export const DUSKMAW_CHASE_START_SEC = 8;
+export const DUSKMAW_CHASE_DURATION_SEC = 224;
+export const DUSKMAW_CHASE_FIRST_GATE_INDEX = 12;
+export const DUSKMAW_CHASE_LAST_GATE_INDEX = 218;
+export const DUSKMAW_CURRENT_BREAK_FIRST_GATE_INDEX = 70;
+export const DUSKMAW_CURRENT_BREAK_REPEAT_GATES = 16;
+export const DUSKMAW_CURRENT_BREAK_TARGET = 8;
+export const DUSKMAW_PRE_VAULT_STRIKES = 4;
+export const DUSKMAW_MOONLINK_STRIKES =
+  DUSKMAW_CURRENT_BREAK_TARGET - DUSKMAW_PRE_VAULT_STRIKES;
+export const DUSKMAW_BOSS_MAX_HEALTH = 22;
+export const DUSKMAW_PRE_VAULT_STRIKE_DAMAGE = 2;
+export const DUSKMAW_MOONLINK_STRIKE_DAMAGE = 5;
+export const DUSKMAW_VAULT_GATE_INDEX = 134;
+export const DUSKMAW_VAULT_HOLD_SEC = 7;
+export const DUSKMAW_AURALIS_CATCHUP_SEC = 7.5;
+export const DUSKMAW_MOON_SEAL_FIRST_GATE_INDEX = 234;
+export const DUSKMAW_MOON_SEAL_REPEAT_GATES = 18;
+export const DUSKMAW_MIN_COMPLETION_SEC = 205;
+// Leave enough route after the grand blast for Auralis to restore the current
+// and visibly fly back to Glowfin before the result panel replaces the world.
+export const DUSKMAW_COMPLETE_COAST_DISTANCE = 390;
+export const DUSKMAW_MOMENTUM_CAP_FRACTION = 0.58;
+export const DUSKMAW_COLLISION_LIGHT_COST = 26;
+export const DUSKMAW_FIRST_CAPTURE_RECOVERY_LIGHT = 58;
+export const DUSKMAW_LIGHT_REGEN_MULTIPLIER = 0.32;
+export const DUSKMAW_LUMEN_BLOOM_HEAL = 24;
+export const DUSKMAW_ATTACK_DODGE_OFFSET = 3.4;
+export const DUSKMAW_BOSS_MOUTHFIRE_RADIUS = 0.94;
+
+export function duskmawMinionMouthfireRadius(tier: DuskmawMinionTier): number {
+  return tier === 1 ? 0.5 : tier === 2 ? 0.62 : 0.74;
+}
+
+export function duskmawDodgeLateral(
+  lockedTargetLateral: number,
+  laneHalfWidth: number,
+): number {
+  const edgeReserve = 0.9;
+  const direction = lockedTargetLateral <= 0 ? 1 : -1;
+  return Math.max(
+    -laneHalfWidth + edgeReserve,
+    Math.min(
+      laneHalfWidth - edgeReserve,
+      lockedTargetLateral + direction * DUSKMAW_ATTACK_DODGE_OFFSET,
+    ),
+  );
+}
+
+export const DUSKMAW_MINION_BLUEPRINTS = Object.freeze([
+  { id: "riftling-left", tier: 1, requiredHits: 1 },
+  { id: "riftling-right", tier: 1, requiredHits: 1 },
+  { id: "grave-warden", tier: 2, requiredHits: 2 },
+  { id: "maw-sentinel", tier: 3, requiredHits: 3 },
+] as const);
+
+export type DuskmawMinionId = typeof DUSKMAW_MINION_BLUEPRINTS[number]["id"];
+export type DuskmawMinionTier = 1 | 2 | 3;
 
 interface RealmGateSource {
   distance: number;
@@ -106,6 +164,72 @@ export interface SlidingCrystalPlatePlan {
   sequenceId: number;
 }
 
+export interface ShadowSweepPlan {
+  verb: "shadow-sweep";
+  telegraphFromDistance: number;
+  sweepSide: -1 | 1;
+  safeCenter: number;
+}
+
+export interface GuidedRescueCurrentPlan {
+  verb: "guided-rescue-current";
+  telegraphFromDistance: number;
+  safeCenter: number;
+}
+
+export interface VacuumWakePlan {
+  verb: "vacuum-wake";
+  telegraphFromDistance: number;
+  startDistance: number;
+  endDistance: number;
+  laneLeft: number;
+  laneRight: number;
+  lateralDriftPerSec: number;
+}
+
+export interface RuinsCollapsePlan {
+  verb: "ruins-collapse";
+  telegraphFromDistance: number;
+  collapseSide: -1 | 1;
+}
+
+export interface MinionAssaultPlan {
+  verb: "minion-assault";
+  telegraphFromDistance: number;
+  minionId: DuskmawMinionId;
+  minionTier: DuskmawMinionTier;
+  hitIndex: number;
+  requiredHits: number;
+  safeCenter: number;
+}
+
+export interface LumenBloomPlan {
+  verb: "lumen-bloom";
+  telegraphFromDistance: number;
+  recoveryId: number;
+  healAmount: number;
+  safeCenter: number;
+}
+
+export interface MoonboneVaultPlan {
+  verb: "moonbone-vault";
+  telegraphFromDistance: number;
+  safeCenter: number;
+  holdSec: number;
+}
+
+export interface CurrentBreakPlan {
+  verb: "current-break";
+  telegraphFromDistance: number;
+  sequence: number;
+}
+
+export interface MoonSealPlan {
+  verb: "moon-seal";
+  telegraphFromDistance: number;
+  sequence: number;
+}
+
 export type KelpCathedralGatePlan =
   | SwayingFrondWindowPlan
   | ReversingCurrentTunnelPlan
@@ -117,7 +241,21 @@ export type CrystalTrenchGatePlan =
   | TrenchThresholdPlan
   | SlidingCrystalPlatePlan;
 
-export type RealmGatePlan = KelpCathedralGatePlan | CrystalTrenchGatePlan;
+export type LeviathanGraveyardGatePlan =
+  | GuidedRescueCurrentPlan
+  | MinionAssaultPlan
+  | LumenBloomPlan
+  | ShadowSweepPlan
+  | VacuumWakePlan
+  | RuinsCollapsePlan
+  | CurrentBreakPlan
+  | MoonboneVaultPlan
+  | MoonSealPlan;
+
+export type RealmGatePlan =
+  | KelpCathedralGatePlan
+  | CrystalTrenchGatePlan
+  | LeviathanGraveyardGatePlan;
 
 export type RealmEventKind =
   | "frond-window"
@@ -133,7 +271,21 @@ export type RealmEventKind =
   | "trench-threshold-missed"
   | "mirror-race-start"
   | "mirror-race-win"
-  | "mirror-race-loss";
+  | "mirror-race-loss"
+  | "minion-hit"
+  | "minion-defeated"
+  | "minion-shot-missed"
+  | "lumen-bloom"
+  | "lumen-bloom-missed"
+  | "shadow-sweep"
+  | "vacuum-wake-enter"
+  | "ruins-collapse"
+  | "current-break"
+  | "current-break-missed"
+  | "moonbone-vault"
+  | "moonbone-vault-locked"
+  | "moon-seal"
+  | "moon-seal-missed";
 
 export type KelpRealmEventKind = Extract<
   RealmEventKind,
@@ -416,6 +568,165 @@ function planSlidingCrystalPlate(
   };
 }
 
+function planDuskmawGate(
+  source: RealmPlanSource,
+  laneHalfWidth: number,
+): LeviathanGraveyardGatePlan {
+  const safeCenter = (source.gate.gapLeft + source.gate.gapRight) * 0.5;
+  const sealOffset = source.gateIndex - DUSKMAW_MOON_SEAL_FIRST_GATE_INDEX;
+  if (
+    sealOffset >= 0 &&
+    sealOffset % DUSKMAW_MOON_SEAL_REPEAT_GATES === 0
+  ) {
+    return {
+      verb: "moon-seal",
+      telegraphFromDistance: source.gate.distance - 76,
+      sequence: Math.floor(sealOffset / DUSKMAW_MOON_SEAL_REPEAT_GATES),
+    };
+  }
+
+  if (source.gateIndex === DUSKMAW_VAULT_GATE_INDEX) {
+    return {
+      verb: "moonbone-vault",
+      telegraphFromDistance: source.gate.distance - 118,
+      safeCenter,
+      holdSec: DUSKMAW_VAULT_HOLD_SEC,
+    };
+  }
+
+  const strikeGates = [70, 86, 102, 118, 154, 170, 190, 210] as const;
+  const strikeAt = strikeGates.indexOf(
+    source.gateIndex as typeof strikeGates[number],
+  );
+  if (strikeAt >= 0) {
+    return {
+      verb: "current-break",
+      telegraphFromDistance: source.gate.distance - 82,
+      sequence: strikeAt + 1,
+    };
+  }
+
+  const bloomGates = [22, 38, 66, 142, 180, 200] as const;
+  const bloomAt = bloomGates.indexOf(
+    source.gateIndex as typeof bloomGates[number],
+  );
+  if (bloomAt >= 0) {
+    return {
+      verb: "lumen-bloom",
+      telegraphFromDistance: source.gate.distance - 72,
+      recoveryId: bloomAt + 1,
+      healAmount: DUSKMAW_LUMEN_BLOOM_HEAL,
+      safeCenter,
+    };
+  }
+
+  const minionGates: ReadonlyArray<{
+    gateIndex: number;
+    minionId: DuskmawMinionId;
+    minionTier: DuskmawMinionTier;
+    hitIndex: number;
+    requiredHits: number;
+  }> = [
+    { gateIndex: 12, minionId: "riftling-left", minionTier: 1, hitIndex: 1, requiredHits: 1 },
+    { gateIndex: 18, minionId: "riftling-right", minionTier: 1, hitIndex: 1, requiredHits: 1 },
+    { gateIndex: 26, minionId: "grave-warden", minionTier: 2, hitIndex: 1, requiredHits: 2 },
+    { gateIndex: 32, minionId: "grave-warden", minionTier: 2, hitIndex: 2, requiredHits: 2 },
+    { gateIndex: 42, minionId: "maw-sentinel", minionTier: 3, hitIndex: 1, requiredHits: 3 },
+    { gateIndex: 50, minionId: "maw-sentinel", minionTier: 3, hitIndex: 2, requiredHits: 3 },
+    { gateIndex: 58, minionId: "maw-sentinel", minionTier: 3, hitIndex: 3, requiredHits: 3 },
+  ];
+  const minion = minionGates.find((candidate) => (
+    candidate.gateIndex === source.gateIndex
+  ));
+  if (minion) {
+    return {
+      verb: "minion-assault",
+      telegraphFromDistance: source.gate.distance - (76 + minion.minionTier * 10),
+      minionId: minion.minionId,
+      minionTier: minion.minionTier,
+      hitIndex: minion.hitIndex,
+      requiredHits: minion.requiredHits,
+      safeCenter,
+    };
+  }
+
+  const hash = sourceHash(source, "duskmaw-pattern");
+  const hashedSide: -1 | 1 = (hash & 1) === 0 ? -1 : 1;
+  // When the authored opening is offset, Duskmaw always marks the opposite
+  // ruin as dangerous. Cyan and danger can therefore never contradict.
+  const side: -1 | 1 = Math.abs(safeCenter) > 0.25
+    ? safeCenter > 0 ? -1 : 1
+    : hashedSide;
+  const duringChase =
+    source.gateIndex >= DUSKMAW_CURRENT_BREAK_FIRST_GATE_INDEX &&
+    source.gateIndex <= DUSKMAW_CHASE_LAST_GATE_INDEX &&
+    source.gateIndex !== DUSKMAW_VAULT_GATE_INDEX;
+  if (duringChase && source.gateIndex % 18 === 0) {
+    return {
+      verb: "shadow-sweep",
+      telegraphFromDistance: source.gate.distance - 130,
+      sweepSide: side,
+      safeCenter,
+    };
+  }
+  if (duringChase && source.gateIndex % 18 === 6) {
+    return {
+      verb: "vacuum-wake",
+      telegraphFromDistance: source.gate.distance - 130,
+      startDistance: source.gate.distance - 62,
+      endDistance: source.gate.distance + 8,
+      laneLeft: -laneHalfWidth,
+      laneRight: laneHalfWidth,
+      lateralDriftPerSec: side * (1.05 + unit(sourceHash(source, "vacuum-force")) * 0.32),
+    };
+  }
+  if (duringChase && source.gateIndex % 18 === 12) {
+    return {
+      verb: "ruins-collapse",
+      telegraphFromDistance: source.gate.distance - 130,
+      collapseSide: side,
+    };
+  }
+  return {
+    verb: "guided-rescue-current",
+    telegraphFromDistance: source.gate.distance - 86,
+    safeCenter,
+  };
+}
+
+export function duskmawCurrentBreakRetryPlan(
+  failed: CurrentBreakPlan,
+  candidate: Pick<RealmGateSource, "distance">,
+): CurrentBreakPlan {
+  return {
+    ...failed,
+    telegraphFromDistance: candidate.distance - 86,
+  };
+}
+
+export function duskmawMinionRetryPlan(
+  failed: MinionAssaultPlan,
+  candidate: Pick<RealmGateSource, "distance">,
+): MinionAssaultPlan {
+  return {
+    ...failed,
+    telegraphFromDistance: candidate.distance - (76 + failed.minionTier * 10),
+  };
+}
+
+export function duskmawMinimumGapFraction(gateIndex: number): number {
+  const isBreak = [70, 86, 102, 118, 154, 170, 190, 210].includes(gateIndex);
+  const sealIndex = gateIndex - DUSKMAW_MOON_SEAL_FIRST_GATE_INDEX;
+  const isSeal = sealIndex >= 0 && sealIndex % DUSKMAW_MOON_SEAL_REPEAT_GATES === 0;
+  if (isBreak || isSeal || gateIndex === DUSKMAW_VAULT_GATE_INDEX) return 0.8;
+  if ([12, 18, 26, 32, 42, 50, 58, 22, 38, 66, 142, 180, 200].includes(gateIndex)) return 0.7;
+  if (
+    gateIndex < DUSKMAW_CHASE_FIRST_GATE_INDEX ||
+    gateIndex > DUSKMAW_CHASE_LAST_GATE_INDEX
+  ) return 0.74;
+  return 0.64;
+}
+
 export function slidingCrystalPlateOpeningAt(
   plan: SlidingCrystalPlatePlan,
   elapsedSec: number,
@@ -517,6 +828,9 @@ export function planRealmGate(
     }
     return planPrismPulse(source, laneHalfWidth, creatureRadius);
   }
+  if (realmId === "leviathan-graveyard") {
+    return planDuskmawGate(source, laneHalfWidth);
+  }
   return undefined;
 }
 
@@ -556,7 +870,19 @@ export function realmOpeningsAt(
       scoreMultiplier: 1,
     }];
   }
-  if (plan.verb === "prism-pulse" || plan.verb === "trench-threshold") {
+  if (
+    plan.verb === "prism-pulse" ||
+    plan.verb === "trench-threshold" ||
+    plan.verb === "guided-rescue-current" ||
+    plan.verb === "minion-assault" ||
+    plan.verb === "lumen-bloom" ||
+    plan.verb === "shadow-sweep" ||
+    plan.verb === "vacuum-wake" ||
+    plan.verb === "ruins-collapse" ||
+    plan.verb === "current-break" ||
+    plan.verb === "moonbone-vault" ||
+    plan.verb === "moon-seal"
+  ) {
     return [{ ...fallback, route: "standard", scoreMultiplier: 1 }];
   }
   return kelpRealmOpeningsAt(plan, fallback, elapsedSec);
@@ -592,7 +918,19 @@ export function realmProofOpening(
     )));
     return { left, right };
   }
-  if (plan.verb === "prism-pulse" || plan.verb === "trench-threshold") {
+  if (
+    plan.verb === "prism-pulse" ||
+    plan.verb === "trench-threshold" ||
+    plan.verb === "guided-rescue-current" ||
+    plan.verb === "minion-assault" ||
+    plan.verb === "lumen-bloom" ||
+    plan.verb === "moonbone-vault" ||
+    plan.verb === "shadow-sweep" ||
+    plan.verb === "vacuum-wake" ||
+    plan.verb === "ruins-collapse" ||
+    plan.verb === "current-break" ||
+    plan.verb === "moon-seal"
+  ) {
     return { ...fallback };
   }
   return kelpRealmProofOpening(plan, fallback);
@@ -637,4 +975,33 @@ export function currentTunnelDirection(
     (plan.laneLeft + plan.laneRight) * 0.5,
   );
   return force < -1e-6 ? -1 : force > 1e-6 ? 1 : 0;
+}
+
+export function vacuumWakeForce(
+  plan: VacuumWakePlan,
+  forwardDistance: number,
+  lateralPosition: number,
+): number {
+  if (
+    forwardDistance < plan.startDistance ||
+    forwardDistance > plan.endDistance ||
+    lateralPosition < plan.laneLeft ||
+    lateralPosition > plan.laneRight
+  ) return 0;
+  const progress = clamp(
+    (forwardDistance - plan.startDistance) /
+      Math.max(0.001, plan.endDistance - plan.startDistance),
+    0,
+    1,
+  );
+  return plan.lateralDriftPerSec * Math.sin(progress * Math.PI);
+}
+
+export function maximumVacuumWakeDisplacement(
+  plan: VacuumWakePlan,
+  forwardSpeedPerSec: number,
+): number {
+  const durationSec = Math.max(0, plan.endDistance - plan.startDistance) /
+    Math.max(0.001, forwardSpeedPerSec);
+  return Math.abs(plan.lateralDriftPerSec) * durationSec * (2 / Math.PI);
 }

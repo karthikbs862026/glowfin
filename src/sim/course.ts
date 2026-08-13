@@ -27,12 +27,18 @@ import {
 } from "./obstacleVariety";
 import type { RealmId } from "../realms/definition";
 import {
+  duskmawCurrentBreakRetryPlan,
+  duskmawMinionRetryPlan,
+  duskmawMinimumGapFraction,
   realmProofOpening,
   maximumCurrentTunnelDisplacement,
+  maximumVacuumWakeDisplacement,
   planRealmGate,
   slidingCrystalPlateRetryPlan,
   trenchThresholdRetryPlan,
   type RealmGatePlan,
+  type CurrentBreakPlan,
+  type MinionAssaultPlan,
   type SlidingCrystalPlatePlan,
 } from "../realms/mechanics";
 import chunkData from "../../config/chunks.json";
@@ -278,6 +284,12 @@ export function transitionLateralBudget(
       base - maximumCurrentTunnelDisplacement(to.realmPlan, speed),
     );
   }
+  if (to.realmPlan?.verb === "vacuum-wake") {
+    return Math.max(
+      0,
+      base - maximumVacuumWakeDisplacement(to.realmPlan, speed),
+    );
+  }
   return base;
 }
 
@@ -383,6 +395,42 @@ export class CourseGenerator {
     return candidate.distance;
   }
 
+  /** A missed cursed current returns within a few readable gates. */
+  scheduleDuskmawCurrentBreakRetry(
+    failedPlan: CurrentBreakPlan,
+    minimumDistance: number,
+  ): number | null {
+    if (this.realmId !== "leviathan-graveyard") return null;
+    this.ensureGeneratedTo(
+      minimumDistance + this.cfg.readability.visibleAheadUnits * 2,
+    );
+    const candidate = this.generated.find((gate) => (
+      gate.distance >= minimumDistance &&
+      gate.realmPlan?.verb === "guided-rescue-current"
+    ));
+    if (!candidate) return null;
+    candidate.realmPlan = duskmawCurrentBreakRetryPlan(failedPlan, candidate);
+    return candidate.distance;
+  }
+
+  /** A surviving minion retreats, then returns on the next guided opening. */
+  scheduleDuskmawMinionRetry(
+    failedPlan: MinionAssaultPlan,
+    minimumDistance: number,
+  ): number | null {
+    if (this.realmId !== "leviathan-graveyard") return null;
+    this.ensureGeneratedTo(
+      minimumDistance + this.cfg.readability.visibleAheadUnits * 2,
+    );
+    const candidate = this.generated.find((gate) => (
+      gate.distance >= minimumDistance &&
+      gate.realmPlan?.verb === "guided-rescue-current"
+    ));
+    if (!candidate) return null;
+    candidate.realmPlan = duskmawMinionRetryPlan(failedPlan, candidate);
+    return candidate.distance;
+  }
+
   private appendChunk(): void {
     const tier = tierAtDistance(this.nextDistance);
     const eligible = templates.filter((t) => t.minTier <= tier);
@@ -443,10 +491,16 @@ export class CourseGenerator {
     const tierFraction = difficulty.maxTier === 0 ? 0 : tier / difficulty.maxTier;
     const widthScale =
       1 + (difficulty.gapWidthMultiplierAtMaxTier - 1) * tierFraction;
-    const widthUnits = Math.max(
+    let widthUnits = Math.max(
       difficulty.minGapWidthUnits,
       laneWidth * template.widthFraction * widthScale
     );
+    if (this.realmId === "leviathan-graveyard") {
+      widthUnits = Math.max(
+        widthUnits,
+        laneWidth * duskmawMinimumGapFraction(realmGateIndex),
+      );
+    }
     const halfGap = widthUnits / 2;
 
     // --- centre, clamped so the gate stays inside the lane ---

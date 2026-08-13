@@ -6,7 +6,7 @@ function file(path: string): string {
   return readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-describe("Version 43 Capacitor wrapper contract", () => {
+describe("Version 45 Capacitor wrapper contract", () => {
   it("wraps only the sealed dist artifact with hardened native defaults", () => {
     expect(capacitorConfig).toMatchObject({
       appId: "com.karthikbs862026.glowfin",
@@ -41,8 +41,8 @@ describe("Version 43 Capacitor wrapper contract", () => {
     expect(android).toContain('android:allowBackup="false"');
     expect(android).toContain('android:scheme="glowfin"');
     expect(android).toContain('android:host="challenge"');
-    expect(file("android/app/build.gradle")).toContain("versionCode 43");
-    expect(file("android/app/build.gradle")).toContain('versionName "0.43.0"');
+    expect(file("android/app/build.gradle")).toContain("versionCode 45");
+    expect(file("android/app/build.gradle")).toContain('versionName "0.45.0"');
 
     const androidStyles = file("android/app/src/main/res/values/styles.xml");
     expect(androidStyles).toContain('android:windowLightNavigationBar" tools:targetApi="27"');
@@ -58,8 +58,8 @@ describe("Version 43 Capacitor wrapper contract", () => {
     expect(privacy).toContain("NSPrivacyTracking");
     expect(privacy).toContain("<false/>");
     const iosProject = file("ios/App/App.xcodeproj/project.pbxproj");
-    expect(iosProject).toContain("CURRENT_PROJECT_VERSION = 43;");
-    expect(iosProject).toContain("MARKETING_VERSION = 0.43.0;");
+    expect(iosProject).toContain("CURRENT_PROJECT_VERSION = 45;");
+    expect(iosProject).toContain("MARKETING_VERSION = 0.45.0;");
   });
 
   it("uses Capacitor's Android inset fallback and exposes optional haptics", () => {
@@ -76,7 +76,7 @@ describe("Version 43 Capacitor wrapper contract", () => {
     expect(tideSprint).toContain('id="race-runtime"');
   });
 
-  it("registers only lifecycle and haptics as Version 43 native plugins", () => {
+  it("registers only lifecycle and haptics as Version 45 native plugins", () => {
     const androidGradle = file("android/app/capacitor.build.gradle");
     expect(androidGradle).toContain("project(':capacitor-app')");
     expect(androidGradle).toContain("project(':capacitor-haptics')");
@@ -84,8 +84,8 @@ describe("Version 43 Capacitor wrapper contract", () => {
     expect(iosPackage).toContain('name: "CapacitorApp"');
     expect(iosPackage).toContain('name: "CapacitorHaptics"');
     const workflow = file(".github/workflows/native-wrapper.yml");
-    expect(workflow).toContain("glowfin-v43-r4-android-candidates");
-    expect(workflow).toContain("Glowfin-v43-r4.xcarchive");
-    expect(workflow).toContain("glowfin-v43-r4-ios-candidate");
+    expect(workflow).toContain("glowfin-v45-r1-android-candidates");
+    expect(workflow).toContain("Glowfin-v45-r1.xcarchive");
+    expect(workflow).toContain("glowfin-v45-r1-ios-candidate");
   });
 });

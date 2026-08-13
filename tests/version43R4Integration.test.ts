@@ -153,7 +153,18 @@ describe("Version 43-R4 shared realm progression", () => {
       cleanCompletions: 1,
       bestTimeSec: 60.6,
     });
-    expect(repository.activeRealmObjectives().every((objective) => objective.completed)).toBe(true);
+    expect(crystal.leviathanGraveyardNewlyUnlocked).toBe(true);
+    const objectives = repository.activeRealmObjectives();
+    expect(
+      objectives
+        .filter((objective) => objective.id.startsWith("realm-kelp-") || objective.id.startsWith("realm-crystal-"))
+        .every((objective) => objective.completed),
+    ).toBe(true);
+    expect(
+      objectives
+        .filter((objective) => objective.id.startsWith("realm-heartlight-"))
+        .every((objective) => !objective.completed),
+    ).toBe(true);
   });
 
   it("merges V42 mode progress and realm history monotonically", () => {
