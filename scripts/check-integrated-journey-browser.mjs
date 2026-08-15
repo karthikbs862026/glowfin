@@ -43,6 +43,15 @@ async function openHub() {
     document.querySelector("#startup-progress")?.getAttribute("data-ready") === "true" &&
     document.querySelector("#moonwell-hub")?.getAttribute("data-active") === "true"
   ), undefined, { timeout: 15_000 });
+
+  // A fresh player is intentionally greeted by the guided-dive choice. Exercise
+  // that real control before checking the hub instead of bypassing the overlay,
+  // then verify the player can reach every destination from the resulting state.
+  const tutorialIntro = page.locator("#tutorial-intro[data-active=\"true\"]");
+  if (await tutorialIntro.isVisible()) {
+    await page.locator("#tutorial-intro-skip").click();
+    await page.waitForSelector("#tutorial-intro[data-active=\"false\"]");
+  }
 }
 
 async function grantChapterOne() {
