@@ -17,12 +17,12 @@ function metadata(
   };
 }
 
-describe("Version 48-R2 release identity", () => {
-  it("accepts only the full Eclipse Court campaign rooted at GitHub Version 45", () => {
+describe("Version 48-R3 release identity", () => {
+  it("accepts only the integrated journey release rooted at GitHub Version 45", () => {
     expect(isGlowfinReleaseMetadata(metadata())).toBe(true);
-    expect(metadata().certification).toBe("eclipse-court-full-campaign-review-candidate");
-    expect(metadata().phase).toBe("phase-full-realm-campaign-r2");
-    expect(metadata().releaseTag).toBe("glowfin-v48-r2-eclipse-court-full-campaign");
+    expect(metadata().certification).toBe("integrated-journey-release-candidate");
+    expect(metadata().phase).toBe("phase-integrated-journey-r3");
+    expect(metadata().releaseTag).toBe("glowfin-v48-r3-integrated-journey");
     expect(metadata().sourceBaseVersion).toBe(45);
     expect(metadata().sourceBaseCommit).toBe(
       "6c352f7ef40abc7569533ba7e8902d9d56d9936a"

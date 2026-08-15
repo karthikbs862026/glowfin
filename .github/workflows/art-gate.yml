@@ -75,6 +75,8 @@ jobs:
         run: npm run runtime-gate:browser
       - name: Validate Tide Sprint mobile layout, budgets and lifecycle recovery
         run: npm run runtime-gate:tide-sprint
+      - name: Validate every integrated destination and realm entitlement
+        run: npm run runtime-gate:journey
       - run: npm run art-gate:capture:fast
       - name: Validate reduced PR matrix
         run: |
@@ -94,6 +96,10 @@ jobs:
             build/audio-gate-browser.json
             build/runtime-recovery-browser.json
             build/tide-sprint-browser.json
+            build/tide-sprint-lobby-*.png
+            build/tide-sprint-race-*.png
+            build/integrated-journey-browser.json
+            build/integrated-journey-*.png
 
   full:
     name: full-render

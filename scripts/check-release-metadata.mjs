@@ -87,13 +87,13 @@ const shortCommit = expectedCommit === "local"
   ? "local"
   : expectedCommit.slice(0, 7);
 const expectedLabel = `V${release.version} · ${expectedEnvironment.toUpperCase()} · ${shortCommit}`;
-if (!index.includes(`id="hud-build" role="status">${expectedLabel}</div>`)) {
+if (!index.includes(`id="hud-build" role="status" hidden>${expectedLabel}</div>`)) {
   throw new Error(
     `Production HTML initial release badge does not identify ${expectedLabel}.`
   );
 }
-if (!index.includes(`Glowfin — Version ${release.version}`)) {
-  throw new Error(`Production HTML title does not identify Version ${release.version}.`);
+if (!index.includes("Glowfin — The Living Tide")) {
+  throw new Error("Production HTML title does not use the player-facing Glowfin identity.");
 }
 
 console.log(

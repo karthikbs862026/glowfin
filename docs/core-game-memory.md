@@ -554,3 +554,29 @@ leaderboard replays and Moonflash clips. Its unminified hosted verifier is
 therefore allowed a narrowly revised 144 KiB ceiling (136.1 KiB measured on
 the accepted candidate), replacing the pre-Eclipse 128 KiB ceiling. This does
 not change the 3 MiB sealed payload, 2 MiB JavaScript or mobile render budgets.
+
+## 2026-08-15 — Unify the complete journey as Version 48-R3
+
+Version 48-R3 supersedes the older partial unlock descriptions. Chapter 1 is
+complete only when the Moonseed reaches the ceremonial finish and the Moon Well
+is restored. That fact grants a permanent Kelp Cathedral story entitlement in
+the cloud-merged realm ledger. Historical saves with the original primary
+completion mark are repaired into the same Moonseed, Moon Well and entitlement
+truth instead of being reset or stranded between save envelopes.
+
+Every surface uses one monotonic story contract. Crystal Trench requires both
+Miri's rescue and the Kelp Cathedral Hymn Page. Leviathan Graveyard requires a
+Crystal Trench victory and its clean crest. Existing downstream run history is
+permanent proof that the corresponding realm was already open; a stale local or
+cloud envelope must never relock it. Living Atlas state, Moon Well buttons,
+result-screen handoffs, persistence validation and cloud merge all derive from
+that same contract.
+
+Tide Sprint must publish and wire its lobby before requesting the Three.js race
+renderer. The static lobby owns detailed self-contained Glowkin portraits, so a
+slow network or GPU cannot leave blank character cards or dead navigation. The
+renderer may warm while the browser is idle, but a release gate caps the eager
+lobby JavaScript and starts a real race on both target phone viewports. Visible
+player copy must never expose version, test, trial, practice, temporary, stable
+or separate-build language; exact release identity remains in sealed metadata
+and a hidden diagnostics node.

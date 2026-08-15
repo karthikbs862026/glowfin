@@ -29,6 +29,7 @@
     "audio-gate:browser": "node tools/audio-gate/integration/capture.mjs",
     "runtime-gate:browser": "node scripts/check-runtime-recovery.mjs",
     "runtime-gate:tide-sprint": "node scripts/check-tide-sprint-browser.mjs",
+    "runtime-gate:journey": "node scripts/check-integrated-journey-browser.mjs",
     "soak:tide-sprint": "node scripts/soak-tide-sprint-renderer.mjs",
     "art:export-glbs": "node --experimental-strip-types tools/art/exportProductionGlbs.mjs",
     "art:pack-runtime-glbs": "node --experimental-strip-types tools/art/packRuntimeGlbs.mjs",

@@ -109,10 +109,10 @@ describe("Version 48-R2 full Eclipse Court campaign", () => {
 
   it("presents the promoted campaign and direct chapter entries", () => {
     const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-    expect(html).toContain("Glowfin — Version 48-R2 · Full Eclipse Court Campaign");
+    expect(html).toContain("Glowfin — The Living Tide");
     expect(html).toContain("Four-act petal campaign");
     expect(html).toContain("Race six living witnesses");
     expect(html).toContain("Break sixteen Crown seals");
-    expect(html).toContain("V48 · LOCAL · local");
+    expect(html).toContain('<div id="hud-build" role="status" hidden>V48 · LOCAL · local</div>');
   });
 });

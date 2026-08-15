@@ -45,12 +45,23 @@ export interface LeviathanGraveyardProgressV1 {
   recentClaims: string[];
 }
 
+/**
+ * Story access lives in the cloud-merged realm ledger so completing Chapter 1
+ * on one device cannot be forgotten when the separate expedition envelope is
+ * absent on another device.
+ */
+export interface RealmStoryAccessV1 {
+  kelpCathedral: boolean;
+}
+
 export interface RealmProgressV1 {
   schemaVersion: typeof REALM_PROGRESS_SCHEMA_VERSION;
   revision: number;
   updatedAt: string;
   kelpCathedral: KelpCathedralProgressV1;
   crystalTrench: CrystalTrenchProgressV1;
+  /** Optional so existing schema-5 saves remain valid and upgrade in place. */
+  storyAccess?: RealmStoryAccessV1;
   /** Optional only so Version 43/44 schema-5 cloud saves remain additive. */
   leviathanGraveyard?: LeviathanGraveyardProgressV1;
   /** Optional so every V45/V46 save remains valid and backfills on first V47 action. */
@@ -229,6 +240,27 @@ export function eclipseCourtProgress(
     : createDefaultEclipseCourtProgress(new Date(progress.updatedAt));
 }
 
+export function realmStoryAccess(
+  progress: Readonly<RealmProgressV1>,
+): RealmStoryAccessV1 {
+  return {
+    kelpCathedral: progress.storyAccess?.kelpCathedral === true,
+  };
+}
+
+export function grantKelpCathedralStoryAccess(
+  current: Readonly<RealmProgressV1>,
+  now = new Date(),
+): RealmProgressV1 {
+  if (realmStoryAccess(current).kelpCathedral) return clone(current);
+  return {
+    ...clone(current),
+    revision: current.revision + 1,
+    updatedAt: now.toISOString(),
+    storyAccess: { kelpCathedral: true },
+  };
+}
+
 export function createDefaultRealmProgress(now = new Date()): RealmProgressV1 {
   return {
     schemaVersion: REALM_PROGRESS_SCHEMA_VERSION,
@@ -250,6 +282,7 @@ export function createDefaultRealmProgress(now = new Date()): RealmProgressV1 {
       masteredVerbs: [],
       recentClaims: [],
     },
+    storyAccess: { kelpCathedral: false },
     leviathanGraveyard: createDefaultLeviathanProgress(),
     livingTideSeason: createDefaultLivingTideSeason(now),
     eclipseCourtPack: createDefaultEclipseCourtProgress(now),
@@ -257,11 +290,19 @@ export function createDefaultRealmProgress(now = new Date()): RealmProgressV1 {
 }
 
 export function isCrystalTrenchUnlocked(progress: RealmProgressV1): boolean {
-  return progress.kelpCathedral.rescues > 0;
+  const graveyard = leviathanGraveyardProgress(progress);
+  return (
+    progress.kelpCathedral.rescues > 0 &&
+    progress.kelpCathedral.relicPages.includes("kelp-cathedral-page-1")
+  ) || progress.crystalTrench.runs > 0 || graveyard.runs > 0;
 }
 
 export function isLeviathanGraveyardUnlocked(progress: RealmProgressV1): boolean {
-  return progress.crystalTrench.completions > 0;
+  const graveyard = leviathanGraveyardProgress(progress);
+  return (
+    progress.crystalTrench.completions > 0 &&
+    progress.crystalTrench.cleanCompletions > 0
+  ) || graveyard.runs > 0;
 }
 
 function objectiveCompleted(
@@ -359,6 +400,7 @@ export function applyKelpCathedralRun(
       recentClaims: [...previous.recentClaims, claimId].slice(-MAX_REALM_CLAIMS),
     },
     crystalTrench: clone(current).crystalTrench,
+    storyAccess: realmStoryAccess(current),
     leviathanGraveyard: leviathanGraveyardProgress(current),
     livingTideSeason: livingTideSeasonProgress(current),
     eclipseCourtPack: eclipseCourtProgress(current),
@@ -442,6 +484,7 @@ export function applyCrystalTrenchRun(
       ])).sort(),
       recentClaims: [...previous.recentClaims, claimId].slice(-MAX_REALM_CLAIMS),
     },
+    storyAccess: realmStoryAccess(current),
     leviathanGraveyard: leviathanGraveyardProgress(current),
     livingTideSeason: livingTideSeasonProgress(current),
     eclipseCourtPack: eclipseCourtProgress(current),
@@ -500,6 +543,7 @@ export function applyLeviathanGraveyardRun(
     updatedAt: now.toISOString(),
     kelpCathedral: clone(current).kelpCathedral,
     crystalTrench: clone(current).crystalTrench,
+    storyAccess: realmStoryAccess(current),
     leviathanGraveyard: {
       runs: previous.runs + 1,
       victories: previous.victories + (record.completed ? 1 : 0),
@@ -645,11 +689,15 @@ export function validateRealmProgress(value: unknown): value is RealmProgressV1 
     Partial<LeviathanGraveyardProgressV1> | undefined;
   const season = candidate.livingTideSeason;
   const eclipseCourt = candidate.eclipseCourtPack;
+  const storyAccess = candidate.storyAccess as Partial<RealmStoryAccessV1> | null | undefined;
   return candidate.schemaVersion === REALM_PROGRESS_SCHEMA_VERSION &&
     Number.isInteger(candidate.revision) && Number(candidate.revision) >= 0 &&
     validDate(candidate.updatedAt) &&
     validKelpProgress(kelp) &&
     validCrystalProgress(crystal) &&
+    (storyAccess === undefined || (
+      storyAccess !== null && typeof storyAccess.kelpCathedral === "boolean"
+    )) &&
     (leviathan === undefined || validLeviathanProgress(leviathan)) &&
     (season === undefined || validateLivingTideSeasonProgress(season)) &&
     (eclipseCourt === undefined || validateEclipseCourtProgress(eclipseCourt));
@@ -685,6 +733,11 @@ export function mergeRealmProgress(
     schemaVersion: REALM_PROGRESS_SCHEMA_VERSION,
     revision: Math.max(local.revision, remote.revision) + 1,
     updatedAt: now.toISOString(),
+    storyAccess: {
+      kelpCathedral:
+        realmStoryAccess(local).kelpCathedral ||
+        realmStoryAccess(remote).kelpCathedral,
+    },
     kelpCathedral: {
       runs: Math.max(local.kelpCathedral.runs, remote.kelpCathedral.runs),
       rescues: Math.max(local.kelpCathedral.rescues, remote.kelpCathedral.rescues),

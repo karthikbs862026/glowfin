@@ -1,6 +1,11 @@
 import type { ExpeditionProgressV1 } from "../expedition/progress";
 import type { RealmProgressV1 } from "../realms/progress";
-import { leviathanGraveyardProgress } from "../realms/progress";
+import {
+  isCrystalTrenchUnlocked,
+  isLeviathanGraveyardUnlocked,
+  leviathanGraveyardProgress,
+  realmStoryAccess,
+} from "../realms/progress";
 
 export const RELIC_ATLAS_IDS = [
   "moonseed-fragment",
@@ -119,16 +124,24 @@ export function deriveRelicAtlasUnlocks(
   expedition: Readonly<ExpeditionProgressV1>,
   realms: Readonly<RealmProgressV1>,
 ): RelicAtlasUnlocks {
+  const graveyard = leviathanGraveyardProgress(realms);
   const moonWellAwake = expeditionMoonseedRecovered(expedition) &&
     expedition.moonWellRestored;
-  const kelpRestored = realms.kelpCathedral.rescues > 0 &&
-    realms.kelpCathedral.relicPages.includes("kelp-cathedral-page-1");
-  const prismRestored = realms.crystalTrench.completions > 0 &&
-    realms.crystalTrench.cleanCompletions > 0;
+  // Realm history is monotonic proof of access. A cloud restore can contain
+  // the integrated realm ledger while an older device lacks the separate
+  // Chapter 1 envelope; never relock a realm that the player has already
+  // entered or completed on another build.
+  const kelpEntitled = moonWellAwake ||
+    realmStoryAccess(realms).kelpCathedral ||
+    realms.kelpCathedral.runs > 0 ||
+    realms.crystalTrench.runs > 0 ||
+    graveyard.runs > 0;
+  const crystalEntitled = isCrystalTrenchUnlocked(realms);
+  const graveyardEntitled = isLeviathanGraveyardUnlocked(realms);
   return {
-    kelpCathedral: moonWellAwake,
-    crystalTrench: moonWellAwake && kelpRestored,
-    leviathanGraveyard: moonWellAwake && kelpRestored && prismRestored,
+    kelpCathedral: kelpEntitled,
+    crystalTrench: crystalEntitled,
+    leviathanGraveyard: graveyardEntitled,
   };
 }
 

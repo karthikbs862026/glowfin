@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#071a34" />
-    <title>Glowfin — Tide Sprint R10</title>
+    <title>Glowfin — Tide Sprint</title>
     <style>
       :root {
         color-scheme: dark;
@@ -48,6 +48,8 @@
           linear-gradient(180deg, rgba(3, 11, 28, .28), rgba(2, 9, 24, .78));
       }
       .lobby-card {
+        position: relative;
+        isolation: isolate;
         width: min(500px, 100%);
         padding: 22px 18px 18px;
         border: 1px solid rgba(145, 235, 255, .34);
@@ -55,6 +57,23 @@
         background: linear-gradient(165deg, rgba(7, 42, 64, .95), rgba(27, 18, 65, .95));
         box-shadow: 0 24px 80px rgba(0, 0, 0, .5), inset 0 1px rgba(255, 255, 255, .06);
         backdrop-filter: blur(14px);
+        overflow: hidden;
+      }
+      .lobby-card::before {
+        position: absolute;
+        z-index: -1;
+        top: -145px;
+        left: 50%;
+        width: 360px;
+        height: 360px;
+        border: 1px solid rgba(255, 226, 151, .28);
+        border-radius: 50%;
+        background:
+          radial-gradient(circle, rgba(123, 238, 255, .18), transparent 48%),
+          conic-gradient(from 35deg, transparent, rgba(255, 216, 131, .2), transparent 28%, rgba(125, 118, 255, .19), transparent 62%);
+        box-shadow: 0 0 80px rgba(80, 218, 255, .14);
+        content: "";
+        transform: translateX(-50%);
       }
       .eyebrow {
         margin: 0;
@@ -66,24 +85,9 @@
       }
       h1 { margin: 7px 0 5px; font-size: clamp(34px, 9vw, 50px); line-height: .96; }
       .lead { margin: 8px 0 14px; color: rgba(218, 246, 255, .78); font-size: 13px; line-height: 1.45; }
-      .race-rules {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 7px;
-        margin-bottom: 14px;
-      }
-      .race-rules span {
-        padding: 8px 5px;
-        border-radius: 12px;
-        background: rgba(2, 17, 34, .58);
-        color: rgba(224, 250, 255, .78);
-        font-size: 9px;
-        font-weight: 800;
-        text-align: center;
-      }
       .mechanics {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 6px;
         margin: 0 0 15px;
         padding: 0;
@@ -103,7 +107,6 @@
       .mechanics b { display: block; margin-bottom: 3px; color: #ffe8a7; font-size: 11px; }
       .mechanics li:first-child b { color: #8defff; }
       .mechanics li:nth-child(2) b { color: #8defff; }
-      .mechanics li:nth-child(3) b { color: #ffb2ce; }
       .mechanics li:last-child b { color: #ffe39b; }
       .race-mode-meta {
         display: grid;
@@ -121,9 +124,9 @@
         font-size: 9px;
         line-height: 1.3;
       }
-      #race-ghost-status { grid-column: 1 / -1; color: #a7efff; }
+      #race-ghost-status { display: none; }
       #race-objectives {
-        display: grid;
+        display: none;
         gap: 4px;
         margin: 0 0 11px;
         padding: 0;
@@ -146,7 +149,7 @@
       .crew-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
       .crew-card {
         min-width: 0;
-        min-height: 120px;
+        min-height: 142px;
         padding: 10px 7px 9px;
         border: 1px solid rgba(151, 228, 245, .2);
         border-radius: 18px;
@@ -159,44 +162,18 @@
         box-shadow: 0 0 25px color-mix(in srgb, var(--crew-colour) 30%, transparent);
       }
       .crew-mark {
-        position: relative;
-        display: block;
-        width: 58px;
-        height: 46px;
-        margin: 0 auto 7px;
+        display: grid;
+        place-items: center;
+        width: 76px;
+        height: 64px;
+        margin: 0 auto 6px;
         filter: drop-shadow(0 0 9px color-mix(in srgb, var(--crew-colour) 55%, transparent));
       }
-      .crew-mark::before, .crew-mark::after, .crew-mark i {
-        position: absolute;
-        display: block;
-        content: "";
+      .crew-mark svg { width: 100%; height: 100%; overflow: visible; }
+      .crew-card[data-selected="true"] .crew-mark {
+        filter: drop-shadow(0 0 13px color-mix(in srgb, var(--crew-accent) 75%, transparent));
+        transform: translateY(-2px) scale(1.04);
       }
-      .crew-mark i {
-        inset: 8px 12px 6px;
-        border-radius: 55% 55% 48% 48%;
-        background: linear-gradient(155deg, white -40%, var(--crew-colour) 45%, #20316f);
-      }
-      .crew-mark::before {
-        left: 6px;
-        right: 6px;
-        top: 19px;
-        height: 11px;
-        border-radius: 50%;
-        background: var(--crew-accent);
-        transform: rotate(-8deg);
-      }
-      .crew-mark::after {
-        left: 22px;
-        top: 11px;
-        width: 14px;
-        height: 7px;
-        border-radius: 50%;
-        border-top: 3px dotted #eaffff;
-      }
-      .crew-mark[data-mark="neri"] i { inset: 12px 7px 10px; border-radius: 65% 38% 55% 42%; transform: rotate(-4deg); }
-      .crew-mark[data-mark="neri"]::before { left: 38px; right: 2px; top: 22px; height: 7px; transform: rotate(24deg); }
-      .crew-mark[data-mark="coralyn"] i { inset: 7px 13px 5px; border-radius: 50% 50% 38% 38%; }
-      .crew-mark[data-mark="coralyn"]::before { left: 5px; right: 5px; top: 22px; height: 13px; transform: rotate(0); }
       .crew-card strong, .crew-card small, .crew-card em { display: block; }
       .crew-card strong { font-size: 13px; }
       .crew-card small { min-height: 25px; margin-top: 2px; color: rgba(214, 244, 252, .62); font-size: 10px; line-height: 1.2; }
@@ -470,14 +447,13 @@
       .runtime-card strong { font-size: 22px; }
       .runtime-card span { margin-top: 9px; color: rgba(220, 246, 255, .72); font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
       .runtime-card button { min-height: 44px; margin-top: 16px; padding: 0 18px; border: 1px solid rgba(138, 232, 255, .45); border-radius: 99px; background: #0d4561; cursor: pointer; }
-      .release-note { margin: 11px 0 0; color: rgba(192, 232, 243, .5); font-size: 9px; text-align: center; }
       @media (max-height: 700px) {
         .lobby-card { padding-top: 15px; }
         h1 { font-size: 34px; }
         .lead { margin-bottom: 10px; }
         .crew-card { min-height: 98px; }
-        .crew-mark { width: 48px; height: 34px; margin-bottom: 3px; }
-        .race-rules, .mechanics { margin-bottom: 9px; }
+        .crew-mark { width: 58px; height: 46px; margin-bottom: 3px; }
+        .mechanics { margin-bottom: 9px; }
         #race-objectives { display: none; }
       }
       @media (min-aspect-ratio: 5 / 4) {
@@ -493,19 +469,13 @@
 
     <main id="race-lobby" class="screen" data-active="true">
       <section class="lobby-card" aria-labelledby="race-title">
-        <p class="eyebrow">Version 42 · Photo-finish current R10</p>
+        <p class="eyebrow">The Moon-Garden Current</p>
         <h1 id="race-title">Tide Sprint</h1>
-        <p class="lead">Follow the bright cyan arrow-stream around your swimmer. A cyan halo means you are riding the fast water; gold Current Rings trigger a powerful Moonflash burst. Drag sideways to steer; slide up or down while holding to control speed.</p>
-        <div class="race-rules" aria-label="Fair-play rules">
-          <span>IDENTICAL STATS</span>
-          <span>LIVE TRUE RANK</span>
-          <span>NO RUBBER-BANDING</span>
-        </div>
+        <p class="lead">Race the Moon Current. Hold its luminous line, chain gold rings, and outswim three Glowkin rivals.</p>
         <ul class="mechanics" aria-label="Tide Sprint controls and boosters">
           <li><b>↔ DRAG</b>Steer</li>
           <li><b>↑ HOLD</b>Surge</li>
-          <li><b>↓ HOLD</b>Brake</li>
-          <li><b>◎ GOLD RING</b>Moonflash boost</li>
+          <li><b>◎ RING</b>Moonflash</li>
         </ul>
         <div class="race-mode-meta" aria-label="Shared Glowfin progress">
           <span id="race-wallet">Tide 1 · 0 Lumen Pearls</span>
@@ -515,19 +485,45 @@
         <ul id="race-objectives" aria-label="Tide Sprint objectives"></ul>
         <div class="crew-grid" aria-label="Choose a Glowkin">
           <button class="crew-card" data-character="glowfin" data-selected="true" aria-pressed="true">
-            <span class="crew-mark" data-mark="glowfin" aria-hidden="true"><i></i></span><strong>Glowfin</strong><small>The Lightbearer</small><em data-bond>Bond 0</em>
+            <span class="crew-mark" data-mark="glowfin" aria-hidden="true">
+              <svg viewBox="0 0 120 92" role="presentation">
+                <defs><radialGradient id="glowfin-body" cx="38%" cy="24%"><stop stop-color="#edffff"/><stop offset=".34" stop-color="#75e7ff"/><stop offset="1" stop-color="#256bb6"/></radialGradient><linearGradient id="glowfin-fin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b9f7ff"/><stop offset="1" stop-color="#53a4ed"/></linearGradient></defs>
+                <ellipse cx="60" cy="46" rx="31" ry="27" fill="url(#glowfin-body)"/>
+                <path d="M32 39C18 29 4 31 5 45c2 14 18 17 31 9-4-5-5-10-4-15Z" fill="url(#glowfin-fin)"/><path d="M88 39c14-10 28-8 27 6-2 14-18 17-31 9 4-5 5-10 4-15Z" fill="url(#glowfin-fin)"/>
+                <path d="M52 22c-11-15-17-12-16 4l10 8m22-12c11-15 17-12 16 4l-10 8" fill="none" stroke="#dfa4ff" stroke-width="6" stroke-linecap="round"/>
+                <path d="M53 69c1 15 5 21 7 21s6-6 7-21" fill="#3987cd"/>
+                <circle cx="49" cy="43" r="3" fill="#062549"/><circle cx="71" cy="43" r="3" fill="#062549"/><path d="M53 53q7 6 14 0" fill="none" stroke="#174873" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span><strong>Glowfin</strong><small>The Lightbearer</small><em data-bond>Bond 0</em>
           </button>
           <button class="crew-card" data-character="neri" data-selected="false" aria-pressed="false">
-            <span class="crew-mark" data-mark="neri" aria-hidden="true"><i></i></span><strong>Neri</strong><small>The Indigo Scout</small><em data-bond>Bond 0</em>
+            <span class="crew-mark" data-mark="neri" aria-hidden="true">
+              <svg viewBox="0 0 120 92" role="presentation">
+                <defs><radialGradient id="neri-body" cx="35%" cy="22%"><stop stop-color="#f3efff"/><stop offset=".3" stop-color="#a28aff"/><stop offset="1" stop-color="#3d287c"/></radialGradient><linearGradient id="neri-fin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#72eeff"/><stop offset="1" stop-color="#5265df"/></linearGradient></defs>
+                <path d="M31 54C14 50 5 39 12 29c7-10 22-2 31 10m42 5c18-7 29-2 29 9 0 12-17 16-31 9" fill="url(#neri-fin)"/>
+                <path d="M32 37c8-19 35-26 53-10 15 14 7 39-10 48-17 10-44-1-47-20-1-6 1-12 4-18Z" fill="url(#neri-body)"/>
+                <path d="M40 27c-8-13-13-12-14 2l10 7m38-13c14-10 18-5 10 8l-11 5" fill="none" stroke="#81f3ff" stroke-width="5" stroke-linecap="round"/>
+                <path d="M78 68c12 9 18 16 13 19-7 4-18-2-25-10" fill="#5245a8"/>
+                <circle cx="49" cy="46" r="3" fill="#17113c"/><circle cx="70" cy="43" r="3" fill="#17113c"/><path d="M53 56q7 4 14-2" fill="none" stroke="#332264" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span><strong>Neri</strong><small>The Indigo Scout</small><em data-bond>Bond 0</em>
           </button>
           <button class="crew-card" data-character="coralyn" data-selected="false" aria-pressed="false">
-            <span class="crew-mark" data-mark="coralyn" aria-hidden="true"><i></i></span><strong>Coralyn</strong><small>The Reef Protector</small><em data-bond>Bond 0</em>
+            <span class="crew-mark" data-mark="coralyn" aria-hidden="true">
+              <svg viewBox="0 0 120 92" role="presentation">
+                <defs><radialGradient id="coralyn-body" cx="36%" cy="20%"><stop stop-color="#fff7dd"/><stop offset=".32" stop-color="#ffac9d"/><stop offset="1" stop-color="#ae3b76"/></radialGradient><linearGradient id="coralyn-fin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffdb8b"/><stop offset="1" stop-color="#f16b98"/></linearGradient></defs>
+                <path d="M35 43C21 27 4 29 7 44c3 13 19 17 32 12m46-13c14-16 31-14 28 1-3 13-19 17-32 12" fill="url(#coralyn-fin)"/>
+                <ellipse cx="60" cy="47" rx="29" ry="28" fill="url(#coralyn-body)"/>
+                <path d="M40 30c-13-15-16-8-8 6l7 6m41-12c13-15 16-8 8 6l-7 6M44 23c-5-15 1-18 8-4m24 4c5-15-1-18-8-4" fill="none" stroke="#ffd27f" stroke-width="5" stroke-linecap="round"/>
+                <path d="M48 70c-1 14 7 21 12 21s13-7 12-21" fill="#bd4778"/>
+                <circle cx="49" cy="45" r="3" fill="#542044"/><circle cx="71" cy="45" r="3" fill="#542044"/><path d="M53 56q7 5 14 0" fill="none" stroke="#7d315b" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span><strong>Coralyn</strong><small>The Reef Protector</small><em data-bond>Bond 0</em>
           </button>
         </div>
-        <button id="race-start">Start Practice Sprint</button>
-        <button id="race-practice" type="button">Learn speed controls</button>
-        <a class="back-link" href="../">Back to the Moon Well</a>
-        <p class="release-note">Integrated Version 42 mode · all four racers share identical competitive physics · V42 · LOCAL · local</p>
+        <button id="race-start"><strong>Race as Glowfin</strong><span>Enter the Moon Current</span></button>
+        <button id="race-practice" type="button">Learn swim controls</button>
+        <a class="back-link" href="../">← Moon Well</a>
       </section>
     </main>
 
