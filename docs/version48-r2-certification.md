@@ -45,6 +45,8 @@ screenshots or copying only the visible renderer.
 - The unminified server authority now includes Eclipse Court simulation and is
   capped at 144 KiB (136.1 KiB measured); all client payload and render budgets
   remain unchanged.
+- Three superseded, unreferenced Crystal Trench V1 textures are excluded from
+  the sealed payload; the renderer continues to use the accepted V2 surfaces.
 
 ## Evidence ledger
 
