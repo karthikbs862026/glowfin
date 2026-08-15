@@ -42,6 +42,28 @@ export const DUSKMAW_LIGHT_REGEN_MULTIPLIER = 0.32;
 export const DUSKMAW_LUMEN_BLOOM_HEAL = 24;
 export const DUSKMAW_ATTACK_DODGE_OFFSET = 3.4;
 export const DUSKMAW_BOSS_MOUTHFIRE_RADIUS = 0.94;
+// V48-R2 turns the three Eclipse Court showcases into one full realm. The
+// targets sustain four readable acts instead of ending after a few gates.
+// Crown Verdict advances only on every fifth (verdict) gate, so its lower
+// number still produces the longest and most demanding chapter.
+export const ECLIPSE_COURT_ALIGNMENT_TARGETS = [64, 56, 16] as const;
+export const ECLIPSE_COURT_COMPLETE_COAST_DISTANCE = 190;
+export const ECLIPSE_COURT_FINALE_COAST_DISTANCE = 330;
+export const ECLIPSE_COURT_ACT_THRESHOLDS = [0, 0.25, 0.5, 0.75] as const;
+
+export type EclipseCourtActIndex = 0 | 1 | 2 | 3;
+export type EclipseCourtEncounterRole =
+  | "challenge"
+  | "recovery"
+  | "surge"
+  | "finale";
+
+export function eclipseCourtActIndex(fraction: number): EclipseCourtActIndex {
+  if (fraction >= ECLIPSE_COURT_ACT_THRESHOLDS[3]) return 3;
+  if (fraction >= ECLIPSE_COURT_ACT_THRESHOLDS[2]) return 2;
+  if (fraction >= ECLIPSE_COURT_ACT_THRESHOLDS[1]) return 1;
+  return 0;
+}
 
 export function duskmawMinionMouthfireRadius(tier: DuskmawMinionTier): number {
   return tier === 1 ? 0.5 : tier === 2 ? 0.62 : 0.74;
@@ -230,6 +252,42 @@ export interface MoonSealPlan {
   sequence: number;
 }
 
+export interface OrbitalThreadPlan {
+  verb: "orbital-thread";
+  telegraphFromDistance: number;
+  center: number;
+  openingWidth: number;
+  sequence: number;
+  stageIndex: number;
+  orbitTilt: number;
+  actIndex: EclipseCourtActIndex;
+  role: EclipseCourtEncounterRole;
+}
+
+export interface UmbraShiftPlan {
+  verb: "umbra-shift";
+  telegraphFromDistance: number;
+  centers: readonly [number, number];
+  openingWidth: number;
+  periodSec: number;
+  phase: number;
+  sequence: number;
+  stageIndex: number;
+  actIndex: EclipseCourtActIndex;
+  role: EclipseCourtEncounterRole;
+}
+
+export interface EclipseVerdictPlan {
+  verb: "eclipse-verdict";
+  telegraphFromDistance: number;
+  center: number;
+  openingWidth: number;
+  sequence: number;
+  stageIndex: number;
+  actIndex: EclipseCourtActIndex;
+  role: EclipseCourtEncounterRole;
+}
+
 export type KelpCathedralGatePlan =
   | SwayingFrondWindowPlan
   | ReversingCurrentTunnelPlan
@@ -252,10 +310,16 @@ export type LeviathanGraveyardGatePlan =
   | MoonboneVaultPlan
   | MoonSealPlan;
 
+export type EclipseCourtGatePlan =
+  | OrbitalThreadPlan
+  | UmbraShiftPlan
+  | EclipseVerdictPlan;
+
 export type RealmGatePlan =
   | KelpCathedralGatePlan
   | CrystalTrenchGatePlan
-  | LeviathanGraveyardGatePlan;
+  | LeviathanGraveyardGatePlan
+  | EclipseCourtGatePlan;
 
 export type RealmEventKind =
   | "frond-window"
@@ -285,7 +349,13 @@ export type RealmEventKind =
   | "moonbone-vault"
   | "moonbone-vault-locked"
   | "moon-seal"
-  | "moon-seal-missed";
+  | "moon-seal-missed"
+  | "orbital-thread"
+  | "orbital-thread-missed"
+  | "umbra-shift"
+  | "umbra-shift-missed"
+  | "eclipse-verdict"
+  | "eclipse-verdict-missed";
 
 export type KelpRealmEventKind = Extract<
   RealmEventKind,
@@ -573,15 +643,15 @@ function planDuskmawGate(
   laneHalfWidth: number,
 ): LeviathanGraveyardGatePlan {
   const safeCenter = (source.gate.gapLeft + source.gate.gapRight) * 0.5;
-  const sealOffset = source.gateIndex - DUSKMAW_MOON_SEAL_FIRST_GATE_INDEX;
+  const moonSealIndex = source.gateIndex - DUSKMAW_MOON_SEAL_FIRST_GATE_INDEX;
   if (
-    sealOffset >= 0 &&
-    sealOffset % DUSKMAW_MOON_SEAL_REPEAT_GATES === 0
+    moonSealIndex >= 0 &&
+    moonSealIndex % DUSKMAW_MOON_SEAL_REPEAT_GATES === 0
   ) {
     return {
       verb: "moon-seal",
       telegraphFromDistance: source.gate.distance - 76,
-      sequence: Math.floor(sealOffset / DUSKMAW_MOON_SEAL_REPEAT_GATES),
+      sequence: Math.floor(moonSealIndex / DUSKMAW_MOON_SEAL_REPEAT_GATES),
     };
   }
 
@@ -594,33 +664,33 @@ function planDuskmawGate(
     };
   }
 
-  const strikeGates = [70, 86, 102, 118, 154, 170, 190, 210] as const;
-  const strikeAt = strikeGates.indexOf(
-    source.gateIndex as typeof strikeGates[number],
+  const strikeGateIndices = [70, 86, 102, 118, 154, 170, 190, 210] as const;
+  const strikeIndex = strikeGateIndices.indexOf(
+    source.gateIndex as typeof strikeGateIndices[number],
   );
-  if (strikeAt >= 0) {
+  if (strikeIndex >= 0) {
     return {
       verb: "current-break",
       telegraphFromDistance: source.gate.distance - 82,
-      sequence: strikeAt + 1,
+      sequence: strikeIndex + 1,
     };
   }
 
-  const bloomGates = [22, 38, 66, 142, 180, 200] as const;
-  const bloomAt = bloomGates.indexOf(
-    source.gateIndex as typeof bloomGates[number],
+  const recoveryGateIndices = [22, 38, 66, 142, 180, 200] as const;
+  const recoveryIndex = recoveryGateIndices.indexOf(
+    source.gateIndex as typeof recoveryGateIndices[number],
   );
-  if (bloomAt >= 0) {
+  if (recoveryIndex >= 0) {
     return {
       verb: "lumen-bloom",
       telegraphFromDistance: source.gate.distance - 72,
-      recoveryId: bloomAt + 1,
+      recoveryId: recoveryIndex + 1,
       healAmount: DUSKMAW_LUMEN_BLOOM_HEAL,
       safeCenter,
     };
   }
 
-  const minionGates: ReadonlyArray<{
+  const minionEncounters: ReadonlyArray<{
     gateIndex: number;
     minionId: DuskmawMinionId;
     minionTier: DuskmawMinionTier;
@@ -635,7 +705,7 @@ function planDuskmawGate(
     { gateIndex: 50, minionId: "maw-sentinel", minionTier: 3, hitIndex: 2, requiredHits: 3 },
     { gateIndex: 58, minionId: "maw-sentinel", minionTier: 3, hitIndex: 3, requiredHits: 3 },
   ];
-  const minion = minionGates.find((candidate) => (
+  const minion = minionEncounters.find((candidate) => (
     candidate.gateIndex === source.gateIndex
   ));
   if (minion) {
@@ -657,11 +727,12 @@ function planDuskmawGate(
   const side: -1 | 1 = Math.abs(safeCenter) > 0.25
     ? safeCenter > 0 ? -1 : 1
     : hashedSide;
-  const duringChase =
+  if (
     source.gateIndex >= DUSKMAW_CURRENT_BREAK_FIRST_GATE_INDEX &&
     source.gateIndex <= DUSKMAW_CHASE_LAST_GATE_INDEX &&
-    source.gateIndex !== DUSKMAW_VAULT_GATE_INDEX;
-  if (duringChase && source.gateIndex % 18 === 0) {
+    source.gateIndex !== DUSKMAW_VAULT_GATE_INDEX &&
+    source.gateIndex % 18 === 0
+  ) {
     return {
       verb: "shadow-sweep",
       telegraphFromDistance: source.gate.distance - 130,
@@ -669,7 +740,12 @@ function planDuskmawGate(
       safeCenter,
     };
   }
-  if (duringChase && source.gateIndex % 18 === 6) {
+  if (
+    source.gateIndex >= DUSKMAW_CURRENT_BREAK_FIRST_GATE_INDEX &&
+    source.gateIndex <= DUSKMAW_CHASE_LAST_GATE_INDEX &&
+    source.gateIndex !== DUSKMAW_VAULT_GATE_INDEX &&
+    source.gateIndex % 18 === 6
+  ) {
     return {
       verb: "vacuum-wake",
       telegraphFromDistance: source.gate.distance - 130,
@@ -680,7 +756,12 @@ function planDuskmawGate(
       lateralDriftPerSec: side * (1.05 + unit(sourceHash(source, "vacuum-force")) * 0.32),
     };
   }
-  if (duringChase && source.gateIndex % 18 === 12) {
+  if (
+    source.gateIndex >= DUSKMAW_CURRENT_BREAK_FIRST_GATE_INDEX &&
+    source.gateIndex <= DUSKMAW_CHASE_LAST_GATE_INDEX &&
+    source.gateIndex !== DUSKMAW_VAULT_GATE_INDEX &&
+    source.gateIndex % 18 === 12
+  ) {
     return {
       verb: "ruins-collapse",
       telegraphFromDistance: source.gate.distance - 130,
@@ -797,11 +878,127 @@ export function prismPulseState(
   };
 }
 
+function planEclipseCourtGate(
+  source: RealmPlanSource,
+  laneHalfWidth: number,
+  creatureRadius: number,
+  stageIndex: number,
+): EclipseCourtGatePlan {
+  const safeStage = clamp(Math.floor(stageIndex), 0, 2);
+  const sequence = source.gateIndex + 1;
+  const actSpan = [18, 17, 20][safeStage] ?? 18;
+  const actIndex = Math.min(3, Math.floor(source.gateIndex / actSpan)) as
+    EclipseCourtActIndex;
+  const encounterProgress = clamp(source.gateIndex / (actSpan * 4 - 1), 0, 1);
+  const recovery = sequence % 12 === 0;
+  const role: EclipseCourtEncounterRole = recovery
+    ? "recovery"
+    : actIndex === 3
+      ? "finale"
+      : actIndex >= 2
+        ? "surge"
+        : "challenge";
+  const authoredWidth = source.gate.gapRight - source.gate.gapLeft;
+  const center = (source.gate.gapLeft + source.gate.gapRight) * 0.5;
+  const baseOpeningWidth = Math.min(
+    laneHalfWidth * 1.42,
+    Math.max(creatureRadius * 2 + 1.55, authoredWidth * 0.88),
+  );
+  // Difficulty rises by act, while the proof aperture retains a full creature
+  // diameter plus a mobile steering reserve. Every twelfth gate is a wider
+  // recovery breath between pressure sequences.
+  const openingWidth = recovery
+    ? Math.min(laneHalfWidth * 1.5, baseOpeningWidth * 1.22)
+    : Math.max(
+      creatureRadius * 2 + 1.32,
+      baseOpeningWidth * (1 - encounterProgress * 0.11),
+    );
+
+  const isVerdict = safeStage === 2 && source.gateIndex >= 4 &&
+    source.gateIndex % 5 === 4;
+  const isStageZeroShift = safeStage === 0 && actIndex > 0 && !recovery && (
+    (actIndex === 1 && sequence % 6 === 0) ||
+    (actIndex === 2 && sequence % 4 === 0) ||
+    (actIndex === 3 && sequence % 3 === 0)
+  );
+  const isStageOneRelief = safeStage === 1 && recovery;
+  const useUmbraShift = !isStageOneRelief && (
+    safeStage === 1 ||
+    isStageZeroShift ||
+    (safeStage === 2 && source.gateIndex % 2 === 1)
+  );
+
+  if (isVerdict) {
+    return {
+      verb: "eclipse-verdict",
+      telegraphFromDistance: source.gate.distance - 82,
+      center,
+      openingWidth: Math.max(openingWidth, laneHalfWidth * 1.22),
+      sequence,
+      stageIndex: safeStage,
+      actIndex,
+      role,
+    };
+  }
+  if (useUmbraShift) {
+    const reserve = Math.max(0, openingWidth - creatureRadius * 2 - 0.78) * 0.22;
+    const amplitude = Math.min(0.68, reserve) * (0.72 + encounterProgress * 0.28);
+    return {
+      verb: "umbra-shift",
+      telegraphFromDistance: source.gate.distance - 72,
+      centers: [center - amplitude, center + amplitude],
+      openingWidth,
+      periodSec: 3.65 - encounterProgress * 1.05 +
+        unit(sourceHash(source, "umbra-period")) * 0.55,
+      phase: unit(sourceHash(source, "umbra-phase")),
+      sequence,
+      stageIndex: safeStage,
+      actIndex,
+      role,
+    };
+  }
+  return {
+    verb: "orbital-thread",
+    telegraphFromDistance: source.gate.distance - 68,
+    center,
+    openingWidth,
+    sequence,
+    stageIndex: safeStage,
+    orbitTilt: (unit(sourceHash(source, "orbit-tilt")) - 0.5) *
+      (0.62 + encounterProgress * 0.38),
+    actIndex,
+    role,
+  };
+}
+
+export function eclipseCourtOpeningAt(
+  plan: EclipseCourtGatePlan,
+  elapsedSec: number,
+): { left: number; right: number; center: number } {
+  if (plan.verb === "umbra-shift") {
+    const cycle = positiveUnit(elapsedSec / plan.periodSec + plan.phase);
+    const blend = 0.5 - Math.cos(cycle * Math.PI * 2) * 0.5;
+    const eased = blend * blend * (3 - 2 * blend);
+    const center = plan.centers[0] + (plan.centers[1] - plan.centers[0]) * eased;
+    return {
+      left: center - plan.openingWidth * 0.5,
+      right: center + plan.openingWidth * 0.5,
+      center,
+    };
+  }
+  return {
+    left: plan.center - plan.openingWidth * 0.5,
+    right: plan.center + plan.openingWidth * 0.5,
+    center: plan.center,
+  };
+}
+
 export function planRealmGate(
   realmId: RealmId,
   source: RealmPlanSource,
   laneHalfWidth: number,
   creatureRadius: number,
+  realmStageIndex = 0,
 ): RealmGatePlan | undefined {
   if (realmId === "kelp-cathedral") {
     const rescueIndex = source.gateIndex - KELP_RESCUE_FIRST_GATE_INDEX;
@@ -830,6 +1027,14 @@ export function planRealmGate(
   }
   if (realmId === "leviathan-graveyard") {
     return planDuskmawGate(source, laneHalfWidth);
+  }
+  if (realmId === "eclipse-court") {
+    return planEclipseCourtGate(
+      source,
+      laneHalfWidth,
+      creatureRadius,
+      realmStageIndex,
+    );
   }
   return undefined;
 }
@@ -861,6 +1066,19 @@ export function realmOpeningsAt(
   fallback: { left: number; right: number },
   elapsedSec: number,
 ): readonly KelpRealmOpening[] {
+  if (
+    plan.verb === "orbital-thread" ||
+    plan.verb === "umbra-shift" ||
+    plan.verb === "eclipse-verdict"
+  ) {
+    const opening = eclipseCourtOpeningAt(plan, elapsedSec);
+    return [{
+      left: opening.left,
+      right: opening.right,
+      route: "standard",
+      scoreMultiplier: 1,
+    }];
+  }
   if (plan.verb === "sliding-crystal-plates") {
     const opening = slidingCrystalPlateOpeningAt(plan, elapsedSec);
     return [{
@@ -909,6 +1127,18 @@ export function realmProofOpening(
   plan: RealmGatePlan,
   fallback: { left: number; right: number },
 ): { left: number; right: number } {
+  if (plan.verb === "umbra-shift") {
+    return {
+      left: Math.max(...plan.centers) - plan.openingWidth * 0.5,
+      right: Math.min(...plan.centers) + plan.openingWidth * 0.5,
+    };
+  }
+  if (plan.verb === "orbital-thread" || plan.verb === "eclipse-verdict") {
+    return {
+      left: plan.center - plan.openingWidth * 0.5,
+      right: plan.center + plan.openingWidth * 0.5,
+    };
+  }
   if (plan.verb === "sliding-crystal-plates") {
     const left = Math.max(...plan.centers.map((center) => (
       center - plan.openingWidth * 0.5

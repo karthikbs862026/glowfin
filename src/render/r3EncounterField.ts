@@ -122,6 +122,50 @@ function merged(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
 }
 
 /**
+ * BufferGeometryUtils requires every source to use the same indexing mode and
+ * the same vertex-attribute set. The Moonseed intentionally combines
+ * polyhedra (non-indexed in Three r165) with torus arcs (indexed), so prepare
+ * one position/normal-only representation before merging. This is a CPU-side
+ * construction step and does not allocate another WebGL resource.
+ */
+function moonseedMergePart(source: THREE.BufferGeometry): THREE.BufferGeometry {
+  const geometry = source.index ? source.toNonIndexed() : source;
+  if (geometry !== source) source.dispose();
+  for (const attribute of Object.keys(geometry.attributes)) {
+    if (attribute !== "position" && attribute !== "normal") {
+      geometry.deleteAttribute(attribute);
+    }
+  }
+  if (!geometry.getAttribute("normal")) geometry.computeVertexNormals();
+  return geometry;
+}
+
+function createMoonseedGeometry(): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
+  const core = new THREE.IcosahedronGeometry(0.62, 1);
+  core.scale(0.76, 1.42, 0.76);
+  parts.push(core);
+  for (let index = 0; index < 3; index += 1) {
+    const arc = new THREE.TorusGeometry(0.9, 0.065, 5, 24, Math.PI * 1.62);
+    arc.rotateZ(index * Math.PI * 2 / 3 + 0.22);
+    arc.rotateX(index === 1 ? 0.72 : index === 2 ? -0.72 : 0.16);
+    parts.push(arc);
+  }
+  const crown = new THREE.OctahedronGeometry(0.2, 0);
+  crown.scale(0.72, 1.28, 0.72);
+  crown.translate(0, 1.02, 0);
+  parts.push(crown);
+  const compatibleParts = parts.map(moonseedMergePart);
+  const geometry = mergeGeometries(compatibleParts, false);
+  for (const part of compatibleParts) part.dispose();
+  if (!geometry) throw new Error("Moonseed geometry could not be merged.");
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+/**
  * One closed, continuous skin through authored cross-sections. Both R3 friends
  * use this instead of overlapping torso/head primitives, so their silhouettes
  * cannot read as separate creatures pushed together.
@@ -438,7 +482,7 @@ export class R3EncounterField {
   readonly miri: THREE.InstancedMesh;
   readonly neri: THREE.InstancedMesh;
   private readonly ringGeometry = new THREE.TorusGeometry(1, 0.12, 6, 24);
-  private readonly relicGeometry = new THREE.IcosahedronGeometry(0.68, 1);
+  private readonly relicGeometry = createMoonseedGeometry();
   private readonly miriGeometry = createMiriGeometry();
   private readonly neriGeometry: THREE.BufferGeometry;
   private readonly matrix = new THREE.Matrix4();

@@ -46,7 +46,7 @@ jobs:
         run: ./gradlew bundleRelease lintRelease --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: glowfin-v45-r1-android-candidates-${{ github.sha }}
+          name: glowfin-v48-r2-android-candidates-${{ github.sha }}
           path: |
             android/app/build/outputs/apk/debug/app-debug.apk
             android/app/build/outputs/bundle/release/app-release.aab
@@ -91,16 +91,16 @@ jobs:
             -scheme App \
             -configuration Release \
             -destination 'generic/platform=iOS' \
-            -archivePath build/Glowfin-v45-r1.xcarchive \
+            -archivePath build/Glowfin-v48-r2.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             archive | tee build/ios-wrapper-archive.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: glowfin-v45-r1-ios-candidate-${{ github.sha }}
+          name: glowfin-v48-r2-ios-candidate-${{ github.sha }}
           path: |
-            build/Glowfin-v45-r1.xcarchive
+            build/Glowfin-v48-r2.xcarchive
             build/ios-wrapper-build.log
             build/ios-wrapper-archive.log
           retention-days: 14

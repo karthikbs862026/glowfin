@@ -1,6 +1,7 @@
 import type {
   CrystalTrenchRunStatus,
   DuskmawRunStatus,
+  EclipseCourtRunStatus,
   KelpCathedralRunStatus,
   RealmRunEvent,
 } from "../sim/run";
@@ -25,6 +26,7 @@ export class RealmHud {
   private readonly feedback: HTMLElement;
   private readonly progress: HTMLElement;
   private readonly progressSteps: readonly HTMLElement[];
+  private eclipseStageIndex = 0;
 
   constructor(root: Document = document) {
     this.root = requireElement(root, "realm-run-status");
@@ -193,7 +195,109 @@ export class RealmHud {
             : `Brood cleared · Duskmaw ${status.bossHealth}/${status.bossMaxHealth} · regenerated ${status.bossRegenerations}/2 · Glowfin recoveries ${status.recoveryItemsCollected}`;
   }
 
+  updateEclipse(
+    status: Readonly<EclipseCourtRunStatus>,
+    nextPlan: RealmGatePlan | null = null,
+  ): void {
+    const stageNames = ["Halo Procession", "Constellation Weave", "Crown Verdict"];
+    const stageStepLabels = [
+      ["1 · Wake", "2 · Rapids", "3 · Shadow", "4 · Bloom"],
+      ["1 · Draft", "2 · Overtake", "3 · Tempest", "4 · Weave"],
+      ["1 · Focus", "2 · Pursuit", "3 · Verdict", "4 · Awaken"],
+    ] as const;
+    const actObjectives = [
+      [
+        "WAKE · THREAD THE FIRST LUNAR CRESTS",
+        "RAPIDS · HOLD THE ACCELERATING PETAL CURRENT",
+        "SHADOW SURGE · READ THE MOVING GOLDEN OPENINGS",
+        "BLOOM · CARRY THE LIGHT INTO THE FIRST MOONSEED",
+      ],
+      [
+        "DRAFT · ENTER THE SIX-WITNESS RACE",
+        "OVERTAKE · HOLD THE CYAN SLIPSTREAM",
+        "TEMPEST · SWITCH CURRENTS BEFORE THEY CLOSE",
+        "WEAVE · SEAL THE LIVING CONSTELLATION",
+      ],
+      [
+        "FOCUS · ALIGN THE OUTER CROWN",
+        "PURSUIT · OUTRUN THE ECLIPSE SHADOW",
+        "VERDICT · BREAK THE WOUND'S FIVEFOLD GUARD",
+        "AWAKEN · OPEN VAELUNE'S LIVING IRIS",
+      ],
+    ] as const;
+    const progressNouns = ["petal crests", "constellation links", "crown seals"] as const;
+    this.eclipseStageIndex = status.stageIndex;
+    this.root.dataset["phase"] = status.phase;
+    this.title.textContent = `Eclipse Court · ${stageNames[status.stageIndex] ?? "Crown Memory"}`;
+    this.progress.dataset["active"] = "true";
+    this.progress.setAttribute(
+      "aria-label",
+      `${status.alignments} of ${status.alignmentTarget} Court alignments complete`,
+    );
+    const labels = stageStepLabels[status.stageIndex] ?? stageStepLabels[0];
+    this.progressSteps.forEach((step, index) => {
+      step.textContent = labels[index] ?? "Court";
+      step.dataset["state"] = status.completed || index < status.actIndex
+        ? "complete"
+        : index === status.actIndex
+          ? "current"
+          : "pending";
+    });
+    const objective = actObjectives[status.stageIndex]?.[status.actIndex] ??
+      "FOLLOW THE LIVING CURRENT";
+    this.objective.textContent = status.completed
+      ? status.stageIndex === 2
+        ? "ECLIPSE WOUND HEALED · VAELUNE AWAKENS"
+        : "MEMORY RESTORED · THE FIRST MOONSEED UNFOLDS"
+      : nextPlan?.verb === "orbital-thread" && nextPlan.role === "recovery"
+        ? "RECOVER · CENTER IN THE WIDE PEARL CURRENT"
+        : objective;
+    this.detail.textContent = status.completed
+      ? status.stageIndex === 2
+        ? "The six witnesses sing as the daughter Moonseed forms"
+        : "A deeper chamber opens inside the living Bloom"
+      : `act ${status.actIndex + 1}/4 · ${progressNouns[status.stageIndex] ?? "alignments"} ${status.alignments}/${status.alignmentTarget}${status.missedAlignments > 0 ? ` · recoveries ${status.missedAlignments}` : ""}`;
+  }
+
   showEvent(event: Readonly<RealmRunEvent>): void {
+    const eclipseFeedback = this.eclipseStageIndex === 2
+      ? event.kind === "orbital-thread"
+        ? "CROWN ARC HELD · the living iris steadies"
+        : event.kind === "orbital-thread-missed"
+          ? "CROWN ARC LOST · hold the next pearl crest"
+          : event.kind === "umbra-shift"
+            ? "SHADOW LENS CROSSED · Vaelune comes into focus"
+            : event.kind === "umbra-shift-missed"
+              ? "LENS LOST · track its violet refraction"
+              : event.kind === "eclipse-verdict"
+                ? "IRIS FOCUSED · the shadow thorn fractures"
+                : event.kind === "eclipse-verdict-missed"
+                  ? "FOCUS BROKEN · the living iris reforms"
+                  : null
+      : this.eclipseStageIndex === 1
+        ? event.kind === "umbra-shift"
+          ? "MANTA PASSED · pack position improves"
+          : event.kind === "umbra-shift-missed"
+            ? "DRAFT LOST · catch the next pearl wake"
+            : null
+      : event.kind === "orbital-thread"
+        ? "PETAL AWAKENED · the Bloom answers"
+        : event.kind === "orbital-thread-missed"
+          ? "CREST LOST · the next petal carries the light"
+          : event.kind === "umbra-shift"
+            ? "WITNESS JOINED · the constellation grows"
+            : event.kind === "umbra-shift-missed"
+              ? "WITNESS DRIFTING · follow its pearl wake"
+              : event.kind === "eclipse-verdict"
+                ? "IRIS FOCUSED · the shadow thorn fractures"
+                : event.kind === "eclipse-verdict-missed"
+                  ? "FOCUS BROKEN · the living iris reforms"
+                  : null;
+    if (eclipseFeedback) {
+      this.feedback.textContent = eclipseFeedback;
+      this.feedback.dataset["active"] = "true";
+      return;
+    }
     this.feedback.textContent = event.kind === "frond-window"
       ? event.success ? "Frond rhythm cleared" : "Fronds brushed your Light"
       : event.kind === "current-tunnel-enter"

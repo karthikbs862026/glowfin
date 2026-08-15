@@ -60,6 +60,7 @@ const FRAGMENT = /* glsl */ `
   uniform vec3 uGlowCentre;
   uniform float uGlowRadius;
   uniform float uMomentum;
+  uniform float uRestoration;
   uniform float uMoonBloomCentreZ;
   uniform float uMoonBloomStrength;
   uniform vec3 uFogColor;
@@ -113,6 +114,7 @@ const FRAGMENT = /* glsl */ `
     vec3 heartRose = vec3(0.941, 0.416, 0.725);
     vec3 awakened = mix(livingCyan, moonViolet, smoothstep(0.22, 0.72, uMomentum));
     awakened = mix(awakened, heartRose, smoothstep(0.72, 1.0, uMomentum));
+    awakened = mix(awakened, vec3(0.55, 1.0, 0.78), uRestoration * 0.42);
 
     vec3 n = abs(normalize(vNormalW));
     vec2 stoneUv = n.y > n.z
@@ -311,6 +313,15 @@ const FRAGMENT = /* glsl */ `
     ) * moonBloomBand * uMoonBloomStrength *
       (coralRole * 0.62 + crystalRole * 0.38);
 
+    // Realm restoration is a persistent presentation layer only: healed
+    // districts gain warmer nacre, healthier coral and brighter route-side
+    // life without changing a single collision or steering value.
+    float restoredLife = clamp(coralRole * 0.68 + crystalRole * 0.46 + nacreRole * 0.18, 0.0, 1.0);
+    colour = mix(colour, colour * vec3(1.08, 1.16, 1.10), uRestoration * restoredLife * 0.48);
+    colour += vec3(0.08, 0.24, 0.17) * uRestoration * restoredLife *
+      (0.34 + 0.22 * sin(vWorldPos.z * 0.08 - uTime * 0.38));
+    colour += vec3(0.16, 0.11, 0.035) * uRestoration * limestoneRole * moonRim * 0.18;
+
     float fog = smoothstep(uFogNear, uFogFar, vViewDepth);
     colour = mix(colour, uFogColor, fog);
     gl_FragColor = vec4(colour, 1.0);
@@ -351,6 +362,7 @@ export function createMoonGardenMaterial({
       uGlowCentre: { value: new THREE.Vector3() },
       uGlowRadius: { value: glowRadius },
       uMomentum: { value: 0 },
+      uRestoration: { value: 0 },
       uMoonBloomCentreZ: { value: -10000 },
       uMoonBloomStrength: { value: 0 },
       uFogColor: { value: new THREE.Color(fogColor) },
@@ -370,7 +382,8 @@ export function updateMoonGardenMaterial(
   timeSec: number,
   glowCentre: THREE.Vector3,
   momentumFraction: number,
-  moonBloom: { anchorDistance: number; strength: number } | null = null
+  moonBloom: { anchorDistance: number; strength: number } | null = null,
+  restorationFraction = 0,
 ): void {
   const time = material.uniforms["uTime"];
   if (time) time.value = timeSec;
@@ -378,6 +391,8 @@ export function updateMoonGardenMaterial(
   if (centre) (centre.value as THREE.Vector3).copy(glowCentre);
   const momentum = material.uniforms["uMomentum"];
   if (momentum) momentum.value = momentumFraction;
+  const restoration = material.uniforms["uRestoration"];
+  if (restoration) restoration.value = THREE.MathUtils.clamp(restorationFraction, 0, 1);
   const bloomCentre = material.uniforms["uMoonBloomCentreZ"];
   if (bloomCentre) bloomCentre.value = moonBloom ? -moonBloom.anchorDistance : -10000;
   const bloomStrength = material.uniforms["uMoonBloomStrength"];

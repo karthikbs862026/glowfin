@@ -3,6 +3,7 @@ export const REALM_IDS = [
   "kelp-cathedral",
   "crystal-trench",
   "leviathan-graveyard",
+  "eclipse-court",
 ] as const;
 
 export type RealmId = typeof REALM_IDS[number];
@@ -24,7 +25,10 @@ export type RealmGameplayVerb =
   | "ruins-collapse"
   | "current-break"
   | "moonbone-vault"
-  | "moon-seal";
+  | "moon-seal"
+  | "orbital-thread"
+  | "umbra-shift"
+  | "eclipse-verdict";
 
 export interface RealmPalette {
   fog: number;
@@ -168,12 +172,36 @@ export const LEVIATHAN_GRAVEYARD_ENCOUNTER: Readonly<RealmDefinition> =
     budget: REALM_BUDGET,
   });
 
+export const ECLIPSE_COURT_REALM: Readonly<RealmDefinition> = Object.freeze({
+  id: "eclipse-court",
+  revision: 1,
+  title: "Eclipse Court",
+  shortTitle: "Eclipse Court",
+  description: "A full four-act campaign through the First Moonseed's twelve-petalled creature-world and its wounded eclipse.",
+  residents: ["Vaelune · Keeper of the First Moonseed", "six star-manta witnesses", "pearl-pollen rays"],
+  gameplayVerbs: [
+    "orbital-thread",
+    "umbra-shift",
+    "eclipse-verdict",
+  ] as const,
+  heroEncounter: "Survive the Halo Rapids, race six living witnesses and break Duskmaw's Eclipse Wound to free Vaelune",
+  relicPageId: null,
+  palette: {
+    fog: 0x091a36,
+    routeCalm: 0x8fe9ff,
+    routeMomentum: 0xf6d786,
+    accent: 0xe7a8ff,
+  },
+  budget: REALM_BUDGET,
+});
+
 export const REALM_DEFINITIONS: Readonly<Record<RealmId, Readonly<RealmDefinition>>> =
   Object.freeze({
     "moon-garden": MOON_GARDEN_REALM,
     "kelp-cathedral": KELP_CATHEDRAL_REALM,
     "crystal-trench": CRYSTAL_TRENCH_REALM,
     "leviathan-graveyard": LEVIATHAN_GRAVEYARD_ENCOUNTER,
+    "eclipse-court": ECLIPSE_COURT_REALM,
   });
 
 export function isRealmId(value: unknown): value is RealmId {

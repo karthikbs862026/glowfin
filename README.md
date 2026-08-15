@@ -7,11 +7,13 @@ this README covers local setup only.
 
 ## Status
 
-**Version 39 — Guided Onboarding & Store-Ready Mobile Experience is a
-physical-device-approved release candidate from the merged and deployed
-Version 38 baseline. Its tutorial, native wrappers, haptics, branded assets,
-startup/offline recovery, Moonflash challenges, privacy/store metadata and
-device-health scope are complete.**
+**Version 48-R2 — Full Eclipse Court Campaign is the owner-approved release
+candidate. It turns the three Eclipse Court showcases into 12 escalating acts
+and 136 objectives, gives Halo Procession, Constellation Weave and Crown
+Verdict distinct architecture and choreography, keeps route visibility clear
+with side-mounted lunar ribs, and isolates direct-review saves from normal
+progress. Earlier versioned routes remain immutable for comparison and
+rollback.**
 
 The deterministic endless-runner core, momentum/light systems, procedural
 course, collisions, scoring, mobile input, adaptive quality, caustics, bloom,

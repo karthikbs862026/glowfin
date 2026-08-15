@@ -53,6 +53,32 @@ export interface RunEndPresentation extends HudMetaPresentation {
   dailyCompleted: boolean;
   calendarRewardRejected: boolean;
   leaderboardDivision: LeaderboardDivision;
+  livingTideVoyage?: {
+    stageTitle: string;
+    stageIndex: number;
+    stageTotal: number;
+    success: boolean;
+    perfect: boolean;
+    nextStageTitle: string | null;
+    voyageComplete: boolean;
+    perfectVoyage: boolean;
+    tidebloomsEarned: number;
+    crownTier: number;
+  };
+  realmPackVoyage?: {
+    packTitle: string;
+    stageTitle: string;
+    stageIndex: number;
+    stageTotal: number;
+    success: boolean;
+    perfect: boolean;
+    nextStageTitle: string | null;
+    packComplete: boolean;
+    perfectPack: boolean;
+    collectionProgress: number;
+    collectionTotal: number;
+    collectionUnlockedNames: string[];
+  };
   realmResult?:
     | {
         kind: "kelp-cathedral";
@@ -82,6 +108,16 @@ export interface RunEndPresentation extends HudMetaPresentation {
         currentBreakTarget: number;
         captures: number;
         cleanPerformance: boolean;
+      }
+    | {
+        kind: "eclipse-court";
+        title: string;
+        stageTitle: string;
+        completed: boolean;
+        alignments: number;
+        alignmentTarget: number;
+        missedAlignments: number;
+        cleanPerformance: boolean;
       };
 }
 
@@ -89,11 +125,12 @@ export interface ExpeditionEndPresentation {
   completed: boolean;
   seconds: number;
   collisions: number;
-  relicsDiscovered: number;
+  relicsRecovered: number;
   primaryMark: boolean;
   relicMark: boolean;
   cleanMark: boolean;
   moonWellRestored: boolean;
+  nextObjective: string;
 }
 
 export class Hud {
@@ -445,6 +482,8 @@ export class Hud {
     presentation: RunEndPresentation
   ): void {
     const realmResult = presentation.realmResult;
+    const livingTide = presentation.livingTideVoyage;
+    const realmPack = presentation.realmPackVoyage;
     const crystalAdvanceReady = realmResult?.kind === "crystal-trench" &&
       realmResult.raceWon && realmResult.leviathanGraveyardUnlocked;
     const leviathanNewlyUnlocked = realmResult?.kind === "crystal-trench" &&
@@ -458,6 +497,10 @@ export class Hud {
           ? realmResult.raceWon
             ? `${realmResult.title} · Mirror Current won`
             : `${realmResult.title} surveyed`
+          : realmResult.kind === "eclipse-court"
+            ? realmResult.completed
+              ? `${realmResult.stageTitle} · Court aligned`
+              : `${realmResult.stageTitle} reforms`
           : realmResult.completed
             ? realmResult.integrated
               ? `${realmResult.title} · Auralis freed`
@@ -472,6 +515,8 @@ export class Hud {
           ? "Continue to Leviathan Graveyard"
         : presentation.realmResult.kind === "duskmaw-pursuit"
           ? "Face Duskmaw Again"
+          : presentation.realmResult.kind === "eclipse-court"
+            ? `Return to ${presentation.realmResult.stageTitle}`
           : `Return to ${presentation.realmResult.title}`
       : "Dive Again";
     this.finalScore.textContent = Math.floor(score).toLocaleString();
@@ -480,6 +525,8 @@ export class Hud {
         ? `${seconds.toFixed(0)}s · ${realmResult.rescuedManta ? "baby manta rescued" : "rescue current continues"} · ${realmResult.relicPageFound ? "Relic Page found" : "relic still hidden"}${realmResult.crystalTrenchUnlocked ? " · Realm 2 unlocked" : ""}`
         : realmResult.kind === "crystal-trench"
           ? `${seconds.toFixed(0)}s · ${realmResult.thresholdCrossed ? "Trench Gate sealed" : "threshold reforms ahead"} · ${realmResult.platesCleared} plates · ${realmResult.raceWon ? `Neri beaten in ${realmResult.raceAttempts} race${realmResult.raceAttempts === 1 ? "" : "s"}` : "Mirror Current still open"}${realmResult.cleanPerformance ? " · clean mark" : ""}${leviathanNewlyUnlocked ? " · Realm 3 unlocked" : crystalAdvanceReady ? " · Realm 3 available" : ""}`
+          : realmResult.kind === "eclipse-court"
+            ? `${seconds.toFixed(0)}s · ${realmResult.alignments}/${realmResult.alignmentTarget} alignments · ${realmResult.missedAlignments === 0 ? "radiant route" : `${realmResult.missedAlignments} broken threads`} · ${realmResult.completed ? "Court memory restored" : "constellation remains open"}`
           : `${seconds.toFixed(0)}s · ${realmResult.currentBreaks}/${realmResult.currentBreakTarget} Current Breaks · ${realmResult.captures === 0 ? "no captures" : `${realmResult.captures} capture${realmResult.captures === 1 ? "" : "s"} recovered`} · ${realmResult.completed ? realmResult.integrated ? "Auralis freed · Duskmaw sealed" : "Moon Seal reached" : "Heartlight War continues"}${realmResult.cleanPerformance ? " · clean mark" : ""}`
       : `${seconds.toFixed(0)}s · ${nearMisses} near-miss · ${collisions} hits`;
     this.setBestScore(presentation.bestScore);
@@ -511,6 +558,65 @@ export class Hud {
           : `Ceremonial 3D reward · ${presentation.unlockedNames.join(" · ")} · Realm 3 route awakened`
         : `Now available in Wardrobe · ${presentation.unlockedNames.join(" · ")}`
       : "";
+    if (livingTide) {
+      this.finalLabel.textContent = livingTide.success
+        ? livingTide.voyageComplete
+          ? livingTide.perfectVoyage
+            ? "Perfect Living Tide Voyage"
+            : "Living Tide Voyage Complete"
+          : `${livingTide.stageTitle} awakened`
+        : `${livingTide.stageTitle} reforms`;
+      this.diveAgain.textContent = livingTide.success
+        ? livingTide.voyageComplete
+          ? "Return to the Tideheart Crown"
+          : `Continue to ${livingTide.nextStageTitle ?? "the next current"}`
+        : `Retry ${livingTide.stageTitle}`;
+      this.finalDetail.textContent = livingTide.success
+        ? `${livingTide.stageIndex}/${livingTide.stageTotal} currents awake${livingTide.perfect ? " · radiant mark" : ""}${livingTide.voyageComplete ? " · Crown restored" : ""}`
+        : `${livingTide.stageIndex - 1}/${livingTide.stageTotal} currents awake · the same fair route remains`;
+      this.runReward.textContent = livingTide.success
+        ? `+${presentation.rewardPearls.toLocaleString()} Lumen Pearls · +${livingTide.tidebloomsEarned} Tidebloom${livingTide.tidebloomsEarned === 1 ? "" : "s"}`
+        : "Voyage progress held · no current lost";
+      this.unlockBanner.dataset["visible"] = livingTide.voyageComplete || livingTide.perfect
+        ? "true"
+        : "false";
+      this.unlockBanner.textContent = livingTide.voyageComplete
+        ? `${livingTide.perfectVoyage ? "Perfect constellation" : "Voyage constellation"} · Tideheart Crown tier ${livingTide.crownTier}/5`
+        : livingTide.perfect
+          ? `${livingTide.stageTitle} radiant mark secured`
+          : "";
+    }
+    if (realmPack) {
+      this.finalLabel.textContent = realmPack.success
+        ? realmPack.packComplete
+          ? realmPack.perfectPack
+            ? `Perfect ${realmPack.packTitle}`
+            : `${realmPack.packTitle} Restored`
+          : `${realmPack.stageTitle} unsealed`
+        : `${realmPack.stageTitle} reforms`;
+      this.diveAgain.textContent = realmPack.success
+        ? realmPack.packComplete
+          ? "Return to the Realm Vault"
+          : `Continue to ${realmPack.nextStageTitle ?? "the next echo"}`
+        : `Retry ${realmPack.stageTitle}`;
+      this.finalDetail.textContent = realmPack.success
+        ? `${realmPack.stageIndex}/${realmPack.stageTotal} echoes restored${realmPack.perfect ? " · radiant route" : ""}${realmPack.packComplete ? " · Court awakened" : ""}`
+        : `${realmPack.stageIndex - 1}/${realmPack.stageTotal} echoes restored · this exact stage remains`;
+      this.runReward.textContent = realmPack.success
+        ? `+${presentation.rewardPearls.toLocaleString()} Lumen Pearls · ${realmPack.collectionProgress}/${realmPack.collectionTotal} collection`
+        : "Pack progress held · no reward or stage lost";
+      this.unlockBanner.dataset["visible"] = String(
+        realmPack.collectionUnlockedNames.length > 0 ||
+        realmPack.packComplete || realmPack.perfect,
+      );
+      this.unlockBanner.textContent = realmPack.collectionUnlockedNames.length > 0
+        ? `Wardrobe unlocked · ${realmPack.collectionUnlockedNames.join(" · ")}`
+        : realmPack.packComplete
+          ? `${realmPack.perfectPack ? "Perfect constellation" : "Realm Pack complete"} · Eclipse Court sealed in the Atlas`
+          : realmPack.perfect
+            ? `${realmPack.stageTitle} radiant route secured`
+            : "";
+    }
     this.objectiveList.replaceChildren(...presentation.objectives.map((objective) => {
       const row = document.createElement("div");
       row.className = "hud-objective";
@@ -547,14 +653,18 @@ export class Hud {
   showExpeditionResult(presentation: ExpeditionEndPresentation): void {
     this.finalLabel.textContent = presentation.completed
       ? "Chapter 1 complete"
-      : "The Moonseed current waits";
-    this.finalScore.textContent = presentation.completed ? "Restored" : "Try again";
+      : presentation.relicMark ? "Moonseed secured" : "Moonseed still missing";
+    this.finalScore.textContent = presentation.completed
+      ? "Restored"
+      : presentation.relicMark ? "Saved" : "Try again";
     this.finalDetail.textContent =
       `${presentation.seconds.toFixed(0)}s · ${presentation.collisions} hits · Guided Expedition`;
     this.newBest.dataset["visible"] = "false";
     this.runReward.textContent = presentation.completed
-      ? "Expedition marks and relics secured"
-      : "No Expedition progress lost";
+      ? "Moon Well restored · Kelp Cathedral unlocked"
+      : presentation.relicMark
+        ? "Moonseed permanently saved · later progress can continue"
+        : "No relic collected · follow the gold Moonseed ring";
     this.unlockBanner.dataset["visible"] = presentation.moonWellRestored
       ? "true"
       : "false";
@@ -563,7 +673,7 @@ export class Hud {
       : "";
     const marks = [
       ["Primary objective", presentation.primaryMark],
-      ["Hidden relic", presentation.relicMark],
+      ["Moonseed relic", presentation.relicMark],
       ["Clean chase", presentation.cleanMark],
     ] as const;
     this.objectiveList.replaceChildren(...marks.map(([label, completed]) => {
@@ -573,15 +683,13 @@ export class Hud {
       const copy = document.createElement("span");
       copy.textContent = label;
       const value = document.createElement("strong");
-      value.textContent = completed ? "Complete" : "Open";
+      value.textContent = completed ? "Complete" : "Not yet";
       row.append(copy, value);
       return row;
     }));
-    this.streak.textContent = `Relic Atlas ${presentation.relicsDiscovered}/6`;
+    this.streak.textContent = `Living Atlas ${presentation.relicsRecovered}/6`;
     this.competitiveDivision.textContent = "Guided Expedition · unranked";
-    this.leaderboardStatus.textContent = presentation.completed
-      ? "Moon Well restoration recorded locally"
-      : "Missed targets return on the next attempt";
+    this.leaderboardStatus.textContent = presentation.nextObjective;
     this.leaderboardList.replaceChildren();
     this.raceBest.disabled = true;
     this.raceBest.textContent = "Ghosts stay in Classic Dive";

@@ -32,6 +32,15 @@ export function tierSettings(tier: QualityTier): TierSettings {
   return budgets.quality.tiers[tier];
 }
 
+/**
+ * A restored mobile WebGL context must resume below the allocation level that
+ * just failed. The next healthy frame may promote again through the existing
+ * hysteresis, but recovery itself never recreates the same pressure spike.
+ */
+export function recoveryQualityTier(tier: QualityTier): QualityTier {
+  return tier === "high" ? "medium" : "low";
+}
+
 export interface QualityChange {
   from: QualityTier;
   to: QualityTier;

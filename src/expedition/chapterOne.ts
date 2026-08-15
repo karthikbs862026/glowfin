@@ -1,13 +1,17 @@
 export const CHAPTER_ONE_FIXED_SEED = 0x4d4f4f4e;
 
-export type ExpeditionExperience = "classic" | "chapter-one-r5";
+export type ExpeditionExperience =
+  | "classic"
+  | "chapter-one-r5"
+  | "living-tide-season-one"
+  | "eclipse-court-pack-one";
 export type ExpeditionUiState = "mission-card" | "briefing" | "running";
 export type ExpeditionUiEvent = "open-briefing" | "close-briefing" | "start" | "finish";
 
 export interface ChapterOneMission {
   id: "the-missing-moonseed";
   chapter: 1;
-  revision: "r5";
+  revision: "r6";
   title: "The Missing Moonseed";
   objective: "Find · Rescue · Race · Break Duskmaw · Restore";
   seed: number;
@@ -16,7 +20,7 @@ export interface ChapterOneMission {
 export const CHAPTER_ONE_MISSION: Readonly<ChapterOneMission> = Object.freeze({
   id: "the-missing-moonseed",
   chapter: 1,
-  revision: "r5",
+  revision: "r6",
   title: "The Missing Moonseed",
   objective: "Find · Rescue · Race · Break Duskmaw · Restore",
   seed: CHAPTER_ONE_FIXED_SEED,

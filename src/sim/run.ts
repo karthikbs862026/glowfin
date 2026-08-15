@@ -54,12 +54,17 @@ import {
   DUSKMAW_LIGHT_REGEN_MULTIPLIER,
   DUSKMAW_MIN_COMPLETION_SEC,
   DUSKMAW_MOMENTUM_CAP_FRACTION,
+  ECLIPSE_COURT_ALIGNMENT_TARGETS,
+  ECLIPSE_COURT_COMPLETE_COAST_DISTANCE,
+  ECLIPSE_COURT_FINALE_COAST_DISTANCE,
+  eclipseCourtActIndex,
   currentTunnelDirection,
   currentTunnelForce,
   duskmawMinionMouthfireRadius,
   vacuumWakeForce,
   type DuskmawMinionId,
   type DuskmawMinionTier,
+  type EclipseCourtActIndex,
   type RealmEventKind,
 } from "../realms/mechanics";
 
@@ -205,6 +210,27 @@ export interface DuskmawRunStatus {
   masteredVerbs: readonly RealmGameplayVerb[];
 }
 
+export type EclipseCourtPhase =
+  | "procession"
+  | "weave"
+  | "conjunction"
+  | "verdict";
+
+export interface EclipseCourtRunStatus {
+  stageIndex: number;
+  phase: EclipseCourtPhase;
+  actIndex: EclipseCourtActIndex;
+  alignments: number;
+  alignmentTarget: number;
+  missedAlignments: number;
+  completionFraction: number;
+  completed: boolean;
+  cleanPerformance: boolean;
+  lastAlignmentSec: number;
+  lastMissSec: number;
+  masteredVerbs: readonly RealmGameplayVerb[];
+}
+
 const NO_EVENTS: StepEvents = {
   nearMisses: 0,
   collisions: 0,
@@ -277,6 +303,12 @@ export class Run {
   private readonly shotLocks = new Map<number, number>();
   private realmDuskmawMoonSealReached = false;
   private realmDuskmawCompletionDistance: number | null = null;
+  private realmEclipseAlignments = 0;
+  private realmEclipseMisses = 0;
+  private realmEclipseCompleted = false;
+  private realmEclipseCompletionDistance: number | null = null;
+  private realmEclipseLastAlignmentSec = Number.NEGATIVE_INFINITY;
+  private realmEclipseLastMissSec = Number.NEGATIVE_INFINITY;
   private readonly realmMasteredVerbs = new Set<RealmGameplayVerb>();
   /** Scan cursor: gates before this index are behind the player. */
   private gateCursor = 0;
@@ -284,17 +316,25 @@ export class Run {
   constructor(
     readonly seed: number,
     private readonly cfg: TuningConfig,
-    options: { realmId?: RealmId } = {},
+    options: { realmId?: RealmId; realmStageIndex?: number } = {},
   ) {
     this.realmId = options.realmId ?? "moon-garden";
+    this.realmStageIndex = Math.max(0, Math.min(
+      ECLIPSE_COURT_ALIGNMENT_TARGETS.length - 1,
+      Math.floor(options.realmStageIndex ?? 0),
+    ));
     this.sim = createSimState();
     this.scoring = createScoringState(cfg);
-    this.course = new CourseGenerator(seed, cfg, { realmId: this.realmId });
+    this.course = new CourseGenerator(seed, cfg, {
+      realmId: this.realmId,
+      realmStageIndex: this.realmStageIndex,
+    });
     this.light = cfg.light.max;
     this.course.ensureGeneratedTo(cfg.readability.visibleAheadUnits * 3);
   }
 
   readonly realmId: RealmId;
+  readonly realmStageIndex: number;
 
   /** Gates generated so far. The renderer draws from this. */
   get gates(): readonly Gate[] {
@@ -423,6 +463,33 @@ export class Run {
       moonSealReached: this.realmDuskmawMoonSealReached,
       completed: this.realmDuskmawMoonSealReached,
       cleanPerformance: this.realmDuskmawCaptures === 0 && this.collisionCount === 0,
+      masteredVerbs: Array.from(this.realmMasteredVerbs).sort(),
+    };
+  }
+
+  get eclipseCourtStatus(): Readonly<EclipseCourtRunStatus> {
+    const target = ECLIPSE_COURT_ALIGNMENT_TARGETS[this.realmStageIndex] ??
+      ECLIPSE_COURT_ALIGNMENT_TARGETS[0];
+    const fraction = Math.max(0, Math.min(1, this.realmEclipseAlignments / target));
+    const actIndex = eclipseCourtActIndex(fraction);
+    const phase: EclipseCourtPhase = [
+      "procession",
+      "weave",
+      "conjunction",
+      "verdict",
+    ][actIndex] as EclipseCourtPhase;
+    return {
+      stageIndex: this.realmStageIndex,
+      phase,
+      actIndex,
+      alignments: this.realmEclipseAlignments,
+      alignmentTarget: target,
+      missedAlignments: this.realmEclipseMisses,
+      completionFraction: fraction,
+      completed: this.realmEclipseCompleted,
+      cleanPerformance: this.realmEclipseMisses === 0 && this.collisionCount === 0,
+      lastAlignmentSec: this.realmEclipseLastAlignmentSec,
+      lastMissSec: this.realmEclipseLastMissSec,
       masteredVerbs: Array.from(this.realmMasteredVerbs).sort(),
     };
   }
@@ -843,7 +910,50 @@ export class Run {
         pass.collided = shotClearance < 0;
         pass.clearance = shotClearance;
       }
-      if (realmPlan?.verb === "swaying-frond-window") {
+      if (
+        realmPlan?.verb === "orbital-thread" ||
+        realmPlan?.verb === "umbra-shift" ||
+        realmPlan?.verb === "eclipse-verdict"
+      ) {
+        const aligned = !pass.collided;
+        const target = ECLIPSE_COURT_ALIGNMENT_TARGETS[this.realmStageIndex] ??
+          ECLIPSE_COURT_ALIGNMENT_TARGETS[0];
+        const progressionVerb = this.realmStageIndex === 0
+          ? "orbital-thread"
+          : this.realmStageIndex === 1
+            ? "umbra-shift"
+            : "eclipse-verdict";
+        if (aligned && !this.realmEclipseCompleted) {
+          if (realmPlan.verb === progressionVerb) {
+            this.realmEclipseAlignments = Math.min(
+              target,
+              this.realmEclipseAlignments + 1,
+            );
+          }
+          this.realmEclipseLastAlignmentSec = this.sim.elapsedSec;
+          this.realmMasteredVerbs.add(realmPlan.verb);
+          if (this.realmEclipseAlignments >= target) {
+            this.realmEclipseCompleted = true;
+            this.realmEclipseCompletionDistance = pass.gate.distance;
+          }
+        } else if (!aligned) {
+          this.realmEclipseMisses += 1;
+          this.realmEclipseLastMissSec = this.sim.elapsedSec;
+        }
+        const kind = realmPlan.verb === "orbital-thread"
+          ? aligned ? "orbital-thread" : "orbital-thread-missed"
+          : realmPlan.verb === "umbra-shift"
+            ? aligned ? "umbra-shift" : "umbra-shift-missed"
+            : aligned ? "eclipse-verdict" : "eclipse-verdict-missed";
+        realmEvents.push({
+          kind,
+          verb: realmPlan.verb,
+          distance: pass.gate.distance,
+          tier: pass.gate.tier,
+          templateId: `${pass.gate.templateId}:${realmPlan.sequence}`,
+          success: aligned,
+        });
+      } else if (realmPlan?.verb === "swaying-frond-window") {
         if (!pass.collided) {
           this.realmFrondWindowsCleared += 1;
           this.realmMasteredVerbs.add("swaying-frond-window");
@@ -1292,6 +1402,18 @@ export class Run {
       this.realmDuskmawCompletionDistance !== null &&
       this.sim.forwardDistance >=
         this.realmDuskmawCompletionDistance + DUSKMAW_COMPLETE_COAST_DISTANCE
+    ) {
+      this.ended = true;
+      this.endReason = "realm-complete";
+      justEnded = true;
+    } else if (
+      this.realmId === "eclipse-court" &&
+      this.realmEclipseCompleted &&
+      this.realmEclipseCompletionDistance !== null &&
+      this.sim.forwardDistance >= this.realmEclipseCompletionDistance +
+        (this.realmStageIndex === 2
+          ? ECLIPSE_COURT_FINALE_COAST_DISTANCE
+          : ECLIPSE_COURT_COMPLETE_COAST_DISTANCE)
     ) {
       this.ended = true;
       this.endReason = "realm-complete";

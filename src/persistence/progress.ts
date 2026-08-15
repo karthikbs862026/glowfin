@@ -57,6 +57,8 @@ import {
   applyKelpCathedralRun,
   applyLeviathanGraveyardRun,
   createDefaultRealmProgress,
+  eclipseCourtProgress,
+  livingTideSeasonProgress,
   mergeRealmProgress,
   readLegacyRealmProgress,
   realmObjectivePresentations,
@@ -70,6 +72,22 @@ import {
   type RealmRunUpdate,
 } from "../realms/progress";
 import type { RealmId } from "../realms/definition";
+import {
+  LIVING_TIDE_STAGE_DEFINITIONS,
+  applyLivingTideStage,
+  beginLivingTideVoyage,
+  livingTideStageSeed,
+  type LivingTideStageDefinition,
+  type LivingTideStageRecord,
+} from "../season/livingTide";
+import {
+  ECLIPSE_COURT_STAGE_DEFINITIONS,
+  applyEclipseCourtStage,
+  beginEclipseCourtRun,
+  eclipseCourtStageSeed,
+  type EclipseCourtStageDefinition,
+  type EclipseCourtStageRecord,
+} from "../content/eclipseCourt";
 
 export const PROGRESS_SCHEMA_VERSION = 5 as const;
 export const PROGRESS_PRIMARY_KEY = "glowfin.progress.v5.primary";
@@ -292,6 +310,42 @@ export interface RealmRecordResult {
   unlockedCosmetics: CosmeticDefinition[];
 }
 
+export interface LivingTideStageRecordResult {
+  progress: GlowfinProgressV2;
+  accepted: boolean;
+  duplicateRewardPrevented: boolean;
+  success: boolean;
+  perfectStage: boolean;
+  stage: LivingTideStageDefinition | null;
+  nextStage: LivingTideStageDefinition | null;
+  voyageComplete: boolean;
+  perfectVoyage: boolean;
+  tidebloomsEarned: number;
+  rewardPearls: number;
+  rewardXp: number;
+  crownTier: number;
+  tideLevelBefore: number;
+  tideLevelAfter: number;
+  unlockedCosmetics: CosmeticDefinition[];
+}
+
+export interface EclipseCourtStageRecordResult {
+  progress: GlowfinProgressV2;
+  accepted: boolean;
+  duplicateRewardPrevented: boolean;
+  success: boolean;
+  perfectStage: boolean;
+  stage: EclipseCourtStageDefinition | null;
+  nextStage: EclipseCourtStageDefinition | null;
+  packComplete: boolean;
+  perfectPack: boolean;
+  rewardPearls: number;
+  rewardXp: number;
+  tideLevelBefore: number;
+  tideLevelAfter: number;
+  unlockedCosmetics: CosmeticDefinition[];
+}
+
 export type CosmeticPurchaseStatus =
   | "purchased"
   | "owned"
@@ -443,6 +497,7 @@ function progressionValid(value: unknown): value is GlowfinProgressionV2 {
   if (
     JSON.stringify(owned) !== JSON.stringify(progression.ownedCosmetics) ||
     JSON.stringify(purchased) !== JSON.stringify(progression.purchasedCosmetics) ||
+    purchased.some((id) => cosmeticDefinition(id)?.source === "realm-pack") ||
     !purchased.every((id) => owned.includes(id)) ||
     Number(progression.lumenPearls) !== Math.max(
       0,
@@ -1329,6 +1384,253 @@ export class ProgressRepository {
     );
   }
 
+  beginLivingTideVoyage(weekId: string): GlowfinProgressV2 {
+    const currentSeason = livingTideSeasonProgress(this.current.realms);
+    const nextSeason = beginLivingTideVoyage(currentSeason, weekId, this.now());
+    if (nextSeason.revision === currentSeason.revision) return this.snapshot();
+    this.current = {
+      ...this.current,
+      revision: this.current.revision + 1,
+      updatedAt: this.now().toISOString(),
+      realms: {
+        ...this.current.realms,
+        revision: this.current.realms.revision + 1,
+        updatedAt: this.now().toISOString(),
+        livingTideSeason: nextSeason,
+      },
+    };
+    this.persist(this.current);
+    return this.snapshot();
+  }
+
+  recordLivingTideStage(
+    record: LivingTideStageRecord,
+  ): LivingTideStageRecordResult {
+    const currentSeason = livingTideSeasonProgress(this.current.realms);
+    const update = applyLivingTideStage(currentSeason, record, this.now());
+    const previousXp = this.current.progression.tideXp;
+    if (!update.accepted || update.duplicatePrevented) {
+      return {
+        progress: this.snapshot(),
+        accepted: update.accepted,
+        duplicateRewardPrevented: update.duplicatePrevented,
+        success: update.success,
+        perfectStage: update.perfectStage,
+        stage: update.stage,
+        nextStage: update.nextStage,
+        voyageComplete: update.voyageComplete,
+        perfectVoyage: update.perfectVoyage,
+        tidebloomsEarned: 0,
+        rewardPearls: 0,
+        rewardXp: 0,
+        crownTier: update.crownTier,
+        tideLevelBefore: tideLevelForXp(previousXp),
+        tideLevelAfter: tideLevelForXp(previousXp),
+        unlockedCosmetics: [],
+      };
+    }
+
+    const nextXp = clampCount(previousXp + update.rewardXp);
+    const nextPearlsEarned = clampCount(
+      this.current.progression.lumenPearlsEarned + update.rewardPearls,
+    );
+    const purchasedCost = purchasedCosmeticCost(
+      this.current.progression.purchasedCosmetics,
+    );
+    const sharedClaims = new Set(this.current.progression.recentRewardClaims);
+    sharedClaims.add(update.claimId);
+    const unlockedCosmetics = newlyUnlockedCosmetics(previousXp, nextXp);
+    this.current = {
+      ...this.current,
+      revision: this.current.revision + 1,
+      updatedAt: this.now().toISOString(),
+      progression: {
+        ...this.current.progression,
+        lumenPearls: Math.max(0, nextPearlsEarned - purchasedCost),
+        lumenPearlsEarned: nextPearlsEarned,
+        tideXp: nextXp,
+        recentRewardClaims: Array.from(sharedClaims)
+          .sort()
+          .slice(-MAX_RECENT_REWARD_CLAIMS),
+      },
+      onboarding: {
+        ...this.current.onboarding,
+        firstRewardSeen: this.current.onboarding.firstRewardSeen ||
+          update.rewardPearls > 0,
+      },
+      realms: {
+        ...this.current.realms,
+        revision: this.current.realms.revision + 1,
+        updatedAt: this.now().toISOString(),
+        livingTideSeason: update.progress,
+      },
+    };
+    this.persist(this.current);
+    return {
+      progress: this.snapshot(),
+      accepted: true,
+      duplicateRewardPrevented: false,
+      success: update.success,
+      perfectStage: update.perfectStage,
+      stage: update.stage,
+      nextStage: update.nextStage,
+      voyageComplete: update.voyageComplete,
+      perfectVoyage: update.perfectVoyage,
+      tidebloomsEarned: update.tidebloomsEarned,
+      rewardPearls: update.rewardPearls,
+      rewardXp: update.rewardXp,
+      crownTier: update.crownTier,
+      tideLevelBefore: tideLevelForXp(previousXp),
+      tideLevelAfter: tideLevelForXp(nextXp),
+      unlockedCosmetics,
+    };
+  }
+
+  livingTideStageSeed(): number | null {
+    const season = livingTideSeasonProgress(this.current.realms);
+    const stage = season.activeVoyage && season.activeVoyage.completedAt === null
+      ? season.activeVoyage.currentStageIndex
+      : -1;
+    const definition = stage >= 0 ? LIVING_TIDE_STAGE_DEFINITIONS[stage] : null;
+    return season.activeVoyage && definition
+      ? livingTideStageSeed(
+        season.activeVoyage.weekId,
+        season.activeVoyage.voyageNumber,
+        definition.id,
+      )
+      : null;
+  }
+
+  beginEclipseCourtRun(weekId: string): GlowfinProgressV2 {
+    const currentPack = eclipseCourtProgress(this.current.realms);
+    const nextPack = beginEclipseCourtRun(currentPack, weekId, this.now());
+    if (nextPack.revision === currentPack.revision) return this.snapshot();
+    this.current = {
+      ...this.current,
+      revision: this.current.revision + 1,
+      updatedAt: this.now().toISOString(),
+      realms: {
+        ...this.current.realms,
+        revision: this.current.realms.revision + 1,
+        updatedAt: this.now().toISOString(),
+        eclipseCourtPack: nextPack,
+      },
+    };
+    this.persist(this.current);
+    return this.snapshot();
+  }
+
+  recordEclipseCourtStage(
+    record: EclipseCourtStageRecord,
+  ): EclipseCourtStageRecordResult {
+    const currentPack = eclipseCourtProgress(this.current.realms);
+    const update = applyEclipseCourtStage(currentPack, record, this.now());
+    const previousXp = this.current.progression.tideXp;
+    if (!update.accepted || update.duplicatePrevented) {
+      return {
+        progress: this.snapshot(),
+        accepted: update.accepted,
+        duplicateRewardPrevented: update.duplicatePrevented,
+        success: update.success,
+        perfectStage: update.perfectStage,
+        stage: update.stage,
+        nextStage: update.nextStage,
+        packComplete: update.packComplete,
+        perfectPack: update.perfectPack,
+        rewardPearls: 0,
+        rewardXp: 0,
+        tideLevelBefore: tideLevelForXp(previousXp),
+        tideLevelAfter: tideLevelForXp(previousXp),
+        unlockedCosmetics: [],
+      };
+    }
+
+    const nextXp = clampCount(previousXp + update.rewardXp);
+    const nextPearlsEarned = clampCount(
+      this.current.progression.lumenPearlsEarned + update.rewardPearls,
+    );
+    const purchasedCost = purchasedCosmeticCost(
+      this.current.progression.purchasedCosmetics,
+    );
+    const sharedClaims = new Set(this.current.progression.recentRewardClaims);
+    sharedClaims.add(update.claimId);
+    const packUnlocks = update.unlockedCosmeticIds
+      .map((id) => cosmeticDefinition(id))
+      .filter((item): item is CosmeticDefinition => item !== null);
+    const unlockedCosmetics = Array.from(new Map([
+      ...newlyUnlockedCosmetics(previousXp, nextXp),
+      ...packUnlocks,
+    ].map((item) => [item.id, item])).values());
+    const ownedCosmetics = sanitizeOwnedCosmetics([
+      ...this.current.progression.ownedCosmetics,
+      ...packUnlocks.map((item) => item.id),
+    ]);
+    this.current = {
+      ...this.current,
+      revision: this.current.revision + 1,
+      updatedAt: this.now().toISOString(),
+      progression: {
+        ...this.current.progression,
+        lumenPearls: Math.max(0, nextPearlsEarned - purchasedCost),
+        lumenPearlsEarned: nextPearlsEarned,
+        tideXp: nextXp,
+        ownedCosmetics,
+        equippedCosmetics: sanitizeCosmeticLoadout(
+          this.current.progression.equippedCosmetics,
+          ownedCosmetics,
+        ),
+        recentRewardClaims: Array.from(sharedClaims)
+          .sort()
+          .slice(-MAX_RECENT_REWARD_CLAIMS),
+      },
+      onboarding: {
+        ...this.current.onboarding,
+        firstRewardSeen: this.current.onboarding.firstRewardSeen ||
+          update.rewardPearls > 0 || packUnlocks.length > 0,
+      },
+      realms: {
+        ...this.current.realms,
+        revision: this.current.realms.revision + 1,
+        updatedAt: this.now().toISOString(),
+        eclipseCourtPack: update.progress,
+      },
+    };
+    this.persist(this.current);
+    return {
+      progress: this.snapshot(),
+      accepted: true,
+      duplicateRewardPrevented: false,
+      success: update.success,
+      perfectStage: update.perfectStage,
+      stage: update.stage,
+      nextStage: update.nextStage,
+      packComplete: update.packComplete,
+      perfectPack: update.perfectPack,
+      rewardPearls: update.rewardPearls,
+      rewardXp: update.rewardXp,
+      tideLevelBefore: tideLevelForXp(previousXp),
+      tideLevelAfter: tideLevelForXp(nextXp),
+      unlockedCosmetics,
+    };
+  }
+
+  eclipseCourtStageSeed(): number | null {
+    const pack = eclipseCourtProgress(this.current.realms);
+    const stageIndex = pack.activeRun && pack.activeRun.completedAt === null
+      ? pack.activeRun.currentStageIndex
+      : -1;
+    const definition = stageIndex >= 0
+      ? ECLIPSE_COURT_STAGE_DEFINITIONS[stageIndex]
+      : null;
+    return pack.activeRun && definition
+      ? eclipseCourtStageSeed(
+        pack.activeRun.weekId,
+        pack.activeRun.runNumber,
+        definition.id,
+      )
+      : null;
+  }
+
   activeRealmObjectives(): RealmObjectivePresentation[] {
     return realmObjectivePresentations(this.current.realms);
   }
@@ -1581,6 +1883,9 @@ export class ProgressRepository {
     }
     if (this.current.progression.ownedCosmetics.includes(cosmetic.id)) {
       return { progress: this.snapshot(), status: "owned", cosmetic, spentPearls: 0 };
+    }
+    if (cosmetic.source === "realm-pack") {
+      return { progress: this.snapshot(), status: "locked", cosmetic, spentPearls: 0 };
     }
     if (tideLevelForXp(this.current.progression.tideXp) < cosmetic.unlockLevel) {
       return { progress: this.snapshot(), status: "locked", cosmetic, spentPearls: 0 };

@@ -17,22 +17,22 @@ function metadata(
   };
 }
 
-describe("Version 45-R1 release identity", () => {
-  it("accepts only the Realm 3 integration rooted at GitHub main", () => {
+describe("Version 48-R2 release identity", () => {
+  it("accepts only the full Eclipse Court campaign rooted at Version 47", () => {
     expect(isGlowfinReleaseMetadata(metadata())).toBe(true);
-    expect(metadata().certification).toBe("integrated-review-candidate");
-    expect(metadata().phase).toBe("phase-realm-three-integration-r1");
-    expect(metadata().releaseTag).toBe("glowfin-v45-r1-realm-three-integrated");
-    expect(metadata().sourceBaseVersion).toBe(43);
+    expect(metadata().certification).toBe("eclipse-court-full-campaign-review-candidate");
+    expect(metadata().phase).toBe("phase-full-realm-campaign-r2");
+    expect(metadata().releaseTag).toBe("glowfin-v48-r2-eclipse-court-full-campaign");
+    expect(metadata().sourceBaseVersion).toBe(47);
     expect(metadata().sourceBaseCommit).toBe(
-      "3202d8199404f6a149a72ab8486202f2f3b1e4bf"
+      "35be13bf16fcf48fbb29d59c16c95bbe447aa6b7"
     );
     expect(metadata().baselineVersion).toBe(39);
     expect(metadata().baselineCommit).toBe(
       "266b7900294f81e174134337a9d14b5951efcf30"
     );
-    expect(releaseConfig.deferredVersions).toEqual([40, 41, 42, 43, 44]);
-    expect(isGlowfinReleaseMetadata(metadata({ version: 44 }))).toBe(false);
+    expect(releaseConfig.deferredVersions).toEqual([40, 41, 42, 43]);
+    expect(isGlowfinReleaseMetadata(metadata({ version: 47 }))).toBe(false);
     expect(isGlowfinReleaseMetadata(metadata({ baselineCommit: "deadbeef" }))).toBe(false);
     expect(isGlowfinReleaseMetadata(metadata({ environment: "production" }))).toBe(true);
   });
@@ -44,10 +44,10 @@ describe("Version 45-R1 release identity", () => {
   });
 
   it("formats a compact phone-readable build label", () => {
-    expect(formatReleaseLabel(metadata())).toBe("V45 · STAGING · 8f529b9");
+    expect(formatReleaseLabel(metadata())).toBe("V48 · STAGING · 8f529b9");
     expect(formatReleaseLabel(metadata({
       environment: "local",
       sourceCommit: "local"
-    }))).toBe("V45 · LOCAL · local");
+    }))).toBe("V48 · LOCAL · local");
   });
 });

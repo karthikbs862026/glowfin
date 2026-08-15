@@ -758,6 +758,8 @@ export class LeviathanGraveyardField {
   private moonPartnerLateral = 0;
   private lastMoonFollowSec = 0;
   private activeMinionTier = 1;
+  private sanctuaryGuardianActive = false;
+  private sanctuaryVisibility: Map<THREE.Object3D, boolean> | null = null;
 
   constructor(
     private readonly cfg: TuningConfig,
@@ -1284,6 +1286,59 @@ export class LeviathanGraveyardField {
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   }
 
+  setSanctuaryGuardianActive(active: boolean): void {
+    this.sanctuaryGuardianActive = active;
+  }
+
+  private enterSanctuaryPresentation(): void {
+    if (this.sanctuaryVisibility) return;
+    this.sanctuaryVisibility = new Map(
+      this.group.children.map((child) => [child, child.visible]),
+    );
+    for (const child of this.group.children) child.visible = false;
+    this.moonLeviathan.group.visible = true;
+  }
+
+  private leaveSanctuaryPresentation(): void {
+    if (!this.sanctuaryVisibility) return;
+    for (const [child, visible] of this.sanctuaryVisibility) {
+      child.visible = visible;
+    }
+    this.sanctuaryVisibility = null;
+  }
+
+  private updateSanctuaryGuardian(
+    forwardDistance: number,
+    elapsedSec: number,
+    reducedMotion: boolean,
+  ): void {
+    this.enterSanctuaryPresentation();
+    const motion = reducedMotion ? 0 : 1;
+    const patrol = Math.sin(elapsedSec * 0.17) * motion;
+    const turn = Math.sin(elapsedSec * 0.17 + Math.PI * 0.5) * motion;
+    this.moonLeviathan.group.position.set(
+      -5.4 + patrol * 2.1,
+      4.8 + Math.sin(elapsedSec * 0.31) * 0.18 * motion,
+      -(forwardDistance + 18.5 + Math.cos(elapsedSec * 0.17) * 1.1 * motion),
+    );
+    this.moonLeviathan.group.rotation.set(
+      0.025,
+      DUSKMAW_FORWARD_YAW_RAD + THREE.MathUtils.degToRad(turn * 18),
+      THREE.MathUtils.degToRad(-turn * 3.5),
+    );
+    this.moonLeviathan.group.scale.setScalar(0.58);
+    this.moonLeviathan.update({
+      elapsedSec,
+      reducedMotion,
+      intensity: 0.82,
+      jawOpen: 0.02,
+      finStroke: reducedMotion ? 0 : Math.sin(elapsedSec * 0.68),
+      awakening: 1,
+      armourDamage: 0,
+      damageFlash: 0,
+    });
+  }
+
   private nearestActiveAttack(
     forwardDistance: number,
     gates: readonly Gate[],
@@ -1410,9 +1465,15 @@ export class LeviathanGraveyardField {
     status: Readonly<DuskmawRunStatus> | null,
     reducedMotion: boolean,
   ): void {
-    const active = realmId === "leviathan-graveyard";
-    this.group.visible = active;
-    if (!active) return;
+    const battleActive = realmId === "leviathan-graveyard";
+    const sanctuaryActive = realmId === "moon-garden" && this.sanctuaryGuardianActive;
+    this.group.visible = battleActive || sanctuaryActive;
+    if (sanctuaryActive) {
+      this.updateSanctuaryGuardian(forwardDistance, elapsedSec, reducedMotion);
+      return;
+    }
+    this.leaveSanctuaryPresentation();
+    if (!battleActive) return;
     if (elapsedSec < this.lastElapsedSec) {
       this.awakeningStartedSec = -1;
       this.moonPartnerLateral = 0;

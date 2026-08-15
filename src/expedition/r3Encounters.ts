@@ -11,7 +11,7 @@ export type R3EncounterBeat =
 
 export type R3Direction = "left" | "right" | "center" | "flow" | "complete";
 
-export const R3_PLAN_REVISION = "v41-r3-objective-gated";
+export const R3_PLAN_REVISION = "v46-r5-moonseed-required";
 export const R3_BEAT_ORDER: readonly R3EncounterBeat[] = Object.freeze([
   "follow-light",
   "relic-fork",
@@ -49,6 +49,7 @@ export const R3_PLAN_HASH = checksumText(JSON.stringify({
     race: R3_RACE_MIN_SECONDS,
   },
   objectives: {
+    moonseedRequired: 1,
     rescueLights: R3_RESCUE_LIGHT_TARGET,
     raceGates: R3_RACE_GATE_TARGET,
   },
@@ -486,8 +487,10 @@ export class R3EncounterDirector {
       this.relicFound = true;
       this.events.relicResolved = "found";
     } else if (motion.toDistance > target.distance + R3_TARGET_RETURN_BEHIND_UNITS) {
-      this.relicResolved = true;
       this.events.relicResolved = "safe-route";
+      // The Missing Moonseed cannot resolve without its title relic. Missing
+      // the narrow route is forgiving: a new gold current forms ahead.
+      this.relicTarget = relicTargetFor(motion);
     }
   }
 
@@ -612,26 +615,19 @@ export class R3EncounterDirector {
     if (this.beat === "relic-fork") {
       this.placeActor(this.visual.neri, playerDistance + 8, -2.8, 0.3, 1.35);
       if (!this.relicResolved && this.relicTarget) {
-        const safe = this.visual.rings[0];
-        safe.visible = true;
-        safe.role = "safe";
-        safe.distance = this.relicTarget.distance;
-        safe.lateral = this.relicTarget.safeLateral;
-        safe.radius = 1.85;
-        safe.colour = CYAN;
-        const risk = this.visual.rings[1];
+        const risk = this.visual.rings[0];
         risk.visible = true;
         risk.role = "relic";
         risk.distance = this.relicTarget.distance;
         risk.lateral = this.relicTarget.lateral;
-        risk.radius = 1.28;
+        risk.radius = 1.65;
         risk.colour = GOLD;
         this.placeActor(
           this.visual.relic,
           this.relicTarget.distance,
           this.relicTarget.lateral,
-          0.62,
-          1,
+          0.78,
+          1.24,
         );
       }
       return;

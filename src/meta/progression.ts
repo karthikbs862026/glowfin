@@ -11,6 +11,8 @@ export interface CosmeticDefinition {
   primaryColor: number;
   secondaryColor: number;
   strength: number;
+  source?: "tide" | "realm-pack";
+  sourceLabel?: string;
 }
 export interface CosmeticLoadout {
   glow: string;
@@ -111,9 +113,22 @@ const UNLOCKS: CosmeticDefinition[] = [
   { id: "aura.astral-crown", category: "aura", name: "Astral Crown", unlockLevel: 10, pricePearls: 540, primaryColor: 0xffc9f2, secondaryColor: 0x7defff, strength: 0.48 }
 ];
 
+/**
+ * The first sealed Realm Pack collection. Level 99 keeps these visual-only
+ * rewards outside the Tide-level shop while still allowing the existing
+ * wardrobe, renderer uniforms, save sanitizer and cloud merge to own them.
+ */
+export const ECLIPSE_COURT_COSMETICS: readonly CosmeticDefinition[] = Object.freeze([
+  { id: "glow.eclipse-nacre", category: "glow", name: "Eclipse Nacre", unlockLevel: 99, pricePearls: 0, primaryColor: 0xffd98a, secondaryColor: 0x6ef4d3, strength: 0.38, source: "realm-pack", sourceLabel: "Eclipse Court" },
+  { id: "fin.eclipse-crest", category: "fin", name: "Eclipse Crest", unlockLevel: 99, pricePearls: 0, primaryColor: 0x9fcaff, secondaryColor: 0xffc979, strength: 0.8, source: "realm-pack", sourceLabel: "Eclipse Court" },
+  { id: "trail.eclipse-wake", category: "trail", name: "Eclipse Wake", unlockLevel: 99, pricePearls: 0, primaryColor: 0xffdc91, secondaryColor: 0x8e6bff, strength: 1, source: "realm-pack", sourceLabel: "Eclipse Court" },
+  { id: "aura.court-orbit", category: "aura", name: "Court Orbit", unlockLevel: 99, pricePearls: 0, primaryColor: 0xffd98c, secondaryColor: 0x76f5df, strength: 0.56, source: "realm-pack", sourceLabel: "Complete Eclipse Court" }
+]);
+
 export const COSMETIC_CATALOG: readonly CosmeticDefinition[] = Object.freeze([
   ...DEFAULTS,
-  ...UNLOCKS
+  ...UNLOCKS,
+  ...ECLIPSE_COURT_COSMETICS
 ]);
 
 export const COSMETIC_UNLOCKS: readonly CosmeticDefinition[] = Object.freeze([
@@ -171,7 +186,9 @@ export function tideProgressForXp(xp: number): TideProgress {
 
 export function unlockedCosmeticsForXp(xp: number): CosmeticDefinition[] {
   const level = tideLevelForXp(xp);
-  return COSMETIC_CATALOG.filter((entry) => entry.unlockLevel <= level);
+  return COSMETIC_CATALOG.filter((entry) => (
+    entry.source !== "realm-pack" && entry.unlockLevel <= level
+  ));
 }
 
 export function sanitizeOwnedCosmetics(value: unknown): string[] {
@@ -196,6 +213,7 @@ export function cosmeticAvailability(
 ): CosmeticAvailability {
   if (loadout[cosmetic.category] === cosmetic.id) return "equipped";
   if (ownedCosmetics.includes(cosmetic.id)) return "owned";
+  if (cosmetic.source === "realm-pack") return "locked";
   return tideLevelForXp(tideXp) >= cosmetic.unlockLevel ? "available" : "locked";
 }
 
@@ -282,11 +300,14 @@ export function loadoutWithCosmetic(
 }
 
 export function cosmeticPalette(loadout: CosmeticLoadout): CosmeticPalette {
-  const safe = sanitizeCosmeticLoadout(loadout, Number.MAX_SAFE_INTEGER);
-  const glow = cosmeticDefinition(safe.glow) ?? DEFAULTS[0]!;
-  const fin = cosmeticDefinition(safe.fin) ?? DEFAULTS[1]!;
-  const trail = cosmeticDefinition(safe.trail) ?? DEFAULTS[2]!;
-  const aura = cosmeticDefinition(safe.aura) ?? DEFAULTS[3]!;
+  const inCategory = (id: string, category: CosmeticCategory, fallback: CosmeticDefinition) => {
+    const item = cosmeticDefinition(id);
+    return item?.category === category ? item : fallback;
+  };
+  const glow = inCategory(loadout.glow, "glow", DEFAULTS[0]!);
+  const fin = inCategory(loadout.fin, "fin", DEFAULTS[1]!);
+  const trail = inCategory(loadout.trail, "trail", DEFAULTS[2]!);
+  const aura = inCategory(loadout.aura, "aura", DEFAULTS[3]!);
   return {
     glowColor: glow.primaryColor,
     glowStrength: glow.strength,
