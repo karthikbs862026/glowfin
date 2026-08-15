@@ -5,15 +5,19 @@
   "phase": "phase-full-realm-campaign-r2",
   "releaseTag": "glowfin-v48-r2-eclipse-court-full-campaign",
   "certification": "eclipse-court-full-campaign-review-candidate",
-  "sourceBaseVersion": 47,
-  "sourceBaseCommit": "35be13bf16fcf48fbb29d59c16c95bbe447aa6b7",
+  "sourceBaseVersion": 45,
+  "sourceBaseCommit": "6c352f7ef40abc7569533ba7e8902d9d56d9936a",
   "baselineVersion": 39,
   "baselineCommit": "266b7900294f81e174134337a9d14b5951efcf30",
   "deferredVersions": [
     40,
     41,
     42,
-    43
+    43,
+    44,
+    45,
+    46,
+    47
   ],
   "artBuild": "phase3c-v30-glowfin-production",
   "productionPolicyVersion": 1
