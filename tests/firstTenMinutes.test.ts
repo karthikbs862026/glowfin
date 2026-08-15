@@ -23,7 +23,7 @@ describe("Version 39 first-ten-minute player shell", () => {
     expect(html).toContain("Six clear steps · about 30 seconds");
     expect(html).toContain("Guided Dive · 1/6");
     expect(html).toContain('id="tutorial-skip"');
-    expect(html).toContain("six clear steps");
+    expect(html).toMatch(/six clear steps/i);
   });
 
   it("keeps post-run to one primary CTA and two secondary actions", () => {

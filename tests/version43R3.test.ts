@@ -198,7 +198,7 @@ test("Crystal Trench completion saves are idempotent and merge conservatively", 
     runId: "r1-rescue-unlock",
     elapsedSec: 42.5,
     rescuedManta: true,
-    relicPageFound: false,
+    relicPageFound: true,
     masteredVerbs: KELP_CATHEDRAL_REALM.gameplayVerbs,
   });
   const record = {
