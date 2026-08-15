@@ -74,6 +74,11 @@ export interface ExpeditionCompletionResult {
   newlyCompletedMarks: Array<keyof ExpeditionCompletionMarks>;
 }
 
+export interface ExpeditionRelicDiscoveryInput {
+  claimId: string;
+  planHash: string;
+}
+
 function clampCount(value: number): number {
   return Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, Math.floor(value)));
 }
@@ -106,6 +111,42 @@ export function expeditionProgressChecksum(progress: ExpeditionProgressV1): stri
 
 function clone(progress: ExpeditionProgressV1): ExpeditionProgressV1 {
   return JSON.parse(JSON.stringify(progress)) as ExpeditionProgressV1;
+}
+
+/**
+ * Repairs the historical split-brain states where Chapter 1 completion, the
+ * hidden-relic mark and the Moonseed inventory could disagree. Restoring the
+ * Moon Well was only ever possible after carrying the Moonseed home, so older
+ * completed saves are entitled to the relic rather than being reset.
+ */
+export function canonicalizeExpeditionProgress(
+  progress: Readonly<ExpeditionProgressV1>,
+  now = new Date(),
+  incrementRevision = true,
+): ExpeditionProgressV1 {
+  const next = clone(progress);
+  const discovered = new Set(next.discoveredRelics);
+  const moonseedOwned = discovered.has("moonseed-fragment") ||
+    next.completionMarks.hiddenRelic ||
+    next.completionMarks.primaryObjective ||
+    next.moonWellRestored;
+  const primaryComplete = next.completionMarks.primaryObjective ||
+    next.moonWellRestored;
+  if (moonseedOwned) discovered.add("moonseed-fragment");
+  const repairedRelics = Array.from(discovered).filter(relicIdValid).sort();
+  const changed =
+    repairedRelics.length !== next.discoveredRelics.length ||
+    repairedRelics.some((id, index) => id !== next.discoveredRelics[index]) ||
+    next.completionMarks.hiddenRelic !== moonseedOwned ||
+    next.completionMarks.primaryObjective !== primaryComplete;
+  next.discoveredRelics = repairedRelics;
+  next.completionMarks.hiddenRelic = moonseedOwned;
+  next.completionMarks.primaryObjective = primaryComplete;
+  if (changed && incrementRevision) {
+    next.revision += 1;
+    next.updatedAt = now.toISOString();
+  }
+  return next;
 }
 
 function isoDateValid(value: unknown): value is string {
@@ -220,7 +261,7 @@ export function mergeExpeditionProgress(
   now = new Date(),
 ): ExpeditionProgressV1 {
   const preferred = local.revision >= remote.revision ? local : remote;
-  return {
+  const merged: ExpeditionProgressV1 = {
     schemaVersion: EXPEDITION_PROGRESS_SCHEMA_VERSION,
     revision: Math.max(local.revision, remote.revision) + 1,
     updatedAt: now.toISOString(),
@@ -255,6 +296,7 @@ export function mergeExpeditionProgress(
       ...remote.recentClaims,
     ])).sort().slice(-MAX_EXPEDITION_CLAIMS),
   };
+  return canonicalizeExpeditionProgress(merged, now, false);
 }
 
 export class ExpeditionProgressRepository {
@@ -282,26 +324,35 @@ export class ExpeditionProgressRepository {
 
     const primary = primaryRaw ? decode(primaryRaw) : null;
     if (primary) {
-      this.current = primary;
+      const canonical = canonicalizeExpeditionProgress(primary, this.now());
+      const repaired = expeditionProgressChecksum(canonical) !==
+        expeditionProgressChecksum(primary);
+      this.current = canonical;
+      if (repaired) this.persist(canonical);
       return {
-        progress: clone(primary),
+        progress: clone(canonical),
         recoveredFrom: "primary",
-        recoveryReason: null,
+        recoveryReason: repaired ? "progress-invariants-repaired" : null,
       };
     }
 
     const backup = backupRaw ? decode(backupRaw) : null;
     if (backup) {
-      this.current = backup;
+      const canonical = canonicalizeExpeditionProgress(backup, this.now());
+      const repaired = expeditionProgressChecksum(canonical) !==
+        expeditionProgressChecksum(backup);
+      this.current = canonical;
       try {
-        this.storage.setItem(EXPEDITION_PROGRESS_PRIMARY_KEY, encode(backup));
+        this.storage.setItem(EXPEDITION_PROGRESS_PRIMARY_KEY, encode(canonical));
       } catch {
         // The recovered in-memory copy remains authoritative for this session.
       }
       return {
-        progress: clone(backup),
+        progress: clone(canonical),
         recoveredFrom: "backup",
-        recoveryReason: primaryRaw ? "primary-corrupt" : "primary-missing",
+        recoveryReason: repaired
+          ? "progress-invariants-repaired"
+          : primaryRaw ? "primary-corrupt" : "primary-missing",
       };
     }
 
@@ -316,6 +367,61 @@ export class ExpeditionProgressRepository {
 
   snapshot(): ExpeditionProgressV1 {
     return clone(this.current);
+  }
+
+  /** Persist the Moonseed at pickup time, before the later chase can fail. */
+  recordMoonseedDiscovery(
+    input: ExpeditionRelicDiscoveryInput,
+  ): ExpeditionCompletionResult {
+    const claimId = `expedition:${safeClaimId(input.claimId)}:moonseed`;
+    if (this.current.recentClaims.includes(claimId)) {
+      return {
+        progress: this.snapshot(),
+        claimed: false,
+        duplicatePrevented: true,
+        newlyDiscoveredRelics: [],
+        newlyRestoredMoonWell: false,
+        newlyCompletedMarks: [],
+      };
+    }
+    const alreadyOwned = this.current.discoveredRelics.includes("moonseed-fragment") &&
+      this.current.completionMarks.hiddenRelic;
+    if (alreadyOwned) {
+      return {
+        progress: this.snapshot(),
+        claimed: false,
+        duplicatePrevented: false,
+        newlyDiscoveredRelics: [],
+        newlyRestoredMoonWell: false,
+        newlyCompletedMarks: [],
+      };
+    }
+    this.current = {
+      ...this.current,
+      revision: this.current.revision + 1,
+      updatedAt: this.now().toISOString(),
+      latestPlanHash: safePlanHash(input.planHash),
+      discoveredRelics: Array.from(new Set([
+        ...this.current.discoveredRelics,
+        "moonseed-fragment" as const,
+      ])).sort(),
+      completionMarks: {
+        ...this.current.completionMarks,
+        hiddenRelic: true,
+      },
+      recentClaims: [...this.current.recentClaims, claimId]
+        .sort()
+        .slice(-MAX_EXPEDITION_CLAIMS),
+    };
+    this.persist(this.current);
+    return {
+      progress: this.snapshot(),
+      claimed: true,
+      duplicatePrevented: false,
+      newlyDiscoveredRelics: ["moonseed-fragment"],
+      newlyRestoredMoonWell: false,
+      newlyCompletedMarks: ["hiddenRelic"],
+    };
   }
 
   recordCompletion(input: ExpeditionCompletionInput): ExpeditionCompletionResult {

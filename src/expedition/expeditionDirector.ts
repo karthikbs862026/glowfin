@@ -173,14 +173,12 @@ export class ExpeditionDirector {
       this.objective.textContent = snapshot.relicResolved
         ? snapshot.relicFound
           ? "Moonseed Fragment found · keep Flow"
-          : "Safe current chosen · Fragment remains hidden"
-        : "Gold narrow route: Fragment · Cyan wide route: safe";
+          : "Moonseed current resolved"
+        : "Gold Moonseed ahead · steer into its luminous ring";
       this.objectiveFill.style.width = snapshot.relicResolved ? "100%" : "0%";
       this.stageStats.textContent = snapshot.relicFound
         ? "Fragment found ✓"
-        : snapshot.relicResolved
-          ? "Relic route missed · mission continues"
-          : "Optional relic · no harsh penalty";
+        : "Required relic · missed rings reform ahead";
       return;
     }
     if (snapshot.beat === "rescue-miri") {
@@ -271,7 +269,7 @@ export class ExpeditionDirector {
       this.objective.textContent = "The Missing Moonseed · Chapter 1 complete";
       this.objectiveFill.style.width = "100%";
       this.stageStats.textContent = snapshot.cleanChase
-        ? "Primary objective · Hidden relic · Clean chase"
+        ? "Primary objective · Moonseed relic · Clean chase"
         : "Primary objective · Moon Well restored";
     }
   }

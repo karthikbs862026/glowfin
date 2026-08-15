@@ -8,7 +8,11 @@ import * as THREE from "three";
 import type { TuningConfig } from "../core/config";
 import type { Gate } from "../sim/course";
 import type { ActiveLivingWorldEvent } from "../sim/obstacleVariety";
-import type { CrystalTrenchRunStatus, DuskmawRunStatus } from "../sim/run";
+import type {
+  CrystalTrenchRunStatus,
+  DuskmawRunStatus,
+  EclipseCourtRunStatus,
+} from "../sim/run";
 import { forwardSpeed, type SimState } from "../sim/state";
 import {
   createCausticMaterial,
@@ -48,6 +52,15 @@ import { KelpCathedralField } from "./kelpCathedralField";
 import { CrystalTrenchField } from "./crystalTrenchField";
 import { LeviathanGraveyardField } from "./leviathanGraveyardField";
 import { isEffectivelyVisible } from "./effectiveVisibility";
+import { LivingAtlasField, type LivingAtlasHotspot } from "./livingAtlasField";
+import type { RelicAtlasId, RelicAtlasState } from "../meta/relicAtlas";
+import {
+  ECLIPSE_COURT_DRAW_CALLS,
+  ECLIPSE_COURT_MATERIALS,
+  ECLIPSE_COURT_TRIANGLES,
+  EclipseCourtField,
+} from "./eclipseCourtField";
+import type { GraphicsBootProfile } from "./bootProfile";
 
 /** Hard caps. Part 4.6 requires pool sizes be part of the performance budget. */
 const MAX_POOLED_STRIPES = 40;
@@ -56,6 +69,7 @@ const STANDARD_EXPOSURE = 0.96;
 const KELP_CATHEDRAL_EXPOSURE = 1.08;
 const CRYSTAL_TRENCH_EXPOSURE = 1.12;
 const LEVIATHAN_GRAVEYARD_EXPOSURE = 1.42;
+const ECLIPSE_COURT_EXPOSURE = 1.34;
 const HIGH_CONTRAST_EXPOSURE = 1.06;
 
 export interface PresentationPreferences {
@@ -72,8 +86,10 @@ function lerp(a: number, b: number, t: number): number {
 export class GameView {
   readonly scene = new THREE.Scene();
   readonly camera: THREE.PerspectiveCamera;
-  /** Resolves after required textures and the GLB install-or-fallback decision. */
+  /** Resolves after required textures settle; GLB upgrades install afterward. */
   readonly ready: Promise<void>;
+  /** Resolves after the optional production GLB upgrade reaches a terminal state. */
+  readonly productionAssetsReady: Promise<void>;
   private readonly renderer: THREE.WebGLRenderer;
 
   private readonly creature: Creature;
@@ -95,10 +111,17 @@ export class GameView {
   private readonly kelpCathedral: KelpCathedralField;
   private readonly crystalTrench: CrystalTrenchField;
   private readonly leviathanGraveyard: LeviathanGraveyardField;
-  private readonly composer: EffectComposer;
-  private readonly bloomPass: UnrealBloomPass;
+  private readonly livingAtlas: LivingAtlasField;
+  // Realm Pack art is created only when the completed 6/6 journey enters it.
+  // Keeping it out of the default 1/6 hub restores V47's startup GPU footprint.
+  private eclipseCourt: EclipseCourtField | null = null;
+  private eclipseCourtStageIndex = 0;
+  private readonly composer: EffectComposer | null;
+  private readonly renderPass: RenderPass | null;
+  private readonly bloomPass: UnrealBloomPass | null;
   private bloomEnabled = true;
   private qualityBloomEnabled = true;
+  private bloomResolutionScale = 0.5;
   private reducedMotion = false;
   private highContrast = false;
   private heroMoment: GlowfinHeroMoment | null = null;
@@ -108,10 +131,12 @@ export class GameView {
   private readonly wallCausticHot = new THREE.Color(0xff6be0);
   private readonly wallCausticScratch = new THREE.Color();
   private activeRealm: RealmId = "moon-garden";
+  private livingAtlasActive = false;
   private moonGardenBackground: THREE.Texture | null = null;
   private kelpBackground: THREE.Texture | null = null;
   private crystalTrenchBackground: THREE.Texture | null = null;
   private leviathanGraveyardBackground: THREE.Texture | null = null;
+  private eclipseCourtBackground: THREE.Texture | null = null;
   /**
    * Mask material for the contrast probe. Outputs white only for obstacles
    * within the reaction window; anything further reads as background.
@@ -218,9 +243,23 @@ export class GameView {
 
   constructor(
     canvas: HTMLCanvasElement,
-    private readonly cfg: TuningConfig
+    private readonly cfg: TuningConfig,
+    bootProfile: Readonly<GraphicsBootProfile>,
+    context: WebGL2RenderingContext,
   ) {
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    canvas.dataset["gameViewStage"] = "renderer-attachment";
+    this.renderer = new THREE.WebGLRenderer({
+      canvas,
+      context,
+      alpha: false,
+      antialias: bootProfile.antialias,
+      depth: true,
+      failIfMajorPerformanceCaveat: false,
+      powerPreference: bootProfile.powerPreference,
+      preserveDrawingBuffer: false,
+      stencil: false,
+    });
+    canvas.dataset["gameViewStage"] = "world-construction";
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     // The deeper directional material pass intentionally removed broad
@@ -234,14 +273,20 @@ export class GameView {
     // instead, so the counters accumulate across every pass. Post-processing
     // draws are real draws and belong in the budget.
     this.renderer.info.autoReset = false;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const initialSettings = tierSettings(bootProfile.initialQuality);
+    this.renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio, initialSettings.pixelRatioCap),
+    );
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
 
+    canvas.dataset["gameViewStage"] = "texture-bootstrap";
     const loadingManager = new THREE.LoadingManager();
-    const textureReady = new Promise<void>((resolve, reject) => {
+    const textureFailures: string[] = [];
+    const textureReady = new Promise<void>((resolve) => {
       loadingManager.onLoad = resolve;
       loadingManager.onError = (url) => {
-        reject(new Error(`Moon-Garden art asset failed to load: ${url}`));
+        textureFailures.push(url);
+        console.warn(`Glowfin texture fallback: ${url}`);
       };
     });
     const textureLoader = new THREE.TextureLoader(loadingManager);
@@ -374,6 +419,7 @@ export class GameView {
       leviathanSeabedSurface
     );
 
+    canvas.dataset["gameViewStage"] = "background-construction";
     const backgroundCanvas = document.createElement("canvas");
     backgroundCanvas.width = 128;
     backgroundCanvas.height = 256;
@@ -570,6 +616,90 @@ export class GameView {
     leviathanBackgroundTexture.colorSpace = THREE.SRGBColorSpace;
     this.leviathanGraveyardBackground = leviathanBackgroundTexture;
     this.disposables.push(leviathanBackgroundTexture);
+
+    // The First Moonseed needs luminous underwater depth even on the low tier.
+    // This tiny generated backdrop replaces the rejected featureless black void
+    // without adding a network asset or another rendering pass.
+    const eclipseBackgroundCanvas = document.createElement("canvas");
+    eclipseBackgroundCanvas.width = 192;
+    eclipseBackgroundCanvas.height = 384;
+    const eclipseBackgroundContext = eclipseBackgroundCanvas.getContext("2d");
+    if (!eclipseBackgroundContext) {
+      throw new Error("2D canvas is required for the Eclipse Bloom gradient.");
+    }
+    const eclipseGradient = eclipseBackgroundContext.createLinearGradient(
+      0,
+      0,
+      0,
+      eclipseBackgroundCanvas.height,
+    );
+    eclipseGradient.addColorStop(0, "#49647b");
+    eclipseGradient.addColorStop(0.17, "#294b67");
+    eclipseGradient.addColorStop(0.46, "#123957");
+    eclipseGradient.addColorStop(0.74, "#0a2944");
+    eclipseGradient.addColorStop(1, "#061828");
+    eclipseBackgroundContext.fillStyle = eclipseGradient;
+    eclipseBackgroundContext.fillRect(
+      0,
+      0,
+      eclipseBackgroundCanvas.width,
+      eclipseBackgroundCanvas.height,
+    );
+    const moonAura = eclipseBackgroundContext.createRadialGradient(
+      eclipseBackgroundCanvas.width * 0.5,
+      eclipseBackgroundCanvas.height * 0.16,
+      2,
+      eclipseBackgroundCanvas.width * 0.5,
+      eclipseBackgroundCanvas.height * 0.16,
+      eclipseBackgroundCanvas.width * 0.72,
+    );
+    moonAura.addColorStop(0, "rgba(255, 237, 192, 0.58)");
+    moonAura.addColorStop(0.16, "rgba(174, 232, 237, 0.34)");
+    moonAura.addColorStop(0.48, "rgba(112, 132, 202, 0.18)");
+    moonAura.addColorStop(1, "rgba(4, 18, 42, 0)");
+    eclipseBackgroundContext.fillStyle = moonAura;
+    eclipseBackgroundContext.fillRect(
+      0,
+      0,
+      eclipseBackgroundCanvas.width,
+      eclipseBackgroundCanvas.height,
+    );
+    // Refracted curtains and suspended life make the backdrop read as water,
+    // while the geometry layer owns all collision and route readability.
+    eclipseBackgroundContext.save();
+    eclipseBackgroundContext.globalCompositeOperation = "screen";
+    for (let index = 0; index < 9; index += 1) {
+      const x = (index + 0.45) / 9 * eclipseBackgroundCanvas.width;
+      const width = 12 + (index % 3) * 7;
+      const shaft = eclipseBackgroundContext.createLinearGradient(x, 0, x + width, eclipseBackgroundCanvas.height * 0.76);
+      shaft.addColorStop(0, `rgba(220, 246, 239, ${0.12 + (index % 2) * 0.035})`);
+      shaft.addColorStop(0.48, "rgba(105, 195, 208, 0.035)");
+      shaft.addColorStop(1, "rgba(55, 105, 153, 0)");
+      eclipseBackgroundContext.fillStyle = shaft;
+      eclipseBackgroundContext.beginPath();
+      eclipseBackgroundContext.moveTo(x - width * 0.35, 0);
+      eclipseBackgroundContext.lineTo(x + width * 0.42, 0);
+      eclipseBackgroundContext.lineTo(x + width * 2.2, eclipseBackgroundCanvas.height * 0.82);
+      eclipseBackgroundContext.lineTo(x - width * 1.55, eclipseBackgroundCanvas.height * 0.82);
+      eclipseBackgroundContext.closePath();
+      eclipseBackgroundContext.fill();
+    }
+    eclipseBackgroundContext.restore();
+    for (let index = 0; index < 74; index += 1) {
+      const x = (index * 47 % eclipseBackgroundCanvas.width) + Math.sin(index * 2.7) * 3;
+      const y = (index * 83 % eclipseBackgroundCanvas.height);
+      const radius = index % 11 === 0 ? 1.35 : index % 4 === 0 ? 0.8 : 0.45;
+      eclipseBackgroundContext.fillStyle = index % 9 === 0
+        ? "rgba(244, 210, 146, 0.24)"
+        : "rgba(170, 232, 237, 0.2)";
+      eclipseBackgroundContext.beginPath();
+      eclipseBackgroundContext.arc(x, y, radius, 0, Math.PI * 2);
+      eclipseBackgroundContext.fill();
+    }
+    const eclipseBackgroundTexture = new THREE.CanvasTexture(eclipseBackgroundCanvas);
+    eclipseBackgroundTexture.colorSpace = THREE.SRGBColorSpace;
+    this.eclipseCourtBackground = eclipseBackgroundTexture;
+    this.disposables.push(eclipseBackgroundTexture);
     // Fog starts well beyond the sight distance so it never eats an obstacle
     // the player is supposed to be reading (Part 3.4).
     // Fog must begin BEYOND the reaction window, not at its edge.
@@ -585,11 +715,22 @@ export class GameView {
       cfg.readability.visibleAheadUnits * cfg.visual.fogFarMultiplier
     );
 
+    canvas.dataset["gameViewStage"] = "atlas-construction";
     this.camera = new THREE.PerspectiveCamera(
       cfg.camera.fovAtZeroMomentum,
       window.innerWidth / window.innerHeight,
       0.1,
       cfg.readability.visibleAheadUnits * (cfg.visual.fogFarMultiplier + 0.4)
+    );
+    this.livingAtlas = new LivingAtlasField(
+      window.innerWidth,
+      window.innerHeight,
+      {
+        moonstone: moonstoneVolumeSurface,
+        kelp: kelpStipeSurface,
+        crystal: crystalTrenchSurface,
+        fossil: leviathanFossilSurface,
+      },
     );
 
     this.hemisphereLight = new THREE.HemisphereLight(0x78c5e8, 0x050d1b, 1.08);
@@ -708,6 +849,7 @@ export class GameView {
     });
     for (const object of this.environment.objects) this.scene.add(object);
 
+    canvas.dataset["gameViewStage"] = "realm-construction";
     this.kelpCathedral = new KelpCathedralField(cfg, {
       blade: kelpBladeSurface,
       stipe: kelpStipeSurface,
@@ -726,7 +868,6 @@ export class GameView {
       seabed: leviathanSeabedSurface,
     });
     this.scene.add(this.leviathanGraveyard.group);
-
     this.r3Encounters = new R3EncounterField(
       inlayMaterial,
       this.environment.sharedLivingMaterial()
@@ -742,7 +883,10 @@ export class GameView {
     // can still start from the already-validated construction kit if a
     // CDN/cache request fails; CI separately requires every status to be "glb"
     // so the fallback cannot masquerade as production evidence.
-    const productionGeometryReady = loadRuntimeProductionGeometry()
+    // The authored GLBs are a visual upgrade over the already-playable
+    // construction kit. Begin them only after essential textures settle and
+    // never hold the first playable frame behind model decode.
+    this.productionAssetsReady = textureReady.then(() => loadRuntimeProductionGeometry())
       .then((assets) => {
         const ghostGeometry = {
           body: assets.glowfin.body.clone(),
@@ -773,10 +917,7 @@ export class GameView {
         };
         console.warn(`Glowfin production GLB fallback: ${message}`);
       });
-    this.ready = Promise.all([
-      textureReady,
-      productionGeometryReady
-    ]).then(() => undefined);
+    this.ready = textureReady;
 
     // --- trail ribbon (Part 3.2 priority 2) ---
     this.trail = new TrailRibbon(cfg);
@@ -787,18 +928,30 @@ export class GameView {
     // present ("with all effects enabled (bloom, trail, caustics active)").
     // Without it, emissive surfaces read as flat coloured shapes rather than as
     // anything bioluminescent.
-    this.composer = new EffectComposer(this.renderer);
-    this.composer.addPass(new RenderPass(this.scene, this.camera));
-    this.bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth * 0.5, window.innerHeight * 0.5),
-      cfg.visual.bloomStrength,
-      cfg.visual.bloomRadius,
-      cfg.visual.bloomThreshold
-    );
-    this.composer.addPass(this.bloomPass);
-    this.composer.setSize(window.innerWidth, window.innerHeight);
+    canvas.dataset["gameViewStage"] = "post-processing";
+    if (bootProfile.postProcessing) {
+      this.composer = new EffectComposer(this.renderer);
+      this.renderPass = new RenderPass(this.scene, this.camera);
+      this.composer.addPass(this.renderPass);
+      this.bloomPass = new UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth * 0.5, window.innerHeight * 0.5),
+        cfg.visual.bloomStrength,
+        cfg.visual.bloomRadius,
+        cfg.visual.bloomThreshold
+      );
+      this.composer.addPass(this.bloomPass);
+      this.composer.setSize(window.innerWidth, window.innerHeight);
+    } else {
+      this.composer = null;
+      this.renderPass = null;
+      this.bloomPass = null;
+      this.qualityBloomEnabled = false;
+      this.bloomEnabled = false;
+    }
 
     this.gpuName = readGpuName(this.renderer.getContext());
+    canvas.dataset["graphicsBootMode"] = bootProfile.mode;
+    canvas.dataset["gameViewStage"] = "ready";
     window.addEventListener("resize", this.handleResize);
   }
 
@@ -954,15 +1107,17 @@ export class GameView {
 
   /** Apply a quality tier (Part 4.6 dynamic scaling). */
   setQuality(settings: TierSettings): void {
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, settings.pixelRatioCap));
+    const pixelRatio = Math.min(window.devicePixelRatio, settings.pixelRatioCap);
+    this.renderer.setPixelRatio(pixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
+    // EffectComposer snapshots DPR during construction. Keep its half-float
+    // targets on the same bounded DPR as the renderer.
+    this.composer?.setPixelRatio(pixelRatio);
 
-    this.qualityBloomEnabled = settings.bloomEnabled;
+    this.qualityBloomEnabled = settings.bloomEnabled && this.bloomPass !== null;
+    this.bloomResolutionScale = settings.bloomResolutionScale;
     this.applyPresentationEffects();
-    this.bloomPass.resolution.set(
-      Math.max(64, window.innerWidth * settings.bloomResolutionScale),
-      Math.max(64, window.innerHeight * settings.bloomResolutionScale)
-    );
+    this.applyBloomResolution();
 
     const octaves = settings.causticsEnabled ? settings.causticOctaves : 1;
     setCausticOctaves(this.floorMaterial, octaves);
@@ -992,8 +1147,8 @@ export class GameView {
     const settings = tierSettings(quality);
     this.setQuality(settings);
 
-    this.bloomEnabled = bloom;
-    this.bloomPass.enabled = bloom;
+    this.bloomEnabled = bloom && this.bloomPass !== null;
+    if (this.bloomPass) this.bloomPass.enabled = this.bloomEnabled;
 
     const floorIntensity = this.floorMaterial.uniforms["uIntensity"];
     const wallIntensity = this.wallMaterial.uniforms["uIntensity"];
@@ -1027,6 +1182,7 @@ export class GameView {
     const kelpActive = realmId === "kelp-cathedral";
     const crystalActive = realmId === "crystal-trench";
     const leviathanActive = realmId === "leviathan-graveyard";
+    const eclipseActive = realmId === "eclipse-court";
     const moonGardenActive = realmId === "moon-garden";
     for (const object of this.gates.objects) object.visible = moonGardenActive;
     this.speedInlays.visible = moonGardenActive;
@@ -1041,6 +1197,8 @@ export class GameView {
         ? this.crystalTrenchBackground
         : leviathanActive
           ? this.leviathanGraveyardBackground
+          : eclipseActive
+            ? this.eclipseCourtBackground
           : this.moonGardenBackground;
     if (this.scene.fog instanceof THREE.Fog) {
       this.scene.fog.color.set(definition.palette.fog);
@@ -1051,6 +1209,8 @@ export class GameView {
             ? 1.24
             : leviathanActive
               ? 1.36
+              : eclipseActive
+                ? 1.58
               : this.cfg.visual.fogNearMultiplier);
       this.scene.fog.far = this.cfg.readability.visibleAheadUnits *
         (kelpActive
@@ -1059,6 +1219,8 @@ export class GameView {
             ? 2.38
             : leviathanActive
               ? 2.56
+              : eclipseActive
+                ? 3.05
               : this.cfg.visual.fogFarMultiplier);
     }
     const setFloorColour = (uniform: string, colour: THREE.ColorRepresentation): void => {
@@ -1073,6 +1235,8 @@ export class GameView {
           ? 0x101c38
           : leviathanActive
             ? 0x284f57
+            : eclipseActive
+              ? 0x0b071d
             : 0x20364a,
     );
     setFloorColour(
@@ -1083,6 +1247,8 @@ export class GameView {
           ? 0x5ebee8
           : leviathanActive
             ? 0x75dce4
+            : eclipseActive
+              ? 0xe5b6ff
             : 0x2ea8d8,
     );
     setFloorColour("uFogColor", definition.palette.fog);
@@ -1096,6 +1262,8 @@ export class GameView {
           ? 0xd8f7ff
           : leviathanActive
             ? 0xb9dfe3
+            : eclipseActive
+              ? 0xf6e4ff
             : 0x78c5e8,
     );
     this.hemisphereLight.groundColor.set(
@@ -1113,6 +1281,8 @@ export class GameView {
         ? 1.68
         : leviathanActive
           ? 1.76
+          : eclipseActive
+            ? 1.92
           : 1.08;
     this.ambientLight.color.set(
       kelpActive
@@ -1121,6 +1291,8 @@ export class GameView {
           ? 0x4e5f9d
           : leviathanActive
             ? 0x62888e
+            : eclipseActive
+              ? 0x4b3c76
             : 0x285877,
     );
     this.ambientLight.intensity = kelpActive
@@ -1129,6 +1301,8 @@ export class GameView {
         ? 0.68
         : leviathanActive
           ? 0.72
+          : eclipseActive
+            ? 0.58
           : 0.38;
     this.keyLight.color.set(
       kelpActive
@@ -1137,6 +1311,8 @@ export class GameView {
           ? 0xd9fbff
           : leviathanActive
             ? 0xe2ffff
+            : eclipseActive
+              ? 0xffe8a8
             : 0xb9edff,
     );
     this.keyLight.intensity = kelpActive
@@ -1145,6 +1321,8 @@ export class GameView {
         ? 2.26
         : leviathanActive
           ? 2.32
+          : eclipseActive
+            ? 2.5
           : 1.65;
     this.bounceLight.color.set(
       kelpActive
@@ -1153,6 +1331,8 @@ export class GameView {
           ? 0x8d72ff
           : leviathanActive
             ? 0x66b9c2
+            : eclipseActive
+              ? 0xa96cff
             : 0xff6bba,
     );
     this.bounceLight.intensity = kelpActive
@@ -1161,14 +1341,19 @@ export class GameView {
         ? 0.64
         : leviathanActive
           ? 0.62
+          : eclipseActive
+            ? 0.76
           : 0.28;
     this.applyPresentationEffects();
   }
 
   private applyPresentationEffects(): void {
-    this.bloomEnabled = this.qualityBloomEnabled && !this.reducedMotion;
-    this.bloomPass.enabled = this.bloomEnabled;
-    this.renderer.toneMappingExposure = this.highContrast
+    this.bloomEnabled = this.qualityBloomEnabled && !this.reducedMotion &&
+      this.bloomPass !== null && this.composer !== null;
+    if (this.bloomPass) this.bloomPass.enabled = this.bloomEnabled;
+    this.renderer.toneMappingExposure = this.livingAtlasActive
+      ? this.highContrast ? 1.2 : 1.1
+      : this.highContrast
       ? Math.max(
           HIGH_CONTRAST_EXPOSURE,
           this.activeRealm === "kelp-cathedral"
@@ -1177,6 +1362,8 @@ export class GameView {
               ? CRYSTAL_TRENCH_EXPOSURE
               : this.activeRealm === "leviathan-graveyard"
                 ? LEVIATHAN_GRAVEYARD_EXPOSURE
+                : this.activeRealm === "eclipse-court"
+                  ? ECLIPSE_COURT_EXPOSURE
                 : 0,
         )
       : this.activeRealm === "kelp-cathedral"
@@ -1185,6 +1372,8 @@ export class GameView {
           ? CRYSTAL_TRENCH_EXPOSURE
           : this.activeRealm === "leviathan-graveyard"
             ? LEVIATHAN_GRAVEYARD_EXPOSURE
+            : this.activeRealm === "eclipse-court"
+              ? ECLIPSE_COURT_EXPOSURE
             : STANDARD_EXPOSURE;
   }
 
@@ -1256,6 +1445,54 @@ export class GameView {
     this.trail.setLumenChainFraction(this.lumenChainFraction);
   }
 
+  /** Persistent hub presentation; completion state never affects simulation. */
+  setRestorationPresentation(
+    restorationFraction: number,
+    auralisGuardianActive: boolean,
+  ): void {
+    this.environment.setRestorationFraction(restorationFraction);
+    this.leviathanGraveyard.setSanctuaryGuardianActive(auralisGuardianActive);
+  }
+
+  setLivingAtlasState(state: Readonly<RelicAtlasState>): void {
+    this.livingAtlas.setState(state);
+  }
+
+  setLivingAtlasActive(active: boolean): void {
+    if (this.livingAtlasActive === active) return;
+    this.livingAtlasActive = active;
+    if (!active) {
+      if (this.renderPass) {
+        this.renderPass.scene = this.scene;
+        this.renderPass.camera = this.camera;
+      }
+    }
+    this.applyPresentationEffects();
+  }
+
+  setEclipseCourtTheme(colour: string | null, stageIndex = 0): void {
+    this.eclipseCourtStageIndex = Math.max(0, Math.min(2, Math.floor(stageIndex)));
+    if (colour && !this.eclipseCourt) {
+      this.eclipseCourt = new EclipseCourtField();
+      this.scene.add(this.eclipseCourt.group);
+    }
+    this.eclipseCourt?.setActive(colour, stageIndex);
+  }
+
+  selectLivingAtlasRelic(id: RelicAtlasId): void {
+    this.livingAtlas.select(id);
+  }
+
+  livingAtlasHotspots(): Readonly<
+    Partial<Record<RelicAtlasId, LivingAtlasHotspot>>
+  > {
+    return this.livingAtlas.hotspots();
+  }
+
+  livingAtlasBudget(): { drawCalls: number; triangles: number; materials: number } {
+    return this.livingAtlas.budget();
+  }
+
   r3EncounterBudget(): { drawCalls: number; triangles: number; materials: 0 } {
     return {
       drawCalls: this.r3Encounters.additionalDrawCalls(),
@@ -1300,6 +1537,14 @@ export class GameView {
     };
   }
 
+  eclipseCourtBudget(): { drawCalls: number; triangles: number; materials: number } {
+    return {
+      drawCalls: ECLIPSE_COURT_DRAW_CALLS,
+      triangles: ECLIPSE_COURT_TRIANGLES,
+      materials: ECLIPSE_COURT_MATERIALS,
+    };
+  }
+
   /** Presentation-only post-run personality pose; simulation truth is frozen. */
   setHeroMoment(moment: GlowfinHeroMoment | null): void {
     this.heroMoment = moment;
@@ -1329,9 +1574,37 @@ export class GameView {
   private handleResize = (): void => {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
+    this.livingAtlas.resize(window.innerWidth, window.innerHeight);
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
-    this.composer.setSize(window.innerWidth, window.innerHeight);
+    this.composer?.setSize(window.innerWidth, window.innerHeight);
+    this.applyBloomResolution();
   };
+
+  private applyBloomResolution(): void {
+    if (!this.bloomPass) return;
+    const pixelRatio = this.renderer.getPixelRatio();
+    this.bloomPass.setSize(
+      Math.max(64, window.innerWidth * pixelRatio * this.bloomResolutionScale),
+      Math.max(64, window.innerHeight * pixelRatio * this.bloomResolutionScale),
+    );
+  }
+
+  /**
+   * Three.js restores its own WebGL state before this application listener.
+   * Reuse those retained scene resources instead of allocating a second copy
+   * of every realm, texture, composer target and shader on a mobile GPU.
+   */
+  recoverAfterContextRestore(settings: TierSettings): void {
+    this.renderer.resetState();
+    this.setQuality(settings);
+    this.handleResize();
+    this.renderer.info.reset();
+    this.resetTrail();
+  }
+
+  isContextLost(): boolean {
+    return this.renderer.getContext().isContextLost();
+  }
 
   /**
    * Update visuals from simulation state and render.
@@ -1354,9 +1627,24 @@ export class GameView {
     kelpRescuedManta = false,
     crystalTrenchStatus: Readonly<CrystalTrenchRunStatus> | null = null,
     duskmawStatus: Readonly<DuskmawRunStatus> | null = null,
+    eclipseCourtStatus: Readonly<EclipseCourtRunStatus> | null = null,
   ): void {
     const cfg = this.cfg;
     this.renderer.info.reset();
+    if (this.livingAtlasActive) {
+      this.livingAtlas.update(frameSec, this.reducedMotion);
+      if (this.renderPass) {
+        this.renderPass.scene = this.livingAtlas.scene;
+        this.renderPass.camera = this.livingAtlas.camera;
+      }
+      if (this.bloomEnabled && this.composer) this.composer.render();
+      else this.renderer.render(this.livingAtlas.scene, this.livingAtlas.camera);
+      return;
+    }
+    if (this.renderPass) {
+      this.renderPass.scene = this.scene;
+      this.renderPass.camera = this.camera;
+    }
     const presentationElapsedSec = this.reducedMotion ? 0 : elapsedSec;
     advanceCausticTime(this.floorMaterial, presentationElapsedSec, cfg.visual.causticSpeed);
     advanceCausticTime(this.wallMaterial, presentationElapsedSec, cfg.visual.causticSpeed);
@@ -1458,13 +1746,31 @@ export class GameView {
       momentumFraction
     );
     const leviathanCamera = this.activeRealm === "leviathan-graveyard";
+    const eclipseCamera = this.activeRealm === "eclipse-court";
     const finalePhase = duskmawStatus?.phase === "complete";
     const moonlinkPhase = duskmawStatus?.phase === "moonlink-battle";
     const finaleLinear = finalePhase
       ? THREE.MathUtils.clamp((duskmawStatus?.phaseElapsedSec ?? 0) / 7.2, 0, 1)
       : 0;
     const finaleEase = finaleLinear * finaleLinear * (3 - 2 * finaleLinear);
-    const fov = leviathanCamera
+    const courtFinaleLinear = eclipseCourtStatus?.completed
+      ? THREE.MathUtils.clamp(
+        (elapsedSec - eclipseCourtStatus.lastAlignmentSec) / 5.5,
+        0,
+        1,
+      )
+      : 0;
+    const courtFinaleEase = courtFinaleLinear * courtFinaleLinear *
+      (3 - 2 * courtFinaleLinear);
+    const fov = eclipseCamera
+      ? eclipseCourtStatus?.completed
+        ? lerp(this.eclipseCourtStageIndex === 1 ? 64 : 59, 53.5, courtFinaleEase)
+        : this.eclipseCourtStageIndex === 0
+          ? lerp(56.5, 60.5, momentumFraction)
+          : this.eclipseCourtStageIndex === 1
+            ? lerp(64, 68, momentumFraction)
+            : lerp(54.5, 58.5, momentumFraction)
+      : leviathanCamera
       ? finalePhase
         ? lerp(57, 52.5, finaleEase)
         : moonlinkPhase
@@ -1476,17 +1782,30 @@ export class GameView {
       this.camera.updateProjectionMatrix();
     }
     const camX = sim.lateralPosition * cfg.camera.lateralFollowFraction;
-    const hitShake = leviathanCamera ? collisionFraction : 0;
+    const hitShake = leviathanCamera
+      ? collisionFraction
+      : eclipseCamera
+        ? collisionFraction * 0.42
+        : 0;
     const finaleBlastAge = finalePhase ? duskmawStatus?.phaseElapsedSec ?? 0 : -1;
     const finaleShakeEnvelope = finaleBlastAge >= 0.8 && finaleBlastAge < 3.9
       ? Math.sin(Math.PI * THREE.MathUtils.clamp((finaleBlastAge - 0.8) / 3.1, 0, 1))
       : 0;
+    const courtBurstEnvelope = eclipseCourtStatus?.completed
+      ? Math.sin(Math.PI * THREE.MathUtils.clamp(
+        (elapsedSec - eclipseCourtStatus.lastAlignmentSec) / 4.8,
+        0,
+        1,
+      ))
+      : 0;
     const shakeX = this.reducedMotion ? 0 :
       Math.sin(elapsedSec * 43) * hitShake * 0.34 +
-      Math.sin(elapsedSec * 31) * finaleShakeEnvelope * 0.16;
+      Math.sin(elapsedSec * 31) * finaleShakeEnvelope * 0.16 +
+      Math.sin(elapsedSec * 29) * courtBurstEnvelope * 0.08;
     const shakeY = this.reducedMotion ? 0 :
       Math.sin(elapsedSec * 57 + 0.8) * hitShake * 0.22 +
-      Math.sin(elapsedSec * 37 + 0.4) * finaleShakeEnvelope * 0.11;
+      Math.sin(elapsedSec * 37 + 0.4) * finaleShakeEnvelope * 0.11 +
+      Math.sin(elapsedSec * 41 + 0.7) * courtBurstEnvelope * 0.055;
     const leviathanCameraHeight = finalePhase ? lerp(4.72, 5.05, finaleEase) : 4.55;
     const leviathanLookHeight = finalePhase ? lerp(2.15, 3.1, finaleEase) : 2.05;
     const leviathanLookAhead = finalePhase
@@ -1494,15 +1813,42 @@ export class GameView {
       : moonlinkPhase
         ? 34
         : 29.5;
+    const cameraHeight = eclipseCamera
+      ? lerp(
+        this.eclipseCourtStageIndex === 0 ? 4.7 : this.eclipseCourtStageIndex === 1 ? 5.35 : 5.85,
+        6.05,
+        courtFinaleEase,
+      )
+      : leviathanCamera
+        ? leviathanCameraHeight
+        : cfg.camera.height;
+    const lookHeight = eclipseCamera
+      ? lerp(
+        this.eclipseCourtStageIndex === 0 ? 2.05 : this.eclipseCourtStageIndex === 1 ? 2.7 : 3.05,
+        3.55,
+        courtFinaleEase,
+      )
+      : leviathanCamera
+        ? leviathanLookHeight
+        : cfg.camera.lookHeight;
+    const lookAhead = eclipseCamera
+      ? lerp(
+        this.eclipseCourtStageIndex === 0 ? 34 : this.eclipseCourtStageIndex === 1 ? 43 : 29,
+        24,
+        courtFinaleEase,
+      )
+      : leviathanCamera
+        ? leviathanLookAhead
+        : cfg.camera.lookAheadUnits;
     this.camera.position.set(
       camX + shakeX,
-      (leviathanCamera ? leviathanCameraHeight : cfg.camera.height) + shakeY,
-      worldZ + (leviathanCamera ? behind + 1.2 : behind),
+      cameraHeight + shakeY,
+      worldZ + (leviathanCamera || eclipseCamera ? behind + 1.2 : behind),
     );
     this.camera.lookAt(
-      camX * (leviathanCamera ? 0.35 : 0.5) - shakeX * 0.35,
-      (leviathanCamera ? leviathanLookHeight : cfg.camera.lookHeight) - shakeY * 0.25,
-      worldZ - (leviathanCamera ? leviathanLookAhead : cfg.camera.lookAheadUnits),
+      camX * (leviathanCamera || eclipseCamera ? 0.35 : 0.5) - shakeX * 0.35,
+      lookHeight - shakeY * 0.25,
+      worldZ - lookAhead,
     );
 
     // Obstacle caustics drift cyan -> magenta with momentum, which gives the
@@ -1569,6 +1915,14 @@ export class GameView {
       duskmawStatus,
       this.reducedMotion,
     );
+    this.eclipseCourt?.update(
+      this.activeRealm,
+      sim.forwardDistance,
+      presentationElapsedSec,
+      gates,
+      eclipseCourtStatus,
+      this.reducedMotion,
+    );
 
     if (this.activeRealm === "moon-garden") {
       this.updateStripes(sim.forwardDistance);
@@ -1581,7 +1935,7 @@ export class GameView {
       );
     }
 
-    if (this.bloomEnabled) this.composer.render();
+    if (this.bloomEnabled && this.composer) this.composer.render();
     else this.renderer.render(this.scene, this.camera);
   }
 
@@ -1598,7 +1952,7 @@ export class GameView {
     this.speedInlays.instanceMatrix.needsUpdate = true;
   }
 
-  /** Release GPU resources; Version 35 reconstructs a fresh view after loss. */
+  /** Release GPU resources when the page itself is permanently leaving. */
   dispose(): void {
     window.removeEventListener("resize", this.handleResize);
     for (const item of this.disposables) item.dispose();
@@ -1609,6 +1963,8 @@ export class GameView {
     this.kelpCathedral.dispose();
     this.crystalTrench.dispose();
     this.leviathanGraveyard.dispose();
+    this.eclipseCourt?.dispose();
+    this.livingAtlas.dispose();
     this.creature.dispose();
     this.ghostCreature.dispose();
     this.environment.dispose();
@@ -1619,7 +1975,7 @@ export class GameView {
     for (const material of this.merfolkMaskMaterials.values()) {
       material.dispose();
     }
-    this.composer.dispose();
+    this.composer?.dispose();
     this.renderer.dispose();
   }
 }

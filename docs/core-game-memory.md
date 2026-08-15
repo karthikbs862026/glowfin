@@ -524,3 +524,33 @@ The fixed 3 MiB sealed payload, 2 MiB JavaScript, 128 KiB hosted verifier and
 realm draw/triangle/texture budgets remain binding. Version 45 wrapper and CI
 artifact identities advance together; automated evidence never substitutes
 for an exact-candidate Android/iPhone playtest.
+
+## 2026-08-15 — Promote the owner-approved V48-R2 Eclipse Court campaign
+
+The accepted Eclipse Court build is Version 48-R2. Its three chapters are no
+longer trial-length showcases: Halo Procession, Constellation Weave and Crown
+Verdict contain 64, 56 and 16 authoritative objectives respectively, for 136
+objectives across twelve escalating acts. The act boundaries are deterministic
+at 0%, 25%, 50% and 75%; recovery gates and longer finale coasts make each
+chapter playable as a full campaign rather than a brief visual review.
+
+The architecture contract is content-owned, not palette-owned. Halo is an open
+lunar-rib procession with no overhead path occlusion, Weave is a field of
+floating constellation atolls with six independent manta witnesses, and
+Verdict is a rising Crown amphitheatre. Every obstacle-facing surface remains
+aligned to simulation truth, and scenery, mantas and wakes stay inside their
+authored chambers instead of crossing walls. The realm remains bounded to 50
+draw calls, 11 active materials and 112,400 triangles.
+
+Direct testing is an explicit V48 review capability only. It uses prefixed
+session storage and cannot read, migrate, overwrite or delete normal Glowfin
+progress. V48-R1, V47-R1 and earlier versioned routes are immutable comparison
+and rollback artifacts. The accepted V48-R2 source was recovered from its exact
+deployed source maps after workspace pruning; visible renderer code and shared
+progression/persistence code must always be promoted together.
+
+Eclipse Court extends the shared deterministic `Run` authority used to verify
+leaderboard replays and Moonflash clips. Its unminified hosted verifier is
+therefore allowed a narrowly revised 144 KiB ceiling (136.1 KiB measured on
+the accepted candidate), replacing the pre-Eclipse 128 KiB ceiling. This does
+not change the 3 MiB sealed payload, 2 MiB JavaScript or mobile render budgets.

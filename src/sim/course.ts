@@ -301,6 +301,7 @@ export class CourseGenerator {
   private nextArtVariant = 0;
   private nextRealmGateIndex = 0;
   private readonly realmId: RealmId;
+  private readonly realmStageIndex: number;
 
   constructor(
     readonly seed: number,
@@ -309,11 +310,13 @@ export class CourseGenerator {
       firstGateDistance?: number;
       profileDistance?: number;
       realmId?: RealmId;
+      realmStageIndex?: number;
     } = {}
   ) {
     this.rng = new SeededRandom(seed);
     this.profile = new MomentumProfile(cfg, options.profileDistance ?? 12000);
     this.realmId = options.realmId ?? "moon-garden";
+    this.realmStageIndex = Math.max(0, Math.floor(options.realmStageIndex ?? 0));
     // Give the player a clear runway before the first obstacle.
     this.nextDistance = options.firstGateDistance ?? cfg.readability.visibleAheadUnits;
   }
@@ -532,6 +535,7 @@ export class CourseGenerator {
         { seed: this.seed, gate: draftGate, gateIndex: realmGateIndex },
         halfWidth,
         r,
+        this.realmStageIndex,
       );
     }
     const proofOpening = gateSolvabilityOpening(draftGate);
@@ -590,6 +594,7 @@ export class CourseGenerator {
         { seed: this.seed, gate, gateIndex: realmGateIndex },
         halfWidth,
         r,
+        this.realmStageIndex,
       );
     }
     return gate;

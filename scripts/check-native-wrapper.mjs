@@ -27,7 +27,9 @@ function requireBrandedPng(path, minimumBytes) {
 const packageJson = json("package.json");
 const release = json("config/release.json");
 const nativeVersion = Number(release.version);
-const nativeMarketingVersion = `0.${nativeVersion}.0`;
+const revisionMatch = String(release.releaseTag).match(/-v\d+-r(\d+)(?:-|$)/i);
+const nativeRevision = Number(revisionMatch?.[1] ?? 0);
+const nativeMarketingVersion = `0.${nativeVersion}.${nativeRevision}`;
 const nativePackages = [
   "@capacitor/core",
   "@capacitor/android",

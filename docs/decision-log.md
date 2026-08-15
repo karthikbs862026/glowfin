@@ -963,3 +963,26 @@ and reduce floor/caustic competition behind the collider-true cyan core.
   3 textures rather than increasing the 3 MiB sealed-payload ceiling.
 - Advance Android/iOS wrapper and CI artifact identities to Version 45. Keep
   physical-device evidence distinct from automated wrapper and browser gates.
+
+## 2026-08-15 — Promote Eclipse Court as a full realm, not a trial collection
+
+- Freeze the owner-approved Version 48-R2 visual and gameplay state as the
+  candidate; later reconstruction must come from its deployed source maps, not
+  screenshots or an approximation of the scene.
+- Make Halo Procession, Constellation Weave and Crown Verdict four-act chapters
+  with 64, 56 and 16 objectives. Preserve deterministic gate authority,
+  recovery windows and a readable finale coast.
+- Require chapter identity through silhouette and choreography: side-mounted
+  lunar ribs for Halo, open atolls and independently swimming witnesses for
+  Weave, and a rising Crown amphitheatre for Verdict. Palette swaps never count
+  as distinct architecture.
+- Keep all scenery outside collision openings and within authored court
+  chambers. Nothing—including manta witnesses or their short pearl wakes—may
+  pass through walls or obstruct the portrait chase camera.
+- Limit the approved world to 50 draw calls, 11 materials and 112,400
+  triangles under the existing mobile realm budget.
+- Allow direct chapter entry only on explicit V48 review URLs. Namespace every
+  review-save key so testing cannot unlock, overwrite or corrupt the main game.
+- Merge through the protected pull-request path, require repository, renderer,
+  soak and native-wrapper gates, then deploy the exact saved V48-R2 Sites
+  version. Leave all earlier versioned routes immutable.

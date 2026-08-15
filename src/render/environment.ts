@@ -267,6 +267,7 @@ export class Environment {
   private readonly pointPositions: THREE.BufferAttribute;
 
   private density = 1;
+  private restorationFraction = 0;
   private activeRealm: RealmId = "moon-garden";
   private readonly matrix = new THREE.Matrix4();
   private readonly position = new THREE.Vector3();
@@ -533,6 +534,10 @@ export class Environment {
     this.heroMerfolk.setDetail(this.density);
   }
 
+  setRestorationFraction(fraction: number): void {
+    this.restorationFraction = THREE.MathUtils.clamp(fraction, 0, 1);
+  }
+
   setRealm(realmId: RealmId): void {
     this.activeRealm = realmId;
     const visible = realmId === "moon-garden";
@@ -590,7 +595,8 @@ export class Environment {
             anchorDistance: moonBloom.plan.anchorDistance,
             strength: livingEventStrength(moonBloom, time)
       }
-        : null
+        : null,
+      this.restorationFraction,
     );
     if (this.activeRealm !== "moon-garden") return;
     const heroStage = this.resolveHeroStage(forwardDistance, gates);
@@ -1277,11 +1283,12 @@ export class Environment {
       this.godRays.setMatrixAt(index, this.matrix);
       const strength = env.godRayIntensity *
         lerp(0.55, 1.05, hash01(band, 5054)) *
-        lerp(0.78, 1.15, momentumFraction);
+        lerp(0.78, 1.15, momentumFraction) *
+        lerp(0.92, 1.34, this.restorationFraction);
       this.colour.setRGB(
-        strength * 2.6,
-        strength * 3.8,
-        strength * 4.6
+        strength * lerp(2.6, 3.3, this.restorationFraction),
+        strength * lerp(3.8, 4.4, this.restorationFraction),
+        strength * lerp(4.6, 4.2, this.restorationFraction)
       );
       this.godRays.setColorAt(index, this.colour);
     }

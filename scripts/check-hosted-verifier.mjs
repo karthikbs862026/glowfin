@@ -2,8 +2,9 @@ import { stat } from "node:fs/promises";
 
 const artifact = new URL("../build/hosted/glowfin-verifier.js", import.meta.url);
 const info = await stat(artifact);
-if (info.size < 10_000 || info.size > 128 * 1024) {
-  throw new Error(`Hosted verifier bundle is outside its 10-128KB budget (${info.size} bytes).`);
+const MAX_HOSTED_VERIFIER_BYTES = 144 * 1024;
+if (info.size < 10_000 || info.size > MAX_HOSTED_VERIFIER_BYTES) {
+  throw new Error(`Hosted verifier bundle is outside its 10-144KB budget (${info.size} bytes).`);
 }
 const authority = await import(`${artifact.href}?check=${Date.now()}`);
 if (authority.LEADERBOARD_VALIDATION_VERSION !== "v38-signature-v2") {

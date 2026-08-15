@@ -1,4 +1,16 @@
 import type { RealmGameplayVerb } from "./definition";
+import {
+  createDefaultLivingTideSeason,
+  mergeLivingTideSeasonProgress,
+  validateLivingTideSeasonProgress,
+  type LivingTideSeasonProgressV1,
+} from "../season/livingTide";
+import {
+  createDefaultEclipseCourtProgress,
+  mergeEclipseCourtProgress,
+  validateEclipseCourtProgress,
+  type EclipseCourtProgressV1,
+} from "../content/eclipseCourt";
 
 export const REALM_PROGRESS_SCHEMA_VERSION = 1 as const;
 export const REALM_PROGRESS_PRIMARY_KEY = "glowfin.realms.v1.primary";
@@ -41,6 +53,10 @@ export interface RealmProgressV1 {
   crystalTrench: CrystalTrenchProgressV1;
   /** Optional only so Version 43/44 schema-5 cloud saves remain additive. */
   leviathanGraveyard?: LeviathanGraveyardProgressV1;
+  /** Optional so every V45/V46 save remains valid and backfills on first V47 action. */
+  livingTideSeason?: LivingTideSeasonProgressV1;
+  /** Optional so V43–V47 schema-5 saves remain valid until V48 is entered. */
+  eclipseCourtPack?: EclipseCourtProgressV1;
 }
 
 interface RealmProgressEnvelopeV1 {
@@ -197,6 +213,22 @@ export function leviathanGraveyardProgress(
     : createDefaultLeviathanProgress();
 }
 
+export function livingTideSeasonProgress(
+  progress: RealmProgressV1,
+): LivingTideSeasonProgressV1 {
+  return progress.livingTideSeason
+    ? JSON.parse(JSON.stringify(progress.livingTideSeason)) as LivingTideSeasonProgressV1
+    : createDefaultLivingTideSeason(new Date(progress.updatedAt));
+}
+
+export function eclipseCourtProgress(
+  progress: RealmProgressV1,
+): EclipseCourtProgressV1 {
+  return progress.eclipseCourtPack
+    ? JSON.parse(JSON.stringify(progress.eclipseCourtPack)) as EclipseCourtProgressV1
+    : createDefaultEclipseCourtProgress(new Date(progress.updatedAt));
+}
+
 export function createDefaultRealmProgress(now = new Date()): RealmProgressV1 {
   return {
     schemaVersion: REALM_PROGRESS_SCHEMA_VERSION,
@@ -219,6 +251,8 @@ export function createDefaultRealmProgress(now = new Date()): RealmProgressV1 {
       recentClaims: [],
     },
     leviathanGraveyard: createDefaultLeviathanProgress(),
+    livingTideSeason: createDefaultLivingTideSeason(now),
+    eclipseCourtPack: createDefaultEclipseCourtProgress(now),
   };
 }
 
@@ -326,6 +360,8 @@ export function applyKelpCathedralRun(
     },
     crystalTrench: clone(current).crystalTrench,
     leviathanGraveyard: leviathanGraveyardProgress(current),
+    livingTideSeason: livingTideSeasonProgress(current),
+    eclipseCourtPack: eclipseCourtProgress(current),
   };
   const newlyCompleted: RealmObjectiveId[] = [];
   if (!rescueWasComplete && objectiveCompleted(progress, "realm-kelp-rescue")) {
@@ -407,6 +443,8 @@ export function applyCrystalTrenchRun(
       recentClaims: [...previous.recentClaims, claimId].slice(-MAX_REALM_CLAIMS),
     },
     leviathanGraveyard: leviathanGraveyardProgress(current),
+    livingTideSeason: livingTideSeasonProgress(current),
+    eclipseCourtPack: eclipseCourtProgress(current),
   };
   const newlyCompleted: RealmObjectiveId[] = [];
   if (!clearWasComplete && objectiveCompleted(progress, "realm-crystal-clear")) {
@@ -475,6 +513,8 @@ export function applyLeviathanGraveyardRun(
       ])).sort(),
       recentClaims: [...previous.recentClaims, claimId].slice(-MAX_REALM_CLAIMS),
     },
+    livingTideSeason: livingTideSeasonProgress(current),
+    eclipseCourtPack: eclipseCourtProgress(current),
   };
   const newlyCompleted: RealmObjectiveId[] = [];
   if (!victoryWasComplete && objectiveCompleted(progress, "realm-heartlight-war")) {
@@ -603,12 +643,16 @@ export function validateRealmProgress(value: unknown): value is RealmProgressV1 
   const crystal = candidate.crystalTrench as Partial<CrystalTrenchProgressV1> | undefined;
   const leviathan = candidate.leviathanGraveyard as
     Partial<LeviathanGraveyardProgressV1> | undefined;
+  const season = candidate.livingTideSeason;
+  const eclipseCourt = candidate.eclipseCourtPack;
   return candidate.schemaVersion === REALM_PROGRESS_SCHEMA_VERSION &&
     Number.isInteger(candidate.revision) && Number(candidate.revision) >= 0 &&
     validDate(candidate.updatedAt) &&
     validKelpProgress(kelp) &&
     validCrystalProgress(crystal) &&
-    (leviathan === undefined || validLeviathanProgress(leviathan));
+    (leviathan === undefined || validLeviathanProgress(leviathan)) &&
+    (season === undefined || validateLivingTideSeasonProgress(season)) &&
+    (eclipseCourt === undefined || validateEclipseCourtProgress(eclipseCourt));
 }
 
 export function mergeRealmProgress(
@@ -697,6 +741,16 @@ export function mergeRealmProgress(
         ...remoteLeviathan.recentClaims,
       ])).sort().slice(-MAX_REALM_CLAIMS),
     },
+    livingTideSeason: mergeLivingTideSeasonProgress(
+      livingTideSeasonProgress(local),
+      livingTideSeasonProgress(remote),
+      now,
+    ),
+    eclipseCourtPack: mergeEclipseCourtProgress(
+      eclipseCourtProgress(local),
+      eclipseCourtProgress(remote),
+      now,
+    ),
   };
 }
 

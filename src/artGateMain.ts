@@ -7,6 +7,11 @@
 
 import { tuning } from "./core/config";
 import { GameView } from "./render/gameView";
+import {
+  browserGraphicsBootSignals,
+  selectGraphicsBootProfile,
+} from "./render/bootProfile";
+import { acquireWebGL2Context } from "./render/graphicsContext";
 import { runArtGateCapture } from "./render/artGateCapture";
 import {
   RendererSoakHarness,
@@ -26,10 +31,18 @@ if (rawTier !== "fast" && rawTier !== "full" && rawTier !== "soak") {
 }
 const requestedTier: "fast" | "full" | "soak" = rawTier;
 const device = parameters.get("device") ?? "ci-chromium";
-const view = new GameView(canvas, tuning);
+const bootProfile = selectGraphicsBootProfile(browserGraphicsBootSignals());
+const graphics = acquireWebGL2Context(canvas, bootProfile);
+if (!graphics.context) {
+  throw new Error(
+    `Art gate requires WebGL2; ${graphics.attempts.join(" · ") || "no context attempts"}`,
+  );
+}
+const view = new GameView(canvas, tuning, bootProfile, graphics.context);
 
 async function capture(): Promise<void> {
   await view.ready;
+  await view.productionAssetsReady;
   const productionAssets = view.productionAssetStatus();
   if (
     productionAssets.glowfin !== "glb" ||

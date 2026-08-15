@@ -11,17 +11,31 @@ import { SteeringSource, attachPointerInput } from "./input/steering";
 import { generateSeed } from "./core/rng";
 import { Run, type DuskmawPursuitPhase } from "./sim/run";
 import { GameView } from "./render/gameView";
+import {
+  browserGraphicsBootSignals,
+  selectGraphicsBootProfile,
+} from "./render/bootProfile";
+import {
+  acquireWebGL2Context,
+  replaceGraphicsCanvas,
+  type GraphicsContextAcquisition,
+} from "./render/graphicsContext";
 import { Hud, type SignatureCuePresentation } from "./render/hud";
 import { MoonWell, type MoonWellPanel } from "./render/moonWell";
 import { DebugOverlay } from "./render/debugOverlay";
-import { QualityController } from "./perf/quality";
+import {
+  QualityController,
+  recoveryQualityTier,
+} from "./perf/quality";
 import { PerfMonitor, checkBudgets } from "./perf/metrics";
 import { GlowfinAudio } from "./audio/audioEngine";
 import { GLOWFIN_RELEASE, mountReleaseIdentity } from "./release";
 import {
   ProgressRepository,
   equippedCosmeticNames,
+  type EclipseCourtStageRecordResult,
   type GlowfinProgressV2,
+  type LivingTideStageRecordResult,
   type RealmRecordResult,
   type SessionObservation
 } from "./persistence/progress";
@@ -99,7 +113,7 @@ import {
   type RuntimeInterruptionReason,
   type RuntimeLifecycleSnapshot
 } from "./resilience/runtimeLifecycle";
-import { detectRuntimeSupport } from "./resilience/runtimeSupport";
+import { detectRuntimeSupport } from "./resilience/runtimeSupportV47";
 import {
   capacitorHapticDriver,
   installCapacitorShell,
@@ -143,7 +157,9 @@ import type { RealmId } from "./realms/definition";
 import {
   isCrystalTrenchUnlocked,
   isLeviathanGraveyardUnlocked,
+  eclipseCourtProgress,
   leviathanGraveyardProgress,
+  livingTideSeasonProgress,
   REALM_OBJECTIVES,
 } from "./realms/progress";
 import { RealmHud } from "./realms/hud";
@@ -152,6 +168,28 @@ import {
   isVersion44ReviewPath,
   realmHandoffDestination,
 } from "./realms/handoff";
+import {
+  deriveRelicAtlasState,
+  deriveRelicAtlasUnlocks,
+  type RelicAtlasDestination,
+} from "./meta/relicAtlas";
+import {
+  LIVING_TIDE_STAGE_DEFINITIONS,
+  livingTideStageSeed,
+  livingTideWeekId,
+  type LivingTideRealmId,
+  type LivingTideStageDefinition,
+} from "./season/livingTide";
+import {
+  ECLIPSE_COURT_STAGE_DEFINITIONS,
+  eclipseCourtStageSeed,
+  eclipseCourtWeekId,
+  type EclipseCourtStageDefinition,
+} from "./content/eclipseCourt";
+import {
+  eclipseCourtPlaytestStorage,
+  isEclipseCourtPlaytestMode,
+} from "./content/eclipseCourtPlaytest";
 
 const initialCanvas = document.querySelector<HTMLCanvasElement>("#glowfin-canvas");
 if (!initialCanvas) throw new Error("Canvas #glowfin-canvas not found");
@@ -159,7 +197,7 @@ let canvas: HTMLCanvasElement = initialCanvas;
 
 mountReleaseIdentity();
 const v44ReviewRoute = isVersion44ReviewPath(window.location.pathname);
-const v45IntegrationRoute = isIntegratedRealmThreeExperience(
+const realmThreeIntegrationEnabled = isIntegratedRealmThreeExperience(
   GLOWFIN_RELEASE.version,
   window.location.pathname,
 );
@@ -167,6 +205,27 @@ const hostedServicesEnabled = shouldUseHostedServices(
   GLOWFIN_RELEASE.environment,
   window.location.hostname
 );
+const eclipseCourtPlaytestMode = isEclipseCourtPlaytestMode({
+  releaseVersion: GLOWFIN_RELEASE.version,
+  pathname: window.location.pathname,
+  search: window.location.search,
+});
+const eclipseCourtPlaytestTrial = eclipseCourtPlaytestMode
+  ? new URLSearchParams(window.location.search).get("trial") ?? ""
+  : "";
+const eclipseCourtPlaytestStage = eclipseCourtPlaytestTrial === "halo"
+  ? 0
+  : eclipseCourtPlaytestTrial === "weave"
+    ? 1
+    : eclipseCourtPlaytestTrial === "verdict" ? 2 : null;
+// R2 is a new full-length campaign and must never inherit the temporary
+// progress of an earlier R1 art review on the same origin.
+const eclipseCourtPlaytestBuildScope = window.location.pathname.startsWith(
+  "/game-v48-r2",
+) ? "v48-r2" : "";
+document.documentElement.dataset["glowfinPlaytest"] = eclipseCourtPlaytestMode
+  ? "eclipse-court"
+  : "off";
 // Version 44 review builds remain network-cache-free while the encounter matures.
 // The host still serves the self-deactivating recovery worker so an older
 // registration cannot regain startup ownership across the Version 42 boundary.
@@ -174,18 +233,98 @@ const SERVICE_WORKER_CACHING_CERTIFIED = false;
 
 const runtimeLifecycle = new RuntimeLifecycle();
 const runtimeSupport = detectRuntimeSupport();
+const graphicsBootProfile = selectGraphicsBootProfile(
+  browserGraphicsBootSignals(),
+);
+document.documentElement.dataset["glowfinGraphicsBoot"] = graphicsBootProfile.mode;
+type RuntimeFailureStage =
+  | "context-creation"
+  | "renderer-attachment"
+  | "world-construction"
+  | "asset-initialization"
+  | "context-recovery";
+let runtimeFailureStage: RuntimeFailureStage | null = null;
+let runtimeFailureDetail = "";
+const contextCreationStatuses: string[] = [];
+
+function observeContextCreation(target: HTMLCanvasElement): void {
+  target.addEventListener("webglcontextcreationerror", (event) => {
+    const statusMessage = (event as WebGLContextEvent).statusMessage;
+    if (statusMessage) contextCreationStatuses.push(statusMessage);
+  });
+}
+
+function contextFailureDetail(
+  acquisition: Readonly<GraphicsContextAcquisition>,
+): string {
+  return [...acquisition.attempts, ...contextCreationStatuses].join(" · ") ||
+    "WebGL2 context unavailable";
+}
+
+observeContextCreation(canvas);
+let graphicsContext = runtimeSupport.supported
+  ? acquireWebGL2Context(canvas, graphicsBootProfile)
+  : null;
+if (graphicsContext && !graphicsContext.context) {
+  canvas = replaceGraphicsCanvas(canvas);
+  observeContextCreation(canvas);
+  graphicsContext = acquireWebGL2Context(canvas, graphicsBootProfile);
+}
+if (graphicsContext) {
+  document.documentElement.dataset["glowfinGraphicsContext"] = graphicsContext.mode;
+  canvas.dataset["graphicsContextAttempts"] = graphicsContext.attempts.join(",");
+  const actualAntialias = graphicsContext.actualAttributes?.antialias;
+  if (typeof actualAntialias === "boolean") {
+    canvas.dataset["graphicsContextAntialias"] = String(actualAntialias);
+  }
+}
 let view: GameView | null = null;
 if (runtimeSupport.supported) {
-  try {
-    view = new GameView(canvas, tuning);
-  } catch {
+  if (!graphicsContext?.context) {
+    runtimeFailureStage = "context-creation";
+    runtimeFailureDetail = graphicsContext
+      ? contextFailureDetail(graphicsContext)
+      : "WebGL2 context acquisition was not attempted";
     runtimeLifecycle.markFailed();
+  } else {
+    try {
+      view = new GameView(
+        canvas,
+        tuning,
+        graphicsBootProfile,
+        graphicsContext.context,
+      );
+    } catch (error: unknown) {
+      const constructionStage = canvas.dataset["gameViewStage"];
+      runtimeFailureStage = constructionStage === "renderer-attachment"
+        ? "renderer-attachment"
+        : "world-construction";
+      runtimeFailureDetail = error instanceof Error
+        ? error.message
+        : "unknown graphics construction error";
+      try {
+        graphicsContext.context.getExtension("WEBGL_lose_context")?.loseContext();
+      } catch {
+        // Best-effort cleanup only; the visible diagnostic remains actionable.
+      }
+      runtimeLifecycle.markFailed();
+    }
   }
 } else {
   runtimeLifecycle.markUnsupported();
 }
 const hud = new Hud();
 const moonWell = new MoonWell();
+function requireLivingTideHud(id: string): HTMLElement {
+  const element = document.getElementById(id);
+  if (!element) throw new Error(`Living Tide run HUD is missing #${id}`);
+  return element;
+}
+const livingTideRunStatus = requireLivingTideHud("living-tide-run-status");
+const livingTideRunSigil = requireLivingTideHud("living-tide-run-sigil");
+const livingTideRunStage = requireLivingTideHud("living-tide-run-stage");
+const livingTideRunObjective = requireLivingTideHud("living-tide-run-objective");
+const livingTideRunPips = requireLivingTideHud("living-tide-run-pips");
 const realmHud = new RealmHud();
 const expedition = new ExpeditionDirector();
 const lumenMotes = new LumenMoteDirector();
@@ -201,11 +340,9 @@ const steering = new SteeringSource({
   sensitivity: tuning.input.sensitivity,
   deadZone: tuning.input.deadZone
 });
-let detachPointerInput: () => void = view
-  ? attachPointerInput(canvas, steering)
-  : () => undefined;
+if (view) attachPointerInput(canvas, steering);
 
-const quality = new QualityController();
+const quality = new QualityController(graphicsBootProfile.initialQuality);
 const perf = new PerfMonitor();
 const overlay = new DebugOverlay();
 view?.setQuality(quality.settings);
@@ -213,7 +350,15 @@ view?.setQuality(quality.settings);
 const timestep = new FixedTimestepRunner(FIXED_DT_SEC);
 const progressStorage = (() => {
   try {
-    return window.localStorage;
+    return eclipseCourtPlaytestMode
+      ? eclipseCourtPlaytestStorage(
+        window.sessionStorage,
+        [
+          eclipseCourtPlaytestBuildScope,
+          eclipseCourtPlaytestStage === null ? "" : eclipseCourtPlaytestTrial,
+        ].filter(Boolean).join("."),
+      )
+      : window.localStorage;
   } catch {
     const memory = new Map<string, string>();
     return {
@@ -335,8 +480,33 @@ function publishRuntimeState(
     runtimeStatusTitle.textContent = "Glowfin needs WebGL2";
     runtimeStatusDetail.textContent = runtimeSupport.detail;
   } else {
-    runtimeStatusTitle.textContent = "Glowfin could not recover";
-    runtimeStatusDetail.textContent = "The graphics system could not be rebuilt safely. Reload to begin a fresh session; saved progress is preserved.";
+    runtimeStatus.dataset["failureStage"] = runtimeFailureStage ?? "unknown";
+    runtimeStatus.dataset["failureDetail"] = runtimeFailureDetail.slice(0, 96);
+    const conciseFailure = runtimeFailureDetail
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 120);
+    if (runtimeFailureStage === "context-creation") {
+      runtimeStatusTitle.textContent = "Glowfin could not start 3D graphics";
+      runtimeStatusDetail.textContent =
+        `No WebGL2 canvas was accepted after safe and browser-default attempts. ${conciseFailure} · Code V48-GFX-CONTEXT`;
+    } else if (runtimeFailureStage === "renderer-attachment") {
+      runtimeStatusTitle.textContent = "Glowfin could not attach its 3D renderer";
+      runtimeStatusDetail.textContent =
+        `A valid canvas was created, but the renderer could not attach. ${conciseFailure} · Code V48-GFX-ATTACH`;
+    } else if (runtimeFailureStage === "world-construction") {
+      runtimeStatusTitle.textContent = "Glowfin could not build the Moon-Garden";
+      runtimeStatusDetail.textContent =
+        `3D graphics started, but world construction stopped. ${conciseFailure} · Code V48-WORLD-BOOT`;
+    } else if (runtimeFailureStage === "asset-initialization") {
+      runtimeStatusTitle.textContent = "Glowfin art could not finish loading";
+      runtimeStatusDetail.textContent =
+        "A required opening asset did not become ready. Reload once; saved progress is preserved. · Code V48-ASSET-BOOT";
+    } else {
+      runtimeStatusTitle.textContent = "Glowfin could not recover";
+      runtimeStatusDetail.textContent =
+        "The graphics context was restored but failed its safe-frame check. Reload once; saved progress is preserved. · Code V48-GFX-RESTORE";
+    }
   }
 }
 
@@ -376,6 +546,8 @@ let realmFeedbackUntilSec = 0;
 let lastDuskmawTelegraphKey: string | null = null;
 let lastDuskmawPhase: DuskmawPursuitPhase | null = null;
 let mooncrestCeremonyCuePlayed = false;
+let lastLivingTideStageResult: LivingTideStageRecordResult | null = null;
+let lastEclipseCourtStageResult: EclipseCourtStageRecordResult | null = null;
 
 interface GlowfinCertificationSnapshot {
   schemaVersion: 1;
@@ -580,6 +752,59 @@ function currentDailyDay() {
   );
 }
 
+function currentLivingTideWeekId(): string {
+  return livingTideWeekId(currentDailyDay().dayId);
+}
+
+function currentEclipseCourtWeekId(): string {
+  return eclipseCourtWeekId(currentDailyDay().dayId);
+}
+
+function setLivingTideRunPresentation(
+  stage: LivingTideStageDefinition | null,
+  stageIndex = 0,
+  completedCount = 0,
+): void {
+  const active = Boolean(stage);
+  livingTideRunStatus.dataset["active"] = String(active);
+  livingTideRunStatus.dataset["mode"] = "living-tide";
+  document.documentElement.dataset["glowfinLivingTide"] = active ? "active" : "inactive";
+  document.documentElement.dataset["glowfinRealmPack"] = "inactive";
+  view?.setEclipseCourtTheme(null);
+  if (!stage) return;
+  livingTideRunStatus.style.setProperty("--living-tide-run-colour", stage.colour);
+  livingTideRunSigil.textContent = stage.sigil;
+  livingTideRunStage.textContent = `SEASON ONE · ${stageIndex + 1}/${LIVING_TIDE_STAGE_DEFINITIONS.length}`;
+  livingTideRunObjective.textContent = `${stage.title} · ${stage.objective}`;
+  livingTideRunPips.querySelectorAll<HTMLElement>("i").forEach((pip, index) => {
+    pip.dataset["complete"] = String(index < completedCount);
+    pip.dataset["current"] = String(index === stageIndex);
+  });
+}
+
+function setEclipseCourtRunPresentation(
+  stage: EclipseCourtStageDefinition | null,
+  stageIndex = 0,
+  completedCount = 0,
+): void {
+  const active = Boolean(stage);
+  livingTideRunStatus.dataset["active"] = String(active);
+  livingTideRunStatus.dataset["mode"] = "eclipse-court";
+  document.documentElement.dataset["glowfinLivingTide"] = "inactive";
+  document.documentElement.dataset["glowfinRealmPack"] = active ? "active" : "inactive";
+  view?.setEclipseCourtTheme(stage?.colour ?? null, stageIndex);
+  if (!stage) return;
+  livingTideRunStatus.style.setProperty("--living-tide-run-colour", stage.colour);
+  livingTideRunSigil.textContent = stage.sigil;
+  livingTideRunStage.textContent =
+    `FIRST MOONSEED · ${stageIndex + 1}/${ECLIPSE_COURT_STAGE_DEFINITIONS.length}`;
+  livingTideRunObjective.textContent = `${stage.title} · ${stage.objective}`;
+  livingTideRunPips.querySelectorAll<HTMLElement>("i").forEach((pip, index) => {
+    pip.dataset["complete"] = String(index < completedCount);
+    pip.dataset["current"] = String(index === stageIndex);
+  });
+}
+
 function raceableDailyReplay(dayId: string) {
   const record = progress.daily.bestDailyReplay;
   const replay = record?.dayId === dayId ? record.replay : null;
@@ -644,17 +869,39 @@ function refreshMoonWell(): void {
   moonWell.renderObjectives(objectivePresentations());
   moonWell.setTutorialStatus(guidedTutorialComplete);
   moonWell.setExpeditionState(expeditionProgress);
+  const atlas = deriveRelicAtlasState(expeditionProgress, progress.realms);
+  const storyUnlocks = deriveRelicAtlasUnlocks(expeditionProgress, progress.realms);
+  moonWell.setRelicAtlasState(atlas);
+  moonWell.setLivingTideSeasonState(
+    livingTideSeasonProgress(progress.realms),
+    atlas.gameComplete,
+    currentLivingTideWeekId(),
+  );
+  moonWell.setEclipseCourtState(
+    eclipseCourtProgress(progress.realms),
+    atlas.gameComplete || eclipseCourtPlaytestMode,
+    currentEclipseCourtWeekId(),
+    eclipseCourtPlaytestMode,
+  );
+  view?.setLivingAtlasState(atlas);
+  view?.setRestorationPresentation(
+    atlas.restorationFraction,
+    atlas.auralisGuardianActive,
+  );
   moonWell.setTideSprintState(progress.tideSprint, progress.ghostEnabled);
-  moonWell.setKelpCathedralState(progress.realms.kelpCathedral);
+  moonWell.setKelpCathedralState(
+    progress.realms.kelpCathedral,
+    storyUnlocks.kelpCathedral,
+  );
   moonWell.setCrystalTrenchState(
     progress.realms.crystalTrench,
-    isCrystalTrenchUnlocked(progress.realms),
+    storyUnlocks.crystalTrench,
   );
   moonWell.setDuskmawState(
     leviathanGraveyardProgress(progress.realms),
-    isLeviathanGraveyardUnlocked(progress.realms),
+    storyUnlocks.leviathanGraveyard,
     v44ReviewRoute,
-    v45IntegrationRoute,
+    realmThreeIntegrationEnabled,
   );
   refreshWardrobe();
 }
@@ -678,6 +925,11 @@ function showMoonWell(panel: MoonWellPanel = "home"): void {
   moonWell.showTutorial(null);
   hud.hideGameOver();
   view?.applyCosmetics(progress.progression.equippedCosmetics);
+  view?.setLivingAtlasActive(panel === "atlas");
+  setLivingTideRunPresentation(null);
+  setEclipseCourtRunPresentation(null);
+  lastLivingTideStageResult = null;
+  lastEclipseCourtStageResult = null;
   refreshMoonWell();
   moonWell.show(hudMeta());
   moonWell.showPanel(panel);
@@ -717,9 +969,11 @@ function presentRealmResult(
   result: RealmRecordResult,
   realmResult: RealmEndPresentation,
   specialUnlockNames: readonly string[] = [],
+  livingTideResult: LivingTideStageRecordResult | null = null,
+  eclipseCourtResult: EclipseCourtStageRecordResult | null = null,
 ): void {
   if (!run) return;
-  progress = result.progress;
+  progress = eclipseCourtResult?.progress ?? livingTideResult?.progress ?? result.progress;
   updateProgressUi();
   completedCompetitiveRun = null;
   hud.hideGhostGap();
@@ -728,6 +982,13 @@ function presentRealmResult(
   hud.setRewardedOffer(null);
   hud.setLeaderboard(null, "empty");
   const day = currentDailyDay().dayId;
+  const seasonVoyage = livingTideResult
+    ? livingTideSeasonProgress(progress.realms).activeVoyage
+    : null;
+  const eclipseCourt = eclipseCourtResult
+    ? eclipseCourtProgress(progress.realms)
+    : null;
+  const eclipseRun = eclipseCourt?.activeRun ?? null;
   hud.showGameOver(
     run.scoring.score,
     run.sim.elapsedSec,
@@ -739,9 +1000,13 @@ function presentRealmResult(
       newBest: false,
       raceGhostScore: null,
       raceGhostLabel: "Ghosts stay in Classic Dive",
-      rewardPearls: result.award.pearls,
+      rewardPearls: result.award.pearls +
+        (livingTideResult?.rewardPearls ?? 0) +
+        (eclipseCourtResult?.rewardPearls ?? 0),
       unlockedNames: [
         ...result.unlockedCosmetics.map((item) => item.name),
+        ...(livingTideResult?.unlockedCosmetics.map((item) => item.name) ?? []),
+        ...(eclipseCourtResult?.unlockedCosmetics.map((item) => item.name) ?? []),
         ...specialUnlockNames,
       ],
       objectives: objectivePresentations(),
@@ -750,6 +1015,42 @@ function presentRealmResult(
       dailyCompleted: progress.daily.dailyClaims.includes(day),
       calendarRewardRejected: false,
       leaderboardDivision: activeClassification.division,
+      livingTideVoyage: livingTideResult && livingTideResult.stage
+        ? {
+          stageTitle: livingTideResult.stage.title,
+          stageIndex: livingTideResult.success
+            ? seasonVoyage?.completedStages.length ?? 1
+            : (seasonVoyage?.completedStages.length ?? 0) + 1,
+          stageTotal: LIVING_TIDE_STAGE_DEFINITIONS.length,
+          success: livingTideResult.success,
+          perfect: livingTideResult.perfectStage,
+          nextStageTitle: livingTideResult.nextStage?.title ?? null,
+          voyageComplete: livingTideResult.voyageComplete,
+          perfectVoyage: livingTideResult.perfectVoyage,
+          tidebloomsEarned: livingTideResult.tidebloomsEarned,
+          crownTier: livingTideResult.crownTier,
+        }
+        : undefined,
+      realmPackVoyage: eclipseCourtResult && eclipseCourtResult.stage
+        ? {
+          packTitle: "Eclipse Court",
+          stageTitle: eclipseCourtResult.stage.title,
+          stageIndex: eclipseCourtResult.success
+            ? eclipseRun?.completedStages.length ?? 1
+            : (eclipseRun?.completedStages.length ?? 0) + 1,
+          stageTotal: ECLIPSE_COURT_STAGE_DEFINITIONS.length,
+          success: eclipseCourtResult.success,
+          perfect: eclipseCourtResult.perfectStage,
+          nextStageTitle: eclipseCourtResult.nextStage?.title ?? null,
+          packComplete: eclipseCourtResult.packComplete,
+          perfectPack: eclipseCourtResult.perfectPack,
+          collectionProgress: eclipseCourt?.collectionIds.length ?? 0,
+          collectionTotal: 4,
+          collectionUnlockedNames: eclipseCourtResult.unlockedCosmetics
+            .filter((item) => item.source === "realm-pack")
+            .map((item) => item.name),
+        }
+        : undefined,
       realmResult,
     },
   );
@@ -864,7 +1165,7 @@ function trackRetentionReturn(observation: SessionObservation): void {
 }
 
 async function hydrateCloudProgress(): Promise<void> {
-  if (!hostedServicesEnabled) return;
+  if (!hostedServicesEnabled || eclipseCourtPlaytestMode) return;
   try {
     const remote = await cloudProgress.load();
     if (remote) {
@@ -929,7 +1230,7 @@ const cloudHydrated = hydrateCloudProgress();
 const dailyHydrated = hydrateDailyClock();
 
 async function synchronizeCloudProgress(): Promise<void> {
-  if (!hostedServicesEnabled) return;
+  if (!hostedServicesEnabled || eclipseCourtPlaytestMode) return;
   cloudSyncRequested = true;
   if (cloudSyncInFlight) return cloudSyncInFlight;
   cloudSyncInFlight = (async () => {
@@ -1018,12 +1319,14 @@ interface StartRunOptions {
   seedOverride?: number;
   experience?: ExpeditionExperience;
   realmId?: RealmId;
+  realmStageIndex?: number;
 }
 
 function startRun(
   mode: GlowfinRunMode = "fresh",
   options: StartRunOptions = {}
 ): void {
+  view?.setLivingAtlasActive(false);
   const guidedTutorialSource = options.guidedTutorialSource ?? null;
   const replayOverride = options.replayOverride ?? null;
   const forceGhost = options.forceGhost ?? false;
@@ -1047,18 +1350,37 @@ function startRun(
   const seed = replay?.seed ?? options.seedOverride ??
     (dailyMode ? dailySeed(day.dayId) : generateSeed());
   activeExperience = options.experience ?? "classic";
+  if (
+    activeExperience !== "living-tide-season-one" &&
+    activeExperience !== "eclipse-court-pack-one"
+  ) {
+    setLivingTideRunPresentation(null);
+    setEclipseCourtRunPresentation(null);
+    lastLivingTideStageResult = null;
+    lastEclipseCourtStageResult = null;
+  } else if (activeExperience === "living-tide-season-one") {
+    lastEclipseCourtStageResult = null;
+  } else {
+    lastLivingTideStageResult = null;
+  }
   activeRealmId = requestedRealm;
   realmFeedbackUntilSec = 0;
   lastDuskmawTelegraphKey = null;
   lastDuskmawPhase = null;
   mooncrestCeremonyCuePlayed = false;
-  run = new Run(seed, tuning, { realmId: activeRealmId });
+  run = new Run(seed, tuning, {
+    realmId: activeRealmId,
+    realmStageIndex: options.realmStageIndex,
+  });
   recorder = new ReplayRecorder(run.seed, tuning.version);
   moonflashRecorder = new MoonflashRecorder();
   activeClassification = classifyRunAccess(accessPreferences);
   activeRunId = createRunId();
   simulationSteps = 0;
-  ghostRun = replay ? new Run(replay.seed, tuning, { realmId: activeRealmId }) : null;
+  ghostRun = replay ? new Run(replay.seed, tuning, {
+    realmId: activeRealmId,
+    realmStageIndex: options.realmStageIndex,
+  }) : null;
   ghostReplay = replay ? new ReplayPlayer(replay) : null;
   ghostVisible = Boolean(ghostRun && ghostReplay && (progress.ghostEnabled || forceGhost));
   ghostCompletionReported = false;
@@ -1096,6 +1418,8 @@ function startRun(
     realmHud.updateCrystal(run.crystalTrenchStatus, null);
   } else if (activeRealmId === "leviathan-graveyard") {
     realmHud.updateDuskmaw(run.duskmawStatus, null);
+  } else if (activeRealmId === "eclipse-court") {
+    realmHud.updateEclipse(run.eclipseCourtStatus, null);
   }
   hud.hideGameOver();
   hud.setSubmitState("unavailable");
@@ -1155,10 +1479,19 @@ function startRun(
       slice: "duskmaw-pursuit-r1",
       seed: run.seed,
       reviewRoute: v44ReviewRoute,
-      integrationRoute: v45IntegrationRoute,
+      integrationRoute: realmThreeIntegrationEnabled,
       previousVictories: leviathanGraveyardProgress(progress.realms).victories,
       mooncrestCovenant: leviathanGraveyardProgress(progress.realms).mooncrestCovenant,
-      persistence: v45IntegrationRoute ? "enabled" : "disabled",
+      persistence: realmThreeIntegrationEnabled ? "enabled" : "disabled",
+    }, activeRunId);
+  } else if (activeRealmId === "eclipse-court") {
+    telemetry.track("realm_start", {
+      realm: activeRealmId,
+      revision: 3,
+      slice: "first-moonseed-eclipse-bloom",
+      stageIndex: run.eclipseCourtStatus.stageIndex,
+      alignmentTarget: run.eclipseCourtStatus.alignmentTarget,
+      seed: run.seed,
     }, activeRunId);
   }
   reportRunStart();
@@ -1177,6 +1510,205 @@ function startExpedition(): void {
     seedOverride: CHAPTER_ONE_MISSION.seed,
     experience: "chapter-one-r5"
   });
+}
+
+function startLivingTideStage(): void {
+  const atlas = deriveRelicAtlasState(expeditionProgress, progress.realms);
+  if (!atlas.gameComplete) {
+    showMoonWell("atlas");
+    return;
+  }
+  const weekId = currentLivingTideWeekId();
+  let season = livingTideSeasonProgress(progress.realms);
+  if (!season.activeVoyage || season.activeVoyage.completedAt !== null) {
+    progress = progressRepository.beginLivingTideVoyage(weekId);
+    season = livingTideSeasonProgress(progress.realms);
+    updateProgressUi();
+    void synchronizeCloudProgress();
+  }
+  const voyage = season.activeVoyage;
+  const stage = voyage
+    ? LIVING_TIDE_STAGE_DEFINITIONS[voyage.currentStageIndex]
+    : null;
+  if (!voyage || !stage) {
+    showMoonWell("season");
+    return;
+  }
+  lastLivingTideStageResult = null;
+  telemetry.track("living_tide_stage_start", {
+    season: "season-one",
+    weekId: voyage.weekId,
+    voyageNumber: voyage.voyageNumber,
+    stage: stage.id,
+    realm: stage.realmId,
+    stageIndex: voyage.currentStageIndex + 1,
+  });
+  startRun("fresh", {
+    experience: "living-tide-season-one",
+    realmId: stage.realmId,
+    seedOverride: livingTideStageSeed(
+      voyage.weekId,
+      voyage.voyageNumber,
+      stage.id,
+    ),
+  });
+  setLivingTideRunPresentation(
+    stage,
+    voyage.currentStageIndex,
+    voyage.completedStages.length,
+  );
+}
+
+function recordLivingTideStageResult(
+  realmId: LivingTideRealmId,
+  success: boolean,
+  perfect: boolean,
+): LivingTideStageRecordResult | null {
+  if (activeExperience !== "living-tide-season-one") return null;
+  const season = livingTideSeasonProgress(progressRepository.snapshot().realms);
+  const voyage = season.activeVoyage;
+  if (!voyage) return null;
+  const result = progressRepository.recordLivingTideStage({
+    claimId: activeRunId,
+    weekId: voyage.weekId,
+    realmId,
+    elapsedSec: run.sim.elapsedSec,
+    success,
+    perfect: success && perfect,
+  });
+  lastLivingTideStageResult = result;
+  progress = result.progress;
+  setLivingTideRunPresentation(null);
+  telemetry.track(success ? "living_tide_stage_complete" : "living_tide_stage_retry", {
+    season: "season-one",
+    weekId: voyage.weekId,
+    voyageNumber: voyage.voyageNumber,
+    stage: result.stage?.id ?? "unknown",
+    realm: realmId,
+    perfect: success && perfect,
+    voyageComplete: result.voyageComplete,
+    tidebloomsEarned: result.tidebloomsEarned,
+    crownTier: result.crownTier,
+  }, activeRunId);
+  if (result.success) {
+    haptics.play(result.voyageComplete ? "milestone" : "setting");
+    view?.setHeroMoment(result.voyageComplete ? "celebration" : "unlock");
+  }
+  return result;
+}
+
+function startEclipseCourtStage(): void {
+  const atlas = deriveRelicAtlasState(expeditionProgress, progress.realms);
+  if (!atlas.gameComplete && !eclipseCourtPlaytestMode) {
+    showMoonWell("atlas");
+    return;
+  }
+  const weekId = currentEclipseCourtWeekId();
+  let pack = eclipseCourtProgress(progress.realms);
+  if (!pack.activeRun || pack.activeRun.completedAt !== null) {
+    progress = progressRepository.beginEclipseCourtRun(weekId);
+    pack = eclipseCourtProgress(progress.realms);
+    updateProgressUi();
+    void synchronizeCloudProgress();
+  }
+  while (
+    eclipseCourtPlaytestStage !== null &&
+    pack.activeRun &&
+    pack.activeRun.currentStageIndex < eclipseCourtPlaytestStage
+  ) {
+    const skipped = ECLIPSE_COURT_STAGE_DEFINITIONS[
+      pack.activeRun.currentStageIndex
+    ]!;
+    progress = progressRepository.recordEclipseCourtStage({
+      claimId: `playtest-${pack.activeRun.runId}-${skipped.id}`,
+      weekId: pack.activeRun.weekId,
+      stageId: skipped.id,
+      realmId: skipped.realmId,
+      elapsedSec: 0,
+      success: true,
+      perfect: false,
+    }).progress;
+    pack = eclipseCourtProgress(progress.realms);
+  }
+  const activeRun = pack.activeRun;
+  const stage = activeRun
+    ? ECLIPSE_COURT_STAGE_DEFINITIONS[activeRun.currentStageIndex]
+    : null;
+  if (!activeRun || !stage) {
+    showMoonWell("vault");
+    return;
+  }
+  lastEclipseCourtStageResult = null;
+  telemetry.track("realm_pack_stage_start", {
+    pack: "eclipse-court",
+    playtest: eclipseCourtPlaytestMode,
+    weekId: activeRun.weekId,
+    runNumber: activeRun.runNumber,
+    stage: stage.id,
+    realm: stage.realmId,
+    stageIndex: activeRun.currentStageIndex + 1,
+  });
+  startRun("fresh", {
+    experience: "eclipse-court-pack-one",
+    realmId: "eclipse-court",
+    realmStageIndex: activeRun.currentStageIndex,
+    seedOverride: eclipseCourtStageSeed(
+      activeRun.weekId,
+      activeRun.runNumber,
+      stage.id,
+    ),
+  });
+  setEclipseCourtRunPresentation(
+    stage,
+    activeRun.currentStageIndex,
+    activeRun.completedStages.length,
+  );
+}
+
+function recordEclipseCourtStageResult(
+  success: boolean,
+  perfect: boolean,
+): EclipseCourtStageRecordResult | null {
+  if (activeExperience !== "eclipse-court-pack-one") return null;
+  const pack = eclipseCourtProgress(progressRepository.snapshot().realms);
+  const activeRun = pack.activeRun;
+  const stage = activeRun
+    ? ECLIPSE_COURT_STAGE_DEFINITIONS[activeRun.currentStageIndex] ?? null
+    : null;
+  if (!activeRun || !stage) return null;
+  const result = progressRepository.recordEclipseCourtStage({
+    claimId: activeRunId,
+    weekId: activeRun.weekId,
+    stageId: stage.id,
+    realmId: stage.realmId,
+    elapsedSec: run.sim.elapsedSec,
+    success,
+    perfect: success && perfect,
+  });
+  lastEclipseCourtStageResult = result;
+  progress = result.progress;
+  setEclipseCourtRunPresentation(null);
+  telemetry.track(
+    success ? "realm_pack_stage_complete" : "realm_pack_stage_retry",
+    {
+      pack: "eclipse-court",
+      playtest: eclipseCourtPlaytestMode,
+      weekId: activeRun.weekId,
+      runNumber: activeRun.runNumber,
+      stage: result.stage?.id ?? "unknown",
+      realm: stage.realmId,
+      perfect: success && perfect,
+      packComplete: result.packComplete,
+      collectionUnlocked: result.unlockedCosmetics
+        .filter((item) => item.source === "realm-pack").length,
+    },
+    activeRunId,
+  );
+  if (result.success) {
+    haptics.play(result.packComplete ? "milestone" : "setting");
+    view?.setHeroMoment(result.packComplete ? "celebration" : "unlock");
+  }
+  return result;
 }
 
 expedition.onMissionSelected(() => {
@@ -1298,8 +1830,24 @@ function updateR3Encounters(motion: LumenMotionSample): void {
     haptics.play(found ? "milestone" : "lumen-mote");
     if (found) audio.playLumenMote(8, true);
     expedition.showEncounterFeedback(
-      found ? "Moonseed Fragment discovered" : "Safe current chosen · mission continues",
+      found ? "Moonseed secured · saved to the Living Atlas" : "Missed Moonseed · gold ring reforms ahead",
     );
+    if (found) {
+      const discovery = expeditionProgressRepository.recordMoonseedDiscovery({
+        claimId: activeRunId,
+        planHash: R3_PLAN_HASH,
+      });
+      expeditionProgress = discovery.progress;
+      moonWell.setExpeditionState(expeditionProgress);
+      telemetry.track("reward_granted", {
+        domain: "expedition",
+        mission: CHAPTER_ONE_MISSION.id,
+        milestone: "moonseed-pickup",
+        relics: discovery.newlyDiscoveredRelics.join(","),
+        duplicatePrevented: discovery.duplicatePrevented,
+        planHash: R3_PLAN_HASH,
+      }, activeRunId);
+    }
   }
   if (events.rescueLightCollected > 0) {
     audio.playLumenMote(events.rescueLightCollected + 3,
@@ -1362,7 +1910,7 @@ function recordExpeditionCompletion(): void {
   const result = expeditionProgressRepository.recordCompletion({
     claimId: activeRunId,
     planHash: R5_PLAN_HASH,
-    primaryObjective: r3.r3Complete && r5.r5Complete,
+    primaryObjective: r3.relicFound && r3.r3Complete && r5.r5Complete,
     relicFound: r3.relicFound,
     bestLumenChain: lumen.bestChain,
     miriRescued: r3.miriRescued,
@@ -1444,6 +1992,19 @@ moonWell.onDive(() => {
 });
 
 moonWell.onKelpCathedral(() => {
+  const unlocked = deriveRelicAtlasUnlocks(
+    expeditionProgress,
+    progress.realms,
+  ).kelpCathedral;
+  if (!unlocked) {
+    telemetry.track("realm_entry", {
+      realm: "kelp-cathedral",
+      source: "moon-well",
+      locked: true,
+      unlockRequirement: "moonseed-moon-well-restoration",
+    });
+    return;
+  }
   telemetry.track("realm_entry", {
     realm: "kelp-cathedral",
     source: "moon-well",
@@ -1454,12 +2015,12 @@ moonWell.onKelpCathedral(() => {
 });
 
 moonWell.onCrystalTrench(() => {
-  if (!isCrystalTrenchUnlocked(progress.realms)) {
+  if (!deriveRelicAtlasUnlocks(expeditionProgress, progress.realms).crystalTrench) {
     telemetry.track("realm_entry", {
       realm: "crystal-trench",
       source: "moon-well",
       locked: true,
-      unlockRequirement: "realm-kelp-rescue",
+      unlockRequirement: "realm-kelp-restoration",
     });
     return;
   }
@@ -1474,13 +2035,16 @@ moonWell.onCrystalTrench(() => {
 });
 
 moonWell.onDuskmaw(() => {
-  const unlocked = isLeviathanGraveyardUnlocked(progress.realms);
+  const unlocked = deriveRelicAtlasUnlocks(
+    expeditionProgress,
+    progress.realms,
+  ).leviathanGraveyard;
   if (!unlocked && !v44ReviewRoute) {
     telemetry.track("realm_entry", {
       realm: "leviathan-graveyard",
       source: "moon-well",
       locked: true,
-      unlockRequirement: "crystal-trench-win",
+      unlockRequirement: "prism-observatory-restoration",
     });
     return;
   }
@@ -1489,10 +2053,34 @@ moonWell.onDuskmaw(() => {
     source: "moon-well",
     slice: "duskmaw-pursuit-r1",
     reviewRoute: v44ReviewRoute,
-    integrationRoute: v45IntegrationRoute,
+    integrationRoute: realmThreeIntegrationEnabled,
     previousVictories: leviathanGraveyardProgress(progress.realms).victories,
   });
   startRun("fresh", { realmId: "leviathan-graveyard" });
+});
+
+moonWell.onLivingTideSeason(() => {
+  telemetry.track("living_tide_entry", {
+    source: "moon-well",
+    unlocked: deriveRelicAtlasState(expeditionProgress, progress.realms).gameComplete,
+    tideblooms: livingTideSeasonProgress(progress.realms).tideblooms,
+  });
+  startLivingTideStage();
+});
+
+moonWell.onEclipseCourt(() => {
+  const unlocked = deriveRelicAtlasState(
+    expeditionProgress,
+    progress.realms,
+  ).gameComplete || eclipseCourtPlaytestMode;
+  telemetry.track("realm_pack_entry", {
+    pack: "eclipse-court",
+    source: "realm-vault",
+    unlocked,
+    playtest: eclipseCourtPlaytestMode,
+    collection: eclipseCourtProgress(progress.realms).collectionIds.length,
+  });
+  startEclipseCourtStage();
 });
 
 moonWell.onTideSprint(() => {
@@ -1552,12 +2140,64 @@ moonWell.onOpenPanel((panel) => {
   view?.applyCosmetics(progress.progression.equippedCosmetics);
   moonWell.setWardrobeFeedback("");
   refreshMoonWell();
+  view?.setLivingAtlasActive(panel === "atlas");
   moonWell.showPanel(panel);
   telemetry.track("hub_view", { panel });
 });
 
+moonWell.onAtlasSelection((id) => {
+  view?.selectLivingAtlasRelic(id);
+  if (hapticsEnabled) haptics.play("setting");
+});
+
+moonWell.onAtlasAction((destination: RelicAtlasDestination, sourceId: string) => {
+  telemetry.track("relic_atlas_navigate", {
+    destination,
+    sourceId,
+    recovered: deriveRelicAtlasState(
+      expeditionProgress,
+      progress.realms,
+    ).recoveredCount,
+  });
+  if (destination === "living-tide-season") {
+    showMoonWell("season");
+    return;
+  }
+  if (destination === "expedition") {
+    startExpedition();
+    return;
+  }
+  if (destination === "kelp-cathedral") {
+    if (!deriveRelicAtlasUnlocks(expeditionProgress, progress.realms).kelpCathedral) {
+      startExpedition();
+      return;
+    }
+    startRun("fresh", { realmId: "kelp-cathedral" });
+    return;
+  }
+  if (destination === "crystal-trench") {
+    const unlocks = deriveRelicAtlasUnlocks(expeditionProgress, progress.realms);
+    if (!unlocks.crystalTrench) {
+      if (unlocks.kelpCathedral) startRun("fresh", { realmId: "kelp-cathedral" });
+      else startExpedition();
+      return;
+    }
+    startRun("fresh", { realmId: "crystal-trench" });
+    return;
+  }
+  const unlocks = deriveRelicAtlasUnlocks(expeditionProgress, progress.realms);
+  if (!unlocks.leviathanGraveyard) {
+    if (unlocks.crystalTrench) startRun("fresh", { realmId: "crystal-trench" });
+    else if (unlocks.kelpCathedral) startRun("fresh", { realmId: "kelp-cathedral" });
+    else startExpedition();
+    return;
+  }
+  startRun("fresh", { realmId: "leviathan-graveyard" });
+});
+
 moonWell.onBack(() => {
   view?.applyCosmetics(progress.progression.equippedCosmetics);
+  view?.setLivingAtlasActive(false);
   moonWell.setWardrobeFeedback("");
   moonWell.showPanel("home");
   telemetry.track("hub_view", { panel: "home" });
@@ -1584,7 +2224,19 @@ hud.onDailyTrial(() => {
 
 hud.onDiveAgain(() => {
   if (!awaitingRestart) return;
-  if (activeExperience === "chapter-one-r5") {
+  if (activeExperience === "living-tide-season-one") {
+    if (lastLivingTideStageResult?.voyageComplete) {
+      showMoonWell("season");
+    } else {
+      startLivingTideStage();
+    }
+  } else if (activeExperience === "eclipse-court-pack-one") {
+    if (lastEclipseCourtStageResult?.packComplete) {
+      showMoonWell("vault");
+    } else {
+      startEclipseCourtStage();
+    }
+  } else if (activeExperience === "chapter-one-r5") {
     startExpedition();
   } else if (
     realmHandoffDestination(activeRealmId, {
@@ -1900,13 +2552,18 @@ hud.onRewardedPearls(() => {
 
 moonWell.onWardrobePreview((cosmeticId) => {
   const cosmetic = cosmeticDefinition(cosmeticId);
-  if (!cosmetic || tideProgressForXp(progress.progression.tideXp).level < cosmetic.unlockLevel) return;
+  if (!cosmetic || (
+    cosmetic.source !== "realm-pack" &&
+    tideProgressForXp(progress.progression.tideXp).level < cosmetic.unlockLevel
+  )) return;
   const preview: CosmeticLoadout = {
     ...progress.progression.equippedCosmetics,
     [cosmetic.category]: cosmetic.id
   };
   view?.applyCosmetics(preview);
-  moonWell.setWardrobeFeedback(`Previewing ${cosmetic.name}. Purchase and equip remain separate.`);
+  moonWell.setWardrobeFeedback(cosmetic.source === "realm-pack"
+    ? `Previewing ${cosmetic.name}. Earn it in ${cosmetic.sourceLabel ?? "the Realm Pack"}; it never changes power.`
+    : `Previewing ${cosmetic.name}. Purchase and equip remain separate.`);
   telemetry.track("cosmetic_preview", {
     cosmetic: cosmetic.id,
     category: cosmetic.category,
@@ -2069,14 +2726,17 @@ void installCapacitorShell({
   void telemetry.flush();
 });
 
-let rendererGeneration = view ? 1 : 0;
+const rendererGeneration = view ? 1 : 0;
 if (rendererGeneration > 0) canvas.dataset["rendererGeneration"] = String(rendererGeneration);
-let detachContextListeners: () => void = () => undefined;
 let rebuildInFlight: Promise<void> | null = null;
 
 function installContextListeners(target: HTMLCanvasElement): () => void {
   const onContextLost = (event: Event) => {
     event.preventDefault();
+    const statusMessage = event instanceof WebGLContextEvent
+      ? event.statusMessage
+      : "";
+    if (statusMessage) runtimeFailureDetail = statusMessage;
     const alreadyLost = runtimeLifecycle.snapshot().blockers.includes("webgl");
     runtimeLifecycle.contextLost();
     steering.reset();
@@ -2110,62 +2770,44 @@ function rebuildRenderer(): Promise<void> {
   rebuildInFlight = (async () => {
     runtimeLifecycle.beginRecovery();
     publishRuntimeState();
-    const previousView = view;
-    const previousCanvas = canvas;
-    view = null;
-    detachContextListeners();
-    detachPointerInput();
-
-    const replacement = previousCanvas.cloneNode(false) as HTMLCanvasElement;
-    rendererGeneration += 1;
-    replacement.dataset["rendererGeneration"] = String(rendererGeneration);
-    previousCanvas.replaceWith(replacement);
-    canvas = replacement;
-
+    const recoveringView = view;
+    const previousQuality = quality.current;
+    const recoveredQuality = recoveryQualityTier(previousQuality);
+    quality.forceTier(recoveredQuality);
     try {
-      previousView.dispose();
-    } catch {
-      // A lost context can reject individual WebGL cleanup calls. Every DOM
-      // and Three.js reference is dropped regardless, and the replacement
-      // canvas starts from a fresh context.
-    }
-
-    let rebuiltView: GameView | null = null;
-    try {
-      rebuiltView = new GameView(canvas, tuning);
-      rebuiltView.setQuality(quality.settings);
-      rebuiltView.setPresentationPreferences(accessPreferences);
-      rebuiltView.setRealm(activeRealmId);
-      rebuiltView.applyCosmetics(progress.progression.equippedCosmetics);
-      detachContextListeners = installContextListeners(canvas);
-      detachPointerInput = attachPointerInput(canvas, steering);
-      await rebuiltView.ready;
-      rebuiltView.resetTrail();
-      view = rebuiltView;
+      // WebGLRenderer's own listener has already rebuilt its internal state.
+      // Reusing the same scene avoids the transient double-allocation that
+      // exhausted high-resolution Android GPUs in V48-R1.
+      recoveringView.recoverAfterContextRestore(quality.settings);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      if (recoveringView.isContextLost()) {
+        throw new Error("WebGL context was lost again during in-place recovery.");
+      }
       runtimeLifecycle.recoverySucceeded();
       timestep.reset();
       lastFrameMs = performance.now();
       publishRuntimeState();
       telemetry.track("webgl_context_restored", {
         generation: rendererGeneration,
-        quality: quality.current,
+        quality: recoveredQuality,
+        previousQuality,
+        recoveryMode: "in-place",
         state: runtimeLifecycle.snapshot().state
       }, activeRunId);
       void telemetry.flush();
-    } catch {
-      detachContextListeners();
-      detachPointerInput();
-      try {
-        rebuiltView?.dispose();
-      } catch {
-        // The failed reconstruction is abandoned and play remains fail-closed.
-      }
-      view = null;
+    } catch (error: unknown) {
+      runtimeFailureStage = "context-recovery";
+      runtimeFailureDetail = error instanceof Error
+        ? error.message
+        : "unknown context recovery error";
       runtimeLifecycle.recoveryFailed();
       publishRuntimeState();
       telemetry.track("webgl_context_recovery_failed", {
         generation: rendererGeneration,
-        quality: quality.current
+        quality: recoveredQuality,
+        previousQuality,
+        recoveryMode: "in-place",
+        reason: error instanceof Error ? error.name : "unknown",
       }, activeRunId);
       void telemetry.flush();
     }
@@ -2175,7 +2817,7 @@ function rebuildRenderer(): Promise<void> {
   return rebuildInFlight;
 }
 
-if (view) detachContextListeners = installContextListeners(canvas);
+if (view) installContextListeners(canvas);
 
 window.addEventListener("error", () => {
   telemetry.track("error", { source: "window", phase: "runtime" }, activeRunId);
@@ -2478,7 +3120,56 @@ function frame(nowMs: number): void {
       tutorialSessionSource = null;
       moonWell.showTutorial(null);
       document.documentElement.dataset["glowfinScreen"] = "post-run";
-      if (activeRealmId === "kelp-cathedral") {
+      if (activeExperience === "eclipse-court-pack-one") {
+        const courtStatus = run.eclipseCourtStatus;
+        realmHud.setActive(false);
+        telemetry.track(
+          courtStatus.completed ? "realm_complete" : "realm_abandon",
+          {
+            realm: "eclipse-court",
+            slice: "original-court-world",
+            endReason: run.endReason,
+            stageIndex: courtStatus.stageIndex,
+            elapsedSec: run.sim.elapsedSec,
+            alignments: courtStatus.alignments,
+            alignmentTarget: courtStatus.alignmentTarget,
+            missedAlignments: courtStatus.missedAlignments,
+            collisions: run.collisionCount,
+            cleanPerformance: courtStatus.cleanPerformance,
+          },
+          activeRunId,
+        );
+        const eclipseCourtResult = recordEclipseCourtStageResult(
+          courtStatus.completed,
+          courtStatus.cleanPerformance,
+        );
+        if (!eclipseCourtResult) return;
+        const realmRecord: RealmRecordResult = {
+          progress: eclipseCourtResult.progress,
+          realm: "eclipse-court",
+          award: { pearls: 0, xp: 0, newlyCompletedObjectives: [] },
+          duplicateRewardPrevented: eclipseCourtResult.duplicateRewardPrevented,
+          crystalTrenchUnlocked: true,
+          crystalTrenchNewlyUnlocked: false,
+          leviathanGraveyardUnlocked: true,
+          leviathanGraveyardNewlyUnlocked: false,
+          mooncrestCovenantNewlyAwarded: false,
+          tideLevelBefore: eclipseCourtResult.tideLevelBefore,
+          tideLevelAfter: eclipseCourtResult.tideLevelAfter,
+          unlockedCosmetics: [],
+        };
+        presentRealmResult(realmRecord, {
+          kind: "eclipse-court",
+          title: "Eclipse Court",
+          stageTitle: eclipseCourtResult.stage?.title ?? "Court Memory",
+          completed: courtStatus.completed,
+          alignments: courtStatus.alignments,
+          alignmentTarget: courtStatus.alignmentTarget,
+          missedAlignments: courtStatus.missedAlignments,
+          cleanPerformance: courtStatus.cleanPerformance,
+        }, [], null, eclipseCourtResult);
+        return;
+      } else if (activeRealmId === "kelp-cathedral") {
         const realmStatus = run.kelpCathedralStatus;
         const realmRecord = progressRepository.recordKelpCathedralRun({
           runId: activeRunId,
@@ -2504,13 +3195,21 @@ function frame(nowMs: number): void {
           },
           activeRunId,
         );
+        const livingTideResult = recordLivingTideStageResult(
+          "kelp-cathedral",
+          realmStatus.rescuedManta,
+          realmStatus.relicPageFound,
+        );
         presentRealmResult(realmRecord, {
           kind: "kelp-cathedral",
           title: "Kelp Cathedral",
           rescuedManta: realmStatus.rescuedManta,
           relicPageFound: realmStatus.relicPageFound,
-          crystalTrenchUnlocked: realmRecord.crystalTrenchUnlocked,
-        });
+          crystalTrenchUnlocked: deriveRelicAtlasUnlocks(
+            expeditionProgress,
+            realmRecord.progress.realms,
+          ).crystalTrench,
+        }, [], livingTideResult, null);
         return;
       } else if (activeRealmId === "crystal-trench") {
         const realmStatus = run.crystalTrenchStatus;
@@ -2523,6 +3222,16 @@ function frame(nowMs: number): void {
         }, {
           collisions: run.collisionCount,
         });
+        const leviathanWasStoryUnlocked = deriveRelicAtlasUnlocks(
+          expeditionProgress,
+          progress.realms,
+        ).leviathanGraveyard;
+        const leviathanStoryUnlocked = deriveRelicAtlasUnlocks(
+          expeditionProgress,
+          realmRecord.progress.realms,
+        ).leviathanGraveyard;
+        const legacyLeviathanNewlyUnlocked =
+          realmRecord.leviathanGraveyardNewlyUnlocked;
         realmHud.setActive(false);
         telemetry.track(
           realmStatus.raceWon ? "realm_complete" : "realm_abandon",
@@ -2545,6 +3254,11 @@ function frame(nowMs: number): void {
           },
           activeRunId,
         );
+        const livingTideResult = recordLivingTideStageResult(
+          "crystal-trench",
+          realmStatus.raceWon,
+          realmStatus.cleanPerformance,
+        );
         presentRealmResult(realmRecord, {
           kind: "crystal-trench",
           title: "Crystal Trench",
@@ -2554,15 +3268,16 @@ function frame(nowMs: number): void {
           raceWon: realmStatus.raceWon,
           raceAttempts: realmStatus.raceAttempts,
           cleanPerformance: realmStatus.cleanPerformance,
-          leviathanGraveyardUnlocked: realmRecord.leviathanGraveyardUnlocked,
+          leviathanGraveyardUnlocked: leviathanStoryUnlocked,
           leviathanGraveyardNewlyUnlocked:
-            realmRecord.leviathanGraveyardNewlyUnlocked,
-        });
+            !leviathanWasStoryUnlocked && leviathanStoryUnlocked &&
+            (legacyLeviathanNewlyUnlocked || realmStatus.cleanPerformance),
+        }, [], livingTideResult, null);
         return;
       } else if (activeRealmId === "leviathan-graveyard") {
         const realmStatus = run.duskmawStatus;
         realmHud.setActive(false);
-        const persistenceEnabled = v45IntegrationRoute;
+        const persistenceEnabled = realmThreeIntegrationEnabled;
         telemetry.track(
           realmStatus.completed ? "realm_complete" : "realm_abandon",
           {
@@ -2597,6 +3312,11 @@ function frame(nowMs: number): void {
           }, {
             collisions: run.collisionCount,
           });
+          const livingTideResult = recordLivingTideStageResult(
+            "leviathan-graveyard",
+            realmStatus.completed,
+            realmStatus.cleanPerformance,
+          );
           presentRealmResult(realmRecord, {
             kind: "duskmaw-pursuit",
             title: "Leviathan Graveyard",
@@ -2608,7 +3328,7 @@ function frame(nowMs: number): void {
             cleanPerformance: realmStatus.cleanPerformance,
           }, realmRecord.mooncrestCovenantNewlyAwarded
             ? ["Auralis Mooncrest Covenant"]
-            : []);
+            : [], livingTideResult, null);
           return;
         }
         presentDuskmawResult();
@@ -2616,6 +3336,8 @@ function frame(nowMs: number): void {
       }
       if (activeExperience === "chapter-one-r5") {
         const completed = run.endReason === "expedition-complete";
+        const atlas = deriveRelicAtlasState(expeditionProgress, progress.realms);
+        const nextEntry = atlas.entries.find((entry) => entry.id === atlas.nextRelicId) ?? null;
         completedCompetitiveRun = null;
         hud.hideGhostGap();
         hud.setSubmitState("unavailable");
@@ -2625,11 +3347,18 @@ function frame(nowMs: number): void {
           completed,
           seconds: run.sim.elapsedSec,
           collisions: run.collisionCount,
-          relicsDiscovered: expeditionProgress.discoveredRelics.length,
+          relicsRecovered: atlas.recoveredCount,
           primaryMark: expeditionProgress.completionMarks.primaryObjective,
           relicMark: expeditionProgress.completionMarks.hiddenRelic,
           cleanMark: expeditionProgress.completionMarks.cleanPerformance,
           moonWellRestored: expeditionProgress.moonWellRestored,
+          nextObjective: atlas.gameComplete
+            ? "The Living Tide is fully restored"
+            : completed && nextEntry
+              ? `Next · ${nextEntry.mapLabel} · ${nextEntry.visualRoute}`
+              : expeditionProgress.completionMarks.hiddenRelic
+                ? "Moonseed saved · resume Chapter 1 to restore the Moon Well"
+                : "Find the bright Moonseed in the gold ring · missed rings return ahead",
         });
         telemetry.track(completed ? "expedition_complete" : "expedition_abandon", {
           mission: CHAPTER_ONE_MISSION.id,
@@ -2894,7 +3623,13 @@ function frame(nowMs: number): void {
     activeRealmId === "leviathan-graveyard"
       ? run.duskmawStatus
       : null,
+    activeRealmId === "eclipse-court"
+      ? run.eclipseCourtStatus
+      : null,
   );
+  if (moonWell.isAtlasOpen) {
+    moonWell.positionAtlasNodes(activeView.livingAtlasHotspots());
+  }
   if (activeRealmId === "kelp-cathedral") {
     const nextRealmPlan = run.gates.find((gate) => (
       gate.realmPlan && gate.distance > run.sim.forwardDistance + 3
@@ -2967,6 +3702,11 @@ function frame(nowMs: number): void {
       }, activeRunId);
     }
     realmHud.updateDuskmaw(duskmawStatus, nextRealmPlan);
+  } else if (activeRealmId === "eclipse-court") {
+    const nextRealmPlan = run.gates.find((gate) => (
+      gate.realmPlan && gate.distance > run.sim.forwardDistance + 3
+    ))?.realmPlan ?? null;
+    realmHud.updateEclipse(run.eclipseCourtStatus, nextRealmPlan);
   }
   if (ghostVisible && ghostRun) {
     hud.updateGhostGap(run.sim.forwardDistance, ghostRun.sim.forwardDistance);
@@ -3050,13 +3790,17 @@ async function start(): Promise<void> {
   let activeView: GameView | null = null;
   try {
     while (!activeView) {
-      if (!view && rebuildInFlight) await rebuildInFlight;
+      if (rebuildInFlight) await rebuildInFlight;
       const candidate: GameView | null = view;
       if (!candidate) break;
       await candidate.ready;
       if (candidate === view) activeView = candidate;
     }
-  } catch {
+  } catch (error: unknown) {
+    runtimeFailureStage = "asset-initialization";
+    runtimeFailureDetail = error instanceof Error
+      ? error.message
+      : "unknown startup asset error";
     runtimeLifecycle.markFailed();
     publishRuntimeState();
     telemetry.track("error", { source: "startup", phase: "renderer-ready" });
@@ -3075,6 +3819,7 @@ async function start(): Promise<void> {
   telemetry.track("load_complete", {
     loadMs: performance.now(),
     quality: quality.current,
+    graphicsContext: graphicsContext?.mode ?? "unavailable",
     productionAssets: activeView.productionAssetStatus().glowfin === "glb",
     rendererGeneration,
     reducedMotion: accessPreferences.reducedMotion,
@@ -3094,7 +3839,7 @@ async function start(): Promise<void> {
     return;
   }
 
-  showMoonWell("home");
+  showMoonWell(eclipseCourtPlaytestMode ? "vault" : "home");
   setStartupProgress(100, navigator.onLine === false
     ? "Ready offline · hosted boards will return with the network."
     : "Ready to dive.");
