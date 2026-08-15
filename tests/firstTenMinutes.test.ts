@@ -20,10 +20,10 @@ describe("Version 39 first-ten-minute player shell", () => {
     expect(html).toContain('id="tutorial-intro-start"');
     expect(html).toContain('id="tutorial-intro-skip"');
     expect(html.match(/data-guided-tutorial/g)?.length).toBeGreaterThanOrEqual(3);
-    expect(html).toContain("New in Version 39 · about 30 seconds");
+    expect(html).toContain("Six clear steps · about 30 seconds");
     expect(html).toContain("Guided Dive · 1/6");
     expect(html).toContain('id="tutorial-skip"');
-    expect(html).toContain("six clear steps");
+    expect(html).toMatch(/six clear steps/i);
   });
 
   it("keeps post-run to one primary CTA and two secondary actions", () => {
@@ -36,13 +36,14 @@ describe("Version 39 first-ten-minute player shell", () => {
     expect(html).not.toContain("Tap outside the buttons");
   });
 
-  it("labels the two gameplay meters and moves release identity into Settings", () => {
+  it("labels the two gameplay meters and keeps build identity out of player UI", () => {
     expect(html).toContain('<div class="hud-meter"><span>Light</span>');
     expect(html).toContain('<div class="hud-meter"><span>Flow</span>');
     const settingsIndex = html.indexOf('id="moonwell-panel-settings"');
     const badgeIndex = html.indexOf('id="hud-build"');
     expect(settingsIndex).toBeGreaterThan(0);
     expect(badgeIndex).toBeGreaterThan(settingsIndex);
+    expect(html).toContain('id="hud-build" role="status" hidden');
     expect(html).toMatch(
       /\.hud-objective,\s*\.hud-objective strong(?:,[^{]+)?\{font-size:12px/,
     );

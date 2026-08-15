@@ -160,6 +160,7 @@ import {
   eclipseCourtProgress,
   leviathanGraveyardProgress,
   livingTideSeasonProgress,
+  realmStoryAccess,
   REALM_OBJECTIVES,
 } from "./realms/progress";
 import { RealmHud } from "./realms/hud";
@@ -376,6 +377,12 @@ const progressLoad = progressRepository.load();
 let progress: GlowfinProgressV2 = progressLoad.progress;
 const expeditionProgressLoad = expeditionProgressRepository.load();
 let expeditionProgress: ExpeditionProgressV1 = expeditionProgressLoad.progress;
+const chapterOneAccessNeedsCloudSync =
+  expeditionProgress.moonWellRestored &&
+  !realmStoryAccess(progress.realms).kelpCathedral;
+if (expeditionProgress.moonWellRestored) {
+  progress = progressRepository.grantKelpCathedralStoryAccess();
+}
 const accessPreferenceRepository = new AccessPreferenceRepository(progressStorage);
 let accessPreferences = accessPreferenceRepository.load();
 steering.setSensitivityMultiplier(steeringSensitivityMultiplier(accessPreferences));
@@ -1276,6 +1283,10 @@ async function synchronizeCloudProgress(): Promise<void> {
   return cloudSyncInFlight;
 }
 
+if (chapterOneAccessNeedsCloudSync) {
+  void synchronizeCloudProgress();
+}
+
 function reportRunStart(): void {
   telemetry.track("run_start", {
     seed: run.seed,
@@ -1920,6 +1931,11 @@ function recordExpeditionCompletion(): void {
     moonWellRestored: r5.moonWellRestored,
   });
   expeditionProgress = result.progress;
+  if (expeditionProgress.moonWellRestored) {
+    progress = progressRepository.grantKelpCathedralStoryAccess();
+    updateProgressUi();
+    void synchronizeCloudProgress();
+  }
   moonWell.setExpeditionState(expeditionProgress);
   telemetry.track("reward_granted", {
     domain: "expedition",

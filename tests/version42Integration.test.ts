@@ -21,9 +21,20 @@ describe("Version 42 Tide Sprint integration seam", () => {
     expect(main).not.toContain("CleanTideSprintView");
     expect(main).not.toContain('from "./tideSprint/director"');
     expect(main).not.toContain('from "./tideSprint/view"');
-    expect(tideSprintMain).toContain("new CleanTideSprintView(canvas)");
+    expect(tideSprintMain).toContain('import type { CleanTideSprintView } from "./view"');
+    expect(tideSprintMain).toContain('import("./view")');
+    expect(tideSprintMain).toContain("new View(canvas)");
     expect(tideSprintMain).toContain("new ProgressRepository(deviceStorage)");
     expect(tideSprintMain).toContain("TideSprintGhostRecorder");
+  });
+
+  it("renders an immediately interactive premium lobby without remote portraits", () => {
+    expect(tideSprintHtml.match(/<svg viewBox="0 0 120 92"/g)).toHaveLength(3);
+    expect(tideSprintHtml).toContain("Race as Glowfin");
+    expect(tideSprintHtml).toContain("Enter the Moon Current");
+    expect(tideSprintHtml).not.toMatch(/Version 42|Start Practice|stable V41|separate game/i);
+    expect(tideSprintMain).toContain('dataset["raceLobby"] = "ready"');
+    expect(tideSprintMain).toContain('"integrated-tide-sprint"');
   });
 
   it("wires shared rewards, objectives, saves, telemetry and lifecycle recovery", () => {

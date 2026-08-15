@@ -301,10 +301,10 @@ export class Hud {
 
   setTelemetryConsent(consent: TelemetryConsent): void {
     this.telemetryChoice.textContent = consent === "granted"
-      ? "Anonymous playtest data: On"
+      ? "Anonymous diagnostics: On"
       : consent === "denied"
-        ? "Anonymous playtest data: Off"
-        : "Share anonymous playtest data";
+        ? "Anonymous diagnostics: Off"
+        : "Share anonymous diagnostics";
     this.telemetryChoice.setAttribute("aria-pressed", consent === "granted" ? "true" : "false");
   }
 
@@ -642,8 +642,8 @@ export class Hud {
       ? presentation.raceGhostLabel
       : `${presentation.raceGhostLabel} · ${Math.floor(presentation.raceGhostScore).toLocaleString()}`;
     this.dailyTrial.textContent = presentation.dailyCompleted
-      ? `Replay Daily Tide Trial · ${presentation.dailyDayId}`
-      : `Daily Tide Trial · ${presentation.dailyDayId}`;
+      ? `Replay Daily Tide · ${presentation.dailyDayId}`
+      : `Daily Tide · ${presentation.dailyDayId}`;
     this.competitiveDivision.textContent = presentation.leaderboardDivision === "assisted"
       ? "Assisted division · replay validated separately"
       : "Standard division · deterministic replay validation";

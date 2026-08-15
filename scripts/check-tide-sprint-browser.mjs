@@ -37,6 +37,7 @@ const browser = await chromium.launch({
 });
 
 const evidence = [];
+mkdirSync(dirname(output), { recursive: true });
 try {
   for (const device of devices) {
     const context = await browser.newContext({
@@ -59,11 +60,17 @@ try {
     });
 
     const target = new URL("tide-sprint/", baseUrl);
-    await page.goto(target.toString(), { waitUntil: "networkidle" });
+    const navigationStartedAt = Date.now();
+    await page.goto(target.toString(), { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => (
+      document.documentElement.dataset.raceLobby === "ready"
+    ), undefined, { timeout: 4_000 });
+    const navigationToLobbyMs = Date.now() - navigationStartedAt;
     await page.waitForSelector('#race-lobby[data-active="true"]');
     const lobby = await page.evaluate(() => {
       const card = document.querySelector(".lobby-card")?.getBoundingClientRect();
       const start = document.querySelector("#race-start")?.getBoundingClientRect();
+      const runtime = window.__GLOWFIN_TIDE_SPRINT_RUNTIME__?.snapshot();
       return {
         viewport: { width: innerWidth, height: innerHeight },
         scrollWidth: document.documentElement.scrollWidth,
@@ -71,6 +78,11 @@ try {
         startHeight: start?.height ?? 0,
         planHash: document.documentElement.dataset.racePlan ?? null,
         owner: document.documentElement.dataset.raceStartupOwner ?? null,
+        portraitCount: document.querySelectorAll(".crew-mark svg").length,
+        portraitDetailCount: document.querySelectorAll(".crew-mark svg path, .crew-mark svg ellipse, .crew-mark svg circle").length,
+        visibleCopy: document.querySelector(".lobby-card")?.innerText ?? "",
+        backHref: document.querySelector(".back-link")?.href ?? null,
+        runtime,
       };
     });
     if (
@@ -80,17 +92,41 @@ try {
       lobby.card.right > lobby.viewport.width + 0.5 ||
       lobby.startHeight < 44 ||
       !/^[0-9a-f]{8}$/.test(lobby.planHash ?? "") ||
-      lobby.owner !== "v42-integrated-photo-finish-current-r10"
+      lobby.owner !== "integrated-tide-sprint" ||
+      lobby.portraitCount !== 3 ||
+      lobby.portraitDetailCount < 24 ||
+      /\b(?:test|trial|practice|version|separate|stable)\b/i.test(lobby.visibleCopy) ||
+      lobby.runtime?.timing?.lobbyReadyMs > 1_500 ||
+      navigationToLobbyMs > 4_000
     ) {
-      throw new Error(`${device.name} lobby contract failed: ${JSON.stringify(lobby)}`);
+      throw new Error(`${device.name} lobby contract failed: ${JSON.stringify({
+        navigationToLobbyMs,
+        lobby,
+      })}`);
     }
 
+    const lobbyScreenshot = resolve(
+      dirname(output),
+      `tide-sprint-lobby-${device.name}.png`,
+    );
+    await page.screenshot({ path: lobbyScreenshot, fullPage: true });
+    await page.locator('[data-character="neri"]').click();
+    await page.waitForFunction(() => (
+      document.querySelector('[data-character="neri"]')?.getAttribute("data-selected") === "true" &&
+      document.querySelector("#race-start")?.textContent?.includes("Race as Neri")
+    ));
     await page.locator("#race-start").click();
     await page.waitForFunction(() => (
       document.querySelector("#race-canvas")?.getAttribute("data-active") === "true" &&
       document.documentElement.dataset.tideSprintRuntime === "running"
     ), undefined, { timeout: 12_000 });
     await page.waitForTimeout(4_200);
+
+    const raceScreenshot = resolve(
+      dirname(output),
+      `tide-sprint-race-${device.name}.png`,
+    );
+    await page.screenshot({ path: raceScreenshot, fullPage: true });
 
     const before = await page.evaluate(() => (
       window.__GLOWFIN_TIDE_SPRINT_RUNTIME__?.snapshot()
@@ -160,7 +196,9 @@ try {
       device: device.name,
       emulated: true,
       engine: `Chromium ${browser.version()}`,
+      navigationToLobbyMs,
       lobby,
+      screenshots: { lobby: lobbyScreenshot, race: raceScreenshot },
       before,
       restored,
       resumed,
@@ -172,9 +210,8 @@ try {
   await browser.close();
 }
 
-mkdirSync(dirname(output), { recursive: true });
 writeFileSync(output, `${JSON.stringify({
-  evidenceVersion: "1.0.0",
+  evidenceVersion: "2.0.0",
   source: "ci-emulated-mobile-browser",
   devices: evidence,
 }, null, 2)}\n`, "utf8");

@@ -480,7 +480,7 @@ export class MoonWell {
       available
         ? integratedRoute
           ? "Enter Realm 3, Leviathan Graveyard Heartlight War"
-          : "Enter the Version 44 R1 Heartlight War"
+          : "Enter the Heartlight War"
         : "Duskmaw pursuit locked; win the Crystal Trench Mirror Current",
     );
     if (!available) {
@@ -532,7 +532,7 @@ export class MoonWell {
     this.root.querySelectorAll<HTMLElement>("[data-tutorial-entry-detail]").forEach((element) => {
       element.textContent = completed
         ? "Six clear steps · about 30 seconds"
-        : "New in Version 39 · six clear steps";
+        : "Six clear steps · about 30 seconds";
     });
   }
 
@@ -720,7 +720,7 @@ export class MoonWell {
       currentStage?.colour ?? "#ffd17d",
     );
     this.vaultCycle.textContent = playtestMode
-      ? "FULL REALM ACCESS · MAIN SAVE PROTECTED"
+      ? "REALM PACK 01 · ECLIPSE COURT"
       : `REALM PACK 01 · WEEK OF ${weekId}`;
     this.vaultCollection.textContent =
       `${progress.collectionIds.length}/${ECLIPSE_COURT_COLLECTION_IDS.length} COLLECTION`;
@@ -751,14 +751,14 @@ export class MoonWell {
     this.vaultStart.disabled = false;
     if (!activeRun) {
       this.vaultStatus.textContent = playtestMode
-        ? "Full three-court campaign · your main save and unlocks will not change"
+        ? "Three living courts · one uninterrupted eclipse"
         : "Enter the First Moonseed · awaken its twelve-petalled living Court";
       this.vaultStart.textContent = playtestMode
         ? "Begin Full Eclipse Court"
         : "Unseal Eclipse Court";
     } else if (complete) {
       this.vaultStatus.textContent = playtestMode
-        ? `Test complete · ${activeRun.perfectStages.length}/3 radiant · main save unchanged`
+        ? `Court restored · ${activeRun.perfectStages.length}/3 radiant`
         : activeRun.perfectStages.length === 3
           ? "Perfect Court · the full constellation burns"
           : `Court restored · ${activeRun.perfectStages.length}/3 radiant`;
@@ -767,7 +767,7 @@ export class MoonWell {
         : "Enter Another Eclipse";
     } else {
       this.vaultStatus.textContent =
-        `${playtestMode ? "CAMPAIGN · " : ""}${stageIndex + 1}/3 · ${currentStage!.objective}`;
+        `${stageIndex + 1}/3 · ${currentStage!.objective}`;
       this.vaultStart.textContent = playtestMode
         ? `Enter ${currentStage!.title}`
         : `Enter ${currentStage!.title}`;

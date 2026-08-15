@@ -58,6 +58,7 @@ import {
   applyLeviathanGraveyardRun,
   createDefaultRealmProgress,
   eclipseCourtProgress,
+  grantKelpCathedralStoryAccess,
   livingTideSeasonProgress,
   mergeRealmProgress,
   readLegacyRealmProgress,
@@ -988,6 +989,7 @@ function runRewardClaimId(
 
 function realmHistoryPayload(progress: RealmProgressV1): string {
   return JSON.stringify({
+    storyAccess: progress.storyAccess ?? null,
     kelpCathedral: progress.kelpCathedral,
     crystalTrench: progress.crystalTrench,
     leviathanGraveyard: progress.leviathanGraveyard ?? null,
@@ -1139,6 +1141,29 @@ export class ProgressRepository {
 
   snapshot(): GlowfinProgressV2 {
     return cloneProgress(this.current);
+  }
+
+  /**
+   * Mirrors the Chapter 1 entitlement into the cloud-synced realm ledger.
+   * This is monotonic: once the Moon Well has opened Realm 1, no older local
+   * or remote save may close it again.
+   */
+  grantKelpCathedralStoryAccess(): GlowfinProgressV2 {
+    const realms = grantKelpCathedralStoryAccess(
+      this.current.realms,
+      this.now(),
+    );
+    if (realms.revision === this.current.realms.revision) {
+      return this.snapshot();
+    }
+    this.current = {
+      ...this.current,
+      revision: this.current.revision + 1,
+      updatedAt: this.now().toISOString(),
+      realms,
+    };
+    this.persist(this.current);
+    return this.snapshot();
   }
 
   recordRun(

@@ -6,7 +6,7 @@ function file(path: string): string {
   return readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-describe("Version 48-R2 Capacitor wrapper contract", () => {
+describe("Version 48-R3 Capacitor wrapper contract", () => {
   it("wraps only the sealed dist artifact with hardened native defaults", () => {
     expect(capacitorConfig).toMatchObject({
       appId: "com.karthikbs862026.glowfin",
@@ -42,7 +42,7 @@ describe("Version 48-R2 Capacitor wrapper contract", () => {
     expect(android).toContain('android:scheme="glowfin"');
     expect(android).toContain('android:host="challenge"');
     expect(file("android/app/build.gradle")).toContain("versionCode 48");
-    expect(file("android/app/build.gradle")).toContain('versionName "0.48.2"');
+    expect(file("android/app/build.gradle")).toContain('versionName "0.48.3"');
 
     const androidStyles = file("android/app/src/main/res/values/styles.xml");
     expect(androidStyles).toContain('android:windowLightNavigationBar" tools:targetApi="27"');
@@ -59,7 +59,7 @@ describe("Version 48-R2 Capacitor wrapper contract", () => {
     expect(privacy).toContain("<false/>");
     const iosProject = file("ios/App/App.xcodeproj/project.pbxproj");
     expect(iosProject).toContain("CURRENT_PROJECT_VERSION = 48;");
-    expect(iosProject).toContain("MARKETING_VERSION = 0.48.2;");
+    expect(iosProject).toContain("MARKETING_VERSION = 0.48.3;");
   });
 
   it("uses Capacitor's Android inset fallback and exposes optional haptics", () => {
@@ -76,7 +76,7 @@ describe("Version 48-R2 Capacitor wrapper contract", () => {
     expect(tideSprint).toContain('id="race-runtime"');
   });
 
-  it("registers only lifecycle and haptics as Version 48-R2 native plugins", () => {
+  it("registers only lifecycle and haptics as Version 48-R3 native plugins", () => {
     const androidGradle = file("android/app/capacitor.build.gradle");
     expect(androidGradle).toContain("project(':capacitor-app')");
     expect(androidGradle).toContain("project(':capacitor-haptics')");
@@ -84,8 +84,8 @@ describe("Version 48-R2 Capacitor wrapper contract", () => {
     expect(iosPackage).toContain('name: "CapacitorApp"');
     expect(iosPackage).toContain('name: "CapacitorHaptics"');
     const workflow = file(".github/workflows/native-wrapper.yml");
-    expect(workflow).toContain("glowfin-v48-r2-android-candidates");
-    expect(workflow).toContain("Glowfin-v48-r2.xcarchive");
-    expect(workflow).toContain("glowfin-v48-r2-ios-candidate");
+    expect(workflow).toContain("glowfin-v48-r3-android-candidates");
+    expect(workflow).toContain("Glowfin-v48-r3.xcarchive");
+    expect(workflow).toContain("glowfin-v48-r3-ios-candidate");
   });
 });

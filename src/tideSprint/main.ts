@@ -22,7 +22,7 @@ import {
   TIDE_SPRINT_LANE_HALF_WIDTH,
   tideSprintSectionLabel,
 } from "./course";
-import { CleanTideSprintView } from "./view";
+import type { CleanTideSprintView } from "./view";
 import {
   TideSprintGhostPlayback,
   TideSprintGhostRecorder,
@@ -44,6 +44,11 @@ import {
 
 const FIXED_DT_SEC = 1 / 120;
 const COUNTDOWN_SEC = 3;
+const moduleStartedAtMs = performance.now();
+
+type TideSprintViewConstructor = new (
+  canvas: HTMLCanvasElement,
+) => CleanTideSprintView;
 
 function required<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id);
@@ -130,9 +135,14 @@ telemetry.track("tide_sprint_entry", {
 });
 let director = new CleanTideSprintDirector();
 let view: CleanTideSprintView | null = null;
+let viewConstructor: TideSprintViewConstructor | null = null;
+let viewLoadPromise: Promise<TideSprintViewConstructor> | null = null;
 let ghostRecorder: TideSprintGhostRecorder | null = null;
 let activeRunId: string | null = null;
 let running = false;
+let starting = false;
+let lobbyReadyAtMs = 0;
+let raceEngineReadyAtMs: number | null = null;
 let animationFrame = 0;
 let lastFrameMs = 0;
 let accumulatorSec = 0;
@@ -161,6 +171,24 @@ function publishRuntimeState(state: string): void {
   canvas.dataset["contextLosses"] = String(contextLosses);
   canvas.dataset["contextRecoveries"] = String(successfulRecoveries);
   canvas.dataset["interruptions"] = String(lifecycleInterruptions);
+}
+
+function loadRaceEngine(): Promise<TideSprintViewConstructor> {
+  if (viewConstructor) return Promise.resolve(viewConstructor);
+  if (!viewLoadPromise) {
+    viewLoadPromise = import("./view").then((module) => {
+      const View = module.CleanTideSprintView;
+      viewConstructor = View;
+      raceEngineReadyAtMs = performance.now();
+      document.documentElement.dataset["raceEngine"] = "ready";
+      return View;
+    }).catch((error: unknown) => {
+      viewLoadPromise = null;
+      document.documentElement.dataset["raceEngine"] = "failed";
+      throw error;
+    });
+  }
+  return viewLoadPromise;
 }
 
 function ordinal(value: number): string {
@@ -244,7 +272,7 @@ function beginControlTutorial(): void {
 
 function completeControlTutorial(): void {
   rememberControlTutorial();
-  practiceButton.textContent = "Practice speed controls again";
+  practiceButton.textContent = "Review swim controls";
   controlTutorialStage = null;
   steeringTarget = 0;
   throttleTarget = TIDE_SPRINT_DEFAULT_THROTTLE;
@@ -259,7 +287,7 @@ function renderModeMeta(): void {
   const tide = tideProgressForXp(glowfinProgress.progression.tideXp);
   walletLabel.textContent = `Tide ${tide.level} · ${glowfinProgress.progression.lumenPearls.toLocaleString()} Lumen Pearls`;
   bestLabel.textContent = crewProgress.bestFinishSec === null
-    ? "No integrated finish yet"
+    ? "No finish yet"
     : `Best ${crewProgress.bestFinishSec.toFixed(2)}s · ${crewProgress.totals.wins} win${crewProgress.totals.wins === 1 ? "" : "s"}`;
   const compatibleGhost = crewProgress.bestGhost?.planHash ===
     CLEAN_TIDE_SPRINT_PLAN_HASH;
@@ -298,7 +326,9 @@ function renderCrew(): void {
     button.style.setProperty("--crew-accent", member.accent);
   }
   const member = tideSprintCrewMember(selected);
-  startButton.innerHTML = `Start as <strong>${member.name}</strong><span>Follow the cyan arrow-stream · chain gold rings to win</span>`;
+  if (!starting) {
+    startButton.innerHTML = `<strong>Race as ${member.name}</strong><span>Enter the Moon Current</span>`;
+  }
   renderModeMeta();
 }
 
@@ -518,16 +548,24 @@ function frame(nowMs: number): void {
   }
 }
 
-function beginRace(forceControlTutorial = false): void {
-  if (running) return;
+async function beginRace(forceControlTutorial = false): Promise<void> {
+  if (running || starting) return;
+  starting = true;
   runtime.dataset["active"] = "false";
   resultPanel.dataset["active"] = "false";
   startButton.disabled = true;
+  practiceButton.disabled = true;
+  startButton.innerHTML = "<strong>Opening the Moon Current…</strong><span>Calling the four racers</span>";
+  publishRuntimeState("loading-race-engine");
   try {
+    const View = await loadRaceEngine();
     view?.dispose();
-    view = new CleanTideSprintView(canvas);
+    view = new View(canvas);
   } catch (error) {
     view = null;
+    starting = false;
+    practiceButton.disabled = false;
+    renderCrew();
     showRuntimeFailure("renderer-construction", error);
     return;
   }
@@ -563,7 +601,9 @@ function beginRace(forceControlTutorial = false): void {
   lobby.dataset["active"] = "false";
   raceHud.dataset["active"] = "true";
   canvas.dataset["active"] = "true";
+  starting = false;
   startButton.disabled = false;
+  practiceButton.disabled = false;
   cancelAnimationFrame(animationFrame);
   if (forceControlTutorial || !controlTutorialCompleted()) {
     beginControlTutorial();
@@ -614,9 +654,9 @@ function returnToCrew(): void {
   renderCrew();
 }
 
-startButton.addEventListener("click", () => beginRace(false));
-practiceButton.addEventListener("click", () => beginRace(true));
-rematchButton.addEventListener("click", () => beginRace(false));
+startButton.addEventListener("click", () => { void beginRace(false); });
+practiceButton.addEventListener("click", () => { void beginRace(true); });
+rematchButton.addEventListener("click", () => { void beginRace(false); });
 changeCrewButton.addEventListener("click", returnToCrew);
 runtimeReload.addEventListener("click", () => window.location.reload());
 
@@ -764,11 +804,12 @@ canvas.addEventListener("webglcontextlost", (event) => {
   }, activeRunId);
 });
 
-canvas.addEventListener("webglcontextrestored", () => {
+canvas.addEventListener("webglcontextrestored", async () => {
   if (!contextLost) return;
   try {
+    const View = await loadRaceEngine();
     view?.dispose();
-    view = new CleanTideSprintView(canvas);
+    view = new View(canvas);
     view.setRoster(director.snapshot());
     contextLost = false;
     successfulRecoveries += 1;
@@ -808,8 +849,10 @@ window.addEventListener("pageshow", (event) => {
 });
 
 document.documentElement.dataset["racePlan"] = CLEAN_TIDE_SPRINT_PLAN_HASH;
-document.documentElement.dataset["raceStartupOwner"] = "v42-integrated-photo-finish-current-r10";
+document.documentElement.dataset["raceStartupOwner"] = "integrated-tide-sprint";
+document.documentElement.dataset["raceLobby"] = "ready";
 publishRuntimeState("lobby");
+lobbyReadyAtMs = performance.now();
 const runtimeWindow = window as typeof window & {
   __GLOWFIN_TIDE_SPRINT_RUNTIME__?: {
     snapshot: () => unknown;
@@ -824,7 +867,14 @@ runtimeWindow.__GLOWFIN_TIDE_SPRINT_RUNTIME__ = {
     contextLosses,
     successfulRecoveries,
     lifecycleInterruptions,
+    starting,
     planHash: CLEAN_TIDE_SPRINT_PLAN_HASH,
+    timing: {
+      lobbyReadyMs: Math.max(0, lobbyReadyAtMs - moduleStartedAtMs),
+      raceEngineReadyMs: raceEngineReadyAtMs === null
+        ? null
+        : Math.max(0, raceEngineReadyAtMs - moduleStartedAtMs),
+    },
     race: (() => {
       try {
         return director.snapshot();
@@ -842,6 +892,22 @@ for (const member of TIDE_SPRINT_CREW) {
 syncThrottleVisual(throttleTarget);
 updateControlCoach();
 practiceButton.textContent = controlTutorialCompleted()
-  ? "Replay one-finger practice"
-  : "Learn one-finger controls";
+  ? "Review swim controls"
+  : "Learn swim controls";
 renderCrew();
+
+// Wire the lobby first, then warm the expensive Three.js renderer only when
+// the browser is idle. On slow phones the page is immediately interactive;
+// on faster devices the race engine is ready before the player chooses a crew.
+const warmRaceEngine = () => { void loadRaceEngine().catch(() => undefined); };
+const idleWindow = window as unknown as {
+  requestIdleCallback?: (
+    callback: () => void,
+    options?: { timeout: number },
+  ) => number;
+};
+if (typeof idleWindow.requestIdleCallback === "function") {
+  idleWindow.requestIdleCallback(warmRaceEngine, { timeout: 1_500 });
+} else {
+  setTimeout(warmRaceEngine, 350);
+}

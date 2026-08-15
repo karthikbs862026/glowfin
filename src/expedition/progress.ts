@@ -126,22 +126,29 @@ export function canonicalizeExpeditionProgress(
 ): ExpeditionProgressV1 {
   const next = clone(progress);
   const discovered = new Set(next.discoveredRelics);
+  // `primaryObjective` has always meant that Glowfin carried the Moonseed
+  // through the ceremonial finish and restored the Moon Well. Several older
+  // builds persisted that completion mark before the dedicated restoration
+  // bit. Treating the two facts as unrelated strands a legitimately completed
+  // save at the Kelp Cathedral gate.
+  const moonWellAwake = next.moonWellRestored ||
+    next.completionMarks.primaryObjective;
   const moonseedOwned = discovered.has("moonseed-fragment") ||
     next.completionMarks.hiddenRelic ||
-    next.completionMarks.primaryObjective ||
-    next.moonWellRestored;
-  const primaryComplete = next.completionMarks.primaryObjective ||
-    next.moonWellRestored;
+    moonWellAwake;
+  const primaryComplete = moonWellAwake;
   if (moonseedOwned) discovered.add("moonseed-fragment");
   const repairedRelics = Array.from(discovered).filter(relicIdValid).sort();
   const changed =
     repairedRelics.length !== next.discoveredRelics.length ||
     repairedRelics.some((id, index) => id !== next.discoveredRelics[index]) ||
     next.completionMarks.hiddenRelic !== moonseedOwned ||
-    next.completionMarks.primaryObjective !== primaryComplete;
+    next.completionMarks.primaryObjective !== primaryComplete ||
+    next.moonWellRestored !== moonWellAwake;
   next.discoveredRelics = repairedRelics;
   next.completionMarks.hiddenRelic = moonseedOwned;
   next.completionMarks.primaryObjective = primaryComplete;
+  next.moonWellRestored = moonWellAwake;
   if (changed && incrementRevision) {
     next.revision += 1;
     next.updatedAt = now.toISOString();
