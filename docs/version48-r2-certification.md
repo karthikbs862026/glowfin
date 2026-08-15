@@ -42,6 +42,9 @@ screenshots or copying only the visible renderer.
 - V48-R1, V47-R1 and all prior versioned routes remain available and unchanged.
 - Android/iOS wrapper and CI artifact identities advance to 48 / 0.48.2 while
   retaining the existing portrait, safe-area, lifecycle and security policy.
+- The unminified server authority now includes Eclipse Court simulation and is
+  capped at 144 KiB (136.1 KiB measured); all client payload and render budgets
+  remain unchanged.
 
 ## Evidence ledger
 

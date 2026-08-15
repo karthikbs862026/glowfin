@@ -88,6 +88,8 @@ export class GameView {
   readonly camera: THREE.PerspectiveCamera;
   /** Resolves after required textures settle; GLB upgrades install afterward. */
   readonly ready: Promise<void>;
+  /** Resolves after the optional production GLB upgrade reaches a terminal state. */
+  readonly productionAssetsReady: Promise<void>;
   private readonly renderer: THREE.WebGLRenderer;
 
   private readonly creature: Creature;
@@ -884,7 +886,7 @@ export class GameView {
     // The authored GLBs are a visual upgrade over the already-playable
     // construction kit. Begin them only after essential textures settle and
     // never hold the first playable frame behind model decode.
-    void textureReady.then(() => loadRuntimeProductionGeometry())
+    this.productionAssetsReady = textureReady.then(() => loadRuntimeProductionGeometry())
       .then((assets) => {
         const ghostGeometry = {
           body: assets.glowfin.body.clone(),

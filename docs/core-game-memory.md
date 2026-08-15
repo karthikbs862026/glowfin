@@ -548,3 +548,9 @@ progress. V48-R1, V47-R1 and earlier versioned routes are immutable comparison
 and rollback artifacts. The accepted V48-R2 source was recovered from its exact
 deployed source maps after workspace pruning; visible renderer code and shared
 progression/persistence code must always be promoted together.
+
+Eclipse Court extends the shared deterministic `Run` authority used to verify
+leaderboard replays and Moonflash clips. Its unminified hosted verifier is
+therefore allowed a narrowly revised 144 KiB ceiling (136.1 KiB measured on
+the accepted candidate), replacing the pre-Eclipse 128 KiB ceiling. This does
+not change the 3 MiB sealed payload, 2 MiB JavaScript or mobile render budgets.

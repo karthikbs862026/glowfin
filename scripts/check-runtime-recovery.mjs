@@ -103,7 +103,7 @@ try {
   const contextLost = await snapshot();
   await page.waitForFunction(
     () => document.documentElement.dataset.glowfinRuntime === "running" &&
-      document.querySelector("#glowfin-canvas")?.getAttribute("data-renderer-generation") === "2" &&
+      document.querySelector("#glowfin-canvas")?.getAttribute("data-renderer-generation") === "1" &&
       window.__GLOWFIN_RUNTIME__?.successfulRecoveries === 1,
     undefined,
     { timeout: 15_000 }
@@ -134,14 +134,14 @@ try {
     contextLost.state !== "context-lost" ||
     contextLost.runtimeOverlayActive !== "true" ||
     contextRestored.state !== "running" ||
-    contextRestored.rendererGeneration !== 2 ||
+    contextRestored.rendererGeneration !== 1 ||
     contextRestored.contextLosses !== 1 ||
     contextRestored.successfulRecoveries !== 1 ||
     contextRestored.runtimeOverlayActive !== "false" ||
     pageCached.state !== "interrupted" ||
     pageCached.interruptions < 1 ||
     resumed.state !== "running" ||
-    resumed.rendererGeneration !== 2 ||
+    resumed.rendererGeneration !== 1 ||
     resumed.startupError ||
     errors.length > 0
   ) {
@@ -158,7 +158,7 @@ try {
 
   mkdirSync(dirname(output), { recursive: true });
   writeFileSync(output, `${JSON.stringify({
-    source: "ci-chromium-forced-context-loss-and-page-cache",
+    source: "ci-chromium-forced-context-loss-in-place-and-page-cache",
     before,
     accessible,
     contextLost,

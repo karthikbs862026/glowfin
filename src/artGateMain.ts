@@ -42,6 +42,7 @@ const view = new GameView(canvas, tuning, bootProfile, graphics.context);
 
 async function capture(): Promise<void> {
   await view.ready;
+  await view.productionAssetsReady;
   const productionAssets = view.productionAssetStatus();
   if (
     productionAssets.glowfin !== "glb" ||
