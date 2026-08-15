@@ -26,7 +26,9 @@ describe("Version 43-R4 mainline realm integration seam", () => {
   });
 
   it("uses one realm identity across simulation, rendering and telemetry", () => {
-    expect(main).toContain("new Run(seed, tuning, { realmId: activeRealmId })");
+    expect(main).toMatch(
+      /new Run\(seed, tuning,\s*\{[\s\S]*?realmId: activeRealmId/,
+    );
     expect(main).toContain("view?.setRealm(activeRealmId)");
     expect(gameView).toContain("setRealm(realmId: RealmId): void");
     expect(main).toContain('telemetry.track("realm_entry"');
@@ -56,8 +58,8 @@ describe("Version 43-R4 mainline realm integration seam", () => {
     expect(gameView).toContain('if (this.activeRealm === "moon-garden")');
     expect(gameView).toContain('this.floorMaterial.uniforms["uSurfaceWeight"]');
     expect(main).toContain('if (activeRealmId !== "moon-garden") return null;');
-    expect(rootHtml).toContain(
-      'html[data-glowfin-realm="kelp-cathedral"] #hud-signature-cue',
+    expect(rootHtml).toMatch(
+      /html\[data-glowfin-realm=(?:"kelp-cathedral"|kelp-cathedral)\] #hud-signature-cue/,
     );
   });
 
@@ -78,8 +80,8 @@ describe("Version 43-R4 mainline realm integration seam", () => {
     expect(gameView).toContain("ruin-stone-albedo-v2.webp");
     expect(gameView).toContain("seabed-albedo-v2.webp");
     expect(gameView).toContain('const crystalActive = realmId === "crystal-trench";');
-    expect(rootHtml).toContain(
-      'html[data-glowfin-realm="crystal-trench"] #hud-signature-cue',
+    expect(rootHtml).toMatch(
+      /html\[data-glowfin-realm=(?:"crystal-trench"|crystal-trench)\] #hud-signature-cue/,
     );
     expect(mechanics).toContain('verb: "prism-pulse"');
     expect(mechanics).toContain('verb: "trench-threshold"');

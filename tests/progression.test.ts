@@ -3,6 +3,7 @@ import {
   COSMETIC_CATALOG,
   COSMETIC_UNLOCKS,
   DEFAULT_COSMETIC_LOADOUT,
+  ECLIPSE_COURT_COSMETICS,
   calculateRunPearlReward,
   cosmeticAvailability,
   cosmeticPalette,
@@ -20,8 +21,9 @@ import {
 describe("Version 33 Moonwake progression", () => {
   it("ships exactly twelve unique cosmetic-only unlocks across all four categories", () => {
     expect(COSMETIC_UNLOCKS).toHaveLength(12);
-    expect(COSMETIC_CATALOG).toHaveLength(16);
-    expect(new Set(COSMETIC_CATALOG.map((item) => item.id)).size).toBe(16);
+    expect(ECLIPSE_COURT_COSMETICS).toHaveLength(4);
+    expect(COSMETIC_CATALOG).toHaveLength(20);
+    expect(new Set(COSMETIC_CATALOG.map((item) => item.id)).size).toBe(20);
     expect(new Set(COSMETIC_UNLOCKS.map((item) => item.category))).toEqual(
       new Set(["glow", "fin", "trail", "aura"])
     );

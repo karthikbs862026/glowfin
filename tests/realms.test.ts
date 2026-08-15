@@ -55,6 +55,7 @@ describe("Version 45-R1 integrated realm framework", () => {
       "kelp-cathedral",
       "crystal-trench",
       "leviathan-graveyard",
+      "eclipse-court",
     ]);
     expect(realmDefinitionIssues(KELP_CATHEDRAL_REALM)).toEqual([]);
     expect(KELP_CATHEDRAL_REALM.gameplayVerbs).toEqual([
