@@ -2726,7 +2726,7 @@ void installCapacitorShell({
   void telemetry.flush();
 });
 
-let rendererGeneration = view ? 1 : 0;
+const rendererGeneration = view ? 1 : 0;
 if (rendererGeneration > 0) canvas.dataset["rendererGeneration"] = String(rendererGeneration);
 let rebuildInFlight: Promise<void> | null = null;
 
