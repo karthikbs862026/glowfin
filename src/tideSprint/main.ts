@@ -900,8 +900,14 @@ renderCrew();
 // the browser is idle. On slow phones the page is immediately interactive;
 // on faster devices the race engine is ready before the player chooses a crew.
 const warmRaceEngine = () => { void loadRaceEngine().catch(() => undefined); };
-if ("requestIdleCallback" in window) {
-  window.requestIdleCallback(warmRaceEngine, { timeout: 1_500 });
+const idleWindow = window as unknown as {
+  requestIdleCallback?: (
+    callback: () => void,
+    options?: { timeout: number },
+  ) => number;
+};
+if (typeof idleWindow.requestIdleCallback === "function") {
+  idleWindow.requestIdleCallback(warmRaceEngine, { timeout: 1_500 });
 } else {
-  window.setTimeout(warmRaceEngine, 350);
+  setTimeout(warmRaceEngine, 350);
 }
