@@ -50,7 +50,7 @@ async function openHub() {
   const tutorialIntro = page.locator("#tutorial-intro[data-active=\"true\"]");
   if (await tutorialIntro.isVisible()) {
     await page.locator("#tutorial-intro-skip").click();
-    await page.waitForSelector("#tutorial-intro[data-active=\"false\"]");
+    await tutorialIntro.waitFor({ state: "hidden" });
   }
 }
 
